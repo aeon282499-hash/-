@@ -77,11 +77,16 @@ def fetch_tse_universe() -> list[tuple[str, str]]:
         resp.raise_for_status()
         df = pd.read_excel(io.BytesIO(resp.content))
 
-        # プライム市場のみ抽出
-        prime = df[df["市場・商品区分"] == "プライム（内国株式）"].copy()
-        prime["ticker"] = prime["コード"].astype(str).str.zfill(4) + ".T"
-        universe = list(zip(prime["ticker"], prime["銘柄名"]))
-        print(f"[universe] 取得完了: {len(universe)} 銘柄（東証プライム）")
+        # プライム・スタンダード・グロース全市場を抽出
+        target_markets = [
+            "プライム（内国株式）",
+            "スタンダード（内国株式）",
+            "グロース（内国株式）",
+        ]
+        filtered = df[df["市場・商品区分"].isin(target_markets)].copy()
+        filtered["ticker"] = filtered["コード"].astype(str).str.zfill(4) + ".T"
+        universe = list(zip(filtered["ticker"], filtered["銘柄名"]))
+        print(f"[universe] 取得完了: {len(universe)} 銘柄（プライム・スタンダード・グロース）")
         return universe
 
     except Exception as e:
