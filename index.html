@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自己紹介</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&family=Raleway:wght@200;400;700&display=swap');
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0d0d12;
+      color: #e0e0e8;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* 背景のグラデーション装飾 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, rgba(99, 60, 180, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(circle, rgba(30, 120, 180, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 56px 64px;
+      max-width: 680px;
+      width: 90%;
+      backdrop-filter: blur(12px);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 32px 80px rgba(0, 0, 0, 0.6);
+    }
+
+    /* カード上部のアクセントライン */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      width: 80%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(140, 100, 255, 0.6), rgba(60, 160, 255, 0.6), transparent);
+    }
+
+    .avatar-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2), 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .label {
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(160, 130, 255, 0.8);
+      margin-bottom: 8px;
+    }
+
+    .name {
+      font-family: 'Raleway', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 200;
+      letter-spacing: 0.06em;
+      color: #f0f0ff;
+      margin-bottom: 40px;
+      line-height: 1.3;
+    }
+
+    .divider {
+      width: 40px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(124, 58, 237, 0.8), rgba(37, 99, 235, 0.8));
+      margin: 0 auto 40px;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(160, 130, 255, 0.7);
+      margin-bottom: 12px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .section-body {
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.8;
+      color: rgba(220, 220, 240, 0.85);
+      padding-left: 4px;
+    }
+
+    .tag-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-left: 4px;
+    }
+
+    .tag {
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: rgba(200, 180, 255, 0.9);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-note {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="avatar-wrap">
+      <div class="avatar">👤</div>
+    </div>
+
+    <div style="text-align: center;">
+      <div class="label">About Me</div>
+      <h1 class="name">あなたの名前</h1>
+      <div class="divider"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">自己紹介</div>
+      <p class="section-body">
+        はじめまして。自己紹介文をここに入力してください。<br>
+        どんな人なのかを自由に書いてみましょう。
+      </p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">趣味</div>
+      <div class="tag-wrap">
+        <span class="tag">あなたの趣味①</span>
+        <span class="tag">あなたの趣味②</span>
+        <span class="tag">あなたの趣味③</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">一言</div>
+      <p class="section-body">
+        ここに好きな言葉や一言メッセージを入力してください。
+      </p>
+    </div>
+
+    <p class="footer-note">✦ &nbsp; PORTFOLIO &nbsp; ✦</p>
+  </div>
+</body>
+</html>

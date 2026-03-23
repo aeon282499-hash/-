@@ -1,0 +1,33 @@
+name: 自動売買シグナル配信
+
+on:
+  # 毎営業日 8:30 JST (= 23:30 UTC 前日) に実行
+  # UTC では日曜〜木曜の 23:30 が月〜金の 8:30 JST に相当する
+  schedule:
+    - cron: '30 23 * * 0-4'
+
+  # GitHub 画面から手動実行したい場合のトリガー
+  workflow_dispatch:
+
+jobs:
+  run-signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python 3.12 をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: 依存パッケージをインストール
+        run: pip install -r requirements.txt
+
+      - name: シグナル配信スクリプトを実行
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python main.py
