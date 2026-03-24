@@ -66,7 +66,7 @@ def main() -> None:
     from notifier import send_signals, send_error
 
     try:
-        signals = run_screener()
+        signals, macro = run_screener()
 
         # 夕方の結果レポート用にシグナルを保存
         payload = {
@@ -80,7 +80,7 @@ def main() -> None:
             json.dump(payload, f, ensure_ascii=False, indent=2)
         print(f"[main] シグナルを today_signals.json に保存しました（{len(signals)}件）")
 
-        send_signals(signals, today)
+        send_signals(signals, today, macro)
         print("[main] 正常終了")
 
     except Exception as e:
