@@ -1,38 +1,26 @@
-name: 朝のシグナル配信
+name: 毎朝シグナル配信
 
 on:
   schedule:
-    - cron: '30 22 * * 0-4'   # 7:30 JST (前日22:30 UTC)
-  workflow_dispatch:
+    - cron: '30 23 * * 0-4'  # JST 月〜金 8:30
+  workflow_dispatch:           # 手動実行ボタン
 
 jobs:
-  run-signal:
+  run:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      PYTHONIOENCODING: utf-8
 
     steps:
-      - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Python 3.12 をセットアップ
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: '3.11'
 
-      - name: 依存パッケージをインストール
+      - name: パッケージインストール
         run: pip install -r requirements.txt
 
-      - name: シグナル配信スクリプトを実行
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          JQUANTS_REFRESH_TOKEN: ${{ secrets.JQUANTS_REFRESH_TOKEN }}
+      - name: シグナル配信実行
         run: python main.py
-
-      - name: シグナルファイルをリポジトリに保存
-        run: |
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
-          git add today_signals.json
-          git diff --staged --quiet || git commit -m "save signals $(date +%Y-%m-%d)"
-          git push
