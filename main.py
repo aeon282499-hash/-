@@ -11,6 +11,7 @@ main.py — エントリーポイント
 """
 
 import sys
+import json
 from datetime import datetime
 import zoneinfo
 
@@ -66,6 +67,19 @@ def main() -> None:
 
     try:
         signals = run_screener()
+
+        # 夕方の結果レポート用にシグナルを保存
+        payload = {
+            "date": today.strftime("%Y-%m-%d"),
+            "signals": [
+                {k: v for k, v in s.items() if k != "reason"}
+                for s in signals
+            ],
+        }
+        with open("today_signals.json", "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        print(f"[main] シグナルを today_signals.json に保存しました（{len(signals)}件）")
+
         send_signals(signals, today)
         print("[main] 正常終了")
 
