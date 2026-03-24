@@ -26,6 +26,7 @@ jobs:
       - name: シグナル配信スクリプトを実行
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JQUANTS_REFRESH_TOKEN: ${{ secrets.JQUANTS_REFRESH_TOKEN }}
         run: python main.py
 
       - name: シグナルファイルをリポジトリに保存
