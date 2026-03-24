@@ -453,14 +453,31 @@ def run_screener() -> list[dict]:
     }
 
     signals: list[dict] = []
+    cnt = {"total": 0, "data_ok": 0, "rsi": 0, "dev": 0, "vol": 0, "turn": 0, "signal": 0}
+
     for ticker, df in data.items():
         if len(signals) >= MAX_SIGNALS:
             break
+        cnt["total"] += 1
+        close = df["Close"].dropna()
+        if len(close) < max(MA_SHORT, ATR_PERIOD) + 5:
+            continue
+        cnt["data_ok"] += 1
+
+        rsi = calc_rsi(close)
+        dev = calc_ma_deviation(close)
+        if rsi is not None and (rsi <= RSI_BUY_MAX or rsi >= RSI_SELL_MIN):
+            cnt["rsi"] += 1
+        if dev is not None and (dev <= DEV_BUY_MAX or dev >= DEV_SELL_MIN):
+            cnt["dev"] += 1
+
         name   = name_map.get(ticker, ticker)
         result = judge_signal_pre(ticker, name, df)
         if result:
             signals.append(result)
+            cnt["signal"] += 1
             print(f"  ✅ [{ticker}] {name} → {result['direction']}")
 
-    print(f"[screener] 結果: {len(signals)} 銘柄（条件①〜⑤クリア）")
+    print(f"[screener] 処理銘柄:{cnt['total']} データOK:{cnt['data_ok']} "
+          f"RSI条件①:{cnt['rsi']} 乖離条件②:{cnt['dev']} シグナル:{cnt['signal']}")
     return signals
