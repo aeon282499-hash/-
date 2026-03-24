@@ -4,7 +4,9 @@ on:
   # 毎営業日 8:30 JST (= 23:30 UTC 前日) に実行
   # UTC では日曜〜木曜の 23:30 が月〜金の 8:30 JST に相当する
   schedule:
-    - cron: '30 23 * * 0-4'
+    # 7:30 JST に計算開始 → 約1時間後の8:30 JST 頃に Discord 着信
+    # 7:30 JST = 22:30 UTC (前日)
+    - cron: '30 22 * * 0-4'
 
   # GitHub 画面から手動実行したい場合のトリガー
   workflow_dispatch:

@@ -2,70 +2,107 @@
 screener.py — 銘柄選定・売買シグナルロジック
 ================================================
 
-【対象】東証プライム市場 全銘柄（JPXの公式リストから自動取得）
-【戦略】厳選ボラティリティ + 極端乖離フィルター（AND条件）
+【戦略】超短期パニック・リバーサル（逆張り）
+  2〜3日の極端な行き過ぎからの自律反発を狙う。
 
-条件①  RSI(14) が極端ゾーン
-        RSI < RSI_BUY_MAX  → 買い候補
-        RSI > RSI_SELL_MIN → 売り候補
+■ シグナル判定フロー
+  ─ 前日（T-1）データで判定 ────────────────────────
+  ① RSI(2)        買い≦RSI_BUY_MAX / 売り≧RSI_SELL_MIN
+  ② 5MA乖離率     買い≦DEV_BUY_MAX% / 売り≧DEV_SELL_MIN%
+  ③ ボラ/出来高   [OR条件] 値幅≧ATR×RANGE_MULT OR 出来高≧平均×VOL_MULT
+  ④ 流動性        売買代金≧TURNOVER_MIN円
+  ⑤ 方向一致      ①と②が同じBUY/SELL
 
-条件②  25日移動平均乖離率が大きく偏離
-        乖離率 < DEV_BUY_MAX%  → 買い候補
-        乖離率 > DEV_SELL_MIN% → 売り候補
-
-条件③  前日の値幅が ATR(20) の RANGE_MULT 倍以上
-
-条件④  前日の出来高が 20日平均出来高の VOL_MULT 倍以上
-
-条件⑤  ①と②の方向が一致
+  ─ 当日（T）始値で最終判定 ──────────────────────────
+  ⑥ ギャップ      BUY: 始値＜前日終値（ギャップダウン）
+                   SELL: 始値＞前日終値（ギャップアップ）
+                   ±GAP_MAX_PCT%超の特大ギャップは見送り
 
 ────────────────────────────────────────────────
-カスタマイズ方法
-  閾値定数（以下の「=== 閾値設定 ===」ブロック）を変えるだけで
-  ロジック全体が変わる。独自指標は judge_signal() 内に追記。
+カスタマイズ方法:
+  以下「=== 閾値設定 ===」の定数を変更するだけでロジックが変わる。
+  optimize.py でこれらの最適値を自動探索できる。
 ────────────────────────────────────────────────
 """
 
 import io
+import os
+import ssl
 import time
 import requests
 import yfinance as yf
+
+# ── SSL証明書エラー回避（ユーザー名に日本語が含まれる環境向け）──
+# certifi のパスに日本語が含まれると curl が証明書を読めないため、
+# SSL検証を無効化したカスタムセッションを使用する
+ssl._create_default_https_context = ssl._create_unverified_context
+
+def _make_session():
+    """SSL検証を無効化したHTTPセッションを返す。"""
+    try:
+        # yfinance 0.2.40+ は curl_cffi を使用
+        from curl_cffi import requests as cfr
+        return cfr.Session(verify=False)
+    except ImportError:
+        pass
+    try:
+        # フォールバック: requests ライブラリ
+        import requests as req
+        s = req.Session()
+        s.verify = False
+        return s
+    except Exception:
+        return None
+
+_SESSION = _make_session()
 import pandas as pd
 import numpy as np
 
 # ================================================================
-# === 閾値設定（ここを変えるだけでロジックが変わる）===
+# === 閾値設定（optimize.py で自動最適化される）===
 # ================================================================
 
-RSI_PERIOD    = 14
-MA_PERIOD     = 25
-ATR_PERIOD    = 20
-LOOKBACK_DAYS = 80    # yfinance から取得する過去日数
+RSI_PERIOD     = 2            # 超短期オシレーター RSI(2)
+MA_PERIOD      = 200          # トレンドフィルター用 長期MA
+MA_SHORT       = 5            # 短期乖離率用 MA
+ATR_PERIOD     = 14           # ATR 算出期間
+VOL_AVG_PERIOD = 20           # 平均出来高の算出期間
+LOOKBACK_DAYS  = 280          # 取得する過去日数（200MA計算のため約1年分必要）
 
-RSI_BUY_MAX   = 32    # RSI がこの値以下 → 買い候補
-RSI_SELL_MIN  = 68    # RSI がこの値以上 → 売り候補
-DEV_BUY_MAX   = -4.0  # 乖離率がこの値(%)以下 → 買い候補
-DEV_SELL_MIN  = +4.0  # 乖離率がこの値(%)以上 → 売り候補
-RANGE_MULT    = 1.3   # 前日値幅が ATR の何倍以上か
-VOL_MULT      = 2.0   # 前日出来高が 20日平均の何倍以上か
-MAX_SIGNALS   = 10    # 最大抽出銘柄数
+# ── 条件①: RSI(2) 閾値 ──────────────────────────────
+RSI_BUY_MAX    = 20           # RSI(2) がこの値以下 → 買い候補（緩めて件数確保）
+RSI_SELL_MIN   = 80           # RSI(2) がこの値以上 → 売り候補
 
-# バッチダウンロードの分割サイズ（大きすぎるとタイムアウト）
-BATCH_SIZE    = 100
+# ── 条件②: 短期MA乖離率 閾値 ────────────────────────
+DEV_BUY_MAX    = -2.0         # 5MA乖離率(%)がこの値以下 → 買い候補
+DEV_SELL_MIN   = +2.0         # 5MA乖離率(%)がこの値以上 → 売り候補
+
+# ── 条件③: ボラ OR 出来高（どちらか一方でOK）──────────
+RANGE_MULT     = 1.0          # 前日値幅 ≧ ATR × この値
+VOL_MULT       = 1.2          # 前日出来高 ≧ 平均 × この値
+
+# ── 条件④: 流動性 ────────────────────────────────────
+TURNOVER_MIN   = 3_000_000_000  # 前日売買代金 ≧ 30億円（板の厚さを確保）
+
+# ── 条件⑥: ギャップ 閾値 ────────────────────────────
+GAP_MAX_PCT    = 5.0          # ±この%超の特大ギャップは見送り
+
+# ── 条件⑦: 200MAトレンドフィルター（勝率向上の核心）──
+# True にすると「トレンド方向への逆張りのみ」に絞り込む
+# 買い: 株価が200MA より上（上昇トレンド中の押し目買い）
+# 売り: 株価が200MA より下（下降トレンド中の戻り売り）
+USE_TREND_FILTER = True
+
+MAX_SIGNALS    = 999          # 上限なし（条件を満たした銘柄をすべて出す）
+BATCH_SIZE     = 100          # バッチダウンロードの分割サイズ
 
 
 # ================================================================
-# 東証プライム銘柄リスト取得（JPX公式Excelから自動取得）
+# 東証全銘柄リスト取得（JPX公式Excelから自動取得）
 # ================================================================
 
 def fetch_tse_universe() -> list[tuple[str, str]]:
-    """
-    JPX（日本取引所グループ）の公式Excelファイルから
-    東証プライム市場の全銘柄コードと銘柄名を取得する。
-
-    取得元: https://www.jpx.co.jp/markets/statistics-equities/misc/
-    戻り値: [("1234.T", "銘柄名"), ...] のリスト
-    """
+    """JPXからプライム・スタンダード・グロース全銘柄を取得する。"""
     url = (
         "https://www.jpx.co.jp/markets/statistics-equities/misc/"
         "tvdivq0000001vg2-att/data_j.xls"
@@ -76,8 +113,6 @@ def fetch_tse_universe() -> list[tuple[str, str]]:
                             headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
         df = pd.read_excel(io.BytesIO(resp.content))
-
-        # プライム・スタンダード・グロース全市場を抽出
         target_markets = [
             "プライム（内国株式）",
             "スタンダード（内国株式）",
@@ -86,57 +121,39 @@ def fetch_tse_universe() -> list[tuple[str, str]]:
         filtered = df[df["市場・商品区分"].isin(target_markets)].copy()
         filtered["ticker"] = filtered["コード"].astype(str).str.zfill(4) + ".T"
         universe = list(zip(filtered["ticker"], filtered["銘柄名"]))
-        print(f"[universe] 取得完了: {len(universe)} 銘柄（プライム・スタンダード・グロース）")
+        print(f"[universe] 取得完了: {len(universe)} 銘柄")
         return universe
-
     except Exception as e:
-        print(f"[universe] JPX取得失敗: {e}")
-        print("[universe] フォールバック: 組み込みリストを使用します")
+        print(f"[universe] JPX取得失敗: {e} → フォールバックリストを使用")
         return _fallback_universe()
 
 
 def _fallback_universe() -> list[tuple[str, str]]:
-    """JPX取得失敗時のフォールバック（日経225採用銘柄 代表30銘柄）"""
     return [
-        ("7203.T", "トヨタ自動車"),
-        ("9984.T", "ソフトバンクグループ"),
-        ("6758.T", "ソニーグループ"),
-        ("9983.T", "ファーストリテイリング"),
-        ("6861.T", "キーエンス"),
-        ("6098.T", "リクルートホールディングス"),
-        ("4063.T", "信越化学工業"),
-        ("8035.T", "東京エレクトロン"),
-        ("9433.T", "KDDI"),
-        ("8306.T", "三菱UFJフィナンシャル・グループ"),
-        ("6954.T", "ファナック"),
-        ("6367.T", "ダイキン工業"),
-        ("7974.T", "任天堂"),
-        ("8316.T", "三井住友フィナンシャルグループ"),
-        ("4568.T", "第一三共"),
-        ("4519.T", "中外製薬"),
-        ("6902.T", "デンソー"),
-        ("7267.T", "本田技研工業"),
-        ("6981.T", "村田製作所"),
-        ("9020.T", "東日本旅客鉄道"),
-        ("2914.T", "日本たばこ産業"),
-        ("8411.T", "みずほフィナンシャルグループ"),
-        ("6501.T", "日立製作所"),
-        ("6503.T", "三菱電機"),
-        ("9022.T", "東海旅客鉄道"),
-        ("4502.T", "武田薬品工業"),
-        ("7011.T", "三菱重工業"),
-        ("5401.T", "日本製鉄"),
-        ("8058.T", "三菱商事"),
-        ("8031.T", "三井物産"),
+        ("7203.T","トヨタ自動車"),("9984.T","ソフトバンクグループ"),
+        ("6758.T","ソニーグループ"),("9983.T","ファーストリテイリング"),
+        ("6861.T","キーエンス"),("6098.T","リクルートホールディングス"),
+        ("4063.T","信越化学工業"),("8035.T","東京エレクトロン"),
+        ("9433.T","KDDI"),("8306.T","三菱UFJフィナンシャル・グループ"),
+        ("6954.T","ファナック"),("6367.T","ダイキン工業"),
+        ("7974.T","任天堂"),("8316.T","三井住友フィナンシャルグループ"),
+        ("4568.T","第一三共"),("4519.T","中外製薬"),
+        ("6902.T","デンソー"),("7267.T","本田技研工業"),
+        ("6981.T","村田製作所"),("9020.T","東日本旅客鉄道"),
+        ("2914.T","日本たばこ産業"),("8411.T","みずほフィナンシャルグループ"),
+        ("6501.T","日立製作所"),("6503.T","三菱電機"),
+        ("9022.T","東海旅客鉄道"),("4502.T","武田薬品工業"),
+        ("7011.T","三菱重工業"),("5401.T","日本製鉄"),
+        ("8058.T","三菱商事"),("8031.T","三井物産"),
     ]
 
 
 # ================================================================
-# テクニカル指標 計算関数
+# テクニカル指標 計算関数（スカラー値返し・1銘柄ずつ用）
 # ================================================================
 
 def calc_rsi(close: pd.Series, period: int = RSI_PERIOD) -> float | None:
-    """RSI(period日) の最新値を返す。データ不足時は None。"""
+    """RSI(period日)の最新値を返す。データ不足・NaNは None。"""
     if len(close) < period + 1:
         return None
     delta    = close.diff()
@@ -144,110 +161,174 @@ def calc_rsi(close: pd.Series, period: int = RSI_PERIOD) -> float | None:
     loss     = -delta.clip(upper=0)
     avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
     avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
-    rs       = avg_gain / avg_loss.replace(0, np.nan)
-    rsi      = 100 - (100 / (1 + rs))
-    return round(float(rsi.iloc[-1]), 2)
+    rs  = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+    val = rsi.iloc[-1]
+    return round(float(val), 2) if pd.notna(val) else None
 
 
-def calc_ma_deviation(close: pd.Series, period: int = MA_PERIOD) -> float | None:
-    """移動平均乖離率(%) の最新値を返す。データ不足時は None。"""
+def calc_ma_deviation(close: pd.Series, period: int = MA_SHORT) -> float | None:
+    """短期MA乖離率(%) = (最新値 - MA) / MA × 100。MA=0 は None。"""
     if len(close) < period:
         return None
-    ma     = float(close.rolling(period).mean().iloc[-1])
-    latest = float(close.iloc[-1])
-    return round((latest - ma) / ma * 100, 2)
+    ma = float(close.rolling(period).mean().iloc[-1])
+    if ma == 0:
+        return None
+    return round((float(close.iloc[-1]) - ma) / ma * 100, 2)
+
+
+def calc_trend(close: pd.Series, period: int = MA_PERIOD) -> str | None:
+    """
+    200MA トレンド判定。
+    株価 > 200MA → "UP"（上昇トレンド）
+    株価 < 200MA → "DOWN"（下降トレンド）
+    データ不足  → None（フィルターをスキップ）
+    """
+    if len(close) < period:
+        return None  # データ不足の場合はフィルターしない
+    ma  = float(close.rolling(period).mean().iloc[-1])
+    cur = float(close.iloc[-1])
+    if ma == 0:
+        return None
+    return "UP" if cur > ma else "DOWN"
 
 
 def calc_range_ratio(df: pd.DataFrame, atr_period: int = ATR_PERIOD) -> float | None:
-    """前日の値幅 / ATR(atr_period) を返す。データ不足時は None。"""
+    """前日の値幅 / ATR(atr_period)。iloc[-2]=前日 を使用。ATR=0 は None。"""
     if len(df) < atr_period + 2:
         return None
-    high       = df["High"]
-    low        = df["Low"]
+    high, low = df["High"], df["Low"]
     prev_close = df["Close"].shift(1)
-    tr = pd.concat([
-        high - low,
-        (high - prev_close).abs(),
-        (low  - prev_close).abs(),
-    ], axis=1).max(axis=1)
-    atr        = float(tr.rolling(atr_period).mean().iloc[-2])
-    prev_range = float(high.iloc[-2]) - float(low.iloc[-2])
+    tr  = pd.concat([high - low,
+                     (high - prev_close).abs(),
+                     (low  - prev_close).abs()], axis=1).max(axis=1)
+    atr = float(tr.rolling(atr_period).mean().iloc[-2])
     if atr == 0:
         return None
+    prev_range = float(high.iloc[-2]) - float(low.iloc[-2])
     return round(prev_range / atr, 2)
 
 
-def calc_volume_ratio(df: pd.DataFrame, period: int = 20) -> float | None:
-    """前日出来高 / 直近 period 日の平均出来高 を返す。データ不足時は None。"""
+def calc_volume_ratio(df: pd.DataFrame,
+                      period: int = VOL_AVG_PERIOD) -> float | None:
+    """前日出来高 / 直近 period 日の平均出来高。ゼロ除算は None。"""
     vol = df["Volume"].dropna()
-    if len(vol) < period + 1:
+    if len(vol) < period + 2:
         return None
-    avg_vol  = float(vol.iloc[-(period + 1):-1].mean())
+    avg_vol  = float(vol.iloc[-(period + 2):-2].mean())
     prev_vol = float(vol.iloc[-2])
     if avg_vol == 0:
         return None
     return round(prev_vol / avg_vol, 2)
 
 
+def calc_turnover(df: pd.DataFrame) -> float | None:
+    """前日売買代金 = 前日終値 × 前日出来高。出来高0（ストップ等）は None。"""
+    if len(df) < 2:
+        return None
+    prev_close  = float(df["Close"].iloc[-2])
+    prev_volume = float(df["Volume"].iloc[-2])
+    if prev_volume == 0:
+        return None
+    return prev_close * prev_volume
+
+
 # ================================================================
-# シグナル判定関数（カスタマイズのメイン）
+# 前日データ（①〜⑤）のシグナル判定
 # ================================================================
 
-def judge_signal(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
+def judge_signal_pre(
+    ticker: str,
+    name: str,
+    df: pd.DataFrame,
+    *,
+    rsi_buy: float   = RSI_BUY_MAX,
+    rsi_sell: float  = RSI_SELL_MIN,
+    dev_buy: float   = DEV_BUY_MAX,
+    dev_sell: float  = DEV_SELL_MIN,
+    range_mult: float = RANGE_MULT,
+    vol_mult: float  = VOL_MULT,
+    turnover_min: float = TURNOVER_MIN,
+) -> dict | None:
     """
-    1銘柄のシグナルを判定。全AND条件を満たした場合のみ dict を返す。
+    前日（T-1）のデータで条件①〜⑤を判定する。
+    全条件クリアで dict を返す。1つでも不合格なら None。
 
-    ──────────────────────────────────────────
-    独自ロジックを追加したい場合:
-      1. 新しい指標計算関数を上部に追加する
-      2. この関数内に条件を追記して pass_all に AND で加える
-    ──────────────────────────────────────────
+    パラメータをキーワード引数で渡せるので optimize.py でのグリッドサーチに使用可。
+
+    ルックアヘッドバイアス防止:
+      df の最終行（iloc[-1]）が「前日」のデータになっていること。
+      当日データは一切参照しない。
     """
     close = df["Close"].dropna()
-    if len(close) < MA_PERIOD + 5:
+    # MA_SHORT（5日）と ATR_PERIOD（14日）が最低限必要
+    # MA_PERIOD（200日）は calc_trend 内で不足時に None を返してスキップするので除外
+    if len(close) < max(MA_SHORT, ATR_PERIOD) + 5:
         return None
 
     rsi         = calc_rsi(close)
     deviation   = calc_ma_deviation(close)
+    trend       = calc_trend(close)       # 200MAトレンド方向
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
+    turnover    = calc_turnover(df)
 
-    if any(v is None for v in [rsi, deviation, range_ratio, vol_ratio]):
+    # いずれかが計算不能なら除外
+    if any(v is None for v in [rsi, deviation, turnover]):
         return None
 
-    # 条件① RSI
-    if rsi <= RSI_BUY_MAX:      rsi_dir = "BUY"
-    elif rsi >= RSI_SELL_MIN:   rsi_dir = "SELL"
-    else:                       return None
+    # ── 条件① RSI(2) ──────────────────────────────────
+    if rsi <= rsi_buy:      rsi_dir = "BUY"
+    elif rsi >= rsi_sell:   rsi_dir = "SELL"
+    else:                   return None
 
-    # 条件② 乖離率
-    if deviation <= DEV_BUY_MAX:     dev_dir = "BUY"
-    elif deviation >= DEV_SELL_MIN:  dev_dir = "SELL"
-    else:                            return None
+    # ── 条件② 5MA乖離率 ───────────────────────────────
+    if deviation <= dev_buy:     dev_dir = "BUY"
+    elif deviation >= dev_sell:  dev_dir = "SELL"
+    else:                        return None
 
-    # 条件⑤ 方向の一致
-    if rsi_dir != dev_dir:      return None
-
-    # 条件③ ボラティリティ
-    if range_ratio < RANGE_MULT: return None
-
-    # 条件④ 出来高
-    if vol_ratio < VOL_MULT:     return None
+    # ── 条件⑤ 方向の一致 ─────────────────────────────
+    if rsi_dir != dev_dir:
+        return None
 
     direction = rsi_dir
+
+    # ── 条件⑦ 200MAトレンドフィルター（勝率向上の核心）─
+    # 上昇トレンド中の押し目買い / 下降トレンド中の戻り売り のみ許可
+    # データ不足で trend=None の場合はスキップしない（小型株対応）
+    if USE_TREND_FILTER and trend is not None:
+        if direction == "BUY"  and trend != "UP":   return None
+        if direction == "SELL" and trend != "DOWN":  return None
+
+    # ── 条件③ ボラティリティ OR 出来高（どちらか一方でOK）─
+    range_ok = (range_ratio is not None) and (range_ratio >= range_mult)
+    vol_ok   = (vol_ratio   is not None) and (vol_ratio   >= vol_mult)
+    if not (range_ok or vol_ok):
+        return None   # 両方未達 → 除外
+
+    # ── 条件④ 流動性（売買代金） ─────────────────────
+    if turnover < turnover_min:
+        return None
+
+    # ── 選定理由の組み立て ─────────────────────────────
+    cond3_str = []
+    if range_ok: cond3_str.append(f"値幅/ATR={range_ratio}（≧{range_mult}）")
+    if vol_ok:   cond3_str.append(f"出来高比={vol_ratio}（≧{vol_mult}）")
+
+    prev_close_price = float(close.iloc[-1])
     if direction == "BUY":
         reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（{RSI_BUY_MAX}以下：売られ過ぎ）",
-            f"{MA_PERIOD}MA乖離率 = {deviation:+.1f}%（{DEV_BUY_MAX}%以下：下方乖離）",
-            f"前日値幅/ATR = {range_ratio}（{RANGE_MULT}倍超：高ボラ確認）",
-            f"前日出来高 = 平均の {vol_ratio}倍（{VOL_MULT}倍超：大口参加確認）",
+            f"RSI({RSI_PERIOD}) = {rsi}（{rsi_buy}以下：超短期売られ過ぎ）",
+            f"{MA_PERIOD}MA乖離率 = {deviation:+.1f}%（下方乖離）",
+            "③ " + " / ".join(cond3_str),
+            f"売買代金 = {turnover/1e8:.1f}億円",
         ]
     else:
         reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（{RSI_SELL_MIN}以上：買われ過ぎ）",
-            f"{MA_PERIOD}MA乖離率 = {deviation:+.1f}%（{DEV_SELL_MIN}%以上：上方乖離）",
-            f"前日値幅/ATR = {range_ratio}（{RANGE_MULT}倍超：高ボラ確認）",
-            f"前日出来高 = 平均の {vol_ratio}倍（{VOL_MULT}倍超：大口参加確認）",
+            f"RSI({RSI_PERIOD}) = {rsi}（{rsi_sell}以上：超短期買われ過ぎ）",
+            f"{MA_PERIOD}MA乖離率 = {deviation:+.1f}%（上方乖離）",
+            "③ " + " / ".join(cond3_str),
+            f"売買代金 = {turnover/1e8:.1f}億円",
         ]
 
     return {
@@ -258,39 +339,80 @@ def judge_signal(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "deviation":   deviation,
         "range_ratio": range_ratio,
         "vol_ratio":   vol_ratio,
+        "turnover":    turnover,
+        "prev_close":  prev_close_price,
         "reason":      reason,
     }
+
+
+# 後方互換エイリアス
+judge_signal = judge_signal_pre
+
+
+def check_gap_entry(
+    signal: dict,
+    today_open: float,
+    *,
+    gap_max_pct: float = GAP_MAX_PCT,
+) -> bool:
+    """
+    条件⑥: 寄り付きギャップ判定（当日の始値のみ参照）。
+
+    BUY : 始値＜前日終値（ギャップダウン）、かつ gap > -gap_max_pct%
+    SELL: 始値＞前日終値（ギャップアップ）、かつ gap < +gap_max_pct%
+    特大ギャップ（ストップ高/安相当）は見送り。
+
+    当日の高値・安値・終値は絶対に参照しない（ルックアヘッド厳禁）。
+    """
+    if not today_open or np.isnan(today_open) or today_open <= 0:
+        return False
+
+    prev_close = signal["prev_close"]
+    if prev_close <= 0:
+        return False
+
+    gap_pct = (today_open / prev_close - 1) * 100
+
+    if signal["direction"] == "BUY":
+        # ギャップダウン（gap_pct < 0）かつ特大ギャップ除外
+        return -gap_max_pct <= gap_pct < 0
+    else:
+        # ギャップアップ（gap_pct > 0）かつ特大ギャップ除外
+        return 0 < gap_pct <= gap_max_pct
 
 
 # ================================================================
 # バッチダウンロード（高速化）
 # ================================================================
 
-def _batch_download(tickers: list[str], period: str) -> dict[str, pd.DataFrame]:
-    """
-    複数銘柄を BATCH_SIZE 件ずつ一括ダウンロードして
-    {ticker: DataFrame} の dict を返す。
-    """
-    result = {}
-    batches = [tickers[i:i + BATCH_SIZE] for i in range(0, len(tickers), BATCH_SIZE)]
+def batch_download(
+    tickers: list[str],
+    period: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+) -> dict[str, pd.DataFrame]:
+    """複数銘柄を BATCH_SIZE 件ずつ一括ダウンロード。"""
+    result  = {}
+    batches = [tickers[i:i + BATCH_SIZE]
+               for i in range(0, len(tickers), BATCH_SIZE)]
 
     for idx, batch in enumerate(batches):
-        print(f"  [batch {idx+1}/{len(batches)}] {len(batch)} 銘柄をダウンロード中...")
+        print(f"  [batch {idx+1}/{len(batches)}] {len(batch)} 銘柄...")
         try:
-            raw = yf.download(
-                batch,
-                period=period,
-                interval="1d",
-                auto_adjust=True,
-                progress=False,
-                group_by="ticker",
-            )
+            kwargs = dict(interval="1d", auto_adjust=True,
+                          progress=False, group_by="ticker")
+            if period:
+                kwargs["period"] = period
+            else:
+                kwargs["start"] = start
+                kwargs["end"]   = end
+
+            if _SESSION is not None:
+                kwargs["session"] = _SESSION
+            raw = yf.download(batch, **kwargs)
             for ticker in batch:
                 try:
-                    if len(batch) == 1:
-                        df = raw.copy()
-                    else:
-                        df = raw[ticker].copy()
+                    df = raw[ticker].copy() if len(batch) > 1 else raw.copy()
                     if isinstance(df.columns, pd.MultiIndex):
                         df.columns = df.columns.get_level_values(0)
                     if not df.empty:
@@ -298,38 +420,38 @@ def _batch_download(tickers: list[str], period: str) -> dict[str, pd.DataFrame]:
                 except Exception:
                     pass
         except Exception as e:
-            print(f"  [batch {idx+1}] ダウンロードエラー: {e}")
-        time.sleep(0.5)  # レート制限対策
+            print(f"  [batch {idx+1}] エラー: {e}")
+        time.sleep(0.3)
 
     return result
 
 
 # ================================================================
-# メインスクリーニング関数
+# メインスクリーニング関数（毎朝8:30実行 / 条件①〜⑤）
 # ================================================================
 
 def run_screener() -> list[dict]:
     """
-    東証プライム全銘柄をスクリーニングし、条件を満たした銘柄リストを返す。
-    シグナルが 0 件の場合は空リスト [] を返す（上限は MAX_SIGNALS 件）。
+    東証全銘柄をスクリーニングし、条件①〜⑤を満たした銘柄を返す。
+    条件⑥（ギャップ判定）は9:00の始値確認後に手動で最終判断。
     """
     universe = fetch_tse_universe()
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
 
-    print(f"[screener] {len(universe)} 銘柄のデータを一括取得中...")
-    data = _batch_download(tickers, period=f"{LOOKBACK_DAYS}d")
-    print(f"[screener] {len(data)} 銘柄のデータ取得完了。シグナル判定中...")
+    print(f"[screener] {len(universe)} 銘柄のデータを取得中...")
+    data = batch_download(tickers, period=f"{LOOKBACK_DAYS}d")
+    print(f"[screener] {len(data)} 銘柄取得完了。シグナル判定中...")
 
     signals: list[dict] = []
     for ticker, df in data.items():
         if len(signals) >= MAX_SIGNALS:
             break
         name   = name_map.get(ticker, ticker)
-        result = judge_signal(ticker, name, df)
+        result = judge_signal_pre(ticker, name, df)
         if result:
             signals.append(result)
             print(f"  ✅ [{ticker}] {name} → {result['direction']}")
 
-    print(f"[screener] 結果: {len(signals)} 銘柄がシグナル条件を満たしました")
+    print(f"[screener] 結果: {len(signals)} 銘柄（条件①〜⑤クリア）")
     return signals
