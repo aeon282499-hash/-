@@ -443,6 +443,15 @@ def run_screener() -> list[dict]:
     data = batch_download(tickers, period=f"{LOOKBACK_DAYS}d")
     print(f"[screener] {len(data)} 銘柄取得完了。シグナル判定中...")
 
+    # 市場開場中に実行した場合、今日の途中データが混入するため除外する
+    # （判定は前日終値までのデータで行う）
+    from datetime import date as _date
+    today_str = _date.today().strftime("%Y-%m-%d")
+    data = {
+        t: df[df.index.strftime("%Y-%m-%d") < today_str]
+        for t, df in data.items()
+    }
+
     signals: list[dict] = []
     for ticker, df in data.items():
         if len(signals) >= MAX_SIGNALS:
