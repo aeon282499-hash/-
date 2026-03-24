@@ -67,7 +67,7 @@ MA_PERIOD      = 200          # トレンドフィルター用 長期MA
 MA_SHORT       = 5            # 短期乖離率用 MA
 ATR_PERIOD     = 14           # ATR 算出期間
 VOL_AVG_PERIOD = 20           # 平均出来高の算出期間
-LOOKBACK_DAYS  = 280          # 取得する過去日数（200MA計算のため約1年分必要）
+LOOKBACK_DAYS  = 60           # 取得する過去日数（RSI/5MA/ATRに必要な最小限）
 
 # ── 条件①: RSI(2) 閾値 ──────────────────────────────
 RSI_BUY_MAX    = 25           # RSI(2) がこの値以下 → 買い候補
@@ -396,32 +396,53 @@ def batch_download(
     batches = [tickers[i:i + BATCH_SIZE]
                for i in range(0, len(tickers), BATCH_SIZE)]
 
+    failed: list[list[str]] = []
+
+    def _run_batch(batch: list[str]) -> dict[str, pd.DataFrame]:
+        """1バッチをダウンロードして {ticker: df} を返す。"""
+        kwargs = dict(interval="1d", auto_adjust=True,
+                      progress=False, group_by="ticker")
+        if period:
+            kwargs["period"] = period
+        else:
+            kwargs["start"] = start
+            kwargs["end"]   = end
+        if _SESSION is not None:
+            kwargs["session"] = _SESSION
+        try:
+            raw = yf.download(batch, **kwargs)
+        except Exception:
+            return {}
+        out = {}
+        for ticker in batch:
+            try:
+                df = raw[ticker].copy() if len(batch) > 1 else raw.copy()
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.get_level_values(0)
+                if not df.empty:
+                    out[ticker] = df
+            except Exception:
+                pass
+        return out
+
     for idx, batch in enumerate(batches):
         print(f"  [batch {idx+1}/{len(batches)}] {len(batch)} 銘柄...")
-        try:
-            kwargs = dict(interval="1d", auto_adjust=True,
-                          progress=False, group_by="ticker")
-            if period:
-                kwargs["period"] = period
-            else:
-                kwargs["start"] = start
-                kwargs["end"]   = end
+        got = _run_batch(batch)
+        if got:
+            result.update(got)
+        else:
+            failed.append(batch)
+        time.sleep(1.5)
 
-            if _SESSION is not None:
-                kwargs["session"] = _SESSION
-            raw = yf.download(batch, **kwargs)
-            for ticker in batch:
-                try:
-                    df = raw[ticker].copy() if len(batch) > 1 else raw.copy()
-                    if isinstance(df.columns, pd.MultiIndex):
-                        df.columns = df.columns.get_level_values(0)
-                    if not df.empty:
-                        result[ticker] = df
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"  [batch {idx+1}] エラー: {e}")
-        time.sleep(0.3)
+    # ── レートリミット分をリトライ ────────────────────────
+    if failed:
+        print(f"  [retry] {len(failed)}バッチ失敗。60秒待機後リトライ...")
+        time.sleep(60)
+        for batch in failed:
+            got = _run_batch(batch)
+            if got:
+                result.update(got)
+            time.sleep(2)
 
     return result
 

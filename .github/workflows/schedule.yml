@@ -14,7 +14,7 @@ on:
 jobs:
   run-signal:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
 
     steps:
       - name: リポジトリをチェックアウト
