@@ -68,14 +68,25 @@ def run_range_backtest(start: str, end: str) -> None:
     name_map = {t: n for t, n in universe}
 
     # ── 期間全体のデータをstooqで取得 ─────────────────
-    backtest_days = (datetime.strptime(end, "%Y-%m-%d") -
-                     datetime.strptime(start, "%Y-%m-%d")).days
-    fetch_days    = backtest_days + LOOKBACK_DAYS + 30
-
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {end}）...")
     all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
     print(f"[backtest] {len(all_data)} 銘柄のデータ取得完了\n")
+
+    # ── 日経225データ取得（市場フィルター用）─────────
+    print("[backtest] 日経225データ取得中（市場フィルター用）...")
+    nk_data = batch_download_stooq(["^NKX.T"], start=fetch_start, end=end)
+    nk_df = nk_data.get("^NKX.T")
+    if nk_df is None:
+        # stooqの日経ティッカーを試す
+        nk_data2 = batch_download_stooq(["998407.T"], start=fetch_start, end=end)
+        nk_df = nk_data2.get("998407.T")
+    if nk_df is not None and len(nk_df) > 25:
+        nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
+        print(f"[backtest] 日経225データ取得完了（{len(nk_df)}日分）")
+    else:
+        nk_df = None
+        print("[backtest] 日経225データ取得失敗 → 市場フィルターOFF")
 
     # ── 各営業日でシグナル判定 ────────────────────────
     trades: list[dict] = []
@@ -98,6 +109,15 @@ def run_range_backtest(start: str, end: str) -> None:
                 if signal is None:
                     continue
 
+                # ── 市場フィルター（BUYは日経が25MA以上の時のみ）──
+                if signal["direction"] == "BUY" and nk_df is not None:
+                    nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
+                    if len(nk_rows) > 0:
+                        nk_close = float(nk_rows["Close"].iloc[-1])
+                        nk_ma25  = float(nk_rows["MA25"].iloc[-1])
+                        if not np.isnan(nk_ma25) and nk_close < nk_ma25:
+                            continue  # 日経下落トレンド中はBUYしない
+
                 # ── 当日データを取得（始値・終値のみ使用）──────────
                 today_rows = full_df[full_df.index.strftime("%Y-%m-%d") == trade_date]
                 if today_rows.empty:
@@ -112,18 +132,25 @@ def run_range_backtest(start: str, end: str) -> None:
                 if any(v <= 0 or np.isnan(v) for v in [today_open, today_close]):
                     continue
 
-                # ── 損益計算（損切り-3%あり）─────────────────────
-                STOP_LOSS = 3.0  # %
+                # ── 損益計算（損切り-3% / 利確+5%）──────────────
+                STOP_LOSS   = 3.0  # %
+                TAKE_PROFIT = 5.0  # %
                 if signal["direction"] == "BUY":
-                    stop_price = today_open * (1 - STOP_LOSS / 100)
+                    stop_price = today_open * (1 - STOP_LOSS   / 100)
+                    tp_price   = today_open * (1 + TAKE_PROFIT / 100)
                     if today_low <= stop_price:
-                        pnl_pct = -STOP_LOSS  # 損切り発動
+                        pnl_pct = -STOP_LOSS    # 損切り発動
+                    elif today_high >= tp_price:
+                        pnl_pct = +TAKE_PROFIT  # 利確発動
                     else:
                         pnl_pct = (today_close - today_open) / today_open * 100
                 else:
-                    stop_price = today_open * (1 + STOP_LOSS / 100)
+                    stop_price = today_open * (1 + STOP_LOSS   / 100)
+                    tp_price   = today_open * (1 - TAKE_PROFIT / 100)
                     if today_high >= stop_price:
-                        pnl_pct = -STOP_LOSS  # 損切り発動
+                        pnl_pct = -STOP_LOSS    # 損切り発動
+                    elif today_low <= tp_price:
+                        pnl_pct = +TAKE_PROFIT  # 利確発動
                     else:
                         pnl_pct = (today_open - today_close) / today_open * 100
 
