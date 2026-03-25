@@ -36,12 +36,11 @@ ATR_PERIOD     = 14
 VOL_AVG_PERIOD = 20
 LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 
-RSI_BUY_MIN    = 60
-RSI_BUY_MAX    = 79
-DEV_BUY_MIN    = 2.0
+RSI_BUY_MAX    = 35     # RSIがこの値以下 → 買い候補（売られすぎ）
+DEV_BUY_MAX    = -3.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 80
-DEV_SELL_MIN   = 5.0
+RSI_SELL_MIN   = 65    # RSIがこの値以上 → 売り候補（買われすぎ）
+DEV_SELL_MIN   = 3.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 1.5
@@ -199,16 +198,25 @@ def batch_download_jquants(
 def batch_download_stooq(
     tickers: list[str],
     lookback_days: int = 90,
+    start: str | None = None,
+    end: str | None = None,
 ) -> dict[str, pd.DataFrame]:
     """
     stooq.com から直接 CSV で日足データを取得する。
     ticker は '.T' 形式を受け取り、stooq の '.jp' 形式に変換する。
+    start/end は "YYYY-MM-DD" 形式。省略時は今日から lookback_days 日前〜今日。
     """
     from datetime import date as _date, timedelta
-    end   = _date.today()
-    start = end - timedelta(days=lookback_days)
-    d1    = start.strftime("%Y%m%d")
-    d2    = end.strftime("%Y%m%d")
+    if end is None:
+        end_date = _date.today()
+    else:
+        end_date = _date.fromisoformat(end)
+    if start is None:
+        start_date = end_date - timedelta(days=lookback_days)
+    else:
+        start_date = _date.fromisoformat(start)
+    d1 = start_date.strftime("%Y%m%d")
+    d2 = end_date.strftime("%Y%m%d")
 
     result: dict[str, pd.DataFrame] = {}
     failed: list[str] = []
@@ -448,8 +456,8 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
 
-    # ── ①② 方向判定 ─────────────────────────────────
-    if RSI_BUY_MIN <= rsi <= RSI_BUY_MAX and deviation >= DEV_BUY_MIN:
+    # ── ①② 方向判定（逆張り）────────────────────────
+    if rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX:
         direction = "BUY"
     elif rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN:
         direction = "SELL"
@@ -472,15 +480,15 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
 
     if direction == "BUY":
         reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（{RSI_BUY_MIN}〜{RSI_BUY_MAX}：強い上昇モメンタム）",
-            f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_BUY_MIN}%：上昇トレンド確認）",
+            f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
+            f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
             "③ " + " / ".join(cond3),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]
     else:
         reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：異常過熱）",
-            f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：極端な上方乖離）",
+            f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ → 反落狙い）",
+            f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：上がりすぎ）",
             "③ " + " / ".join(cond3),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]

@@ -26,10 +26,10 @@ import pandas as pd
 import numpy as np
 
 from screener import (
-    fetch_tse_universe,
+    _nikkei225_universe,
     judge_signal_pre,
     check_gap_entry,
-    batch_download,
+    batch_download_stooq,
     LOOKBACK_DAYS,
     MAX_SIGNALS,
 )
@@ -63,20 +63,18 @@ def run_range_backtest(start: str, end: str) -> None:
     print(f"{'='*60}\n")
 
     # ── 銘柄リスト取得 ────────────────────────────────
-    universe = fetch_tse_universe()
+    universe = _nikkei225_universe()
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
 
-    # ── 期間全体のデータを一括取得 ─────────────────────
-    # start/end 方式はyfinance で不安定なため period 方式を使う
-    # バックテスト期間 + 指標計算に必要な日数を確保
+    # ── 期間全体のデータをstooqで取得 ─────────────────
     backtest_days = (datetime.strptime(end, "%Y-%m-%d") -
                      datetime.strptime(start, "%Y-%m-%d")).days
     fetch_days    = backtest_days + LOOKBACK_DAYS + 30
-    period_str    = f"{fetch_days}d"
 
-    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（直近{fetch_days}日分）...")
-    all_data = batch_download(tickers, period=period_str)
+    fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
+    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {end}）...")
+    all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
     print(f"[backtest] {len(all_data)} 銘柄のデータ取得完了\n")
 
     # ── 各営業日でシグナル判定 ────────────────────────
@@ -110,10 +108,6 @@ def run_range_backtest(start: str, end: str) -> None:
 
                 # ── 始値・終値が異常値（0やNaN）の場合はスキップ ──
                 if any(v <= 0 or np.isnan(v) for v in [today_open, today_close]):
-                    continue
-
-                # ── 条件⑦: ギャップ判定（始値のみ参照）──────────
-                if not check_gap_entry(signal, today_open):
                     continue
 
                 # ── 損益計算 ──────────────────────────────────────
