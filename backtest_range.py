@@ -26,6 +26,7 @@ import requests
 
 from screener import (
     _nikkei225_universe,
+    fetch_tse_prime_universe,
     judge_signal_pre,
     batch_download_stooq,
     calc_rsi,
@@ -60,8 +61,8 @@ def run_range_backtest(start: str, end: str) -> None:
     print(f"  戦略: スイング（最大{MAX_HOLD}日・損切{STOP_LOSS}%・利確{TAKE_PROFIT}%・RSI回復・高ボラ除外ATR>{ATR_VOL_CAP}%）")
     print(f"{'='*60}\n")
 
-    # ── 銘柄リスト取得 ────────────────────────────────
-    universe = _nikkei225_universe()
+    # ── 銘柄リスト取得（東証プライム全銘柄）────────────
+    universe = fetch_tse_prime_universe()
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
 
