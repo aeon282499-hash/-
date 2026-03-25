@@ -223,7 +223,8 @@ def batch_download_stooq(
 
     for i, ticker in enumerate(tickers):
         code  = ticker.replace(".T", "")
-        stooq = f"{code}.jp"
+        # インデックス（^始まり）はそのまま、株式は.jpを付ける
+        stooq = code if code.startswith("^") else f"{code}.jp"
         url   = f"https://stooq.com/q/d/l/?s={stooq}&d1={d1}&d2={d2}&i=d"
         try:
             r  = requests.get(url, timeout=15, verify=False)
