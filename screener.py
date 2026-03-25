@@ -516,6 +516,38 @@ def check_gap_entry(signal: dict, today_open: float, gap_max_pct: float = 5.0) -
 
 
 # ================================================================
+# 東証プライム銘柄一覧（JPX公開データから動的取得）
+# ================================================================
+
+def fetch_tse_prime_universe() -> list[tuple[str, str]]:
+    """JPX公開Excelから東証プライム内国株を取得する。失敗時はフォールバック。"""
+    url = ("https://www.jpx.co.jp/markets/statistics-equities/misc/"
+           "tvdivq0000001vg2-att/data_j.xls")
+    try:
+        import io as _io
+        r = requests.get(url, timeout=30, verify=False)
+        r.raise_for_status()
+        df = pd.read_excel(_io.BytesIO(r.content), dtype=str)
+        df.columns = ["date","code","name","market",
+                      "s33c","s33","s17c","s17","szc","sz"]
+        prime = df[
+            df["market"].str.contains("プライム", na=False) &
+            ~df["market"].str.contains("外国", na=False)
+        ].copy()
+        result = []
+        for _, row in prime.iterrows():
+            code   = str(row["code"]).strip().zfill(4)[:4]
+            name   = str(row["name"]).strip()
+            ticker = code + ".T"
+            result.append((ticker, name))
+        print(f"[universe] JPXプライム: {len(result)} 銘柄取得完了")
+        return result if result else _nikkei225_universe()
+    except Exception as e:
+        print(f"[universe] JPX取得失敗: {e} → フォールバック使用")
+        return _nikkei225_universe()
+
+
+# ================================================================
 # フォールバック: 日経225ユニバース
 # ================================================================
 
@@ -615,8 +647,8 @@ def run_screener() -> tuple[list[dict], dict]:
     # ── マクロ環境（US市場） ──────────────────────────
     macro = fetch_macro()
 
-    # ── ユニバース取得（yfinance）─────────────────────
-    universe = _nikkei225_universe()
+    # ── ユニバース取得（東証プライム全銘柄）──────────
+    universe = fetch_tse_prime_universe()
     name_map = {t: n for t, n in universe}
     tickers  = [t for t, _ in universe]
     print(f"[screener] ユニバース: {len(tickers)} 銘柄")
