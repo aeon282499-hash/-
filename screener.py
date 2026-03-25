@@ -479,7 +479,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
     turnover    = calc_turnover(df)
-    bb_upper, bb_lower = calc_bollinger(close)
+    bb_upper, bb_lower = calc_bollinger(close, std_dev=1.5)
 
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
@@ -522,7 +522,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         reason = [
             f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
             f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
-            f"BB下限 = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
+            f"BB下限(-1.5σ) = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
             "④ " + " / ".join(cond4),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]
@@ -530,7 +530,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         reason = [
             f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ → 反落狙い）",
             f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：上がりすぎ）",
-            f"BB上限 = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
+            f"BB上限(+1.5σ) = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
             "④ " + " / ".join(cond4),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]
