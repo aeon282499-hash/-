@@ -76,14 +76,33 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
     # ── 各銘柄のEmbed ────────────────────────────────────
     embeds = [header_embed]
     for i, sig in enumerate(signals, 1):
-        if sig["direction"] == "BUY":
+        direction    = sig["direction"]
+        prev_close   = sig.get("prev_close", 0)
+
+        if direction == "BUY":
             action_str = "🔴 **寄り成り 買い**（9:00 エントリー）"
             color      = COLOR_BUY
+            stop_price = prev_close * 0.97
+            tp_price   = prev_close * 1.05
+            stop_str   = f"**{stop_price:,.0f}円**（前日終値-3%）"
+            tp_str     = f"**{tp_price:,.0f}円**（前日終値+5%）"
         else:
             action_str = "🔵 **寄り成り 売り**（空売り）（9:00 エントリー）"
             color      = COLOR_SELL
+            stop_price = prev_close * 1.03
+            tp_price   = prev_close * 0.95
+            stop_str   = f"**{stop_price:,.0f}円**（前日終値+3%）"
+            tp_str     = f"**{tp_price:,.0f}円**（前日終値-5%）"
 
-        reason_text = "\n".join(f"・{r}" for r in sig["reason"])
+        # 株数・投入金額（100万円基準）
+        if prev_close > 0:
+            shares      = max(100, int(1_000_000 / prev_close / 100) * 100)
+            invest_amt  = shares * prev_close
+            invest_str  = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
+        else:
+            invest_str  = "**100万円目安**"
+
+        reason_text  = "\n".join(f"・{r}" for r in sig["reason"])
         turnover_str = f"{sig['turnover']/1e8:.0f}億円"
 
         embed = {
@@ -96,23 +115,33 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
                     "inline": False,
                 },
                 {
-                    "name":   "💴 投入金額目安",
-                    "value":  "**100万〜150万円**（寄り成り、15:30大引け決済）",
+                    "name":   "💴 推奨株数・投入金額",
+                    "value":  invest_str,
                     "inline": False,
                 },
                 {
-                    "name":   "🛡️ 安全性の証明",
-                    "value":  f"売買代金 **{turnover_str}**（150万の決済でスリッページ軽微）",
+                    "name":   "🛑 損切りライン（目安）",
+                    "value":  stop_str,
+                    "inline": True,
+                },
+                {
+                    "name":   "✅ 利確ライン（目安）",
+                    "value":  tp_str,
+                    "inline": True,
+                },
+                {
+                    "name":   "📅 保有ルール",
+                    "value":  "最大**5営業日**保有\nRSI回復（BUY:≧50 / SELL:≦50）で早期決済\n5日経過で終値決済",
                     "inline": False,
                 },
                 {
-                    "name":   "📊 極限吟味のロジック",
+                    "name":   "🛡️ 流動性",
+                    "value":  f"売買代金 **{turnover_str}**（スリッページ軽微）",
+                    "inline": False,
+                },
+                {
+                    "name":   "📊 シグナル根拠",
                     "value":  reason_text,
-                    "inline": False,
-                },
-                {
-                    "name":   "⚠️ 決済リマインド",
-                    "value":  "**15:30 大引けで必ず決済**（寄り引けデイトレ）",
                     "inline": False,
                 },
             ],

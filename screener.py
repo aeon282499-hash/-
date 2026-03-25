@@ -46,7 +46,7 @@ RANGE_MULT     = 1.5
 VOL_MULT       = 1.5
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 
-MAX_SIGNALS    = 3
+MAX_SIGNALS    = 5
 BATCH_SIZE     = 100   # yfinanceフォールバック用
 
 _JQUANTS_BASE  = "https://api.jquants.com/v1"
