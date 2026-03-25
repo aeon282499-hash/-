@@ -105,18 +105,27 @@ def run_range_backtest(start: str, end: str) -> None:
 
                 today_open  = float(today_rows["Open"].iloc[0])
                 today_close = float(today_rows["Close"].iloc[0])
+                today_low   = float(today_rows["Low"].iloc[0])
+                today_high  = float(today_rows["High"].iloc[0])
 
                 # ── 始値・終値が異常値（0やNaN）の場合はスキップ ──
                 if any(v <= 0 or np.isnan(v) for v in [today_open, today_close]):
                     continue
 
-                # ── 損益計算 ──────────────────────────────────────
-                # 買い: 始値で買い → 終値で売り
-                # 売り: 始値で空売り → 終値で買い戻し
+                # ── 損益計算（損切り-3%あり）─────────────────────
+                STOP_LOSS = 3.0  # %
                 if signal["direction"] == "BUY":
-                    pnl_pct = (today_close - today_open) / today_open * 100
+                    stop_price = today_open * (1 - STOP_LOSS / 100)
+                    if today_low <= stop_price:
+                        pnl_pct = -STOP_LOSS  # 損切り発動
+                    else:
+                        pnl_pct = (today_close - today_open) / today_open * 100
                 else:
-                    pnl_pct = (today_open - today_close) / today_open * 100
+                    stop_price = today_open * (1 + STOP_LOSS / 100)
+                    if today_high >= stop_price:
+                        pnl_pct = -STOP_LOSS  # 損切り発動
+                    else:
+                        pnl_pct = (today_open - today_close) / today_open * 100
 
                 trades.append({
                     "date":      trade_date,
