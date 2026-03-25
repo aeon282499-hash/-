@@ -1,0 +1,60 @@
+name: デイトレバックテスト実行
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: '開始日 (YYYY-MM-DD)'
+        required: true
+        default: '2024-01-01'
+      end:
+        description: '終了日 (YYYY-MM-DD)'
+        required: true
+        default: '2025-03-24'
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: デイトレバックテスト実行
+        run: python backtest_day.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_day_result.txt
+
+      - name: 結果をDiscordに送信
+        run: |
+          python - << 'PYEOF'
+          import os, requests
+
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          if not url:
+              print("DISCORD_WEBHOOK_URL未設定")
+              exit()
+
+          with open("backtest_day_result.txt", "r", encoding="utf-8", errors="replace") as f:
+              content = f.read()
+
+          idx    = content.rfind("デイトレ バックテスト結果")
+          result = content[idx:] if idx != -1 else content[-2000:]
+
+          payload = {
+              "embeds": [{
+                  "title": "デイトレ バックテスト結果 (${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }})",
+                  "description": f"```\n{result[:3900]}\n```",
+                  "color": 0x1E88E5
+              }]
+          }
+          r = requests.post(url, json=payload, timeout=10)
+          print(f"Discord送信: {r.status_code}")
+          PYEOF

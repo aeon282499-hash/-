@@ -1,0 +1,36 @@
+name: デイトレシグナル配信
+
+on:
+  schedule:
+    - cron: '5 23 * * 0-4'   # JST 月〜金 8:05（スイング配信の5分後）
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: デイトレシグナル配信実行
+        run: python main_day.py
+
+      - name: day_signals.json をコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add day_signals.json || true
+          git diff --cached --quiet || git commit -m "chore: update day_signals.json [skip ci]"
+          git push || true
