@@ -36,11 +36,11 @@ ATR_PERIOD     = 14
 VOL_AVG_PERIOD = 20
 LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 
-RSI_BUY_MAX    = 35     # RSIがこの値以下 → 買い候補（売られすぎ）
-DEV_BUY_MAX    = -3.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
+RSI_BUY_MAX    = 40     # RSIがこの値以下 → 買い候補（売られすぎ）
+DEV_BUY_MAX    = -2.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 65    # RSIがこの値以上 → 売り候補（買われすぎ）
-DEV_SELL_MIN   = 3.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
+RSI_SELL_MIN   = 60    # RSIがこの値以上 → 売り候補（買われすぎ）
+DEV_SELL_MIN   = 2.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 1.5
@@ -428,6 +428,21 @@ def calc_turnover(df: pd.DataFrame) -> float | None:
     if prev_volume == 0:
         return None
     return prev_close * prev_volume
+
+
+def calc_atr(df: pd.DataFrame, period: int = ATR_PERIOD) -> float | None:
+    """ATR（平均真の値幅・絶対値）を返す。"""
+    if len(df) < period + 1:
+        return None
+    high, low  = df["High"], df["Low"]
+    prev_close = df["Close"].shift(1)
+    tr  = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low  - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    atr = float(tr.rolling(period).mean().iloc[-1])
+    return atr if atr > 0 else None
 
 
 def calc_bollinger(close: pd.Series, period: int = 20, std_dev: float = 2.0) -> tuple:
