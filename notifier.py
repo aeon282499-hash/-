@@ -197,6 +197,60 @@ def send_skip(reason: str, today: date) -> None:
     _post(payload)
 
 
+def send_results(closed: list[dict], still_open: list[dict], today: date) -> None:
+    """前日シグナルの損益結果を Discord に送信する。"""
+    if not closed and not still_open:
+        return
+
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    lines = []
+
+    if closed:
+        lines.append("**── 決済済み ──**")
+        for p in closed:
+            pnl   = p.get("pnl_pct", 0) or 0
+            etype = p.get("exit_type", "?")
+            emoji = "✅" if pnl > 0 else "❌"
+            dir_str = "買い" if p["direction"] == "BUY" else "売り"
+            lines.append(
+                f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
+                f"→ **{pnl:+.2f}%** ［{etype}］"
+            )
+
+    if still_open:
+        if lines:
+            lines.append("")
+        lines.append("**── 保有中 ──**")
+        for p in still_open:
+            upnl    = p.get("unrealized_pnl", 0) or 0
+            hold    = p.get("hold_days", 0)
+            emoji   = "📈" if upnl >= 0 else "📉"
+            dir_str = "買い" if p["direction"] == "BUY" else "売り"
+            lines.append(
+                f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
+                f"含み **{upnl:+.2f}%**（{hold}日目）"
+            )
+
+    # 合計損益
+    if closed:
+        avg_pnl = sum(p.get("pnl_pct", 0) or 0 for p in closed) / len(closed)
+        wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
+        lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
+
+    payload = {
+        "embeds": [{
+            "title":       f"📋 {date_str} — 前日シグナル結果",
+            "description": "\n".join(lines),
+            "color":       COLOR_WIN if any((p.get("pnl_pct") or 0) > 0 for p in closed) else COLOR_ERROR,
+            "footer":      {"text": f"配信時刻: {time_str}"},
+        }]
+    }
+    _post(payload)
+    print(f"[notifier] 結果レポートを Discord に送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
+
+
 def send_error(error_message: str, today: date) -> None:
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")

@@ -2,7 +2,7 @@ name: 毎朝シグナル配信
 
 on:
   schedule:
-    - cron: '30 23 * * 0-4'  # JST 月〜金 8:30
+    - cron: '0 23 * * 0-4'   # JST 月〜金 8:00 開始（8:30までに配信）
   workflow_dispatch:           # 手動実行ボタン
 
 jobs:
@@ -14,6 +14,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
@@ -24,3 +26,11 @@ jobs:
 
       - name: シグナル配信実行
         run: python main.py
+
+      - name: ポジション保存（positions.json をコミット）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add positions.json || true
+          git diff --cached --quiet || git commit -m "chore: update positions.json [skip ci]"
+          git push || true
