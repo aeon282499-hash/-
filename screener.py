@@ -485,6 +485,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         return None
 
     last_close = float(close.iloc[-1])
+    last_open  = float(df["Open"].iloc[-1]) if "Open" in df.columns else None
 
     # ── ①②③ 方向判定（逆張り + ボリンジャーバンド）─────
     if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
@@ -495,6 +496,13 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         direction = "SELL"
     else:
         return None
+
+    # ── 確認足フィルター（反転方向の足が出ていること）────
+    if last_open is not None and last_open > 0:
+        if direction == "BUY"  and last_close <= last_open:
+            return None   # 陰線 = まだ売り圧力が続いている → スキップ
+        if direction == "SELL" and last_close >= last_open:
+            return None   # 陽線 = まだ買い圧力が続いている → スキップ
 
     # ── ④ ボラ OR 出来高 ──────────────────────────────
     range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
