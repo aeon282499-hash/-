@@ -430,6 +430,17 @@ def calc_turnover(df: pd.DataFrame) -> float | None:
     return prev_close * prev_volume
 
 
+def calc_bollinger(close: pd.Series, period: int = 20, std_dev: float = 2.0) -> tuple:
+    """ボリンジャーバンドの上限・下限を返す。"""
+    if len(close) < period:
+        return None, None
+    sma = close.rolling(period).mean()
+    std = close.rolling(period).std()
+    upper = float((sma + std_dev * std).iloc[-1])
+    lower = float((sma - std_dev * std).iloc[-1])
+    return upper, lower
+
+
 def calc_trend(close: pd.Series, period: int = 200) -> str | None:
     if len(close) < period:
         return None
@@ -443,9 +454,9 @@ def calc_trend(close: pd.Series, period: int = 200) -> str | None:
 # ================================================================
 
 def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
-    """RSI(14)モメンタム戦略でシグナル判定。"""
+    """逆張り平均回帰戦略でシグナル判定（RSI + 乖離率 + ボリンジャーバンド）。"""
     close = df["Close"].dropna()
-    if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD) + 5:
+    if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
         return None
 
     rsi         = calc_rsi(close)
@@ -453,44 +464,51 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
     turnover    = calc_turnover(df)
+    bb_upper, bb_lower = calc_bollinger(close)
 
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
 
-    # ── ①② 方向判定（逆張り）────────────────────────
-    if rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX:
+    last_close = float(close.iloc[-1])
+
+    # ── ①②③ 方向判定（逆張り + ボリンジャーバンド）─────
+    if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
+            and bb_lower is not None and last_close < bb_lower):
         direction = "BUY"
-    elif rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN:
+    elif (rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN
+            and bb_upper is not None and last_close > bb_upper):
         direction = "SELL"
     else:
         return None
 
-    # ── ③ ボラ OR 出来高 ──────────────────────────────
+    # ── ④ ボラ OR 出来高 ──────────────────────────────
     range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
     vol_ok   = (vol_ratio   is not None) and (vol_ratio   >= VOL_MULT)
     if not (range_ok or vol_ok):
         return None
 
-    # ── ④ 流動性 ──────────────────────────────────────
+    # ── ⑤ 流動性 ──────────────────────────────────────
     if turnover < TURNOVER_MIN:
         return None
 
-    cond3 = []
-    if range_ok: cond3.append(f"値幅/ATR={range_ratio:.1f}（≧{RANGE_MULT}）")
-    if vol_ok:   cond3.append(f"出来高比={vol_ratio:.1f}（≧{VOL_MULT}）")
+    cond4 = []
+    if range_ok: cond4.append(f"値幅/ATR={range_ratio:.1f}（≧{RANGE_MULT}）")
+    if vol_ok:   cond4.append(f"出来高比={vol_ratio:.1f}（≧{VOL_MULT}）")
 
     if direction == "BUY":
         reason = [
             f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
             f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
-            "③ " + " / ".join(cond3),
+            f"BB下限 = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
+            "④ " + " / ".join(cond4),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]
     else:
         reason = [
             f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ → 反落狙い）",
             f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：上がりすぎ）",
-            "③ " + " / ".join(cond3),
+            f"BB上限 = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
+            "④ " + " / ".join(cond4),
             f"売買代金 = {turnover/1e8:.0f}億円",
         ]
 
@@ -500,10 +518,12 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "direction":   direction,
         "rsi":         rsi,
         "deviation":   deviation,
+        "bb_upper":    bb_upper,
+        "bb_lower":    bb_lower,
         "range_ratio": range_ratio,
         "vol_ratio":   vol_ratio,
         "turnover":    turnover,
-        "prev_close":  float(close.iloc[-1]),
+        "prev_close":  last_close,
         "reason":      reason,
     }
 

@@ -1,19 +1,17 @@
 """
-backtest_range.py — 期間バックテスト（勝率・損益集計）
-=======================================================
+backtest_range.py — スイングトレード期間バックテスト（勝率・損益集計）
+=======================================================================
 
 使い方:
   python backtest_range.py 2024-01-01 2024-12-31
 
-期間内の全営業日に対してシグナル判定①〜⑦を適用し、
-  エントリー: 当日始値
-  エグジット: 当日終値（15:30大引け）
-として損益を計算し、勝率・期待値などを表示する。
-
-ルックアヘッドバイアス防止:
-  条件⑦の判定に使うのは当日の「始値（Open）」のみ。
-  当日の高値・安値・終値はエグジット計算にのみ使用し、
-  エントリー判断には絶対に混入させない。
+戦略:
+  エントリー : シグナル翌営業日の始値
+  エグジット : 以下のいずれか早い方
+    1. 損切り  -3%（日中の安値/高値が達したら発動）
+    2. 利確    +5%（日中の高値/安値が達したら発動）
+    3. RSI回復  BUY→RSI≧50 / SELL→RSI≦50 の翌日終値
+    4. 最大保有 5営業日後の終値
 """
 
 import sys
@@ -21,18 +19,22 @@ import time
 from datetime import datetime, timedelta
 
 import jpholiday
-import yfinance as yf
 import pandas as pd
 import numpy as np
+import requests
 
 from screener import (
     _nikkei225_universe,
     judge_signal_pre,
-    check_gap_entry,
     batch_download_stooq,
+    calc_rsi,
     LOOKBACK_DAYS,
     MAX_SIGNALS,
 )
+
+STOP_LOSS   = 3.0   # %
+TAKE_PROFIT = 5.0   # %
+MAX_HOLD    = 5     # 営業日
 
 
 def get_trading_days(start: str, end: str) -> list[str]:
@@ -48,18 +50,11 @@ def get_trading_days(start: str, end: str) -> list[str]:
 
 
 def run_range_backtest(start: str, end: str) -> None:
-    """
-    start 〜 end の期間でバックテストを実行し、結果を表示する。
-
-    Parameters
-    ----------
-    start : "YYYY-MM-DD"
-    end   : "YYYY-MM-DD"
-    """
     trading_days = get_trading_days(start, end)
     print(f"\n{'='*60}")
     print(f"  バックテスト期間: {start} 〜 {end}")
     print(f"  営業日数: {len(trading_days)} 日")
+    print(f"  戦略: スイング（最大{MAX_HOLD}日・損切{STOP_LOSS}%・利確{TAKE_PROFIT}%・RSI回復）")
     print(f"{'='*60}\n")
 
     # ── 銘柄リスト取得 ────────────────────────────────
@@ -69,13 +64,15 @@ def run_range_backtest(start: str, end: str) -> None:
 
     # ── 期間全体のデータをstooqで取得 ─────────────────
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
-    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {end}）...")
-    all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
+    # エグジット用に終了日を少し延ばす（最大保有日数分）
+    fetch_end = (datetime.strptime(end, "%Y-%m-%d") + timedelta(days=MAX_HOLD * 3)).strftime("%Y-%m-%d")
+    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
+    all_data = batch_download_stooq(tickers, start=fetch_start, end=fetch_end)
     print(f"[backtest] {len(all_data)} 銘柄のデータ取得完了\n")
 
     # ── 日経225データ取得（市場フィルター用）─────────
-    print("[backtest] 日経225データ取得中（市場フィルター用）...")
-    nk_data = batch_download_stooq(["^NKX"], start=fetch_start, end=end)
+    print("[backtest] 日経225データ取得中...")
+    nk_data = batch_download_stooq(["^NKX"], start=fetch_start, end=fetch_end)
     nk_df = nk_data.get("^NKX")
     if nk_df is not None and len(nk_df) > 25:
         nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
@@ -84,18 +81,16 @@ def run_range_backtest(start: str, end: str) -> None:
         nk_df = None
         print("[backtest] 日経225データ取得失敗 → 市場フィルターOFF")
 
+    # 全営業日インデックス（エグジット日探索用）
+    all_trading_days = get_trading_days(fetch_start, fetch_end)
+
     # ── 各営業日でシグナル判定 ────────────────────────
     trades: list[dict] = []
 
     for trade_date in trading_days:
-        # 当日のデータを含む DataFrame は条件①〜⑥の判定に使わない
-        # → trade_date の「前日終値」までのデータ（exclusive end = trade_date）
-        pre_end = trade_date   # yfinance の end は「その日を含まない」
-
         for ticker, full_df in all_data.items():
             try:
-                # ── 前日までのデータを切り出す（ルックアヘッド防止）──
-                # 文字列比較にしてタイムゾーン問題を回避する
+                # 前日までのデータ（ルックアヘッド防止）
                 pre_df = full_df[full_df.index.strftime("%Y-%m-%d") < trade_date].copy()
                 if len(pre_df) < 30:
                     continue
@@ -112,70 +107,119 @@ def run_range_backtest(start: str, end: str) -> None:
                         nk_close = float(nk_rows["Close"].iloc[-1])
                         nk_ma25  = float(nk_rows["MA25"].iloc[-1])
                         if not np.isnan(nk_ma25) and nk_close < nk_ma25:
-                            continue  # 日経下落トレンド中はBUYしない
+                            continue
 
-                # ── 当日データを取得（始値・終値のみ使用）──────────
-                today_rows = full_df[full_df.index.strftime("%Y-%m-%d") == trade_date]
-                if today_rows.empty:
-                    continue   # 当日データなし（休場・上場廃止等）
+                # ── エントリー日（シグナル翌営業日）──────────────
+                idx = all_trading_days.index(trade_date) if trade_date in all_trading_days else -1
+                if idx < 0 or idx + 1 >= len(all_trading_days):
+                    continue
+                entry_date = all_trading_days[idx + 1]
 
-                today_open  = float(today_rows["Open"].iloc[0])
-                today_close = float(today_rows["Close"].iloc[0])
-                today_low   = float(today_rows["Low"].iloc[0])
-                today_high  = float(today_rows["High"].iloc[0])
-
-                # ── 始値・終値が異常値（0やNaN）の場合はスキップ ──
-                if any(v <= 0 or np.isnan(v) for v in [today_open, today_close]):
+                entry_rows = full_df[full_df.index.strftime("%Y-%m-%d") == entry_date]
+                if entry_rows.empty:
+                    continue
+                entry_open = float(entry_rows["Open"].iloc[0])
+                if entry_open <= 0 or np.isnan(entry_open):
                     continue
 
-                # ── 損益計算（損切り-3% / 利確+5%）──────────────
-                STOP_LOSS   = 3.0  # %
-                TAKE_PROFIT = 5.0  # %
-                if signal["direction"] == "BUY":
-                    stop_price = today_open * (1 - STOP_LOSS   / 100)
-                    tp_price   = today_open * (1 + TAKE_PROFIT / 100)
-                    if today_low <= stop_price:
-                        pnl_pct = -STOP_LOSS    # 損切り発動
-                    elif today_high >= tp_price:
-                        pnl_pct = +TAKE_PROFIT  # 利確発動
+                # ── スイング保有シミュレーション ──────────────────
+                direction = signal["direction"]
+                stop_price = (entry_open * (1 - STOP_LOSS / 100)
+                              if direction == "BUY"
+                              else entry_open * (1 + STOP_LOSS / 100))
+                tp_price   = (entry_open * (1 + TAKE_PROFIT / 100)
+                              if direction == "BUY"
+                              else entry_open * (1 - TAKE_PROFIT / 100))
+
+                pnl_pct   = None
+                exit_date = None
+                exit_type = None
+
+                for hold_day in range(1, MAX_HOLD + 1):
+                    day_idx  = idx + 1 + hold_day  # entry_date の翌日から
+                    if day_idx >= len(all_trading_days):
+                        break
+                    check_date = all_trading_days[day_idx]
+
+                    day_rows = full_df[full_df.index.strftime("%Y-%m-%d") == check_date]
+                    if day_rows.empty:
+                        continue
+
+                    day_open  = float(day_rows["Open"].iloc[0])
+                    day_high  = float(day_rows["High"].iloc[0])
+                    day_low   = float(day_rows["Low"].iloc[0])
+                    day_close = float(day_rows["Close"].iloc[0])
+
+                    if any(v <= 0 or np.isnan(v) for v in [day_open, day_high, day_low, day_close]):
+                        continue
+
+                    # 損切り・利確チェック（日中値）
+                    if direction == "BUY":
+                        if day_low <= stop_price:
+                            pnl_pct   = -STOP_LOSS
+                            exit_date = check_date
+                            exit_type = "STOP"
+                            break
+                        if day_high >= tp_price:
+                            pnl_pct   = +TAKE_PROFIT
+                            exit_date = check_date
+                            exit_type = "TP"
+                            break
                     else:
-                        pnl_pct = (today_close - today_open) / today_open * 100
-                else:
-                    stop_price = today_open * (1 + STOP_LOSS   / 100)
-                    tp_price   = today_open * (1 - TAKE_PROFIT / 100)
-                    if today_high >= stop_price:
-                        pnl_pct = -STOP_LOSS    # 損切り発動
-                    elif today_low <= tp_price:
-                        pnl_pct = +TAKE_PROFIT  # 利確発動
-                    else:
-                        pnl_pct = (today_open - today_close) / today_open * 100
+                        if day_high >= stop_price:
+                            pnl_pct   = -STOP_LOSS
+                            exit_date = check_date
+                            exit_type = "STOP"
+                            break
+                        if day_low <= tp_price:
+                            pnl_pct   = +TAKE_PROFIT
+                            exit_date = check_date
+                            exit_type = "TP"
+                            break
+
+                    # RSI回復チェック（終値ベースで計算）
+                    hist_df = full_df[full_df.index.strftime("%Y-%m-%d") <= check_date]
+                    rsi_now = calc_rsi(hist_df["Close"].dropna())
+                    rsi_exit = (rsi_now is not None and (
+                        (direction == "BUY"  and rsi_now >= 50) or
+                        (direction == "SELL" and rsi_now <= 50)
+                    ))
+
+                    # 最終日または RSI回復 → 終値で決済
+                    if rsi_exit or hold_day == MAX_HOLD:
+                        if direction == "BUY":
+                            pnl_pct = (day_close - entry_open) / entry_open * 100
+                        else:
+                            pnl_pct = (entry_open - day_close) / entry_open * 100
+                        exit_date = check_date
+                        exit_type = "RSI" if rsi_exit else "MAXHOLD"
+                        break
+
+                if pnl_pct is None:
+                    continue
 
                 trades.append({
-                    "date":      trade_date,
-                    "ticker":    ticker,
-                    "name":      name,
-                    "direction": signal["direction"],
-                    "open":      today_open,
-                    "close":     today_close,
-                    "pnl_pct":   round(pnl_pct, 3),
-                    "win":       pnl_pct > 0,
+                    "signal_date": trade_date,
+                    "entry_date":  entry_date,
+                    "exit_date":   exit_date,
+                    "exit_type":   exit_type,
+                    "ticker":      ticker,
+                    "name":        name,
+                    "direction":   direction,
+                    "entry_open":  entry_open,
+                    "pnl_pct":     round(pnl_pct, 3),
+                    "win":         pnl_pct > 0,
                 })
 
-            except Exception as e:
-                # 個別銘柄のエラーでバックテスト全体を止めない
+            except Exception:
                 continue
 
-        # MAX_SIGNALS を超えた日はシグナル数を上限で打ち切る処理は
-        # 期間バックテストでは全件記録（成績評価のため）
-
-    # ── 結果集計 ──────────────────────────────────────
     _print_results(trades, start, end)
 
 
 def _print_results(trades: list[dict], start: str, end: str) -> None:
-    """バックテスト結果を表示する。"""
     print(f"\n{'='*60}")
-    print(f"  バックテスト結果 ({start} 〜 {end})")
+    print(f"  バックテスト結果 ({start} 〜 {end})  [スイング戦略]")
     print(f"{'='*60}")
 
     if not trades:
@@ -205,6 +249,14 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
     print(f"  平均損失      : {avg_loss:+.3f}%")
     print(f"  プロフィットF : {profit_factor:.2f}")
 
+    # エグジット種別集計
+    print(f"\n  ── エグジット種別 ──────────────────────")
+    for etype in ["STOP", "TP", "RSI", "MAXHOLD"]:
+        sub = df[df["exit_type"] == etype]
+        if len(sub) > 0:
+            wr = sub["win"].sum() / len(sub) * 100
+            print(f"  [{etype:7s}] {len(sub):4d}件 / 勝率{wr:5.1f}% / 平均{sub['pnl_pct'].mean():+.3f}%")
+
     # 売買方向別
     for d in ["BUY", "SELL"]:
         sub = df[df["direction"] == d]
@@ -216,13 +268,13 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
     # 上位損益銘柄
     print(f"\n  ── 上位5件（利益）──────────────")
     for _, r in df.nlargest(5, "pnl_pct").iterrows():
-        print(f"    {r['date']} {r['name']}({r['ticker']}) "
-              f"{r['direction']} {r['pnl_pct']:+.2f}%")
+        print(f"    {r['entry_date']} {r['name']}({r['ticker']}) "
+              f"{r['direction']} {r['pnl_pct']:+.2f}% [{r['exit_type']}]")
 
     print(f"\n  ── 下位5件（損失）──────────────")
     for _, r in df.nsmallest(5, "pnl_pct").iterrows():
-        print(f"    {r['date']} {r['name']}({r['ticker']}) "
-              f"{r['direction']} {r['pnl_pct']:+.2f}%")
+        print(f"    {r['entry_date']} {r['name']}({r['ticker']}) "
+              f"{r['direction']} {r['pnl_pct']:+.2f}% [{r['exit_type']}]")
 
     print(f"\n{'='*60}\n")
 
@@ -236,7 +288,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 3:
         s, e = sys.argv[1], sys.argv[2]
     else:
-        # デフォルト: 直近1年
         e = datetime.today().strftime("%Y-%m-%d")
         s = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
         print(f"[info] 引数省略: デフォルト期間 {s} 〜 {e} を使用します")
