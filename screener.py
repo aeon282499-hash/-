@@ -36,11 +36,11 @@ ATR_PERIOD     = 14
 VOL_AVG_PERIOD = 20
 LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 
-RSI_BUY_MAX    = 35     # RSIがこの値以下 → 買い候補（売られすぎ）
-DEV_BUY_MAX    = -3.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
+RSI_BUY_MAX    = 40     # RSIがこの値以下 → 買い候補（売られすぎ）
+DEV_BUY_MAX    = -2.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 65    # RSIがこの値以上 → 売り候補（買われすぎ）
-DEV_SELL_MIN   = 3.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
+RSI_SELL_MIN   = 60    # RSIがこの値以上 → 売り候補（買われすぎ）
+DEV_SELL_MIN   = 2.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 1.5

@@ -35,7 +35,7 @@ jobs:
       - name: 結果をDiscordに送信
         run: |
           python - << 'PYEOF'
-          import os, requests, re
+          import os, requests
 
           url = os.environ.get("DISCORD_WEBHOOK_URL", "")
           if not url:
@@ -45,13 +45,13 @@ jobs:
           with open("backtest_result.txt", "r", encoding="utf-8", errors="replace") as f:
               content = f.read()
 
-          # 結果部分だけ抽出
-          match = re.search(r"={10,}.*バックテスト結果.*?={10,}", content, re.DOTALL)
-          result = match.group(0) if match else content[-1500:]
+          # バックテスト結果セクションを抽出（最後の====以降）
+          idx = content.rfind("バックテスト結果")
+          result = content[idx:] if idx != -1 else content[-2000:]
 
           payload = {
               "embeds": [{
-                  "title": f"バックテスト結果 (${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }})",
+                  "title": "バックテスト結果 (${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }})",
                   "description": f"```\n{result[:3900]}\n```",
                   "color": 0x43A047
               }]
