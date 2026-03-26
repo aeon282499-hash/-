@@ -79,20 +79,31 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
         direction    = sig["direction"]
         prev_close   = sig.get("prev_close", 0)
 
+        bb_upper = sig.get("bb_upper")
+        bb_lower = sig.get("bb_lower")
+
         if direction == "BUY":
-            action_str = "🔴 **寄り成り 買い**（9:00 エントリー）"
+            action_str = "🔴 **買い**（9:00以降、指値推奨）"
             color      = COLOR_BUY
             stop_price = prev_close * 0.97
             tp_price   = prev_close * 1.05
             stop_str   = f"**{stop_price:,.0f}円**（前日終値-3%）"
             tp_str     = f"**{tp_price:,.0f}円**（前日終値+5%）"
+            if bb_lower:
+                entry_str = f"**{bb_lower:,.0f}円**（BB下限）付近に指値\n※寄り付き後に値が下限に近ければ有効"
+            else:
+                entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
         else:
-            action_str = "🔵 **寄り成り 売り**（空売り）（9:00 エントリー）"
+            action_str = "🔵 **空売り**（9:00以降、指値推奨）"
             color      = COLOR_SELL
             stop_price = prev_close * 1.03
             tp_price   = prev_close * 0.95
             stop_str   = f"**{stop_price:,.0f}円**（前日終値+3%）"
             tp_str     = f"**{tp_price:,.0f}円**（前日終値-5%）"
+            if bb_upper:
+                entry_str = f"**{bb_upper:,.0f}円**（BB上限）付近に指値\n※寄り付き後に値が上限に近ければ有効"
+            else:
+                entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
 
         # 株数・投入金額（100万円基準）
         if prev_close > 0:
@@ -112,6 +123,11 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
                 {
                     "name":   "📌 アクション",
                     "value":  action_str,
+                    "inline": False,
+                },
+                {
+                    "name":   "🎯 エントリー目安（指値）",
+                    "value":  entry_str,
                     "inline": False,
                 },
                 {
