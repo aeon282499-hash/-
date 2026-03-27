@@ -4,8 +4,9 @@ notifier.py — Discord Webhook 通知モジュール
 
 import os
 import requests
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import zoneinfo
+import jpholiday
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
@@ -238,15 +239,32 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
     if still_open:
         if lines:
             lines.append("")
-        lines.append("**── 保有中 ──**")
+        lines.append("**── 保有中（持ち越し） ──**")
         for p in still_open:
             upnl    = p.get("unrealized_pnl", 0) or 0
             hold    = p.get("hold_days", 0)
             emoji   = "📈" if upnl >= 0 else "📉"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
+
+            # 処分期限日（entry_dateから5営業日目）を計算
+            try:
+                entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
+                cur = entry_dt
+                biz_count = 0
+                while biz_count < 5:
+                    cur += timedelta(days=1)
+                    if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+                        biz_count += 1
+                deadline = cur
+                deadline_str = deadline.strftime("%m月%d日")
+                remaining = 5 - hold
+                warn = "⚠️ **本日処分！**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに処分）"
+            except Exception:
+                warn = ""
+
             lines.append(
                 f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
-                f"含み **{upnl:+.2f}%**（{hold}日目）"
+                f"含み **{upnl:+.2f}%** — {hold}日目 {warn}"
             )
 
     # 合計損益
