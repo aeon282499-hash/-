@@ -35,8 +35,8 @@ PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限
 PREV_RETURN_SELL_MIN =  3.0   # 前日騰落率の下限
 PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（これより上はニュース系除外）
 
-RSI_BUY_MAX    = 40
-RSI_SELL_MIN   = 60
+RSI_BUY_MAX    = 50
+RSI_SELL_MIN   = 50
 VOL_MULT       = 1.5
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 ATR_VOL_CAP    = 3.0             # ATR/終値(%)上限

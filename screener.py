@@ -36,11 +36,11 @@ ATR_PERIOD     = 14
 VOL_AVG_PERIOD = 20
 LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 
-RSI_BUY_MAX    = 35     # RSIがこの値以下 → 買い候補（売られすぎ）
-DEV_BUY_MAX    = -3.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
+RSI_BUY_MAX    = 40     # RSIがこの値以下 → 買い候補（売られすぎ）
+DEV_BUY_MAX    = -2.0  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 65    # RSIがこの値以上 → 売り候補（買われすぎ）
-DEV_SELL_MIN   = 3.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
+RSI_SELL_MIN   = 60    # RSIがこの値以上 → 売り候補（買われすぎ）
+DEV_SELL_MIN   = 2.0   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 2.0
@@ -731,6 +731,22 @@ def run_screener() -> tuple[list[dict], dict]:
         for t, df in data.items()
     }
 
+    # ── 日経225データ取得（市場フィルター用）─────────
+    nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可
+    try:
+        kwargs_nk = dict(period="60d", interval="1d", auto_adjust=True, progress=False)
+        if _SESSION:
+            kwargs_nk["session"] = _SESSION
+        nk_raw = yf.download("^N225", **kwargs_nk)
+        if len(nk_raw) >= 25:
+            nk_close = float(nk_raw["Close"].iloc[-1])
+            nk_ma25  = float(nk_raw["Close"].rolling(25).mean().iloc[-1])
+            nk_above_ma25 = (nk_close >= nk_ma25)
+            direction_str = "25MA以上↑" if nk_above_ma25 else "25MA以下↓"
+            print(f"[screener] 日経225: {nk_close:,.0f}円 / 25MA: {nk_ma25:,.0f}円 → {direction_str}")
+    except Exception as e:
+        print(f"[screener] 日経225取得失敗: {e} → 市場フィルターOFF")
+
     # ── シグナル判定 ──────────────────────────────────
     candidates: list[dict] = []
     for ticker, df in data.items():
@@ -740,6 +756,9 @@ def run_screener() -> tuple[list[dict], dict]:
         name   = name_map.get(ticker, ticker)
         result = judge_signal_pre(ticker, name, df)
         if result:
+            # 日経フィルター: 25MA割れのときはBUYシグナルを出さない
+            if result["direction"] == "BUY" and nk_above_ma25 is False:
+                continue
             candidates.append(result)
             print(f"  [HIT] [{ticker}] {name} -> {result['direction']} "
                   f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "

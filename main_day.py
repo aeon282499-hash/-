@@ -75,7 +75,7 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
         entry_high  = float(entry_rows["High"].iloc[0])
         entry_low   = float(entry_rows["Low"].iloc[0])
 
-        STOP = 2.0
+        STOP = 3.0
         TP   = 5.0
 
         if direction == "BUY":
@@ -115,7 +115,7 @@ def send_day_results(results: list[dict], today: date) -> None:
         return
 
     import os, requests
-    url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         return
 
@@ -153,7 +153,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
     from datetime import datetime as _dt
     import zoneinfo as _zi
 
-    url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         return
 
@@ -281,7 +281,7 @@ def main() -> None:
         import traceback, os, requests as req
         err_msg = traceback.format_exc()
         print(f"[main_day] エラー:\n{err_msg}", file=sys.stderr)
-        url = os.getenv("DISCORD_WEBHOOK_URL", "")
+        url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", ""))
         if url:
             req.post(url, json={"content": f"[デイトレ] エラー発生:\n```{err_msg[:1500]}```"}, timeout=10)
         sys.exit(1)
