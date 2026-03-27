@@ -717,8 +717,8 @@ def run_screener() -> tuple[list[dict], dict]:
     tickers  = [t for t, _ in universe]
     print(f"[screener] ユニバース: {len(tickers)} 銘柄")
 
-    # ── 日足データ取得（stooq）────────────────────────
-    data = batch_download_stooq(tickers, lookback_days=90)
+    # ── 日足データ取得（yfinance）─────────────────────
+    data = batch_download(tickers, period="6mo")
     if not data:
         print("[screener] データ取得失敗 → シグナルなし")
         return [], macro
