@@ -92,7 +92,15 @@ def run_range_backtest(start: str, end: str) -> None:
     trades: list[dict] = []
 
     for trade_date in trading_days:
+        # 当日オープン中のティッカーを収集（重複エントリー防止）
+        open_tickers = {
+            t["ticker"] for t in trades
+            if t["exit_date"] is None or t["exit_date"] > trade_date
+        }
+
         for ticker, full_df in all_data.items():
+            if ticker in open_tickers:
+                continue
             try:
                 # 前日までのデータ（ルックアヘッド防止）
                 pre_df = full_df[full_df.index.strftime("%Y-%m-%d") < trade_date].copy()

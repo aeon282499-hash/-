@@ -754,6 +754,19 @@ def run_screener() -> tuple[list[dict], dict]:
         candidates = [c for c in candidates if c["direction"] == "BUY"]
         print("[screener] 米国株高 → 売りシグナル破棄")
 
+    # ── 既存ポジションの銘柄を除外 ───────────────────
+    import json as _json
+    try:
+        with open("positions.json", encoding="utf-8") as _f:
+            _positions = _json.load(_f)
+        open_tickers = {p["ticker"] for p in _positions if p.get("status") in ("pending", "open")}
+        if open_tickers:
+            before = len(candidates)
+            candidates = [c for c in candidates if c["ticker"] not in open_tickers]
+            print(f"[screener] 保有中銘柄を除外: {before - len(candidates)}件 {open_tickers}")
+    except Exception:
+        pass
+
     # ── 流動性降順ソート → 上位MAX_SIGNALS銘柄 ──────
     candidates.sort(key=lambda x: x["turnover"], reverse=True)
     signals = candidates[:MAX_SIGNALS]

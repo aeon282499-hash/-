@@ -1,4 +1,4 @@
-name: バックテスト実行
+name: スイング売買シグナルバックテスト
 
 on:
   workflow_dispatch:
