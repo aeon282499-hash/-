@@ -75,7 +75,7 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
         entry_high  = float(entry_rows["High"].iloc[0])
         entry_low   = float(entry_rows["Low"].iloc[0])
 
-        STOP = 3.0
+        STOP = 2.0
         TP   = 5.0
 
         if direction == "BUY":

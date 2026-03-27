@@ -30,7 +30,7 @@ try:
 except ImportError:
     fetch_tse_prime_universe = _nikkei225_universe
 
-STOP_LOSS   = 3.0   # %
+STOP_LOSS   = 2.0   # %
 TAKE_PROFIT = 5.0   # %
 
 
