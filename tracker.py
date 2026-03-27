@@ -30,9 +30,9 @@ from datetime import date, timedelta
 from screener import batch_download_stooq, calc_rsi
 
 POSITIONS_FILE = "positions.json"
-STOP_LOSS      = 3.0   # %
+STOP_LOSS      = 2.0   # %
 TAKE_PROFIT    = 5.0   # %
-MAX_HOLD       = 5     # 営業日
+MAX_HOLD       = 3     # 営業日
 
 
 def load_positions() -> list[dict]:

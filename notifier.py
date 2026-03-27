@@ -86,9 +86,9 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
         if direction == "BUY":
             action_str = "🔴 **買い**（9:00以降、指値推奨）"
             color      = COLOR_BUY
-            stop_price = prev_close * 0.97
+            stop_price = prev_close * 0.98
             tp_price   = prev_close * 1.05
-            stop_str   = f"**{stop_price:,.0f}円**（前日終値-3%）"
+            stop_str   = f"**{stop_price:,.0f}円**（前日終値-2%）"
             tp_str     = f"**{tp_price:,.0f}円**（前日終値+5%）"
             if bb_lower:
                 entry_str = f"**{bb_lower:,.0f}円**（BB下限）付近に指値\n※寄り付き後に値が下限に近ければ有効"
@@ -97,9 +97,9 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
         else:
             action_str = "🔵 **空売り**（9:00以降、指値推奨）"
             color      = COLOR_SELL
-            stop_price = prev_close * 1.03
+            stop_price = prev_close * 1.02
             tp_price   = prev_close * 0.95
-            stop_str   = f"**{stop_price:,.0f}円**（前日終値+3%）"
+            stop_str   = f"**{stop_price:,.0f}円**（前日終値+2%）"
             tp_str     = f"**{tp_price:,.0f}円**（前日終値-5%）"
             if bb_upper:
                 entry_str = f"**{bb_upper:,.0f}円**（BB上限）付近に指値\n※寄り付き後に値が上限に近ければ有効"

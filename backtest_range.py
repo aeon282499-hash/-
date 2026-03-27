@@ -35,9 +35,9 @@ from screener import (
     MAX_SIGNALS,
 )
 
-STOP_LOSS       = 3.0   # % 固定損切り
+STOP_LOSS       = 2.0   # % 固定損切り
 TAKE_PROFIT     = 5.0   # % 固定利確
-MAX_HOLD        = 5     # 最大保有営業日数
+MAX_HOLD        = 3     # 最大保有営業日数
 ATR_VOL_CAP     = 3.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
 
 
