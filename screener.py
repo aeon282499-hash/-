@@ -46,7 +46,7 @@ RANGE_MULT     = 1.5
 VOL_MULT       = 2.0
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 
-MAX_SIGNALS    = 5
+MAX_SIGNALS    = 8
 BATCH_SIZE     = 100   # yfinanceフォールバック用
 
 _JQUANTS_BASE  = "https://api.jquants.com/v1"
@@ -745,14 +745,9 @@ def run_screener() -> tuple[list[dict], dict]:
                   f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "
                   f"turnover={result['turnover']/1e8:.0f}oku")
 
-    # ── マクロバイアスで絞り込み ──────────────────────
+    # ── マクロバイアス（参考表示のみ・シグナル絞り込みは行わない）──
     bias = macro.get("bias", "neutral")
-    if bias == "bearish":
-        candidates = [c for c in candidates if c["direction"] == "SELL"]
-        print("[screener] 米国株安 → 買いシグナル破棄")
-    elif bias == "bullish":
-        candidates = [c for c in candidates if c["direction"] == "BUY"]
-        print("[screener] 米国株高 → 売りシグナル破棄")
+    print(f"[screener] マクロバイアス: {bias}（参考）")
 
     # ── 既存ポジションの銘柄を除外 ───────────────────
     import json as _json
