@@ -54,7 +54,7 @@ LOOKBACK_DAYS  = 60
 from screener import (
     fetch_tse_prime_universe,
     _nikkei225_universe,
-    batch_download_stooq,
+    batch_download,
     calc_rsi,
     calc_atr,
     fetch_macro,
@@ -190,7 +190,7 @@ def run_screener_day() -> tuple[list[dict], dict]:
     tickers  = [t for t, _ in universe]
     print(f"[screener_day] ユニバース: {len(tickers)} 銘柄")
 
-    data = batch_download_stooq(tickers, lookback_days=90)
+    data = batch_download(tickers, period="6mo")
     if not data:
         print("[screener_day] データ取得失敗")
         return [], macro
@@ -213,14 +213,9 @@ def run_screener_day() -> tuple[list[dict], dict]:
             print(f"  [HIT] {ticker} {name} {result['direction']} "
                   f"前日{result['prev_return']:+.1f}% RSI={result['rsi']}")
 
-    # マクロバイアスで絞り込み
+    # マクロバイアス（参考表示のみ・絞り込みは行わない）
     bias = macro.get("bias", "neutral")
-    if bias == "bearish":
-        candidates = [c for c in candidates if c["direction"] == "SELL"]
-        print("[screener_day] 米国株安 → 買いシグナル破棄")
-    elif bias == "bullish":
-        candidates = [c for c in candidates if c["direction"] == "BUY"]
-        print("[screener_day] 米国株高 → 売りシグナル破棄")
+    print(f"[screener_day] マクロバイアス: {bias}（参考）")
 
     # 騰落率の絶対値が大きい順（より極端な動きを優先）
     candidates.sort(key=lambda x: abs(x["prev_return"]), reverse=True)

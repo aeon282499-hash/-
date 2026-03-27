@@ -51,14 +51,11 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
     if not yesterday_signals:
         return []
 
-    from screener import batch_download_stooq
+    from screener import batch_download
     tickers = [s["ticker"] for s in yesterday_signals]
     yesterday_str = (today - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # 前日から今日までのデータ取得
-    start = (today - timedelta(days=10)).strftime("%Y-%m-%d")
-    end   = today.strftime("%Y-%m-%d")
-    all_data = batch_download_stooq(tickers, start=start, end=end)
+    all_data = batch_download(tickers, period="5d")
 
     results = []
     for sig in yesterday_signals:
