@@ -19,7 +19,7 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import batch_download_stooq, batch_download, _nikkei225_universe
+from screener import batch_download_stooq, _nikkei225_universe
 from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
@@ -59,7 +59,7 @@ def run_day_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
-    all_data = batch_download(tickers, start=fetch_start, end=end)
+    all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
     print(f"[backtest_day] {len(all_data)} 銘柄のデータ取得完了\n")
 
     # 日経225データ（市場フィルター用）
