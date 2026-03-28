@@ -19,10 +19,11 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import batch_download_stooq, _nikkei225_universe
+from screener import batch_download_stooq, _nikkei225_universe, calc_atr
 from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
+    ATR_VOL_CAP,
 )
 
 try:
@@ -32,6 +33,7 @@ except ImportError:
 
 STOP_LOSS   = 3.0   # %
 TAKE_PROFIT = 5.0   # %
+ATR_VOL_CAP = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
 
 
 def get_trading_days(start: str, end: str) -> list[str]:
@@ -98,6 +100,13 @@ def run_day_backtest(start: str, end: str) -> None:
                         nk_ma25  = float(nk_rows["MA25"].iloc[-1])
                         if not np.isnan(nk_ma25) and nk_close < nk_ma25:
                             continue
+
+                # 高ボラ除外（ATR/終値 > ATR_VOL_CAP%）
+                atr = calc_atr(pre_df)
+                last_close = float(pre_df["Close"].iloc[-1])
+                if atr is not None and last_close > 0:
+                    if (atr / last_close * 100) > ATR_VOL_CAP:
+                        continue
 
                 # エントリー日（シグナル翌営業日）
                 idx = all_trading_days.index(signal_date) if signal_date in all_trading_days else -1
