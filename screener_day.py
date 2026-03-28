@@ -31,7 +31,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # ================================================================
 
 PREV_RETURN_BUY_MIN  = -8.0   # 前日騰落率の下限（これより下はニュース系除外）
-PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限
+PREV_RETURN_BUY_MAX  = -4.0   # 前日騰落率の上限
 PREV_RETURN_SELL_MIN =  3.0   # 前日騰落率の下限
 PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（これより上はニュース系除外）
 
