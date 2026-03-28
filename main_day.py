@@ -196,7 +196,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
             tp_str     = f"**{tp_price:,.0f}円**（始値-5%）"
 
         if prev_close > 0:
-            shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
+            shares     = max(100, int(3_000_000 / prev_close / 100) * 100)
             invest_amt = shares * prev_close
             invest_str = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
         else:
