@@ -16,7 +16,7 @@ jobs:
   backtest:
     runs-on: ubuntu-latest
     env:
-      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       PYTHONIOENCODING: utf-8
 
     steps:
