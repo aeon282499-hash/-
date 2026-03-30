@@ -2,14 +2,14 @@ name: デイトレシグナル配信
 
 on:
   schedule:
-    - cron: '5 23 * * 0-4'   # JST 月〜金 8:05（スイング配信の5分後）
+    - cron: '20 23 * * 0-4'  # JST 月〜金 8:20開始 → 8:30頃配信
   workflow_dispatch:
 
 jobs:
   run:
     runs-on: ubuntu-latest
     env:
-      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       PYTHONIOENCODING: utf-8
 
     steps:

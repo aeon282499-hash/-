@@ -11,7 +11,7 @@ screener_day.py — デイトレ用シグナルロジック（前日大幅変動
 
 【フィルター】
   ① 前日騰落率   BUY: -8% 〜 -3% / SELL: +3% 〜 +8%
-  ② RSI(14)      BUY: ≦50 / SELL: ≧50
+  ② RSI(14)      BUY: ≦40 / SELL: ≧50
   ③ 出来高比     前日出来高 ≧ 20日平均の1.5倍（動きが本物）
   ④ 売買代金     ≧ 30億円（流動性確保）
   ⑤ 高ボラ除外   ATR/終値 > 3% の銘柄はスキップ
@@ -31,8 +31,8 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # ================================================================
 
 PREV_RETURN_BUY_MIN  = -8.0   # 前日騰落率の下限（これより下はニュース系除外）
-PREV_RETURN_BUY_MAX  = -4.0   # 前日騰落率の上限
-PREV_RETURN_SELL_MIN =  4.0   # 前日騰落率の下限
+PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限
+PREV_RETURN_SELL_MIN =  3.0   # 前日騰落率の下限
 PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（これより上はニュース系除外）
 
 RSI_BUY_MAX    = 50
@@ -54,7 +54,7 @@ LOOKBACK_DAYS  = 60
 from screener import (
     fetch_tse_prime_universe,
     _nikkei225_universe,
-    batch_download,
+    batch_download_stooq,
     calc_rsi,
     calc_atr,
     fetch_macro,
@@ -190,13 +190,13 @@ def run_screener_day() -> tuple[list[dict], dict]:
     tickers  = [t for t, _ in universe]
     print(f"[screener_day] ユニバース: {len(tickers)} 銘柄")
 
-    data = batch_download(tickers, period="6mo")
+    from datetime import date as _date, timedelta as _td
+    today_str  = _date.today().strftime("%Y-%m-%d")
+    start_str  = (_date.today() - _td(days=180)).strftime("%Y-%m-%d")
+    data = batch_download_stooq(tickers, start=start_str, end=today_str)
     if not data:
         print("[screener_day] データ取得失敗")
         return [], macro
-
-    from datetime import date as _date
-    today_str = _date.today().strftime("%Y-%m-%d")
     data = {
         t: df[df.index.strftime("%Y-%m-%d") < today_str]
         for t, df in data.items()

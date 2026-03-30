@@ -51,11 +51,12 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
     if not yesterday_signals:
         return []
 
-    from screener import batch_download
+    from screener import batch_download_stooq
     tickers = [s["ticker"] for s in yesterday_signals]
-    yesterday_str = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    end_str   = today.strftime("%Y-%m-%d")
+    start_str = (today - timedelta(days=10)).strftime("%Y-%m-%d")
 
-    all_data = batch_download(tickers, period="5d")
+    all_data = batch_download_stooq(tickers, start=start_str, end=end_str)
 
     results = []
     for sig in yesterday_signals:
@@ -138,7 +139,7 @@ def send_day_results(results: list[dict], today: date) -> None:
 
     payload = {
         "embeds": [{
-            "title":       f"📋 {date_str} — デイトレ前日結果",
+            "title":       f"📋【デイトレ結果】{date_str}",
             "description": "\n".join(lines),
             "color":       0x43A047 if avg_pnl > 0 else 0xFDD835,
         }]
@@ -163,7 +164,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
     if not signals:
         payload = {
             "embeds": [{
-                "title":       f"📊 {date_str} — デイトレシグナル",
+                "title":       f"⚡【デイトレ】{date_str} — シグナルなし",
                 "description": "本日は条件を満たす銘柄がありません。",
                 "color":       0x757575,
             }]
@@ -205,7 +206,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
         reason_text = "\n".join(f"・{r}" for r in sig["reason"])
 
         embeds.append({
-            "title": f"[デイトレ] #{i}  {sig['name']}（{sig['ticker']}）",
+            "title": f"⚡【デイトレ】#{i}  {sig['name']}（{sig['ticker']}）",
             "color": color,
             "fields": [
                 {"name": "📌 アクション",        "value": action_str,   "inline": False},
@@ -220,7 +221,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
 
     payload = {
         "content": (
-            f"## 📈 デイトレシグナル｜{date_str}\n"
+            f"## ⚡【デイトレ】シグナル｜{date_str}\n"
             f"> 本日: **{len(signals)}銘柄**（買い {buys} / 売り {sells}）"
         ),
         "embeds": embeds[:10],

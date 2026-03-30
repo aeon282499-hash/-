@@ -51,7 +51,7 @@ jobs:
 
           payload = {
               "embeds": [{
-                  "title": "バックテスト結果 (${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }})",
+                  "title": "🔬【バックテスト】スイング ${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }}",
                   "description": f"```\n{result[:3900]}\n```",
                   "color": 0x43A047
               }]

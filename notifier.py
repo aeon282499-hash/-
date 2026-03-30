@@ -69,7 +69,7 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
 
     # ── ヘッダーEmbed（相場環境） ────────────────────────
     header_embed = {
-        "title": f"📊 {date_str} — 本日の相場環境と基本戦略",
+        "title": f"📊【スイング】{date_str} — 相場環境",
         "description": macro_desc,
         "color": COLOR_NONE,
     }
@@ -118,7 +118,7 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
         turnover_str = f"{sig['turnover']/1e8:.0f}億円"
 
         embed = {
-            "title": f"#{i}  {sig['name']}（{sig['ticker']}）",
+            "title": f"📊【スイング】#{i}  {sig['name']}（{sig['ticker']}）",
             "color": color,
             "fields": [
                 {
@@ -168,7 +168,7 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
 
     payload = {
         "content": (
-            f"## 📈 自動売買シグナル｜{date_str}\n"
+            f"## 📊【スイング】自動売買シグナル｜{date_str}\n"
             f"> 本日の実行銘柄数: **{len(signals)}銘柄**"
             f"（買い {buys} / 売り {sells}）"
         ),
@@ -182,7 +182,7 @@ def _send_no_signal(date_str: str, time_str: str, macro: dict) -> None:
     macro_desc = _macro_description(macro)
     payload = {
         "embeds": [{
-            "title":       f"📊 {date_str} — 本日のシグナル結果",
+            "title":       f"📊【スイング】{date_str} — シグナルなし",
             "description": (
                 "本日は極限まで吟味した結果、確実に勝てる優位性を持つ銘柄が存在しません。\n"
                 "大切な資金の防衛を優先し、本日のトレードは **0銘柄（見送り）** とします。\n\n"
@@ -275,7 +275,7 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
 
     payload = {
         "embeds": [{
-            "title":       f"📋 {date_str} — 前日シグナル結果",
+            "title":       f"📋【スイング結果】{date_str}",
             "description": "\n".join(lines),
             "color":       COLOR_WIN if any((p.get("pnl_pct") or 0) > 0 for p in closed) else COLOR_ERROR,
             "footer":      {"text": f"配信時刻: {time_str}"},

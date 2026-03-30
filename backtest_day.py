@@ -61,11 +61,11 @@ def run_day_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
-    all_data = batch_download(tickers, start=fetch_start, end=end)
+    all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
     print(f"[backtest_day] {len(all_data)} 銘柄のデータ取得完了\n")
 
     # 日経225データ（市場フィルター用）
-    nk_data = batch_download(["^N225"], start=fetch_start, end=end)
+    nk_data = batch_download_stooq(["^N225"], start=fetch_start, end=end)
     nk_df   = nk_data.get("^N225")
     if nk_df is not None and len(nk_df) > 25:
         nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
