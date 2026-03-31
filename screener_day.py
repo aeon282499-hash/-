@@ -197,7 +197,7 @@ def run_screener_day() -> tuple[list[dict], dict]:
     start_str  = (_date.today() - _td(days=180)).strftime("%Y-%m-%d")
     try:
         token = _jquants_id_token()
-        data  = batch_download_jquants(token, start=start_str, end=today_str)
+        data  = batch_download_jquants(token, start=start_str, end=today_str, tickers=tickers)
     except Exception as e:
         print(f"[screener_day] J-Quants失敗({e})→stooqで再試行...")
         data = batch_download_stooq(tickers, start=start_str, end=today_str)

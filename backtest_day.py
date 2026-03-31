@@ -66,7 +66,7 @@ def run_day_backtest(start: str, end: str) -> None:
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
     try:
         token    = _jquants_id_token()
-        all_data = batch_download_jquants(token, start=fetch_start, end=end)
+        all_data = batch_download_jquants(token, start=fetch_start, end=end, tickers=tickers)
         print(f"[backtest_day] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
     except Exception as e:
         print(f"[backtest_day] J-Quants失敗({e})→stooqで再試行...")

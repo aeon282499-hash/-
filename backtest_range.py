@@ -78,7 +78,7 @@ def run_range_backtest(start: str, end: str) -> None:
     print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
     try:
         token    = _jquants_id_token()
-        all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end)
+        all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end, tickers=tickers)
         print(f"[backtest] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
     except Exception as e:
         print(f"[backtest] J-Quants失敗({e})→stooqで再試行...")

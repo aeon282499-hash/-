@@ -58,7 +58,7 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
 
     try:
         token    = _jquants_id_token()
-        all_data = batch_download_jquants(token, start=start_str, end=end_str)
+        all_data = batch_download_jquants(token, start=start_str, end=end_str, tickers=tickers)
     except Exception as e:
         print(f"[main_day] J-Quants失敗({e})→stooqで再試行...")
         all_data = batch_download_stooq(tickers, start=start_str, end=end_str)
