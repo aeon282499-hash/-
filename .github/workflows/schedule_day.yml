@@ -2,7 +2,7 @@ name: デイトレシグナル配信
 
 on:
   schedule:
-    - cron: '20 23 * * 0-4'  # JST 月〜金 8:20開始 → 8:30頃配信
+    - cron: '34 23 * * 0-4'  # JST 月〜金 8:34開始 → 8:40頃配信
   workflow_dispatch:
 
 jobs:

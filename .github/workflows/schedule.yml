@@ -2,7 +2,7 @@ name: 毎朝シグナル配信
 
 on:
   schedule:
-    - cron: '0 23 * * 0-4'   # JST 月〜金 8:00 開始（8:30までに配信）
+    - cron: '36 23 * * 0-4'  # JST 月〜金 8:36開始 → 8:40頃配信
   workflow_dispatch:           # 手動実行ボタン
 
 jobs:
@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       PYTHONIOENCODING: utf-8
 
     steps:
