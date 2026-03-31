@@ -55,6 +55,8 @@ from screener import (
     fetch_tse_prime_universe,
     _nikkei225_universe,
     batch_download_stooq,
+    batch_download_jquants,
+    _jquants_id_token,
     calc_rsi,
     calc_atr,
     fetch_macro,
@@ -193,7 +195,12 @@ def run_screener_day() -> tuple[list[dict], dict]:
     from datetime import date as _date, timedelta as _td
     today_str  = _date.today().strftime("%Y-%m-%d")
     start_str  = (_date.today() - _td(days=180)).strftime("%Y-%m-%d")
-    data = batch_download_stooq(tickers, start=start_str, end=today_str)
+    try:
+        token = _jquants_id_token()
+        data  = batch_download_jquants(token, start=start_str, end=today_str)
+    except Exception as e:
+        print(f"[screener_day] J-Quants失敗({e})→stooqで再試行...")
+        data = batch_download_stooq(tickers, start=start_str, end=today_str)
     if not data:
         print("[screener_day] データ取得失敗")
         return [], macro

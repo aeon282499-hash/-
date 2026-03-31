@@ -51,12 +51,17 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
     if not yesterday_signals:
         return []
 
-    from screener import batch_download_stooq
+    from screener import batch_download_stooq, batch_download_jquants, _jquants_id_token
     tickers = [s["ticker"] for s in yesterday_signals]
     end_str   = today.strftime("%Y-%m-%d")
     start_str = (today - timedelta(days=10)).strftime("%Y-%m-%d")
 
-    all_data = batch_download_stooq(tickers, start=start_str, end=end_str)
+    try:
+        token    = _jquants_id_token()
+        all_data = batch_download_jquants(token, start=start_str, end=end_str)
+    except Exception as e:
+        print(f"[main_day] J-Quants失敗({e})→stooqで再試行...")
+        all_data = batch_download_stooq(tickers, start=start_str, end=end_str)
 
     results = []
     for sig in yesterday_signals:
