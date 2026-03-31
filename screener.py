@@ -134,36 +134,43 @@ def batch_download_jquants(
     tickers: list[str] | None = None,
 ) -> dict[str, pd.DataFrame]:
     """
-    J-Quants APIから銘柄ごとに日足OHLCVを取得し {ticker: DataFrame} を返す。
+    J-Quants APIから全銘柄の日足OHLCVを取得し {ticker: DataFrame} を返す。
 
-    tickers: 取得する銘柄リスト（"1234.T" 形式）。省略時はユニバース全銘柄。
-    start/end: 取得期間。省略時は lookback_trading_days 営業日分。
+    start/end を指定した場合はその期間、省略時は lookback_trading_days 営業日分。
+    tickers は互換性のために残しているが使用しない（日付ベース一括取得）。
     """
-    from datetime import date as _date, timedelta
+    import jpholiday
+    from datetime import date as _date, timedelta, datetime
 
-    if start is None:
-        start = (_date.today() - timedelta(days=lookback_trading_days * 2)).strftime("%Y-%m-%d")
-    if end is None:
-        end = _date.today().strftime("%Y-%m-%d")
+    trading_days: list[str] = []
+    if start and end:
+        cur  = datetime.strptime(start, "%Y-%m-%d").date()
+        end_ = datetime.strptime(end,   "%Y-%m-%d").date()
+        while cur <= end_:
+            if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+                trading_days.append(cur.strftime("%Y-%m-%d"))
+            cur += timedelta(days=1)
+    else:
+        cur = _date.today() - timedelta(days=1)
+        while len(trading_days) < lookback_trading_days:
+            if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+                trading_days.append(cur.strftime("%Y-%m-%d"))
+            cur -= timedelta(days=1)
+        trading_days.reverse()
 
-    if tickers is None:
-        raw = fetch_tse_universe(token)
-        tickers = [t for t, _ in raw]
+    print(f"[jquants] {trading_days[0]} 〜 {trading_days[-1]}"
+          f"（{len(trading_days)} 営業日）を取得中...")
 
-    print(f"[jquants] {len(tickers)} 銘柄を個別取得中（{start} 〜 {end}）...")
-
-    result: dict[str, pd.DataFrame] = {}
-    for i, ticker in enumerate(tickers):
-        base_code = ticker.replace(".T", "")
-        all_records: list[dict] = []
+    all_records: list[dict] = []
+    for i, date_str in enumerate(trading_days):
         pagination_key = None
         while True:
-            params: dict = {"code": base_code, "from": start, "to": end}
+            params: dict = {"date": date_str}
             if pagination_key:
                 params["pagination_key"] = pagination_key
             try:
-                data = _jquants_get("/equities/bars/daily", token, params)
-                records = data.get("data", [])
+                data       = _jquants_get("/equities/bars/daily", token, params)
+                records    = data.get("data", [])
                 all_records.extend(records)
                 pagination_key = data.get("pagination_key")
                 if not pagination_key:
@@ -172,25 +179,41 @@ def batch_download_jquants(
                 if "429" in str(e):
                     time.sleep(2.0)
                     continue
+                print(f"  [jquants] {date_str} 取得失敗: {e}")
                 break
-        if all_records:
-            df = pd.DataFrame(all_records)
-            required = {"Date", "AdjO", "AdjH", "AdjL", "AdjC", "AdjVo"}
-            if required.issubset(df.columns):
-                df["Date"] = pd.to_datetime(df["Date"])
-                df = df.rename(columns={
-                    "AdjO": "Open", "AdjH": "High", "AdjL": "Low",
-                    "AdjC": "Close", "AdjVo": "Volume",
-                })
-                df = df[["Date", "Open", "High", "Low", "Close", "Volume"]].copy()
-                df = df.set_index("Date").sort_index()
-                df = df.apply(pd.to_numeric, errors="coerce")
-                df = df.dropna(subset=["Close"])
-                if not df.empty:
-                    result[ticker] = df
-        if (i + 1) % 50 == 0:
-            print(f"  [jquants] {i+1}/{len(tickers)} 銘柄完了...")
+        if (i + 1) % 10 == 0:
+            print(f"  [jquants] {i+1}/{len(trading_days)} 日完了...")
         time.sleep(0.3)
+
+    if not all_records:
+        print("[jquants] データ取得件数: 0")
+        return {}
+
+    print(f"[jquants] 合計 {len(all_records):,} レコード取得完了。DataFrame作成中...")
+
+    df_all = pd.DataFrame(all_records)
+    required = {"Code", "Date", "AdjO", "AdjH", "AdjL", "AdjC", "AdjVo"}
+    if not required.issubset(df_all.columns):
+        missing = required - set(df_all.columns)
+        print(f"[jquants] カラム不足: {missing}")
+        return {}
+
+    df_all["Date"] = pd.to_datetime(df_all["Date"])
+    df_all = df_all.rename(columns={
+        "AdjO": "Open", "AdjH": "High", "AdjL": "Low",
+        "AdjC": "Close", "AdjVo": "Volume",
+    })
+
+    result: dict[str, pd.DataFrame] = {}
+    for code, grp in df_all.groupby("Code"):
+        base   = str(code)[:4]
+        ticker = base + ".T"
+        sub    = grp[["Date", "Open", "High", "Low", "Close", "Volume"]].copy()
+        sub    = sub.set_index("Date").sort_index()
+        sub    = sub.apply(pd.to_numeric, errors="coerce")
+        sub    = sub.dropna(subset=["Close"])
+        if not sub.empty:
+            result[ticker] = sub
 
     print(f"[jquants] {len(result)} 銘柄分のDataFrame作成完了")
     return result
