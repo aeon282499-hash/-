@@ -15,11 +15,14 @@ backtest_day.py — デイトレバックテスト（寄り買い/売り → 引
 import sys
 from datetime import datetime, timedelta
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import batch_download_stooq, batch_download, _nikkei225_universe, calc_atr
+from screener import batch_download_stooq, batch_download, _nikkei225_universe, calc_atr, batch_download_jquants, _jquants_id_token
 from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
@@ -61,8 +64,14 @@ def run_day_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
-    all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
-    print(f"[backtest_day] {len(all_data)} 銘柄のデータ取得完了\n")
+    try:
+        token    = _jquants_id_token()
+        all_data = batch_download_jquants(token, start=fetch_start, end=end)
+        print(f"[backtest_day] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
+    except Exception as e:
+        print(f"[backtest_day] J-Quants失敗({e})→stooqで再試行...")
+        all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
+        print(f"[backtest_day] stooq: {len(all_data)} 銘柄のデータ取得完了\n")
 
     # 日経225データ（市場フィルター用）
     nk_data = batch_download_stooq(["^N225"], start=fetch_start, end=end)
