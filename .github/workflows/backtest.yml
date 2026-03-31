@@ -36,7 +36,7 @@ jobs:
       - name: 結果をDiscordに送信
         run: |
           python - << 'PYEOF'
-          import os, requests
+          import os, re, requests
 
           url = os.environ.get("DISCORD_WEBHOOK_URL", "")
           if not url:
@@ -46,15 +46,50 @@ jobs:
           with open("backtest_result.txt", "r", encoding="utf-8", errors="replace") as f:
               content = f.read()
 
-          # バックテスト結果セクションを抽出（最後の====以降）
-          idx = content.rfind("バックテスト結果")
-          result = content[idx:] if idx != -1 else content[-2000:]
+          idx    = content.rfind("バックテスト結果")
+          result = content[idx:] if idx != -1 else content[-3000:]
+
+          def extr(pattern, text, default="—"):
+              m = re.search(pattern, text)
+              return m.group(1).strip() if m else default
+
+          total   = extr(r'取引回数\s*:\s*(\d+)', result)
+          wins    = extr(r'勝ち\s*:\s*(\d+)', result)
+          losses  = extr(r'負け\s*:\s*(\d+)', result)
+          winrate = extr(r'勝率\s*:\s*([\d.]+%)', result)
+          avgpnl  = extr(r'平均損益\s*:\s*([^\n]+)', result)
+          avgwin  = extr(r'平均利益\s*:\s*([^\n]+)', result)
+          avgloss = extr(r'平均損失\s*:\s*([^\n]+)', result)
+          pf      = extr(r'プロフィットF\s*:\s*([^\n]+)', result)
+
+          if total == "0":
+              fields = [{"name": "取引回数", "value": "0件（条件を満たす取引なし）", "inline": False}]
+          else:
+              fields = [
+                  {"name": "📊 取引回数", "value": f"**{total}件**（勝{wins} / 負{losses}）", "inline": True},
+                  {"name": "🎯 勝率",     "value": f"**{winrate}**", "inline": True},
+                  {"name": "💹 平均損益", "value": f"**{avgpnl}**", "inline": True},
+                  {"name": "📈 平均利益", "value": avgwin,  "inline": True},
+                  {"name": "📉 平均損失", "value": avgloss, "inline": True},
+                  {"name": "⚖️ PF",       "value": f"**{pf}**", "inline": True},
+              ]
+              exit_lines = re.findall(r'\[(STOP|TP|RSI|MAXHOLD)\s*\].*', result)
+              if exit_lines:
+                  fields.append({"name": "エグジット種別", "value": "\n".join(exit_lines[:5]), "inline": False})
+              buy_line  = re.search(r'\[BUY\].*',  result)
+              sell_line = re.search(r'\[SELL\].*', result)
+              dir_text = "\n".join(filter(None, [
+                  buy_line.group()  if buy_line  else None,
+                  sell_line.group() if sell_line else None,
+              ]))
+              if dir_text:
+                  fields.append({"name": "売買方向別", "value": dir_text, "inline": False})
 
           payload = {
               "embeds": [{
                   "title": "🔬【バックテスト】スイング ${{ github.event.inputs.start }} 〜 ${{ github.event.inputs.end }}",
-                  "description": f"```\n{result[:3900]}\n```",
-                  "color": 0x43A047
+                  "color": 0x43A047,
+                  "fields": fields,
               }]
           }
           r = requests.post(url, json=payload, timeout=10)
