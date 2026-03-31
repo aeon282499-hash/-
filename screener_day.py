@@ -80,23 +80,23 @@ def calc_prev_return(df: pd.DataFrame) -> float | None:
 
 
 def calc_volume_ratio_day(df: pd.DataFrame, period: int = VOL_AVG_PERIOD) -> float | None:
-    """前日出来高 / 過去N日平均出来高を返す。"""
+    """シグナル当日出来高 / 過去N日平均出来高を返す。"""
     vol = df["Volume"].dropna()
     if len(vol) < period + 2:
         return None
-    avg_vol  = float(vol.iloc[-(period + 2):-2].mean())
-    prev_vol = float(vol.iloc[-2])
+    avg_vol  = float(vol.iloc[-(period + 1):-1].mean())
+    prev_vol = float(vol.iloc[-1])
     if avg_vol <= 0:
         return None
     return round(prev_vol / avg_vol, 2)
 
 
 def calc_turnover_day(df: pd.DataFrame) -> float | None:
-    """前日の売買代金を返す。"""
-    if len(df) < 2:
+    """シグナル当日の売買代金を返す。"""
+    if len(df) < 1:
         return None
-    prev_close  = float(df["Close"].iloc[-2])
-    prev_volume = float(df["Volume"].iloc[-2])
+    prev_close  = float(df["Close"].iloc[-1])
+    prev_volume = float(df["Volume"].iloc[-1])
     if prev_volume <= 0:
         return None
     return prev_close * prev_volume
