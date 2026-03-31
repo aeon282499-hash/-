@@ -175,15 +175,17 @@ def batch_download_jquants(
                 pagination_key = data.get("pagination_key")
                 if not pagination_key:
                     break
+                time.sleep(1.2)  # ページネーション間も待機
             except Exception as e:
                 if "429" in str(e):
-                    time.sleep(2.0)
+                    print(f"  [jquants] レート制限 → 5分待機してリトライ...")
+                    time.sleep(300)
                     continue
                 print(f"  [jquants] {date_str} 取得失敗: {e}")
                 break
         if (i + 1) % 10 == 0:
             print(f"  [jquants] {i+1}/{len(trading_days)} 日完了...")
-        time.sleep(0.3)
+        time.sleep(1.2)  # 1分60リクエスト制限対応（1.2秒 = 最大50req/分）
 
     if not all_records:
         print("[jquants] データ取得件数: 0")
