@@ -34,9 +34,10 @@ try:
 except ImportError:
     fetch_tse_prime_universe = _nikkei225_universe
 
-STOP_LOSS   = 3.0   # %
-TAKE_PROFIT = 5.0   # %
-ATR_VOL_CAP = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
+STOP_LOSS      = 3.0   # %
+TAKE_PROFIT    = 5.0   # %
+ATR_VOL_CAP    = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
+SP500_DROP_MAX = -1.5  # S&P500プロキシ前日下落率の下限
 
 
 def get_trading_days(start: str, end: str) -> list[str]:
@@ -61,6 +62,9 @@ def run_day_backtest(start: str, end: str) -> None:
     universe = fetch_tse_prime_universe()
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
+    for proxy in ["1321.T", "1655.T"]:
+        if proxy not in tickers:
+            tickers.append(proxy)
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
@@ -80,6 +84,9 @@ def run_day_backtest(start: str, end: str) -> None:
     else:
         nk_df = None
 
+    # S&P500プロキシ（1655.T）
+    sp_df = all_data.get("1655.T")
+
     all_trading_days = get_trading_days(
         (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=10)).strftime("%Y-%m-%d"),
         end
@@ -90,6 +97,8 @@ def run_day_backtest(start: str, end: str) -> None:
     for signal_date in trading_days:
         # 前日までのデータでシグナル判定
         for ticker, full_df in all_data.items():
+            if ticker in ("1321.T", "1655.T"):
+                continue
             try:
                 pre_df = full_df[full_df.index.strftime("%Y-%m-%d") <= signal_date].copy()
                 if len(pre_df) < 30:
@@ -100,7 +109,7 @@ def run_day_backtest(start: str, end: str) -> None:
                 if signal is None:
                     continue
 
-                # 市場フィルター（BUYは日経が25MA以上の時のみ）
+                # 市場フィルター① 日経ETF(1321.T): 終値 ≥ 25日MA
                 if signal["direction"] == "BUY" and nk_df is not None:
                     nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") <= signal_date]
                     if len(nk_rows) >= 25:
@@ -108,6 +117,17 @@ def run_day_backtest(start: str, end: str) -> None:
                         nk_ma25  = float(nk_rows["MA25"].iloc[-1])
                         if not np.isnan(nk_ma25) and nk_close < nk_ma25:
                             continue
+
+                # 市場フィルター② S&P500プロキシ(1655.T): 前日下落率 ≥ SP500_DROP_MAX
+                if signal["direction"] == "BUY" and sp_df is not None:
+                    sp_rows = sp_df[sp_df.index.strftime("%Y-%m-%d") <= signal_date]
+                    if len(sp_rows) >= 2:
+                        sp_prev = float(sp_rows["Close"].iloc[-2])
+                        sp_last = float(sp_rows["Close"].iloc[-1])
+                        if sp_prev > 0:
+                            sp_ret = (sp_last - sp_prev) / sp_prev * 100
+                            if sp_ret < SP500_DROP_MAX:
+                                continue
 
                 # 高ボラ除外（ATR/終値 > ATR_VOL_CAP%）
                 atr = calc_atr(pre_df)
