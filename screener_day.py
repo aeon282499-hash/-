@@ -1,20 +1,19 @@
 """
-screener_day.py — デイトレ用シグナルロジック（前日大幅変動 逆張り）
+screener_day.py — デイトレ用シグナルロジック（順張りモメンタム）
 ====================================================================
 
 【戦略】
-  前日に -3%〜-8% 下落した銘柄 → 翌日寄りで買い（当日引けで決済）
-  前日に +3%〜+8% 上昇した銘柄 → 翌日寄りで売り（当日引けで決済）
+  前日に +2%〜+8% 急騰 かつ 出来高急増した銘柄 → 翌日寄りで買い（当日引けで決済）
 
-  根拠: 大きなギャップは6〜7割当日中に部分回帰する傾向がある。
-  -8%/+8% 超えは決算・不祥事等の「戻らないニュース」の可能性があるため除外。
+  根拠: 強い出来高を伴う急騰銘柄はモメンタムが継続しやすい。
+  +8% 超えは決算・テーマ相場等の特殊要因の可能性があるため除外。
 
 【フィルター】
-  ① 前日騰落率   BUY: -8% 〜 -3% / SELL: +3% 〜 +8%
-  ② RSI(14)      BUY: ≦40 / SELL: ≧50
-  ③ 出来高比     前日出来高 ≧ 20日平均の1.5倍（動きが本物）
+  ① 前日騰落率   +2% 〜 +8%（出来高急増を伴う急騰）
+  ② RSI(14)      50 〜 75（モメンタムゾーン・過熱しすぎない）
+  ③ 出来高比     前日出来高 ≧ 20日平均の2.0倍（本物の急騰）
   ④ 売買代金     ≧ 30億円（流動性確保）
-  ⑤ 高ボラ除外   ATR/終値 > 3% の銘柄はスキップ
+  ⑤ 高ボラ除外   ATR/終値 > 4% の銘柄はスキップ
 """
 
 import time
@@ -30,14 +29,12 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # パラメーター設定
 # ================================================================
 
-PREV_RETURN_BUY_MIN  = -8.0   # 前日騰落率の下限（これより下はニュース系除外）
-PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限
-PREV_RETURN_SELL_MIN =  3.0   # 前日騰落率の下限
-PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（これより上はニュース系除外）
+PREV_RETURN_BUY_MIN  =  2.0   # 前日騰落率の下限
+PREV_RETURN_BUY_MAX  =  8.0   # 前日騰落率の上限（これより上はニュース系除外）
 
-RSI_BUY_MAX    = 50
-RSI_SELL_MIN   = 50
-VOL_MULT       = 1.5
+RSI_BUY_MIN    = 50    # RSI下限（モメンタムゾーン）
+RSI_BUY_MAX    = 75    # RSI上限（過熱しすぎ除外）
+VOL_MULT       = 2.0
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 ATR_VOL_CAP    = 4.0             # ATR/終値(%)上限
 MAX_SIGNALS    = 5
@@ -107,7 +104,7 @@ def calc_turnover_day(df: pd.DataFrame) -> float | None:
 # ================================================================
 
 def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
-    """デイトレ用シグナル判定（前日大幅変動 逆張り）。"""
+    """デイトレ用シグナル判定（順張りモメンタム）。"""
     if len(df) < RSI_PERIOD + VOL_AVG_PERIOD + 5:
         return None
 
@@ -128,43 +125,29 @@ def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ① 前日騰落率で方向判定 ────────────────────────────
-    if PREV_RETURN_BUY_MIN <= prev_return <= PREV_RETURN_BUY_MAX:
-        direction = "BUY"
-    elif PREV_RETURN_SELL_MIN <= prev_return <= PREV_RETURN_SELL_MAX:
-        direction = "SELL"
-    else:
+    # ── ① 前日騰落率フィルター（BUYのみ）────────────────
+    if not (PREV_RETURN_BUY_MIN <= prev_return <= PREV_RETURN_BUY_MAX):
         return None
+    direction = "BUY"
 
-    # ── ② RSIフィルター ───────────────────────────────────
-    if direction == "BUY"  and rsi > RSI_BUY_MAX:
-        return None
-    if direction == "SELL" and rsi < RSI_SELL_MIN:
+    # ── ② RSIフィルター（モメンタムゾーン）──────────────
+    if rsi < RSI_BUY_MIN or rsi > RSI_BUY_MAX:
         return None
 
     # ── ③ 出来高フィルター ────────────────────────────────
-    vol_ok = (vol_ratio is not None) and (vol_ratio >= VOL_MULT)
-    if not vol_ok:
+    if vol_ratio is None or vol_ratio < VOL_MULT:
         return None
 
     # ── ④ 流動性フィルター ────────────────────────────────
     if turnover < TURNOVER_MIN:
         return None
 
-    if direction == "BUY":
-        reason = [
-            f"前日騰落率 = {prev_return:+.1f}%（{PREV_RETURN_BUY_MIN}〜{PREV_RETURN_BUY_MAX}%の急落）",
-            f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ）",
-            f"出来高比 = {vol_ratio:.1f}（≧{VOL_MULT}：出来高急増で本物の動き）",
-            f"売買代金 = {turnover/1e8:.0f}億円",
-        ]
-    else:
-        reason = [
-            f"前日騰落率 = {prev_return:+.1f}%（{PREV_RETURN_SELL_MIN}〜{PREV_RETURN_SELL_MAX}%の急騰）",
-            f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ）",
-            f"出来高比 = {vol_ratio:.1f}（≧{VOL_MULT}：出来高急増で本物の動き）",
-            f"売買代金 = {turnover/1e8:.0f}億円",
-        ]
+    reason = [
+        f"前日騰落率 = {prev_return:+.1f}%（{PREV_RETURN_BUY_MIN}〜{PREV_RETURN_BUY_MAX}%の急騰）",
+        f"RSI({RSI_PERIOD}) = {rsi:.0f}（{RSI_BUY_MIN}〜{RSI_BUY_MAX}：モメンタムゾーン）",
+        f"出来高比 = {vol_ratio:.1f}（≧{VOL_MULT}：出来高急増で本物の動き）",
+        f"売買代金 = {turnover/1e8:.0f}億円",
+    ]
 
     return {
         "ticker":      ticker,
@@ -218,14 +201,13 @@ def run_screener_day() -> tuple[list[dict], dict]:
         if result:
             candidates.append(result)
             print(f"  [HIT] {ticker} {name} {result['direction']} "
-                  f"前日{result['prev_return']:+.1f}% RSI={result['rsi']}")
+                  f"前日{result['prev_return']:+.1f}% RSI={result['rsi']:.0f}")
 
-    # マクロバイアス（参考表示のみ・絞り込みは行わない）
     bias = macro.get("bias", "neutral")
     print(f"[screener_day] マクロバイアス: {bias}（参考）")
 
-    # 騰落率の絶対値が大きい順（より極端な動きを優先）
-    candidates.sort(key=lambda x: abs(x["prev_return"]), reverse=True)
+    # 出来高比が高い順に優先
+    candidates.sort(key=lambda x: x["vol_ratio"], reverse=True)
     signals = candidates[:MAX_SIGNALS]
 
     print(f"[screener_day] 候補{len(candidates)}銘柄 → 最終{len(signals)}銘柄")

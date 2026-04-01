@@ -36,7 +36,7 @@ except ImportError:
 
 STOP_LOSS   = 3.0   # %
 TAKE_PROFIT = 5.0   # %
-ATR_VOL_CAP = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
+ATR_VOL_CAP = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
 
 
 def get_trading_days(start: str, end: str) -> list[str]:
