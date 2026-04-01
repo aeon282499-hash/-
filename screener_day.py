@@ -194,7 +194,7 @@ def run_screener_day() -> tuple[list[dict], dict]:
 
     from datetime import date as _date, timedelta as _td
     today_str  = _date.today().strftime("%Y-%m-%d")
-    start_str  = (_date.today() - _td(days=180)).strftime("%Y-%m-%d")
+    start_str  = (_date.today() - _td(days=90)).strftime("%Y-%m-%d")
     try:
         token = _jquants_id_token()
         data  = batch_download_jquants(token, start=start_str, end=today_str, tickers=tickers)

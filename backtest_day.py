@@ -73,9 +73,8 @@ def run_day_backtest(start: str, end: str) -> None:
         all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
         print(f"[backtest_day] stooq: {len(all_data)} 銘柄のデータ取得完了\n")
 
-    # 日経225データ（市場フィルター用）
-    nk_data = batch_download_stooq(["^N225"], start=fetch_start, end=end)
-    nk_df   = nk_data.get("^N225")
+    # 日経225プロキシ（1321.T）を取得済みデータから使用（stooq不要）
+    nk_df = all_data.get("1321.T")
     if nk_df is not None and len(nk_df) > 25:
         nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
     else:

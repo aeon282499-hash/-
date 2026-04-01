@@ -85,13 +85,11 @@ def run_range_backtest(start: str, end: str) -> None:
         all_data = batch_download_stooq(tickers, start=fetch_start, end=fetch_end)
         print(f"[backtest] stooq: {len(all_data)} 銘柄のデータ取得完了\n")
 
-    # ── 日経225データ取得（市場フィルター用）─────────
-    print("[backtest] 日経225データ取得中...")
-    nk_data = batch_download_stooq(["^NKX"], start=fetch_start, end=fetch_end)
-    nk_df = nk_data.get("^NKX")
+    # ── 日経225プロキシ（1321.T）を取得済みデータから使用 ─
+    nk_df = all_data.get("1321.T")
     if nk_df is not None and len(nk_df) > 25:
         nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
-        print(f"[backtest] 日経225データ取得完了（{len(nk_df)}日分）")
+        print(f"[backtest] 日経ETF(1321.T)取得完了（{len(nk_df)}日分）")
     else:
         nk_df = None
         print("[backtest] 日経225データ取得失敗 → 市場フィルターOFF")
