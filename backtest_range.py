@@ -31,7 +31,6 @@ from screener import (
     _nikkei225_universe,
     fetch_tse_prime_universe,
     judge_signal_pre,
-    batch_download_stooq,
     batch_download_jquants,
     _jquants_id_token,
     calc_rsi,
@@ -40,7 +39,7 @@ from screener import (
     MAX_SIGNALS,
 )
 
-STOP_LOSS       = 2.0   # % 固定損切り
+STOP_LOSS       = 3.0   # % 固定損切り
 TAKE_PROFIT     = 5.0   # % 固定利確
 MAX_HOLD        = 3     # 最大保有営業日数
 ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
@@ -71,19 +70,13 @@ def run_range_backtest(start: str, end: str) -> None:
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
 
-    # ── 期間全体のデータをstooqで取得 ─────────────────
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     # エグジット用に終了日を少し延ばす（最大保有日数分）
     fetch_end = (datetime.strptime(end, "%Y-%m-%d") + timedelta(days=MAX_HOLD * 3)).strftime("%Y-%m-%d")
     print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
-    try:
-        token    = _jquants_id_token()
-        all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end, tickers=tickers)
-        print(f"[backtest] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
-    except Exception as e:
-        print(f"[backtest] J-Quants失敗({e})→stooqで再試行...")
-        all_data = batch_download_stooq(tickers, start=fetch_start, end=fetch_end)
-        print(f"[backtest] stooq: {len(all_data)} 銘柄のデータ取得完了\n")
+    token    = _jquants_id_token()
+    all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end, tickers=tickers)
+    print(f"[backtest] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
 
     # ── 日経225プロキシ（1321.T）を取得済みデータから使用 ─
     nk_df = all_data.get("1321.T")
@@ -268,6 +261,10 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
         if losses > 0 and df[~df["win"]]["pnl_pct"].sum() != 0 else float("inf")
     )
 
+    cumulative = df.sort_values("entry_date")["pnl_pct"].cumsum()
+    peak       = cumulative.cummax()
+    max_dd     = (cumulative - peak).min()
+
     print(f"  取引回数      : {total} 件")
     print(f"  勝ち          : {int(wins)} 件")
     print(f"  負け          : {int(losses)} 件")
@@ -276,6 +273,7 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
     print(f"  平均利益      : {avg_win:+.3f}%")
     print(f"  平均損失      : {avg_loss:+.3f}%")
     print(f"  プロフィットF : {profit_factor:.2f}")
+    print(f"  最大DD        : {max_dd:+.2f}%")
 
     # エグジット種別集計
     print(f"\n  ── エグジット種別 ──────────────────────")

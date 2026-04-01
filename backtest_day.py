@@ -22,7 +22,7 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import batch_download_stooq, batch_download, _nikkei225_universe, calc_atr, batch_download_jquants, _jquants_id_token
+from screener import batch_download, _nikkei225_universe, calc_atr, batch_download_jquants, _jquants_id_token
 from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
@@ -68,14 +68,9 @@ def run_day_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
-    try:
-        token    = _jquants_id_token()
-        all_data = batch_download_jquants(token, start=fetch_start, end=end, tickers=tickers)
-        print(f"[backtest_day] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
-    except Exception as e:
-        print(f"[backtest_day] J-Quants失敗({e})→stooqで再試行...")
-        all_data = batch_download_stooq(tickers, start=fetch_start, end=end)
-        print(f"[backtest_day] stooq: {len(all_data)} 銘柄のデータ取得完了\n")
+    token    = _jquants_id_token()
+    all_data = batch_download_jquants(token, start=fetch_start, end=end, tickers=tickers)
+    print(f"[backtest_day] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
 
     # 日経225プロキシ（1321.T）を取得済みデータから使用（stooq不要）
     nk_df = all_data.get("1321.T")
@@ -224,6 +219,10 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
         if losses > 0 and df[~df["win"]]["pnl_pct"].sum() != 0 else float("inf")
     )
 
+    cumulative = df.sort_values("entry_date")["pnl_pct"].cumsum()
+    peak       = cumulative.cummax()
+    max_dd     = (cumulative - peak).min()
+
     print(f"  取引回数      : {total} 件")
     print(f"  勝ち          : {int(wins)} 件")
     print(f"  負け          : {int(losses)} 件")
@@ -232,6 +231,7 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
     print(f"  平均利益      : {avg_win:+.3f}%")
     print(f"  平均損失      : {avg_loss:+.3f}%")
     print(f"  プロフィットF : {profit_factor:.2f}")
+    print(f"  最大DD        : {max_dd:+.2f}%")
 
     print(f"\n  ── エグジット種別 ──────────────────────")
     for etype in ["STOP", "TP", "CLOSE"]:

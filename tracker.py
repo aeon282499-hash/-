@@ -27,10 +27,10 @@ import json
 import os
 from datetime import date, timedelta
 
-from screener import batch_download_stooq, calc_rsi
+from screener import batch_download_jquants, _jquants_id_token, calc_rsi
 
 POSITIONS_FILE = "positions.json"
-STOP_LOSS      = 2.0   # %
+STOP_LOSS      = 3.0   # %
 TAKE_PROFIT    = 5.0   # %
 MAX_HOLD       = 3     # 営業日
 
@@ -95,7 +95,8 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
     end     = today.strftime("%Y-%m-%d")
 
     print(f"[tracker] {len(tickers)} 銘柄のデータ取得中（結果チェック用）...")
-    all_data = batch_download_stooq(tickers, start=start, end=end)
+    token    = _jquants_id_token()
+    all_data = batch_download_jquants(token, start=start, end=end, tickers=tickers)
 
     closed_today = []
     still_open   = []
