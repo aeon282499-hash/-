@@ -73,7 +73,7 @@ jobs:
                   {"name": "📉 平均損失", "value": avgloss, "inline": True},
                   {"name": "⚖️ PF",       "value": f"**{pf}**", "inline": True},
               ]
-              exit_lines = re.findall(r'\[(STOP|TP|RSI|MAXHOLD)\s*\].*', result)
+              exit_lines = re.findall(r'\[(?:STOP|TP|RSI|MAXHOLD)\s*\].*', result)
               if exit_lines:
                   fields.append({"name": "エグジット種別", "value": "\n".join(exit_lines[:5]), "inline": False})
               buy_line  = re.search(r'\[BUY\].*',  result)
