@@ -11,6 +11,7 @@ jobs:
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       PYTHONIOENCODING: utf-8
 
     steps:

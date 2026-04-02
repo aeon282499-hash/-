@@ -363,25 +363,41 @@ def batch_download(
 
 
 # ================================================================
-# マクロ環境取得（yfinance で米国市場のみ）
+# マクロ環境取得（Alpha Vantage で米国市場のみ）
 # ================================================================
+
+def _fetch_av_daily_return(symbol: str, api_key: str) -> float | None:
+    """Alpha Vantage TIME_SERIES_DAILY から前日比騰落率(%)を返す。"""
+    url = "https://www.alphavantage.co/query"
+    params = {
+        "function":   "TIME_SERIES_DAILY",
+        "symbol":     symbol,
+        "outputsize": "compact",
+        "apikey":     api_key,
+    }
+    try:
+        resp = requests.get(url, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json().get("Time Series (Daily)", {})
+        dates = sorted(data.keys(), reverse=True)
+        if len(dates) < 2:
+            return None
+        last = float(data[dates[0]]["4. close"])
+        prev = float(data[dates[1]]["4. close"])
+        return round((last - prev) / prev * 100, 2)
+    except Exception:
+        return None
+
 
 def fetch_macro() -> dict:
     """前日の米国市場（NYダウ・ナスダック）騰落率を取得する。"""
     result = {"dow": None, "nasdaq": None, "bias": "neutral"}
-    for key, ticker in {"dow": "^DJI", "nasdaq": "^IXIC"}.items():
-        try:
-            kwargs = dict(period="3d", interval="1d",
-                          auto_adjust=True, progress=False)
-            if _SESSION:
-                kwargs["session"] = _SESSION
-            df = yf.download(ticker, **kwargs)
-            if len(df) >= 2:
-                prev = float(df["Close"].iloc[-2])
-                last = float(df["Close"].iloc[-1])
-                result[key] = round((last - prev) / prev * 100, 2)
-        except Exception:
-            pass
+    api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
+    if api_key:
+        result["dow"]    = _fetch_av_daily_return("DJI",  api_key)
+        result["nasdaq"] = _fetch_av_daily_return("IXIC", api_key)
+    else:
+        print("[macro] ALPHA_VANTAGE_API_KEY 未設定 → マクロ取得スキップ")
 
     dow = result.get("dow") or 0
     nas = result.get("nasdaq") or 0
