@@ -80,7 +80,7 @@ def main() -> None:
         save_positions(positions)
 
         # ── ④ Discord にシグナル送信 ─────────────────────────
-        send_signals(signals, today, macro)
+        send_signals(signals, today, macro, entry_date)
         print("[main] 正常終了")
 
     except Exception as e:

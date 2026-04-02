@@ -2,7 +2,7 @@ name: 毎朝シグナル配信
 
 on:
   schedule:
-    - cron: '36 23 * * 0-4'  # JST 月〜金 8:36開始 → 8:40頃配信
+    - cron: '22 23 * * 0-4'  # JST 月〜金 8:22開始 → 8:30頃配信
   workflow_dispatch:           # 手動実行ボタン
 
 jobs:

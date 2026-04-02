@@ -9,7 +9,7 @@ backtest_day.py — デイトレバックテスト（寄り買い/売り → 引
   エントリー : シグナル翌営業日の始値
   エグジット : 同日の終値（15:30大引け）
   損切り     : 始値 -3%（日中安値/高値が到達した場合）
-  利確       : 始値 +5%（日中高値/安値が到達した場合）
+  利確       : 始値 +3%（日中高値/安値が到達した場合）
 """
 
 import sys
@@ -35,7 +35,7 @@ except ImportError:
     fetch_tse_prime_universe = _nikkei225_universe
 
 STOP_LOSS      = 3.0   # %
-TAKE_PROFIT    = 5.0   # %
+TAKE_PROFIT    = 3.0   # %
 ATR_VOL_CAP    = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
 SP500_DROP_MAX = -1.5  # S&P500プロキシ前日下落率の下限
 

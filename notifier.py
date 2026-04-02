@@ -53,10 +53,30 @@ def _macro_description(macro: dict) -> str:
     return f"{dow_str} ／ {nas_str}\n{env}\n{strategy}"
 
 
-def send_signals(signals: list[dict], today: date, macro: dict | None = None) -> None:
+def _nth_trading_day(d, n: int):
+    """d から n 営業日後を返す。"""
+    cur = d
+    count = 0
+    while count < n:
+        cur += timedelta(days=1)
+        if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+            count += 1
+    return cur
+
+
+def send_signals(signals: list[dict], today: date, macro: dict | None = None, entry_date=None) -> None:
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
     macro = macro or {}
+
+    # 処分日（エントリー日から3営業日後）
+    if entry_date is None:
+        _d = today + timedelta(days=1)
+        while _d.weekday() >= 5 or jpholiday.is_holiday(_d):
+            _d += timedelta(days=1)
+        entry_date = _d
+    exit_date = _nth_trading_day(entry_date, 3)
+    exit_date_str = exit_date.strftime("%m月%d日")
 
     if not signals:
         _send_no_signal(date_str, time_str, macro)
@@ -147,8 +167,8 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None) ->
                     "inline": True,
                 },
                 {
-                    "name":   "📅 保有ルール",
-                    "value":  "最大**5営業日**保有\nRSI回復（BUY:≧50 / SELL:≦50）で早期決済\n5日経過で終値決済",
+                    "name":   "📅 保有ルール・処分日",
+                    "value":  f"最大**3営業日**保有\nRSI回復（BUY:≧50 / SELL:≦50）で早期決済\n⏰ **処分期限: {exit_date_str}**（3営業日後終値）",
                     "inline": False,
                 },
                 {
