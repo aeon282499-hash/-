@@ -221,6 +221,49 @@ def batch_download_jquants(
     return result
 
 
+def fetch_ticker_ohlcv(token: str, code4: str, start: str, end: str) -> "pd.DataFrame | None":
+    """特定銘柄のOHLCV日足データをJ-Quantsから取得する（銘柄指定・高速）。"""
+    code5 = code4.zfill(5)
+    all_records: list[dict] = []
+    pagination_key = None
+
+    while True:
+        params: dict = {"code": code5, "from": start, "to": end}
+        if pagination_key:
+            params["pagination_key"] = pagination_key
+        try:
+            data           = _jquants_get("/equities/daily_quotes", token, params)
+            records        = data.get("daily_quotes", [])
+            all_records.extend(records)
+            pagination_key = data.get("pagination_key")
+            if not pagination_key:
+                break
+            time.sleep(1.2)
+        except Exception as e:
+            print(f"[fetch_ticker] {code4} 取得失敗: {e}")
+            return None
+
+    if not all_records:
+        return None
+
+    df = pd.DataFrame(all_records)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df = df.set_index("Date").sort_index()
+    df = df.rename(columns={
+        "AdjustmentOpen":   "Open",
+        "AdjustmentHigh":   "High",
+        "AdjustmentLow":    "Low",
+        "AdjustmentClose":  "Close",
+        "AdjustmentVolume": "Volume",
+    })
+    if "Close" not in df.columns:
+        print(f"[fetch_ticker] {code4} Closeカラムなし")
+        return None
+    keep = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in df.columns]
+    df   = df[keep].apply(pd.to_numeric, errors="coerce").dropna(subset=["Close"])
+    return df if not df.empty else None
+
+
 # ================================================================
 # stooq によるデータ取得（メイン・認証不要）
 # ================================================================
