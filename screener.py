@@ -432,6 +432,34 @@ def _fetch_av_daily_return(symbol: str, api_key: str) -> float | None:
         return None
 
 
+def fetch_av_history(symbol: str, api_key: str) -> "dict[str, float]":
+    """Alpha Vantage から全期間の日次騰落率を取得する。{date_str: return_pct}"""
+    url = "https://www.alphavantage.co/query"
+    params = {
+        "function":   "TIME_SERIES_DAILY",
+        "symbol":     symbol,
+        "outputsize": "full",
+        "apikey":     api_key,
+    }
+    try:
+        resp  = requests.get(url, params=params, timeout=30)
+        resp.raise_for_status()
+        data  = resp.json().get("Time Series (Daily)", {})
+        dates = sorted(data.keys())
+        result: dict[str, float] = {}
+        for i in range(1, len(dates)):
+            d    = dates[i]
+            prev = float(data[dates[i - 1]]["4. close"])
+            cur  = float(data[d]["4. close"])
+            if prev > 0:
+                result[d] = round((cur - prev) / prev * 100, 2)
+        print(f"[av_history] {symbol}: {len(result)} 日分取得完了")
+        return result
+    except Exception as e:
+        print(f"[av_history] {symbol} 取得失敗: {e}")
+        return {}
+
+
 def fetch_macro() -> dict:
     """前日の米国市場（NYダウ・ナスダック）騰落率を取得する。"""
     result = {"dow": None, "nasdaq": None, "bias": "neutral"}
