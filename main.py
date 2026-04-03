@@ -81,6 +81,13 @@ def main() -> None:
 
         # ── ④ Discord にシグナル送信 ─────────────────────────
         send_signals(signals, today, macro, entry_date)
+
+        # ── ⑤ Twitter に投稿 ────────────────────────────────
+        from twitter_notifier import post_swing_signals, post_swing_results
+        post_swing_signals(signals, today, macro)
+        if closed_today:
+            post_swing_results(closed_today, today)
+
         print("[main] 正常終了")
 
     except Exception as e:

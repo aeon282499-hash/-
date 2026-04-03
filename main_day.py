@@ -277,6 +277,11 @@ def main() -> None:
 
         # ── ④ Discord にシグナル送信 ─────────────────────
         send_day_signals(signals, today, macro)
+
+        # ── ⑤ Twitter に投稿 ────────────────────────────────
+        from twitter_notifier import post_day_signals
+        post_day_signals(signals, today)
+
         print("[main_day] 正常終了")
 
     except Exception as e:
