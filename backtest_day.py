@@ -9,7 +9,7 @@ backtest_day.py — デイトレバックテスト（寄り買い/売り → 引
   エントリー : シグナル翌営業日の始値
   エグジット : 同日の終値（15:30大引け）
   損切り     : 始値 -3%（日中安値/高値が到達した場合）
-  利確       : 始値 +3%（日中高値/安値が到達した場合）
+  利確       : 始値 +5%（日中高値/安値が到達した場合）
 """
 
 import sys
@@ -35,7 +35,7 @@ except ImportError:
     fetch_tse_prime_universe = _nikkei225_universe
 
 STOP_LOSS      = 3.0   # %
-TAKE_PROFIT    = 3.0   # %
+TAKE_PROFIT    = 5.0   # %
 ATR_VOL_CAP    = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
 SP500_DROP_MAX = -1.5  # S&P500プロキシ前日下落率の下限
 
@@ -88,6 +88,7 @@ def run_day_backtest(start: str, end: str) -> None:
     )
 
     trades: list[dict] = []
+    stop_cooldown: dict[str, str] = {}  # ticker → 直近STOP発生の entry_date
 
     for signal_date in trading_days:
         # 前日までのデータでシグナル判定
@@ -103,6 +104,14 @@ def run_day_backtest(start: str, end: str) -> None:
                 signal = judge_signal_day(ticker, name, pre_df)
                 if signal is None:
                     continue
+
+                # 連続STOP防止: 直近2営業日以内にSTOPした銘柄はスキップ
+                if ticker in stop_cooldown:
+                    last_stop = stop_cooldown[ticker]
+                    last_idx  = all_trading_days.index(last_stop) if last_stop in all_trading_days else -1
+                    cur_idx   = all_trading_days.index(signal_date) if signal_date in all_trading_days else -1
+                    if last_idx >= 0 and cur_idx >= 0 and cur_idx - last_idx <= 2:
+                        continue
 
                 # 市場フィルター① 日経ETF(1321.T): 終値 ≥ 25日MA
                 if signal["direction"] == "BUY" and nk_df is not None:
@@ -175,6 +184,9 @@ def run_day_backtest(start: str, end: str) -> None:
                     else:
                         pnl_pct  = (entry_open - entry_close) / entry_open * 100
                         exit_type = "CLOSE"
+
+                if exit_type == "STOP":
+                    stop_cooldown[ticker] = entry_date
 
                 trades.append({
                     "signal_date":  signal_date,

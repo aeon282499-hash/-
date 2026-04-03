@@ -32,11 +32,11 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 PREV_RETURN_BUY_MIN  = -8.0   # 前日騰落率の下限（買い）
 PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限（買い）
-PREV_RETURN_SELL_MIN =  3.0   # 前日騰落率の下限（売り）
+PREV_RETURN_SELL_MIN =  4.0   # 前日騰落率の下限（売り）
 PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（売り）
 
 RSI_BUY_MAX    = 50    # BUY: RSIがこの値以下（売られすぎ）
-RSI_SELL_MIN   = 50    # SELL: RSIがこの値以上（買われすぎ）
+RSI_SELL_MIN   = 55    # SELL: RSIがこの値以上（買われすぎ）
 VOL_MULT       = 1.5
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 ATR_VOL_CAP    = 4.0             # ATR/終値(%)上限
