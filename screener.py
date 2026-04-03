@@ -540,22 +540,23 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ①②③ 方向判定（逆張り + ボリンジャーバンド）─────
+    # ── ①②③ 方向判定（BUYのみ・逆張り + ボリンジャーバンド）─────
     if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
             and bb_lower is not None and last_close < bb_lower):
         direction = "BUY"
-    elif (rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN
-            and bb_upper is not None and last_close > bb_upper):
-        direction = "SELL"
     else:
         return None
 
-    # ── 確認足フィルター（反転方向の足が出ていること）────
+    # ── 個別株トレンドフィルター（50MA以上のみBUY）──────────
+    if len(close) >= 50:
+        ma50 = float(close.rolling(50).mean().iloc[-1])
+        if last_close < ma50:
+            return None
+
+    # ── 確認足フィルター（陽線のみ）────────────────────────
     if last_open is not None and last_open > 0:
-        if direction == "BUY"  and last_close <= last_open:
+        if last_close <= last_open:
             return None   # 陰線 = まだ売り圧力が続いている → スキップ
-        if direction == "SELL" and last_close >= last_open:
-            return None   # 陽線 = まだ買い圧力が続いている → スキップ
 
     # ── ④ ボラ OR 出来高 ──────────────────────────────
     range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
@@ -571,22 +572,13 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     if range_ok: cond4.append(f"値幅/ATR={range_ratio:.1f}（≧{RANGE_MULT}）")
     if vol_ok:   cond4.append(f"出来高比={vol_ratio:.1f}（≧{VOL_MULT}）")
 
-    if direction == "BUY":
-        reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
-            f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
-            f"BB下限(-1.5σ) = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
-            "④ " + " / ".join(cond4),
-            f"売買代金 = {turnover/1e8:.0f}億円",
-        ]
-    else:
-        reason = [
-            f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ → 反落狙い）",
-            f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：上がりすぎ）",
-            f"BB上限(+1.5σ) = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
-            "④ " + " / ".join(cond4),
-            f"売買代金 = {turnover/1e8:.0f}億円",
-        ]
+    reason = [
+        f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
+        f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
+        f"BB下限(-1.5σ) = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
+        "④ " + " / ".join(cond4),
+        f"売買代金 = {turnover/1e8:.0f}億円",
+    ]
 
     return {
         "ticker":      ticker,
