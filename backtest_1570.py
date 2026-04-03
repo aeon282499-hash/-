@@ -22,7 +22,7 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import fetch_ticker_ohlcv, _jquants_id_token
+from screener import batch_download_jquants, _jquants_id_token
 from screener_1570 import judge_signal_1570, TICKER_1570, TICKER_SP500P, LOOKBACK_DAYS
 
 STOP_LOSS   = 3.0
@@ -49,13 +49,12 @@ def run_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_1570] データ取得中（{fetch_start} 〜 {end}）...")
-    token         = _jquants_id_token()
-    code_1570     = TICKER_1570.replace(".T", "")
-    code_sp500    = TICKER_SP500P.replace(".T", "")
-    df_1570_full  = fetch_ticker_ohlcv(token, code_1570,  fetch_start, end)
-    df_sp500_full = fetch_ticker_ohlcv(token, code_sp500, fetch_start, end)
+    token    = _jquants_id_token()
+    all_data = batch_download_jquants(token, start=fetch_start, end=end, tickers=[TICKER_1570, TICKER_SP500P])
     print(f"[backtest_1570] データ取得完了\n")
 
+    df_1570_full  = all_data.get(TICKER_1570)
+    df_sp500_full = all_data.get(TICKER_SP500P)
     if df_1570_full is None or df_sp500_full is None:
         print("データ取得失敗")
         return
