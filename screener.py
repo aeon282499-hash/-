@@ -394,8 +394,8 @@ def fetch_macro() -> dict:
     result = {"dow": None, "nasdaq": None, "bias": "neutral"}
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
     if api_key:
-        result["dow"]    = _fetch_av_daily_return("DJI",  api_key)
-        result["nasdaq"] = _fetch_av_daily_return("IXIC", api_key)
+        result["dow"]    = _fetch_av_daily_return("SPY",  api_key)  # S&P500 ETF proxy
+        result["nasdaq"] = _fetch_av_daily_return("QQQ", api_key)  # Nasdaq ETF proxy
     else:
         print("[macro] ALPHA_VANTAGE_API_KEY 未設定 → マクロ取得スキップ")
 
