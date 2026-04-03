@@ -32,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: デイトレバックテスト実行
-        run: python backtest_day.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_day_result.txt
+        run: python -u backtest_day.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_day_result.txt
 
       - name: 結果をDiscordに送信
         run: |
