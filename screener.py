@@ -178,8 +178,8 @@ def batch_download_jquants(
                 time.sleep(1.2)  # ページネーション間も待機
             except Exception as e:
                 if "429" in str(e):
-                    print(f"  [jquants] レート制限 → 5分待機してリトライ...")
-                    time.sleep(300)
+                    print(f"  [jquants] レート制限 → 60秒待機してリトライ...")
+                    time.sleep(60)
                     continue
                 print(f"  [jquants] {date_str} 取得失敗: {e}")
                 break
