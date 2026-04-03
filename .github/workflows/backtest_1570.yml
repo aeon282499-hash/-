@@ -15,6 +15,7 @@ on:
 jobs:
   backtest:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_1570 }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
@@ -31,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: 1570バックテスト実行
-        run: python backtest_1570.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_1570_result.txt
+        run: python -u backtest_1570.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_1570_result.txt
 
       - name: 結果をDiscordに送信
         run: |
