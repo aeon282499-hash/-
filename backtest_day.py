@@ -22,17 +22,12 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-from screener import batch_download, _nikkei225_universe, calc_atr, batch_download_jquants, _jquants_id_token
+from screener import batch_download, _nikkei225_universe, calc_atr, batch_download_jquants, _jquants_id_token, fetch_tse_universe
 from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
     ATR_VOL_CAP,
 )
-
-try:
-    from screener import fetch_tse_prime_universe
-except ImportError:
-    fetch_tse_prime_universe = _nikkei225_universe
 
 STOP_LOSS      = 3.0   # %
 TAKE_PROFIT    = 5.0   # %
@@ -59,16 +54,16 @@ def run_day_backtest(start: str, end: str) -> None:
     print(f"  戦略: 前日大幅変動逆張り（寄り成り → 引け決済）")
     print(f"{'='*60}\n")
 
-    universe = fetch_tse_prime_universe()
+    fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
+    token    = _jquants_id_token()
+    universe = fetch_tse_universe(token)
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
     for proxy in ["1321.T", "1655.T"]:
         if proxy not in tickers:
             tickers.append(proxy)
 
-    fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     print(f"[backtest_day] {len(universe)} 銘柄のデータ取得中（{fetch_start} 〜 {end}）...")
-    token    = _jquants_id_token()
     all_data = batch_download_jquants(token, start=fetch_start, end=end, tickers=tickers)
     print(f"[backtest_day] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
 

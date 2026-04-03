@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       start:
-        description: '開始日 (YYYY-MM-DD)'
+        description: '開始日 (YYYY-MM-DD) ※推奨: 2年以内'
         required: true
         default: '2024-01-01'
       end:
-        description: '終了日 (YYYY-MM-DD)'
+        description: '終了日 (YYYY-MM-DD) ※推奨: 2年以内'
         required: true
-        default: '2025-03-24'
+        default: '2025-12-31'
 
 jobs:
   backtest:
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}

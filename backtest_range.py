@@ -29,7 +29,7 @@ import requests
 
 from screener import (
     _nikkei225_universe,
-    fetch_tse_prime_universe,
+    fetch_tse_universe,
     judge_signal_pre,
     batch_download_jquants,
     _jquants_id_token,
@@ -65,16 +65,16 @@ def run_range_backtest(start: str, end: str) -> None:
     print(f"  戦略: スイング（最大{MAX_HOLD}日・損切{STOP_LOSS}%・利確{TAKE_PROFIT}%・RSI回復・高ボラ除外ATR>{ATR_VOL_CAP}%）")
     print(f"{'='*60}\n")
 
-    # ── 銘柄リスト取得（東証プライム全銘柄）────────────
-    universe = fetch_tse_prime_universe()
-    tickers  = [t for t, _ in universe]
-    name_map = {t: n for t, n in universe}
-
+    # ── 銘柄リスト取得（J-Quants）────────────────────
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
     # エグジット用に終了日を少し延ばす（最大保有日数分）
     fetch_end = (datetime.strptime(end, "%Y-%m-%d") + timedelta(days=MAX_HOLD * 3)).strftime("%Y-%m-%d")
-    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
     token    = _jquants_id_token()
+    universe = fetch_tse_universe(token)
+    tickers  = [t for t, _ in universe]
+    name_map = {t: n for t, n in universe}
+
+    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
     all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end, tickers=tickers)
     print(f"[backtest] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
 
