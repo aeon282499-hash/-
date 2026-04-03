@@ -2,7 +2,7 @@ name: 1570 ETF デイトレシグナル配信
 
 on:
   schedule:
-    - cron: '25 23 * * 0-4'  # JST 月〜金 8:25開始 → 8:30頃配信
+    - cron: '25 23 * * 1-5'  # JST 月〜金 8:25開始 → 8:30頃配信
   workflow_dispatch:
 
 jobs:
