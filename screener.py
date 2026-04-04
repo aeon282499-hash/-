@@ -442,9 +442,16 @@ def fetch_av_history(symbol: str, api_key: str) -> "dict[str, float]":
         "apikey":     api_key,
     }
     try:
-        resp  = requests.get(url, params=params, timeout=30)
+        resp     = requests.get(url, params=params, timeout=30)
         resp.raise_for_status()
-        data  = resp.json().get("Time Series (Daily)", {})
+        resp_json = resp.json()
+        if "Note" in resp_json:
+            print(f"[av_history] レート制限: {resp_json['Note']}")
+            return {}
+        if "Information" in resp_json:
+            print(f"[av_history] API制限: {resp_json['Information']}")
+            return {}
+        data  = resp_json.get("Time Series (Daily)", {})
         dates = sorted(data.keys())
         result: dict[str, float] = {}
         for i in range(1, len(dates)):
