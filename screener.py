@@ -625,12 +625,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     else:
         return None
 
-    # ── 個別株トレンドフィルター（50MA以上のみBUY）──────────
-    if len(close) >= 50:
-        ma50 = float(close.rolling(50).mean().iloc[-1])
-        if last_close < ma50:
-            return None
-
     # ── 確認足フィルター（陽線のみ）────────────────────────
     if last_open is not None and last_open > 0:
         if last_close <= last_open:
