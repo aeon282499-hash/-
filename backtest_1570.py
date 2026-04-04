@@ -22,9 +22,8 @@ import jpholiday
 import pandas as pd
 import numpy as np
 
-import os
-from screener import batch_download_jquants, _jquants_id_token, fetch_av_history
-from screener_1570 import judge_signal_1570, TICKER_1570, LOOKBACK_DAYS
+from screener import batch_download_jquants, _jquants_id_token
+from screener_1570 import judge_signal_1570, TICKER_1570, TICKER_SP500P, LOOKBACK_DAYS
 
 STOP_LOSS   = 3.0
 TAKE_PROFIT = 5.0
@@ -50,24 +49,17 @@ def run_backtest(start: str, end: str) -> None:
 
     fetch_start = (datetime.strptime(start, "%Y-%m-%d") - timedelta(days=LOOKBACK_DAYS + 30)).strftime("%Y-%m-%d")
 
-    # S&P500履歴をAlpha Vantageから取得（1655.Tより正確・当日夜のデータを反映）
-    api_key    = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
-    sp500_hist = fetch_av_history("SPY", api_key) if api_key else {}
-    sp500_dates = sorted(sp500_hist.keys())
-    if not sp500_hist:
-        print("[backtest_1570] Alpha Vantage取得失敗 → バックテスト中止")
-        return
-
-    # 1570の価格データをJ-Quantsから取得
-    print(f"[backtest_1570] 1570データ取得中（{fetch_start} 〜 {end}）...")
-    token        = _jquants_id_token()
-    all_data     = batch_download_jquants(token, start=fetch_start, end=end, tickers=[TICKER_1570])
-    df_1570_full = all_data.get(TICKER_1570)
+    print(f"[backtest_1570] データ取得中（{fetch_start} 〜 {end}）...")
+    token         = _jquants_id_token()
+    all_data      = batch_download_jquants(token, start=fetch_start, end=end, tickers=[TICKER_1570, TICKER_SP500P])
+    df_1570_full  = all_data.get(TICKER_1570)
+    df_sp500_full = all_data.get(TICKER_SP500P)
     print(f"[backtest_1570] データ取得完了\n")
 
-    if df_1570_full is None:
-        print("1570データ取得失敗")
+    if df_1570_full is None or df_sp500_full is None:
+        print("データ取得失敗")
         return
+    sp500_dates = sorted(df_sp500_full.index.strftime("%Y-%m-%d").tolist())
 
     all_trading_days = get_trading_days(fetch_start, end)
     trades: list[dict] = []
@@ -77,11 +69,10 @@ def run_backtest(start: str, end: str) -> None:
         if len(pre_1570) < 20:
             continue
 
-        # signal_dateより前の最新の米国取引日のS&P500騰落率を使用
-        prev_us_dates = [d for d in sp500_dates if d < signal_date]
-        if not prev_us_dates:
+        pre_sp500 = df_sp500_full[df_sp500_full.index.strftime("%Y-%m-%d") <= signal_date].copy()
+        if len(pre_sp500) < 2:
             continue
-        sp500_ret = sp500_hist[prev_us_dates[-1]]
+        sp500_ret = (float(pre_sp500["Close"].iloc[-1]) - float(pre_sp500["Close"].iloc[-2])) / float(pre_sp500["Close"].iloc[-2]) * 100
 
         signal = judge_signal_1570(pre_1570, sp500_ret)
         if signal["direction"] == "PASS":
