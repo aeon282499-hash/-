@@ -1,0 +1,34 @@
+[
+  {
+    "id": "product_001",
+    "name": "〇〇美容クリーム",
+    "category": "スキンケア",
+    "affiliate_link": "https://example.com/affiliate/001",
+    "price": "3,980円",
+    "features": [
+      "ヒアルロン酸3種配合",
+      "医師監修",
+      "敏感肌OK",
+      "無添加・無香料"
+    ],
+    "target_problem": "乾燥・ハリ不足・くすみ",
+    "result": "使い始めて2週間でモチモチ肌に",
+    "active": true
+  },
+  {
+    "id": "product_002",
+    "name": "〇〇転職エージェント",
+    "category": "転職",
+    "affiliate_link": "https://example.com/affiliate/002",
+    "price": "無料",
+    "features": [
+      "書類通過率90%",
+      "非公開求人多数",
+      "専任キャリアアドバイザー付き",
+      "未経験OK求人あり"
+    ],
+    "target_problem": "残業が多い・給料が低い・職場環境が悪い",
+    "result": "転職して月収10万円アップ",
+    "active": true
+  }
+]

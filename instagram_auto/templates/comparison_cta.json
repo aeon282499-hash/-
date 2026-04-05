@@ -1,0 +1,58 @@
+{
+  "id": "comparison_cta",
+  "name": "比較→おすすめ→CTA",
+  "description": "複数商品・方法の比較からおすすめを紹介。購買意欲が高い層に刺さる",
+  "total_duration_sec": 30,
+  "scenes": [
+    {
+      "id": "comparison_hook",
+      "order": 1,
+      "duration_sec": 3,
+      "purpose": "比較テーマでフック。迷っている人を引き込む",
+      "narration_hint": "「〇〇か△△か迷ってる人、これ見て」「〇〇選びで失敗してる人の特徴」",
+      "text_position": "center",
+      "text_style": "large_bold",
+      "material_type": "comparison_visual"
+    },
+    {
+      "id": "option_a",
+      "order": 2,
+      "duration_sec": 7,
+      "purpose": "比較対象A（よくある選択肢・劣る方）",
+      "narration_hint": "「〇〇を選ぶ人は△△だから損してることが多い」と共感しつつ問題点を指摘",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "option_a_visual"
+    },
+    {
+      "id": "option_b",
+      "order": 3,
+      "duration_sec": 7,
+      "purpose": "比較対象B（おすすめする商品・勝る方）",
+      "narration_hint": "「一方〇〇なら△△だから◆◆になれる」と具体的なメリット",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "option_b_visual"
+    },
+    {
+      "id": "recommendation",
+      "order": 4,
+      "duration_sec": 8,
+      "purpose": "おすすめの理由をまとめて商品紹介",
+      "narration_hint": "「だから私は絶対〇〇をおすすめする」と断言して商品の特徴・価格",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "product_featured"
+    },
+    {
+      "id": "cta",
+      "order": 5,
+      "duration_sec": 5,
+      "purpose": "プロフィールへの誘導CTA",
+      "narration_hint": "「気になる人はプロフのリンクから」",
+      "text_position": "center",
+      "text_style": "cta_large",
+      "material_type": "cta_screen"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "美容・健康アカウント",
+  "genre": "beauty_health",
+  "target_audience": "20〜40代女性",
+  "persona": "美容に詳しい同世代の友人",
+  "tone": "親しみやすく、共感できる口調。敬語は使わない。",
+  "voice_id": "",
+  "hashtags": [
+    "#美容",
+    "#スキンケア",
+    "#コスメ",
+    "#美肌",
+    "#プチプラ",
+    "#おすすめ",
+    "#美容好きな人と繋がりたい"
+  ],
+  "profile_link": "https://lit.link/example",
+  "cta_text": "気になる人はプロフのリンクから"
+}

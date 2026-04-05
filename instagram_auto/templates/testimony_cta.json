@@ -1,0 +1,68 @@
+{
+  "id": "testimony_cta",
+  "name": "体験談→共感→解決策→CTA",
+  "description": "体験談・ストーリー形式。信頼感が高く購買につながりやすい",
+  "total_duration_sec": 35,
+  "scenes": [
+    {
+      "id": "story_hook",
+      "order": 1,
+      "duration_sec": 4,
+      "purpose": "共感を引く体験談の冒頭でフック",
+      "narration_hint": "「去年の私、〇〇で本当に悩んでたんだけど」「正直もう諦めてたんだよね」",
+      "text_position": "center",
+      "text_style": "large_bold",
+      "material_type": "face_or_before_video"
+    },
+    {
+      "id": "struggle",
+      "order": 2,
+      "duration_sec": 8,
+      "purpose": "悩みの具体的な描写（視聴者が共感できる内容）",
+      "narration_hint": "「〇〇が△△で、毎日◆◆が辛かった」と具体的に。数字や期間を入れるとリアリティが増す",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "before_lifestyle"
+    },
+    {
+      "id": "turning_point",
+      "order": 3,
+      "duration_sec": 6,
+      "purpose": "転換点（商品に出会ったきっかけ）",
+      "narration_hint": "「そんな時に〇〇を見つけて」「友達に教えてもらったんだけど」と自然なきっかけ",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "discovery_moment"
+    },
+    {
+      "id": "result",
+      "order": 4,
+      "duration_sec": 8,
+      "purpose": "商品を使った結果・変化を具体的に伝える",
+      "narration_hint": "「〇週間で△△に変わった」「今は◆◆が全然違う」と数字や具体例で",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "after_lifestyle"
+    },
+    {
+      "id": "product_intro",
+      "order": 5,
+      "duration_sec": 4,
+      "purpose": "商品の簡単な紹介",
+      "narration_hint": "商品名・価格・購入先を簡潔に",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "product_close_up"
+    },
+    {
+      "id": "cta",
+      "order": 6,
+      "duration_sec": 5,
+      "purpose": "プロフィールへの誘導CTA",
+      "narration_hint": "「気になる人はプロフのリンクから」",
+      "text_position": "center",
+      "text_style": "cta_large",
+      "material_type": "cta_screen"
+    }
+  ]
+}

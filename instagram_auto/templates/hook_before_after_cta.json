@@ -1,0 +1,58 @@
+{
+  "id": "hook_before_after_cta",
+  "name": "フック→ビフォー→アフター→解決策→CTA",
+  "description": "共感を引き出してから商品で解決するパターン",
+  "total_duration_sec": 30,
+  "scenes": [
+    {
+      "id": "hook",
+      "order": 1,
+      "duration_sec": 3,
+      "purpose": "視聴者の注意を引く強いフック",
+      "narration_hint": "「〇〇な人の99%がこれ知らないんだけど」「え、まじ？」系の驚き・共感を誘う一言",
+      "text_position": "center",
+      "text_style": "large_bold",
+      "material_type": "close_up_product_or_face"
+    },
+    {
+      "id": "before",
+      "order": 2,
+      "duration_sec": 6,
+      "purpose": "視聴者が共感するビフォー（悩みの状態）を描写",
+      "narration_hint": "「私も〇〇で悩んでたんだけど」「正直△△で辛かった」など視聴者の悩みに寄り添う",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "before_state_video"
+    },
+    {
+      "id": "after",
+      "order": 3,
+      "duration_sec": 6,
+      "purpose": "商品を使った後の変化・結果（アフター）を見せる",
+      "narration_hint": "「でも〇〇したら△△に変わった！」「使い始めて2週間で全然違う」など具体的な変化",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "after_state_video"
+    },
+    {
+      "id": "solution",
+      "order": 4,
+      "duration_sec": 10,
+      "purpose": "商品の特徴・メリットを分かりやすく紹介",
+      "narration_hint": "商品名・価格・特徴2〜3点を具体的に。「〇〇円で△△できるのにやらないのはもったいない」",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "product_close_up"
+    },
+    {
+      "id": "cta",
+      "order": 5,
+      "duration_sec": 5,
+      "purpose": "プロフィールへの誘導CTA",
+      "narration_hint": "「気になる人はプロフのリンクから」「詳細はプロフに貼ってあるよ」",
+      "text_position": "center",
+      "text_style": "cta_large",
+      "material_type": "cta_screen"
+    }
+  ]
+}

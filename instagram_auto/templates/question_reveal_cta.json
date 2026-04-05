@@ -1,0 +1,48 @@
+{
+  "id": "question_reveal_cta",
+  "name": "質問→暴露→解決策→CTA",
+  "description": "知らない情報を暴露するパターン。「知らないと損」系に強い",
+  "total_duration_sec": 28,
+  "scenes": [
+    {
+      "id": "question_hook",
+      "order": 1,
+      "duration_sec": 4,
+      "purpose": "視聴者が気になる問いかけでフックする",
+      "narration_hint": "「〇〇って知ってる？」「△△な人ほど損してる理由があるんだけど」",
+      "text_position": "center",
+      "text_style": "large_bold",
+      "material_type": "text_overlay_minimal"
+    },
+    {
+      "id": "reveal",
+      "order": 2,
+      "duration_sec": 10,
+      "purpose": "知られていない事実・情報を暴露して価値提供",
+      "narration_hint": "「実は〇〇って△△だったんだよね」「ほとんどの人が知らないけど〜」と具体的な情報",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "info_visual"
+    },
+    {
+      "id": "solution",
+      "order": 3,
+      "duration_sec": 9,
+      "purpose": "暴露した問題の解決策として商品を自然に紹介",
+      "narration_hint": "「だから私は〇〇を使ってる」「これ使えば解決できるよ」と自然な流れで紹介",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "product_demo"
+    },
+    {
+      "id": "cta",
+      "order": 4,
+      "duration_sec": 5,
+      "purpose": "プロフィールへの誘導CTA",
+      "narration_hint": "「気になる人はプロフのリンクから」「詳細はプロフに貼ってあるよ」",
+      "text_position": "center",
+      "text_style": "cta_large",
+      "material_type": "cta_screen"
+    }
+  ]
+}

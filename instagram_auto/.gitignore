@@ -1,0 +1,14 @@
+.env
+*.mp4
+*.mp3
+*.wav
+output/
+logs/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+posting_history.json
+template_history.json
+materials/video/
+materials/bgm/

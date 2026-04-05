@@ -1,0 +1,58 @@
+{
+  "id": "listicle_cta",
+  "name": "箇条書きリスト→総まとめ→CTA",
+  "description": "「〇選」「〇つのこと」系のリスト形式。保存率・シェア率が高い",
+  "total_duration_sec": 32,
+  "scenes": [
+    {
+      "id": "list_hook",
+      "order": 1,
+      "duration_sec": 3,
+      "purpose": "「〇選」「知らないと損」系タイトルでフック",
+      "narration_hint": "「〇〇な人が絶対やってる△△選」「保存必須の〇〇まとめ」",
+      "text_position": "center",
+      "text_style": "large_bold",
+      "material_type": "title_card"
+    },
+    {
+      "id": "item_1",
+      "order": 2,
+      "duration_sec": 6,
+      "purpose": "リスト1番目（最も重要・インパクト大）",
+      "narration_hint": "具体的なTips/情報を1つ。「①〇〇すること」",
+      "text_position": "bottom",
+      "text_style": "list_item",
+      "material_type": "tip_visual"
+    },
+    {
+      "id": "item_2",
+      "order": 3,
+      "duration_sec": 6,
+      "purpose": "リスト2番目",
+      "narration_hint": "具体的なTips/情報を1つ。「②〇〇すること」",
+      "text_position": "bottom",
+      "text_style": "list_item",
+      "material_type": "tip_visual"
+    },
+    {
+      "id": "item_3",
+      "order": 4,
+      "duration_sec": 6,
+      "purpose": "リスト3番目（商品に自然につながるもの）",
+      "narration_hint": "商品に自然につながるTips。「③〇〇を取り入れること」",
+      "text_position": "bottom",
+      "text_style": "list_item",
+      "material_type": "product_as_tip"
+    },
+    {
+      "id": "summary_cta",
+      "order": 5,
+      "duration_sec": 11,
+      "purpose": "まとめ＋商品紹介＋CTA",
+      "narration_hint": "「特に③の〇〇はこれが一番おすすめ」と商品紹介してCTAへ",
+      "text_position": "bottom",
+      "text_style": "subtitle",
+      "material_type": "product_and_cta"
+    }
+  ]
+}
