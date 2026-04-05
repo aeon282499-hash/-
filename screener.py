@@ -869,9 +869,9 @@ def run_screener() -> tuple[list[dict], dict]:
             if ticker in earnings_exclude:
                 print(f"  [SKIP] {ticker} 直近決算発表のため除外")
                 continue
-            # 日経フィルター: 25MA割れのときはBUYシグナルを出さない
-            if result["direction"] == "BUY" and nk_above_ma25 is False:
-                continue
+            # 日経フィルター: 無効化中（市場フィルターOFF）
+            # if result["direction"] == "BUY" and nk_above_ma25 is False:
+            #     continue
             candidates.append(result)
             print(f"  [HIT] [{ticker}] {name} -> {result['direction']} "
                   f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "
