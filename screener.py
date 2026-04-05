@@ -108,7 +108,8 @@ def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
             print(f"[universe] J-Quants認証失敗: {e} → フォールバック使用")
             return _nikkei225_universe()
     try:
-        data  = _jquants_get("/listed/info", token)
+        from datetime import date as _date
+        data  = _jquants_get("/listed/info", token, {"date": _date.today().strftime("%Y-%m-%d")})
         items = data.get("info", [])
         target_keywords = ["プライム", "スタンダード", "グロース"]
         universe = []

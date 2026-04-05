@@ -62,7 +62,7 @@ def run_range_backtest(start: str, end: str) -> None:
     print(f"\n{'='*60}")
     print(f"  バックテスト期間: {start} 〜 {end}")
     print(f"  営業日数: {len(trading_days)} 日")
-    print(f"  戦略: スイング（最大{MAX_HOLD}日・損切{STOP_LOSS}%・利確{TAKE_PROFIT}%・RSI回復・高ボラ除外ATR>{ATR_VOL_CAP}%）")
+    print(f"  戦略: スイング（最大{MAX_HOLD}日・損切{STOP_LOSS}%・利確{TAKE_PROFIT}%・RSI回復・高ボラ除外ATR>{ATR_VOL_CAP}%・市場フィルターOFF）")
     print(f"{'='*60}\n")
 
     # ── 銘柄リスト取得（J-Quants）────────────────────
@@ -74,7 +74,7 @@ def run_range_backtest(start: str, end: str) -> None:
     tickers  = [t for t, _ in universe]
     name_map = {t: n for t, n in universe}
 
-    print(f"[backtest] {len(universe)} 銘柄のデータを取得中（{fetch_start} 〜 {fetch_end}）...")
+    print(f"[backtest] データ取得中（{fetch_start} 〜 {fetch_end}）...")
     all_data = batch_download_jquants(token, start=fetch_start, end=fetch_end, tickers=tickers)
     print(f"[backtest] J-Quants: {len(all_data)} 銘柄のデータ取得完了\n")
 
@@ -114,14 +114,14 @@ def run_range_backtest(start: str, end: str) -> None:
                 if signal is None:
                     continue
 
-                # ── 市場フィルター（BUYは日経が25MA以上の時のみ）──
-                if signal["direction"] == "BUY" and nk_df is not None:
-                    nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
-                    if len(nk_rows) >= 25:
-                        nk_close = float(nk_rows["Close"].iloc[-1])
-                        nk_ma25  = float(nk_rows["MA25"].iloc[-1])
-                        if not np.isnan(nk_ma25) and nk_close < nk_ma25:
-                            continue
+                # ── 市場フィルター（無効化中：テスト用）──────────────
+                # if signal["direction"] == "BUY" and nk_df is not None:
+                #     nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
+                #     if len(nk_rows) >= 25:
+                #         nk_close = float(nk_rows["Close"].iloc[-1])
+                #         nk_ma25  = float(nk_rows["MA25"].iloc[-1])
+                #         if not np.isnan(nk_ma25) and nk_close < nk_ma25:
+                #             continue
 
                 # ── エントリー日（シグナル翌営業日）──────────────
                 idx = all_trading_days.index(trade_date) if trade_date in all_trading_days else -1
