@@ -422,14 +422,25 @@ def _fetch_av_daily_return(symbol: str, api_key: str) -> float | None:
     try:
         resp = requests.get(url, params=params, timeout=15)
         resp.raise_for_status()
-        data = resp.json().get("Time Series (Daily)", {})
+        resp_json = resp.json()
+        if "Note" in resp_json:
+            print(f"[macro] {symbol} レート制限: {resp_json['Note']}")
+            return None
+        if "Information" in resp_json:
+            print(f"[macro] {symbol} API制限: {resp_json['Information']}")
+            return None
+        data = resp_json.get("Time Series (Daily)", {})
+        if not data:
+            print(f"[macro] {symbol} データなし: {resp_json}")
+            return None
         dates = sorted(data.keys(), reverse=True)
         if len(dates) < 2:
             return None
         last = float(data[dates[0]]["4. close"])
         prev = float(data[dates[1]]["4. close"])
         return round((last - prev) / prev * 100, 2)
-    except Exception:
+    except Exception as e:
+        print(f"[macro] {symbol} 取得失敗: {e}")
         return None
 
 
