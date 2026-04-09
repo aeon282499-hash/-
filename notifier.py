@@ -11,7 +11,6 @@ import jpholiday
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
 COLOR_BUY   = 0xE53935   # 赤
-COLOR_SELL  = 0x1E88E5   # 青
 COLOR_NONE  = 0x757575   # グレー
 COLOR_ERROR = 0xFDD835   # 黄
 COLOR_WIN   = 0x43A047   # 緑
@@ -82,9 +81,6 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
         _send_no_signal(date_str, time_str, macro)
         return
 
-    buys  = sum(1 for s in signals if s["direction"] == "BUY")
-    sells = len(signals) - buys
-
     macro_desc = _macro_description(macro)
 
     # ── ヘッダーEmbed（相場環境） ────────────────────────
@@ -112,17 +108,6 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
             tp_str     = f"**{tp_price:,.0f}円**（前日終値+5%）"
             if bb_lower:
                 entry_str = f"**{bb_lower:,.0f}円**（BB下限）付近に指値\n※寄り付き後に値が下限に近ければ有効"
-            else:
-                entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
-        else:
-            action_str = "🔵 **空売り**（9:00以降、指値推奨）"
-            color      = COLOR_SELL
-            stop_price = prev_close * 1.02
-            tp_price   = prev_close * 0.95
-            stop_str   = f"**{stop_price:,.0f}円**（前日終値+2%）"
-            tp_str     = f"**{tp_price:,.0f}円**（前日終値-5%）"
-            if bb_upper:
-                entry_str = f"**{bb_upper:,.0f}円**（BB上限）付近に指値\n※寄り付き後に値が上限に近ければ有効"
             else:
                 entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
 
@@ -168,7 +153,7 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
                 },
                 {
                     "name":   "📅 保有ルール・処分日",
-                    "value":  f"最大**3営業日**保有\nRSI回復（BUY:≧50 / SELL:≦50）で早期決済\n⏰ **処分期限: {exit_date_str}**（3営業日後終値）",
+                    "value":  f"最大**3営業日**保有\nRSI回復（≧50）で早期決済\n⏰ **処分期限: {exit_date_str}**（3営業日後終値）",
                     "inline": False,
                 },
                 {
@@ -189,8 +174,7 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
     payload = {
         "content": (
             f"## 📊【スイング】自動売買シグナル｜{date_str}\n"
-            f"> 本日の実行銘柄数: **{len(signals)}銘柄**"
-            f"（買い {buys} / 売り {sells}）"
+            f"> 本日の買いシグナル: **{len(signals)}銘柄**"
         ),
         "embeds": embeds[:10],  # Discord上限10
     }

@@ -39,8 +39,6 @@ LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 RSI_BUY_MAX    = 45     # RSIがこの値以下 → 買い候補（売られすぎ）
 DEV_BUY_MAX    = -1.5  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 65    # RSIがこの値以上 → 売り候補（買われすぎ）
-DEV_SELL_MIN   = 2.5   # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 2.0
@@ -633,9 +631,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
             and bb_lower is not None and last_close < bb_lower):
         direction = "BUY"
-    elif (rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN
-            and bb_upper is not None and last_close > bb_upper):
-        direction = "SELL"
     else:
         return None
 
