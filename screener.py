@@ -826,19 +826,12 @@ def run_screener() -> tuple[list[dict], dict]:
     tickers  = [t for t, _ in universe]
     print(f"[screener] ユニバース: {len(tickers)} 銘柄")
 
-    # ── 日足データ取得（yfinance）─────────────────────
-    data = batch_download(tickers, period="6mo")
+    # ── 日足データ取得（J-Quants）────────────────────
+    token = _jquants_id_token()
+    data = batch_download_jquants(token, lookback_trading_days=LOOKBACK_DAYS)
     if not data:
-        print("[screener] データ取得失敗 → シグナルなし")
+        print("[screener] J-Quantsデータ取得失敗 → シグナルなし")
         return [], macro
-
-    # ── 当日データを除外（市場開場中対応）────────────
-    from datetime import date as _date
-    today_str = _date.today().strftime("%Y-%m-%d")
-    data = {
-        t: df[df.index.strftime("%Y-%m-%d") < today_str]
-        for t, df in data.items()
-    }
 
     # ── 決算発表銘柄の除外リスト取得 ─────────────────
     earnings_exclude = fetch_earnings_tickers(days=2)

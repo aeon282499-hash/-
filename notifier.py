@@ -40,14 +40,14 @@ def _macro_description(macro: dict) -> str:
     nas_str = f"ナスダック(QQQ) {nas:+.1f}%" if nas is not None else "ナスダック 取得不可"
 
     if bias == "bearish":
-        env = "⚠️ 米国株安 → **売りバイアス**（買いシグナルは見送り）"
-        strategy = "本日は地合い悪化のため売りシグナルのみ採用します。"
+        env = "⚠️ 米国株安 → **地合い注意**"
+        strategy = "地合いに注意しながら買いシグナルを採用します。"
     elif bias == "bullish":
-        env = "🌕 米国株高 → **買いバイアス**（売りシグナルは見送り）"
-        strategy = "本日は地合い良好のため買いシグナルのみ採用します。"
+        env = "🌕 米国株高 → **地合い良好**"
+        strategy = "地合い良好のため買いシグナルを採用します。"
     else:
         env = "⚖️ 米国市場はほぼ横ばい → **中立**"
-        strategy = "買い・売り双方のシグナルを採用します。"
+        strategy = "買いシグナルを採用します。"
 
     return f"{dow_str} ／ {nas_str}\n{env}\n{strategy}"
 
