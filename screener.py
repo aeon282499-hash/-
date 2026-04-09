@@ -611,7 +611,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         return None
 
     last_close = float(close.iloc[-1])
-    last_open  = float(df["Open"].iloc[-1]) if "Open" in df.columns else None
 
     # ── 高ボラ除外（ATR/終値 > ATR_VOL_CAP%）─────────────
     atr = calc_atr(df)
@@ -619,17 +618,15 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ①②③ 方向判定（BUYのみ・逆張り + ボリンジャーバンド）─────
+    # ── ①②③ 方向判定（逆張り + ボリンジャーバンド）─────
     if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
             and bb_lower is not None and last_close < bb_lower):
         direction = "BUY"
+    elif (rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN
+            and bb_upper is not None and last_close > bb_upper):
+        direction = "SELL"
     else:
         return None
-
-    # ── 確認足フィルター（陽線のみ）────────────────────────
-    if last_open is not None and last_open > 0:
-        if last_close <= last_open:
-            return None   # 陰線 = まだ売り圧力が続いている → スキップ
 
     # ── ④ ボラ OR 出来高 ──────────────────────────────
     range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
