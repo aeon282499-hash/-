@@ -29,7 +29,8 @@ from datetime import date, timedelta
 
 from screener import batch_download_jquants, _jquants_id_token, calc_rsi
 
-POSITIONS_FILE = "positions.json"
+POSITIONS_FILE      = "positions.json"
+SELL_POSITIONS_FILE = "positions_sell.json"
 STOP_LOSS      = 3.0   # %
 TAKE_PROFIT    = 5.0   # %
 MAX_HOLD       = 3     # 営業日
@@ -46,6 +47,19 @@ def save_positions(positions: list[dict]) -> None:
     with open(POSITIONS_FILE, "w", encoding="utf-8") as f:
         json.dump(positions, f, ensure_ascii=False, indent=2)
     print(f"[tracker] positions.json を保存しました（{len(positions)}件）")
+
+
+def load_sell_positions() -> list[dict]:
+    if os.path.exists(SELL_POSITIONS_FILE):
+        with open(SELL_POSITIONS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_sell_positions(positions: list[dict]) -> None:
+    with open(SELL_POSITIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(positions, f, ensure_ascii=False, indent=2)
+    print(f"[tracker] positions_sell.json を保存しました（{len(positions)}件）")
 
 
 def add_signals_to_positions(

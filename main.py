@@ -60,37 +60,54 @@ def main() -> None:
         sys.exit(0)
 
     from screener import run_screener
-    from notifier import send_signals, send_results, send_error, send_monthly_report
-    from tracker import load_positions, save_positions, update_positions, add_signals_to_positions
+    from notifier import (send_signals, send_results, send_error, send_monthly_report,
+                          send_sell_signals, send_sell_results, send_sell_monthly_report)
+    from tracker import (load_positions, save_positions, update_positions, add_signals_to_positions,
+                         load_sell_positions, save_sell_positions)
 
     try:
-        # ── ① 前日ポジションの結果チェック ──────────────────
+        # ── ① BUY前日ポジションの結果チェック ──────────────────
         positions = load_positions()
         active = [p for p in positions if p["status"] in ("pending", "open")]
-        print(f"[main] オープンポジション: {len(active)}件")
+        print(f"[main] BUYオープンポジション: {len(active)}件")
 
         if active:
             positions, closed_today, still_open = update_positions(positions, today)
-            print(f"[main] 決済: {len(closed_today)}件 / 保有中: {len(still_open)}件")
+            print(f"[main] BUY決済: {len(closed_today)}件 / 保有中: {len(still_open)}件")
             send_results(closed_today, still_open, today)
             send_monthly_report(positions, today)
         else:
             closed_today = []
             still_open   = []
 
+        # ── ① SELL前日ポジションの結果チェック ─────────────────
+        sell_positions = load_sell_positions()
+        sell_active = [p for p in sell_positions if p["status"] in ("pending", "open")]
+        print(f"[main] SELLオープンポジション: {len(sell_active)}件")
+
+        if sell_active:
+            sell_positions, sell_closed_today, sell_still_open = update_positions(sell_positions, today)
+            print(f"[main] SELL決済: {len(sell_closed_today)}件 / 保有中: {len(sell_still_open)}件")
+            send_sell_results(sell_closed_today, sell_still_open, today)
+            send_sell_monthly_report(sell_positions, today)
+        else:
+            sell_closed_today = []
+            sell_still_open   = []
+
         # ── ② 新規スクリーニング ─────────────────────────────
         signals, sell_signals, macro = run_screener()
 
         # ── ③ 新シグナルをポジションに追加 ───────────────────
-        entry_date = next_trading_day(today)
-        positions  = add_signals_to_positions(positions, signals, today, entry_date)
+        entry_date     = next_trading_day(today)
+        positions      = add_signals_to_positions(positions, signals, today, entry_date)
+        sell_positions = add_signals_to_positions(sell_positions, sell_signals, today, entry_date)
         save_positions(positions)
+        save_sell_positions(sell_positions)
 
         # ── ④ Discord にシグナル送信 ─────────────────────────
         send_signals(signals, today, macro, entry_date)
 
         # ── ⑤ SELL シグナルを別チャンネルに送信 ─────────────
-        from notifier import send_sell_signals
         send_sell_signals(sell_signals, today, entry_date)
 
         # ── ⑤ Twitter に投稿 ────────────────────────────────

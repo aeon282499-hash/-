@@ -427,6 +427,132 @@ def send_monthly_report(positions: list[dict], today: date) -> None:
     print(f"[notifier] 月別・年間損益レポートを送信しました")
 
 
+def _post_sell(payload: dict) -> None:
+    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
+    if not url:
+        print("[notifier] DISCORD_WEBHOOK_SELL_URL が未設定 → SELL通知スキップ")
+        return
+    resp = requests.post(url, json=payload, timeout=10)
+    if resp.status_code not in (200, 204):
+        print(f"[notifier] SELL Discord送信失敗: HTTP {resp.status_code}")
+
+
+def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
+    """空売りポジションの損益結果をSELL専用Webhookに送信する。"""
+    if not closed and not still_open:
+        return
+
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    lines = []
+
+    if closed:
+        lines.append("**── 決済済み（買い戻し） ──**")
+        for p in closed:
+            pnl   = p.get("pnl_pct", 0) or 0
+            etype = p.get("exit_type", "?")
+            emoji = "✅" if pnl > 0 else "❌"
+            lines.append(
+                f"{emoji} **{p['name']}**（{p['ticker']}）空売り "
+                f"→ **{pnl:+.2f}%** ［{etype}］"
+            )
+
+    if still_open:
+        if lines:
+            lines.append("")
+        lines.append("**── 保有中（売りポジション持ち越し） ──**")
+        for p in still_open:
+            upnl = p.get("unrealized_pnl", 0) or 0
+            hold = p.get("hold_days", 0)
+            emoji = "📈" if upnl >= 0 else "📉"
+            try:
+                entry_dt  = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
+                cur       = entry_dt
+                biz_count = 0
+                while biz_count < MAX_HOLD:
+                    cur += timedelta(days=1)
+                    if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+                        biz_count += 1
+                deadline_str = cur.strftime("%m月%d日")
+                remaining    = MAX_HOLD - hold
+                warn = "⚠️ **本日処分！**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに買戻し）"
+            except Exception:
+                warn = ""
+            lines.append(
+                f"{emoji} **{p['name']}**（{p['ticker']}）含み **{upnl:+.2f}%** — {hold}日目 {warn}"
+            )
+
+    if closed:
+        avg_pnl = sum(p.get("pnl_pct", 0) or 0 for p in closed) / len(closed)
+        wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
+        lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
+
+    _post_sell({
+        "embeds": [{
+            "title":       f"📋【スイング空売り結果】{date_str}",
+            "description": "\n".join(lines),
+            "color":       0x43A047 if any((p.get("pnl_pct") or 0) > 0 for p in closed) else 0xFDD835,
+            "footer":      {"text": f"配信時刻: {time_str}"},
+        }]
+    })
+    print(f"[notifier] SELL結果レポートを送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
+
+
+def send_sell_monthly_report(positions: list[dict], today: date) -> None:
+    """空売りの月別・年間損益をSELL専用Webhookに送信する。"""
+    from collections import defaultdict
+
+    closed = [
+        p for p in positions
+        if p.get("status") == "closed" and p.get("pnl_pct") is not None
+    ]
+    if not closed:
+        return
+
+    monthly = defaultdict(list)
+    for p in closed:
+        ym = (p.get("exit_date") or "")[:7]
+        if ym:
+            monthly[ym].append(p["pnl_pct"])
+
+    current_year = str(today.year)
+    year_months  = {ym: pnls for ym, pnls in monthly.items() if ym.startswith(current_year)}
+
+    if not year_months:
+        return
+
+    lines = []
+    for ym in sorted(year_months.keys()):
+        pnls = year_months[ym]
+        mr   = sum(pnls) * WEIGHT
+        wins = sum(1 for p in pnls if p > 0)
+        yen  = mr / 100 * CAPITAL
+        sign = "+" if mr >= 0 else ""
+        lines.append(
+            f"`{ym}` {len(pnls)}件 勝率{wins}/{len(pnls)} "
+            f"**月利{sign}{mr:.1f}%**（{sign}{yen/10000:.1f}万円）"
+        )
+
+    year_pnls  = [p for pnls in year_months.values() for p in pnls]
+    annual_pct = sum(year_pnls) * WEIGHT
+    annual_yen = annual_pct / 100 * CAPITAL
+    a_sign     = "+" if annual_pct >= 0 else ""
+
+    desc  = "\n".join(lines)
+    desc += f"\n\n**{current_year}年合計: {a_sign}{annual_pct:.1f}%（{a_sign}{annual_yen/10000:.1f}万円）**"
+
+    _post_sell({
+        "embeds": [{
+            "title":       f"📉 {current_year}年 月別・年間損益（スイング空売り）",
+            "description": desc,
+            "color":       0x43A047 if annual_pct >= 0 else 0xFDD835,
+            "footer":      {"text": "※資金300万・1トレード100万基準"},
+        }]
+    })
+    print(f"[notifier] SELL月別・年間損益レポートを送信しました")
+
+
 def send_error(error_message: str, today: date) -> None:
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
