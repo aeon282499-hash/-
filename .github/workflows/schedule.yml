@@ -6,6 +6,8 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # today_signals.json / positions.json のpushに必要
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
@@ -35,6 +37,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add positions.json today_signals.json || true
           git diff --cached --quiet || git commit -m "chore: update positions.json today_signals.json [skip ci]"
-          git push || true
+          git push origin main
