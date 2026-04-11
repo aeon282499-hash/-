@@ -2,58 +2,69 @@
 report.py — 夕方15:40 JST に朝のシグナル結果を Discord に送信する
 =================================================================
   - 朝の main.py が保存した today_signals.json を読み込む
-  - 各銘柄の当日 始値・終値 を取得して損益を計算
+  - 各銘柄の当日 始値・終値 を J-Quants で取得して損益を計算
   - Discord に結果サマリーを送信する
 """
 
 import json
 import os
 import sys
+import time
+import requests
 from datetime import datetime, date
 import zoneinfo
 
-import yfinance as yf
-import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
+_JQUANTS_BASE = "https://api.jquants.com/v2"
+
+
+def _jquants_get(path: str, params: dict | None = None) -> dict:
+    api_key = os.getenv("JQUANTS_API_KEY", "").strip()
+    if not api_key:
+        raise ValueError("JQUANTS_API_KEY が未設定です")
+    resp = requests.get(
+        f"{_JQUANTS_BASE}{path}",
+        headers={"x-api-key": api_key},
+        params=params or {},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
 
 def fetch_today_ohlc(tickers: list[str]) -> dict[str, dict]:
-    """当日の始値・終値を取得する。"""
+    """J-Quantsで当日の始値・終値を取得する。"""
     if not tickers:
         return {}
-    import ssl
-    ssl._create_default_https_context = ssl._create_unverified_context
 
+    today_str = date.today().strftime("%Y-%m-%d")
     result = {}
-    try:
-        raw = yf.download(
-            tickers,
-            period="2d",
-            interval="1d",
-            auto_adjust=True,
-            progress=False,
-            group_by="ticker",
-        )
-        today_str = date.today().strftime("%Y-%m-%d")
-        for ticker in tickers:
-            try:
-                df = raw[ticker].copy() if len(tickers) > 1 else raw.copy()
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = df.columns.get_level_values(0)
-                rows = df[df.index.strftime("%Y-%m-%d") == today_str]
-                if rows.empty:
-                    continue
-                o = float(rows["Open"].iloc[0])
-                c = float(rows["Close"].iloc[0])
-                if o > 0 and c > 0:
-                    result[ticker] = {"open": o, "close": c}
-            except Exception:
-                pass
-    except Exception as e:
-        print(f"[report] データ取得エラー: {e}")
+
+    for ticker in tickers:
+        code4 = ticker.replace(".T", "")
+        code5 = code4.zfill(5)
+        try:
+            data = _jquants_get(
+                "/equities/daily_quotes",
+                {"code": code5, "from": today_str, "to": today_str},
+            )
+            quotes = data.get("daily_quotes", [])
+            if not quotes:
+                print(f"  [report] {ticker}: 本日データなし")
+                continue
+            q = quotes[0]
+            o = q.get("AdjustmentOpen") or q.get("Open")
+            c = q.get("AdjustmentClose") or q.get("Close")
+            if o and c and float(o) > 0 and float(c) > 0:
+                result[ticker] = {"open": float(o), "close": float(c)}
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  [report] {ticker} 取得失敗: {e}")
+
     return result
 
 
@@ -65,7 +76,6 @@ def calc_pnl(direction: str, open_price: float, close_price: float) -> float:
 
 
 def send_report(results: list[dict], signal_date: str) -> None:
-    import requests
     url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
     if not url:
         print("[report] DISCORD_WEBHOOK_URL が未設定です")
@@ -74,15 +84,14 @@ def send_report(results: list[dict], signal_date: str) -> None:
     date_str = datetime.strptime(signal_date, "%Y-%m-%d").strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
 
-    wins   = [r for r in results if r["pnl"] > 0]
-    losses = [r for r in results if r["pnl"] <= 0]
-    total  = len(results)
+    wins  = [r for r in results if r["pnl"] > 0]
+    total = len(results)
     win_rate = len(wins) / total * 100 if total > 0 else 0
     avg_pnl  = sum(r["pnl"] for r in results) / total if total > 0 else 0
 
     lines = []
     for r in results:
-        mark = "✅" if r["pnl"] > 0 else "❌"
+        mark      = "✅" if r["pnl"] > 0 else "❌"
         dir_label = "🔴BUY" if r["direction"] == "BUY" else "🔵SELL"
         lines.append(
             f"{mark} **{r['name']}**（{r['ticker']}）{dir_label}\n"
@@ -100,7 +109,7 @@ def send_report(results: list[dict], signal_date: str) -> None:
         color = 0x43A047 if avg_pnl >= 0 else 0xE53935
     else:
         summary = "本日シグナルなし（ノートレード）"
-        color = 0x757575
+        color   = 0x757575
 
     payload = {
         "content": f"## 📊 本日の売買結果｜{date_str}",
@@ -123,7 +132,6 @@ def send_report(results: list[dict], signal_date: str) -> None:
 def main() -> None:
     today_str = date.today().strftime("%Y-%m-%d")
 
-    # today_signals.json を読み込む
     if not os.path.exists("today_signals.json"):
         print("[report] today_signals.json が見つかりません → スキップ")
         sys.exit(0)
@@ -134,19 +142,16 @@ def main() -> None:
     signal_date = data.get("date", "")
     signals     = data.get("signals", [])
 
-    # 日付が今日でなければスキップ（古いファイルが残っている場合）
     if signal_date != today_str:
         print(f"[report] シグナル日付 {signal_date} ≠ 今日 {today_str} → スキップ")
         sys.exit(0)
 
     if not signals:
         print("[report] 本日シグナルなし → 通知スキップ")
-        # 0件の場合も一応通知
-        send_report([], signal_date)
         sys.exit(0)
 
     tickers = [s["ticker"] for s in signals]
-    print(f"[report] {len(tickers)} 銘柄の終値を取得中...")
+    print(f"[report] {len(tickers)} 銘柄の終値をJ-Quantsで取得中...")
     ohlc = fetch_today_ohlc(tickers)
 
     results = []
@@ -155,8 +160,8 @@ def main() -> None:
         if t not in ohlc:
             print(f"  [skip] {t}: データなし")
             continue
-        o = ohlc[t]["open"]
-        c = ohlc[t]["close"]
+        o   = ohlc[t]["open"]
+        c   = ohlc[t]["close"]
         pnl = calc_pnl(s["direction"], o, c)
         results.append({
             "ticker":    t,
