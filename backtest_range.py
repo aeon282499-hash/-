@@ -31,6 +31,7 @@ from screener import (
     _nikkei225_universe,
     fetch_tse_universe,
     judge_signal_pre,
+    judge_sell_signal_pre,
     batch_download_jquants,
     _jquants_id_token,
     calc_rsi,
@@ -40,9 +41,11 @@ from screener import (
 )
 
 STOP_LOSS       = 3.0   # % 固定損切り
-TAKE_PROFIT     = 5.0   # % 固定利確
+TAKE_PROFIT     = 3.0   # % 固定利確
 MAX_HOLD        = 3     # 最大保有営業日数
 ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
+BUY_ONLY        = True  # TrueにするとBUYシグナルのみ対象
+SELL_ONLY       = False # TrueにするとSELLシグナルのみ（信用売り専用）
 
 
 def get_trading_days(start: str, end: str) -> list[str]:
@@ -109,19 +112,25 @@ def run_range_backtest(start: str, end: str) -> None:
                 if len(pre_df) < 30:
                     continue
 
-                name   = name_map.get(ticker, ticker)
-                signal = judge_signal_pre(ticker, name, pre_df)
+                name = name_map.get(ticker, ticker)
+
+                # BUY / SELL どちらのシグナル関数を使うか
+                if SELL_ONLY:
+                    signal = judge_sell_signal_pre(ticker, name, pre_df)
+                else:
+                    signal = judge_signal_pre(ticker, name, pre_df)
                 if signal is None:
                     continue
 
-                # ── 市場フィルター（無効化中：テスト用）──────────────
-                # if signal["direction"] == "BUY" and nk_df is not None:
-                #     nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
-                #     if len(nk_rows) >= 25:
-                #         nk_close = float(nk_rows["Close"].iloc[-1])
-                #         nk_ma25  = float(nk_rows["MA25"].iloc[-1])
-                #         if not np.isnan(nk_ma25) and nk_close < nk_ma25:
-                #             continue
+                # ── 日経MA25状態を記録（フィルター比較用）──────────
+                nk_above = None
+                if nk_df is not None:
+                    nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
+                    if len(nk_rows) >= 25:
+                        nk_close = float(nk_rows["Close"].iloc[-1])
+                        nk_ma25  = float(nk_rows["MA25"].iloc[-1])
+                        if not np.isnan(nk_ma25):
+                            nk_above = (nk_close >= nk_ma25)
 
                 # ── エントリー日（シグナル翌営業日）──────────────
                 idx = all_trading_days.index(trade_date) if trade_date in all_trading_days else -1
@@ -137,7 +146,11 @@ def run_range_backtest(start: str, end: str) -> None:
                     continue
 
                 # ── 高ボラ銘柄フィルター（ATR/終値 > 3% は除外）──────
-                direction  = signal["direction"]
+                direction = signal["direction"]
+                if BUY_ONLY and direction != "BUY":
+                    continue
+                if SELL_ONLY and direction != "SELL":
+                    continue
                 atr = calc_atr(pre_df)
                 last_close = float(pre_df["Close"].iloc[-1])
                 if atr is not None and last_close > 0:
@@ -230,12 +243,34 @@ def run_range_backtest(start: str, end: str) -> None:
                     "entry_open":  entry_open,
                     "pnl_pct":     round(pnl_pct, 3),
                     "win":         pnl_pct > 0,
+                    "nk_above_ma25": nk_above,
                 })
 
             except Exception:
                 continue
 
     _print_results(trades, start, end)
+
+
+def _summary_stats(df: pd.DataFrame) -> dict:
+    total = len(df)
+    if total == 0:
+        return {"total": 0, "win_rate": 0, "avg_pnl": 0, "pf": 0, "max_dd": 0, "cum_pnl": 0}
+    wins   = df["win"].sum()
+    losses = total - wins
+    avg_pnl = df["pnl_pct"].mean()
+    cum     = df.sort_values("entry_date")["pnl_pct"].cumsum()
+    max_dd  = (cum - cum.cummax()).min()
+    pf = (df[df["win"]]["pnl_pct"].sum() / abs(df[~df["win"]]["pnl_pct"].sum())
+          if losses > 0 and df[~df["win"]]["pnl_pct"].sum() != 0 else float("inf"))
+    return {
+        "total":    total,
+        "win_rate": wins / total * 100,
+        "avg_pnl":  avg_pnl,
+        "pf":       pf,
+        "max_dd":   max_dd,
+        "cum_pnl":  df["pnl_pct"].sum(),
+    }
 
 
 def _print_results(trades: list[dict], start: str, end: str) -> None:
@@ -248,65 +283,51 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
         print(f"{'='*60}\n")
         return
 
-    df       = pd.DataFrame(trades)
-    total    = len(df)
-    wins     = df["win"].sum()
-    losses   = total - wins
-    win_rate = wins / total * 100
-    avg_pnl  = df["pnl_pct"].mean()
-    avg_win  = df[df["win"]]["pnl_pct"].mean() if wins > 0 else 0
-    avg_loss = df[~df["win"]]["pnl_pct"].mean() if losses > 0 else 0
-    profit_factor = (
-        df[df["win"]]["pnl_pct"].sum() / abs(df[~df["win"]]["pnl_pct"].sum())
-        if losses > 0 and df[~df["win"]]["pnl_pct"].sum() != 0 else float("inf")
-    )
+    df_all      = pd.DataFrame(trades)
+    df_filtered = df_all[df_all["nk_above_ma25"] == True].copy()
 
-    cumulative = df.sort_values("entry_date")["pnl_pct"].cumsum()
-    peak       = cumulative.cummax()
-    max_dd     = (cumulative - peak).min()
+    # ── 全体サマリー ──────────────────────────────────
+    s = _summary_stats(df_all)
+    print(f"\n  【フィルターなし】 {s['total']}件 / 勝率{s['win_rate']:.1f}% / 平均{s['avg_pnl']:+.3f}% / PF{s['pf']:.2f} / MaxDD{s['max_dd']:+.2f}%")
+    sf = _summary_stats(df_filtered)
+    print(f"  【フィルターあり】 {sf['total']}件 / 勝率{sf['win_rate']:.1f}% / 平均{sf['avg_pnl']:+.3f}% / PF{sf['pf']:.2f} / MaxDD{sf['max_dd']:+.2f}%")
 
-    print(f"  取引回数      : {total} 件")
-    print(f"  勝ち          : {int(wins)} 件")
-    print(f"  負け          : {int(losses)} 件")
-    print(f"  勝率          : {win_rate:.1f}%")
-    print(f"  平均損益      : {avg_pnl:+.3f}%")
-    print(f"  平均利益      : {avg_win:+.3f}%")
-    print(f"  平均損失      : {avg_loss:+.3f}%")
-    print(f"  プロフィットF : {profit_factor:.2f}")
-    print(f"  最大DD        : {max_dd:+.2f}%")
+    # ── 年別比較 ──────────────────────────────────────
+    print(f"\n  {'='*56}")
+    print(f"  年別比較（月次平均損益%）")
+    print(f"  {'='*56}")
+    print(f"  {'年':>4}  {'なし件数':>6}  {'なし勝率':>7}  {'なしPF':>6}  {'あり件数':>6}  {'あり勝率':>7}  {'ありPF':>6}")
+    print(f"  {'-'*56}")
 
-    # エグジット種別集計
-    print(f"\n  ── エグジット種別 ──────────────────────")
-    for etype in ["STOP", "TP", "RSI", "MAXHOLD"]:
-        sub = df[df["exit_type"] == etype]
-        if len(sub) > 0:
-            wr = sub["win"].sum() / len(sub) * 100
-            print(f"  [{etype:7s}] {len(sub):4d}件 / 勝率{wr:5.1f}% / 平均{sub['pnl_pct'].mean():+.3f}%")
+    years = sorted(df_all["exit_date"].str[:4].unique())
+    for yr in years:
+        sub_all = df_all[df_all["exit_date"].str[:4] == yr]
+        sub_flt = df_filtered[df_filtered["exit_date"].str[:4] == yr]
+        sa = _summary_stats(sub_all)
+        sf2 = _summary_stats(sub_flt)
+        print(f"  {yr}  {sa['total']:>6}件  {sa['win_rate']:>6.1f}%  {sa['pf']:>6.2f}  {sf2['total']:>6}件  {sf2['win_rate']:>6.1f}%  {sf2['pf']:>6.2f}")
 
-    # 売買方向別
-    for d in ["BUY", "SELL"]:
-        sub = df[df["direction"] == d]
-        if len(sub) == 0:
-            continue
-        wr = sub["win"].sum() / len(sub) * 100
-        print(f"\n  [{d}] {len(sub)}件 / 勝率{wr:.1f}% / 平均{sub['pnl_pct'].mean():+.3f}%")
+    # ── 月別比較 ──────────────────────────────────────
+    print(f"\n  {'='*56}")
+    print(f"  月別比較")
+    print(f"  {'='*56}")
+    print(f"  {'年月':>7}  {'なし':>10}  {'なし勝率':>8}  {'あり':>10}  {'あり勝率':>8}")
+    print(f"  {'-'*56}")
 
-    # 上位損益銘柄
-    print(f"\n  ── 上位5件（利益）──────────────")
-    for _, r in df.nlargest(5, "pnl_pct").iterrows():
-        print(f"    {r['entry_date']} {r['name']}({r['ticker']}) "
-              f"{r['direction']} {r['pnl_pct']:+.2f}% [{r['exit_type']}]")
-
-    print(f"\n  ── 下位5件（損失）──────────────")
-    for _, r in df.nsmallest(5, "pnl_pct").iterrows():
-        print(f"    {r['entry_date']} {r['name']}({r['ticker']}) "
-              f"{r['direction']} {r['pnl_pct']:+.2f}% [{r['exit_type']}]")
+    months = sorted(df_all["exit_date"].str[:7].unique())
+    for ym in months:
+        sub_all = df_all[df_all["exit_date"].str[:7] == ym]
+        sub_flt = df_filtered[df_filtered["exit_date"].str[:7] == ym]
+        sa = _summary_stats(sub_all)
+        sf2 = _summary_stats(sub_flt)
+        flag = " <<" if sf2["pf"] > sa["pf"] else ""
+        print(f"  {ym}  {sa['total']:>4}件{sa['avg_pnl']:>+7.2f}%  {sa['win_rate']:>6.1f}%  {sf2['total']:>4}件{sf2['avg_pnl']:>+7.2f}%  {sf2['win_rate']:>6.1f}%{flag}")
 
     print(f"\n{'='*60}\n")
 
-    # CSV 出力
+    # CSV 出力（nk_above_ma25カラム付き）
     out_path = f"backtest_{start}_{end}.csv"
-    df.to_csv(out_path, index=False, encoding="utf-8-sig")
+    df_all.to_csv(out_path, index=False, encoding="utf-8-sig")
     print(f"  詳細結果を {out_path} に保存しました。\n")
 
 

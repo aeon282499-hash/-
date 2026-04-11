@@ -617,7 +617,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
     turnover    = calc_turnover(df)
-
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
 
@@ -629,7 +628,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ①② 方向判定（逆張り）─────────────────────────
+    # ── ①② 方向判定（逆張り）────────────────────────────
     if rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX:
         direction = "BUY"
     else:
