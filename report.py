@@ -153,15 +153,16 @@ def build_monthly_summary(trades: list[dict]) -> list[str]:
 
     lines = []
     for month in sorted(monthly.keys()):
-        s   = calc_stats(monthly[month])
-        mr  = monthly_return(monthly[month])
+        s    = calc_stats(monthly[month])
+        mr   = monthly_return(monthly[month])
+        yen  = mr / 100 * CAPITAL
         sign = "+" if mr >= 0 else ""
         lines.append(
             f"`{month}` {s['count']}件 "
             f"勝率{s['win_rate']}% "
             f"平均{'+' if s['avg_pnl']>=0 else ''}{s['avg_pnl']}% "
             f"PF{s['pf']} "
-            f"**月利{sign}{mr}%**"
+            f"**月利{sign}{mr}%**（{sign}{yen/10000:.1f}万円）"
         )
     return lines
 
@@ -228,6 +229,7 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
 
     # 年利 = 当年全トレードの合計pnl × 資金比率
     annual_return = round(sum(t["pnl"] for t in year_trades) * WEIGHT, 2)
+    annual_yen    = annual_return / 100 * CAPITAL
     ar_sign       = "+" if annual_return >= 0 else ""
     yr_sign       = "+" if year_s["avg_pnl"] >= 0 else ""
 
@@ -236,7 +238,7 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
         f"勝率{year_s['win_rate']}%｜"
         f"平均{yr_sign}{year_s['avg_pnl']}%｜"
         f"PF **{year_s['pf']}**｜"
-        f"**年利{ar_sign}{annual_return}%**"
+        f"**年利{ar_sign}{annual_return}%**（{ar_sign}{annual_yen/10000:.1f}万円）"
     )
 
     _post(url, {
