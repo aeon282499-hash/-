@@ -60,7 +60,7 @@ def main() -> None:
         sys.exit(0)
 
     from screener import run_screener
-    from notifier import send_signals, send_results, send_error
+    from notifier import send_signals, send_results, send_error, send_monthly_report
     from tracker import load_positions, save_positions, update_positions, add_signals_to_positions
 
     try:
@@ -73,6 +73,7 @@ def main() -> None:
             positions, closed_today, still_open = update_positions(positions, today)
             print(f"[main] 決済: {len(closed_today)}件 / 保有中: {len(still_open)}件")
             send_results(closed_today, still_open, today)
+            send_monthly_report(positions, today)
         else:
             closed_today = []
             still_open   = []
