@@ -131,25 +131,36 @@ def calc_stats(trades: list[dict]) -> dict:
     }
 
 
+CAPITAL     = 3_000_000   # 総資金（円）
+PER_TRADE   = 1_000_000   # 1トレード投入額（円）
+WEIGHT      = PER_TRADE / CAPITAL  # 資金比率 = 1/3
+
+
+def monthly_return(trades: list[dict]) -> float:
+    """月利（資金300万円・1トレード100万円基準）。"""
+    return round(sum(t["pnl"] for t in trades) * WEIGHT, 2)
+
+
 def build_monthly_summary(trades: list[dict]) -> list[str]:
-    """年間の月別累計テキストを生成する。"""
+    """当年のみ月別累計テキストを生成する。"""
     current_year = date.today().year
     year_trades  = [t for t in trades if t["date"].startswith(str(current_year))]
 
     monthly = defaultdict(list)
     for t in year_trades:
-        month = t["date"][:7]  # "2026-04"
-        monthly[month].append(t)
+        monthly[t["date"][:7]].append(t)
 
     lines = []
     for month in sorted(monthly.keys()):
-        s    = calc_stats(monthly[month])
-        sign = "+" if s["avg_pnl"] >= 0 else ""
+        s   = calc_stats(monthly[month])
+        mr  = monthly_return(monthly[month])
+        sign = "+" if mr >= 0 else ""
         lines.append(
             f"`{month}` {s['count']}件 "
             f"勝率{s['win_rate']}% "
-            f"平均{sign}{s['avg_pnl']}% "
-            f"PF{s['pf']}"
+            f"平均{'+' if s['avg_pnl']>=0 else ''}{s['avg_pnl']}% "
+            f"PF{s['pf']} "
+            f"**月利{sign}{mr}%**"
         )
     return lines
 
@@ -214,21 +225,25 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
     if not monthly_lines:
         return
 
-    monthly_text = "\n".join(monthly_lines)
-    year_sign    = "+" if year_s["avg_pnl"] >= 0 else ""
-    year_text    = (
+    # 年利 = 当年全トレードの合計pnl × 資金比率
+    annual_return = round(sum(t["pnl"] for t in year_trades) * WEIGHT, 2)
+    ar_sign       = "+" if annual_return >= 0 else ""
+    yr_sign       = "+" if year_s["avg_pnl"] >= 0 else ""
+
+    year_text = (
         f"**{current_year}年合計** {year_s['count']}件｜"
         f"勝率{year_s['win_rate']}%｜"
-        f"平均{year_sign}{year_s['avg_pnl']}%｜"
-        f"PF **{year_s['pf']}**"
+        f"平均{yr_sign}{year_s['avg_pnl']}%｜"
+        f"PF **{year_s['pf']}**｜"
+        f"**年利{ar_sign}{annual_return}%**"
     )
 
     _post(url, {
         "embeds": [{
-            "title":       "📈 月別・年間累計",
-            "description": f"{monthly_text}\n\n{year_text}",
+            "title":       f"📈 {current_year}年 月別・年間累計",
+            "description": "\n".join(monthly_lines) + f"\n\n{year_text}",
             "color":       0x1565C0,
-            "footer":      {"text": f"{current_year}年 実績（本番稼働分）"},
+            "footer":      {"text": f"※資金300万円・1トレード100万円基準"},
         }],
     })
 
