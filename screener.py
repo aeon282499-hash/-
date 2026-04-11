@@ -39,6 +39,9 @@ LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 RSI_BUY_MAX    = 45     # RSIがこの値以下 → 買い候補（売られすぎ）
 DEV_BUY_MAX    = -1.5  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
+RSI_SELL_MIN   = 55     # RSIがこの値以上 → 売り候補（買われすぎ）
+DEV_SELL_MIN   = +1.5  # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
+
 
 RANGE_MULT     = 1.5
 VOL_MULT       = 2.0
@@ -604,7 +607,7 @@ def calc_trend(close: pd.Series, period: int = 200) -> str | None:
 # ================================================================
 
 def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
-    """逆張り平均回帰戦略でシグナル判定（RSI + 乖離率 + ボリンジャーバンド）。"""
+    """逆張り平均回帰戦略でシグナル判定（RSI + 乖離率 + ボラ/出来高 + 流動性）。"""
     close = df["Close"].dropna()
     if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
         return None
@@ -614,7 +617,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
     turnover    = calc_turnover(df)
-    bb_upper, bb_lower = calc_bollinger(close, std_dev=1.5)
 
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
@@ -627,9 +629,8 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ①②③ 方向判定（逆張り + ボリンジャーバンド）─────
-    if (rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX
-            and bb_lower is not None and last_close < bb_lower):
+    # ── ①② 方向判定（逆張り）─────────────────────────
+    if rsi <= RSI_BUY_MAX and deviation <= DEV_BUY_MAX:
         direction = "BUY"
     else:
         return None
@@ -651,8 +652,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     reason = [
         f"RSI({RSI_PERIOD}) = {rsi}（≦{RSI_BUY_MAX}：売られすぎ → 反発狙い）",
         f"25MA乖離率 = {deviation:+.1f}%（≦{DEV_BUY_MAX}%：下がりすぎ）",
-        f"BB下限(-1.5σ) = {bb_lower:.0f}（終値{last_close:.0f}が下抜け）",
-        "④ " + " / ".join(cond4),
+        "③ " + " / ".join(cond4),
         f"売買代金 = {turnover/1e8:.0f}億円",
     ]
 
@@ -660,6 +660,74 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "ticker":      ticker,
         "name":        name,
         "direction":   direction,
+        "rsi":         rsi,
+        "deviation":   deviation,
+        "range_ratio": range_ratio,
+        "vol_ratio":   vol_ratio,
+        "turnover":    turnover,
+        "prev_close":  last_close,
+        "reason":      reason,
+    }
+
+
+judge_signal = judge_signal_pre
+
+
+def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
+    """逆張り空売り戦略でシグナル判定（RSI高い + 乖離プラス + BB上限超え）。"""
+    close = df["Close"].dropna()
+    if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
+        return None
+
+    rsi         = calc_rsi(close)
+    deviation   = calc_ma_deviation(close)
+    range_ratio = calc_range_ratio(df)
+    vol_ratio   = calc_volume_ratio(df)
+    turnover    = calc_turnover(df)
+    bb_upper, bb_lower = calc_bollinger(close, std_dev=1.5)
+
+    if any(v is None for v in [rsi, deviation, turnover]):
+        return None
+
+    last_close = float(close.iloc[-1])
+
+    # 高ボラ除外
+    atr = calc_atr(df)
+    if atr is not None and last_close > 0:
+        if (atr / last_close * 100) > ATR_VOL_CAP:
+            return None
+
+    # 売り条件: RSI高い + 乖離プラス + BB上限超え
+    if not (rsi >= RSI_SELL_MIN and deviation >= DEV_SELL_MIN
+            and bb_upper is not None and last_close > bb_upper):
+        return None
+
+    # ボラ or 出来高
+    range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
+    vol_ok   = (vol_ratio   is not None) and (vol_ratio   >= VOL_MULT)
+    if not (range_ok or vol_ok):
+        return None
+
+    # 流動性
+    if turnover < TURNOVER_MIN:
+        return None
+
+    cond4 = []
+    if range_ok: cond4.append(f"値幅/ATR={range_ratio:.1f}（≧{RANGE_MULT}）")
+    if vol_ok:   cond4.append(f"出来高比={vol_ratio:.1f}（≧{VOL_MULT}）")
+
+    reason = [
+        f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_MIN}：買われすぎ → 反落狙い）",
+        f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_MIN}%：上がりすぎ）",
+        f"BB上限(+1.5σ) = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
+        "④ " + " / ".join(cond4),
+        f"売買代金 = {turnover/1e8:.0f}億円",
+    ]
+
+    return {
+        "ticker":      ticker,
+        "name":        name,
+        "direction":   "SELL",
         "rsi":         rsi,
         "deviation":   deviation,
         "bb_upper":    bb_upper,
@@ -670,9 +738,6 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "prev_close":  last_close,
         "reason":      reason,
     }
-
-
-judge_signal = judge_signal_pre
 
 
 def check_gap_entry(signal: dict, today_open: float, gap_max_pct: float = 5.0) -> bool:
