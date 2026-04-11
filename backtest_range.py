@@ -332,8 +332,17 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        s, e = sys.argv[1], sys.argv[2]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--sell" in sys.argv:
+        BUY_ONLY  = False
+        SELL_ONLY = True
+        print("[info] SELLモードで実行します")
+    if "--buy" in sys.argv:
+        BUY_ONLY  = True
+        SELL_ONLY = False
+
+    if len(args) >= 2:
+        s, e = args[0], args[1]
     else:
         e = datetime.today().strftime("%Y-%m-%d")
         s = (datetime.today() - timedelta(days=365)).strftime("%Y-%m-%d")
