@@ -21,7 +21,8 @@ from dotenv import load_dotenv
 load_dotenv()
 JST              = zoneinfo.ZoneInfo("Asia/Tokyo")
 _JQUANTS_BASE    = "https://api.jquants.com/v2"
-HISTORY_FILE     = "trade_history.json"
+HISTORY_FILE      = "trade_history.json"
+SELL_HISTORY_FILE = "trade_history_sell.json"
 
 
 # ================================================================
@@ -79,22 +80,22 @@ def calc_pnl(direction: str, open_price: float, close_price: float) -> float:
 # 履歴管理
 # ================================================================
 
-def load_history() -> list[dict]:
-    if not os.path.exists(HISTORY_FILE):
+def load_history(path: str = HISTORY_FILE) -> list[dict]:
+    if not os.path.exists(path):
         return []
-    with open(HISTORY_FILE, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f).get("trades", [])
 
 
-def save_history(trades: list[dict]) -> None:
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+def save_history(trades: list[dict], path: str = HISTORY_FILE) -> None:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump({"trades": trades}, f, ensure_ascii=False, indent=2)
 
 
-def append_today_results(results: list[dict], trade_date: str) -> list[dict]:
+def append_today_results(results: list[dict], trade_date: str,
+                         history_path: str = HISTORY_FILE) -> list[dict]:
     """今日の結果を履歴に追加（同日の重複は上書き）。"""
-    trades = load_history()
-    # 同日分を一旦除去
+    trades = load_history(history_path)
     trades = [t for t in trades if t["date"] != trade_date]
     for r in results:
         trades.append({
@@ -107,7 +108,7 @@ def append_today_results(results: list[dict], trade_date: str) -> list[dict]:
             "pnl":       r["pnl"],
             "win":       r["pnl"] > 0,
         })
-    save_history(trades)
+    save_history(trades, history_path)
     return trades
 
 
@@ -250,35 +251,100 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
     print(f"[report] レポート送信完了（本日{today_s['count']}件 / 年間{year_s['count']}件）")
 
 
+def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dict]) -> None:
+    """空売り結果をSELL専用Webhookに送信する。"""
+    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
+    if not url:
+        print("[report] DISCORD_WEBHOOK_SELL_URL が未設定 → SELLレポートスキップ")
+        return
+
+    date_str = datetime.strptime(signal_date, "%Y-%m-%d").strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+    today_s  = calc_stats(results)
+
+    lines = []
+    for r in results:
+        mark = "✅" if r["pnl"] > 0 else "❌"
+        lines.append(
+            f"{mark} **{r['name']}**（{r['ticker']}）空売り\n"
+            f"　始値 {r['open']:,.0f}円 → 終値 {r['close']:,.0f}円　**{r['pnl']:+.2f}%**"
+        )
+
+    if today_s["count"] > 0:
+        summary = (
+            f"**{today_s['count']}銘柄** エントリー｜"
+            f"勝率 {today_s['wins']}/{today_s['count']}（{today_s['win_rate']}%）｜"
+            f"平均損益 **{today_s['avg_pnl']:+.2f}%**"
+        )
+        color = 0x43A047 if today_s["avg_pnl"] >= 0 else 0xE53935
+    else:
+        summary = "本日空売りシグナルなし（ノートレード）"
+        color   = 0x757575
+
+    _post(url, {
+        "content": f"## 📉 本日の空売り結果｜{date_str}",
+        "embeds": [{
+            "description": f"{summary}\n\n" + "\n".join(lines),
+            "color":  color,
+            "footer": {"text": f"集計時刻: {time_str}（大引け後）"},
+        }],
+    })
+
+    # 月別・年間累計
+    current_year  = date.today().year
+    year_trades   = [t for t in all_trades if t["date"].startswith(str(current_year))]
+    year_s        = calc_stats(year_trades)
+    monthly_lines = build_monthly_summary(all_trades)
+
+    if not monthly_lines:
+        return
+
+    annual_return = round(sum(t["pnl"] for t in year_trades) * WEIGHT, 2)
+    annual_yen    = annual_return / 100 * CAPITAL
+    ar_sign       = "+" if annual_return >= 0 else ""
+    yr_sign       = "+" if year_s["avg_pnl"] >= 0 else ""
+
+    year_text = (
+        f"**{current_year}年合計** {year_s['count']}件｜"
+        f"勝率{year_s['win_rate']}%｜"
+        f"平均{yr_sign}{year_s['avg_pnl']}%｜"
+        f"PF **{year_s['pf']}**｜"
+        f"**年利{ar_sign}{annual_return}%**（{ar_sign}{annual_yen/10000:.1f}万円）"
+    )
+
+    _post(url, {
+        "embeds": [{
+            "title":       f"📉 {current_year}年 月別・年間累計（空売り）",
+            "description": "\n".join(monthly_lines) + f"\n\n{year_text}",
+            "color":       0x1E88E5,
+            "footer":      {"text": "※資金300万円・1トレード100万円基準"},
+        }],
+    })
+
+    print(f"[report] SELL レポート送信完了（本日{today_s['count']}件 / 年間{year_s['count']}件）")
+
+
 # ================================================================
 # メイン
 # ================================================================
 
-def main() -> None:
-    today_str = date.today().strftime("%Y-%m-%d")
-
-    if not os.path.exists("today_signals.json"):
-        print("[report] today_signals.json が見つかりません → スキップ")
-        sys.exit(0)
-
-    with open("today_signals.json", encoding="utf-8") as f:
+def _load_signals_file(filepath: str, today_str: str) -> list[dict] | None:
+    """シグナルファイルを読み込んで検証する。Noneは処理スキップ。"""
+    if not os.path.exists(filepath):
+        print(f"[report] {filepath} が見つかりません → スキップ")
+        return None
+    with open(filepath, encoding="utf-8") as f:
         data = json.load(f)
-
     signal_date = data.get("date", "")
-    signals     = data.get("signals", [])
-
     if signal_date != today_str:
-        print(f"[report] シグナル日付 {signal_date} ≠ 今日 {today_str} → スキップ")
-        sys.exit(0)
+        print(f"[report] {filepath} 日付 {signal_date} ≠ 今日 {today_str} → スキップ")
+        return None
+    return data.get("signals", [])
 
-    if not signals:
-        print("[report] 本日シグナルなし → スキップ")
-        sys.exit(0)
 
-    tickers = [s["ticker"] for s in signals]
-    print(f"[report] {len(tickers)} 銘柄の終値をJ-Quantsで取得中...")
-    ohlc = fetch_today_ohlc(tickers)
-
+def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
+                     history_path: str) -> tuple[list[dict], list[dict]]:
+    """シグナルリストから損益を計算して履歴に保存。"""
     results = []
     for s in signals:
         t = s["ticker"]
@@ -296,10 +362,39 @@ def main() -> None:
             "close":     c,
             "pnl":       round(pnl, 2),
         })
+    all_trades = append_today_results(results, signal_date, history_path)
+    return results, all_trades
 
-    # 履歴に保存して累計集計
-    all_trades = append_today_results(results, signal_date)
-    send_report(results, signal_date, all_trades)
+
+def main() -> None:
+    today_str = date.today().strftime("%Y-%m-%d")
+
+    # BUY シグナル処理
+    buy_signals = _load_signals_file("today_signals.json", today_str)
+    if buy_signals is not None:
+        all_tickers = [s["ticker"] for s in buy_signals]
+        print(f"[report] BUY {len(all_tickers)} 銘柄の終値をJ-Quantsで取得中...")
+        ohlc = fetch_today_ohlc(all_tickers)
+        results, all_trades = _process_signals(buy_signals, ohlc, today_str, HISTORY_FILE)
+        send_report(results, today_str, all_trades)
+    else:
+        ohlc = None
+
+    # SELL シグナル処理
+    sell_signals = _load_signals_file("today_sell_signals.json", today_str)
+    if sell_signals is not None:
+        # OHLCデータの取得（BUYで未取得の銘柄だけ追加取得）
+        sell_tickers = [s["ticker"] for s in sell_signals]
+        missing = [t for t in sell_tickers if ohlc is None or t not in ohlc]
+        if missing:
+            print(f"[report] SELL {len(missing)} 銘柄の終値をJ-Quantsで取得中...")
+            sell_ohlc = fetch_today_ohlc(missing)
+            combined_ohlc = {**(ohlc or {}), **sell_ohlc}
+        else:
+            combined_ohlc = ohlc or {}
+        results_sell, all_sell_trades = _process_signals(
+            sell_signals, combined_ohlc, today_str, SELL_HISTORY_FILE)
+        send_sell_report(results_sell, today_str, all_sell_trades)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ jobs:
       - name: 結果レポートを送信
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python report.py
 
@@ -36,6 +37,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add trade_history.json || true
-          git diff --cached --quiet || git commit -m "chore: update trade_history.json [skip ci]"
+          git add trade_history.json trade_history_sell.json || true
+          git diff --cached --quiet || git commit -m "chore: update trade_history.json trade_history_sell.json [skip ci]"
           git push origin main

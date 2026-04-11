@@ -110,6 +110,21 @@ def main() -> None:
         # ── ⑤ SELL シグナルを別チャンネルに送信 ─────────────
         send_sell_signals(sell_signals, today, entry_date)
 
+        # ── ⑥ 夕方レポート用にシグナルを保存 ─────────────────
+        import json as _json
+        today_str = today.strftime("%Y-%m-%d")
+        with open("today_signals.json", "w", encoding="utf-8") as f:
+            _json.dump({
+                "date":    today_str,
+                "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "BUY"} for s in signals],
+            }, f, ensure_ascii=False, indent=2)
+        with open("today_sell_signals.json", "w", encoding="utf-8") as f:
+            _json.dump({
+                "date":    today_str,
+                "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "SELL"} for s in sell_signals],
+            }, f, ensure_ascii=False, indent=2)
+        print(f"[main] today_signals.json ({len(signals)}件) / today_sell_signals.json ({len(sell_signals)}件) 保存")
+
         # ── ⑤ Twitter に投稿 ────────────────────────────────
         from twitter_notifier import post_swing_signals, post_swing_results
         post_swing_signals(signals, today, macro)
