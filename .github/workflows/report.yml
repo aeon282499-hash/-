@@ -9,6 +9,8 @@ jobs:
   run-report:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
 
     steps:
       - name: リポジトリをチェックアウト
@@ -28,3 +30,12 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python report.py
+
+      - name: 取引履歴を保存（trade_history.json をコミット）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add trade_history.json || true
+          git diff --cached --quiet || git commit -m "chore: update trade_history.json [skip ci]"
+          git push origin main
