@@ -918,24 +918,34 @@ def run_screener() -> tuple[list[dict], dict]:
 
     # ── シグナル判定 ──────────────────────────────────
     candidates: list[dict] = []
+    sell_candidates: list[dict] = []
     for ticker, df in data.items():
         close = df["Close"].dropna()
         if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD) + 5:
             continue
-        name   = name_map.get(ticker, ticker)
+        name = name_map.get(ticker, ticker)
+
+        # BUY判定
         result = judge_signal_pre(ticker, name, df)
         if result:
-            # 決算除外フィルター
             if ticker in earnings_exclude:
                 print(f"  [SKIP] {ticker} 直近決算発表のため除外")
-                continue
-            # 日経フィルター: 無効化中（市場フィルターOFF）
-            # if result["direction"] == "BUY" and nk_above_ma25 is False:
-            #     continue
-            candidates.append(result)
-            print(f"  [HIT] [{ticker}] {name} -> {result['direction']} "
-                  f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "
-                  f"turnover={result['turnover']/1e8:.0f}oku")
+            else:
+                candidates.append(result)
+                print(f"  [BUY HIT] [{ticker}] {name} "
+                      f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "
+                      f"turnover={result['turnover']/1e8:.0f}oku")
+
+        # SELL判定
+        sell_result = judge_sell_signal_pre(ticker, name, df)
+        if sell_result:
+            if ticker in earnings_exclude:
+                print(f"  [SKIP SELL] {ticker} 直近決算発表のため除外")
+            else:
+                sell_candidates.append(sell_result)
+                print(f"  [SELL HIT] [{ticker}] {name} "
+                      f"RSI={sell_result['rsi']} deviation={sell_result['deviation']:+.1f}% "
+                      f"turnover={sell_result['turnover']/1e8:.0f}oku")
 
     # ── マクロバイアス（参考表示のみ・シグナル絞り込みは行わない）──
     bias = macro.get("bias", "neutral")
@@ -958,5 +968,9 @@ def run_screener() -> tuple[list[dict], dict]:
     candidates.sort(key=lambda x: x["turnover"], reverse=True)
     signals = candidates[:MAX_SIGNALS]
 
-    print(f"[screener] 候補{len(candidates)}銘柄 → 最終{len(signals)}銘柄")
-    return signals, macro
+    sell_candidates.sort(key=lambda x: x["turnover"], reverse=True)
+    sell_signals = sell_candidates[:MAX_SIGNALS]
+
+    print(f"[screener] BUY候補{len(candidates)}銘柄 → {len(signals)}銘柄")
+    print(f"[screener] SELL候補{len(sell_candidates)}銘柄 → {len(sell_signals)}銘柄")
+    return signals, sell_signals, macro

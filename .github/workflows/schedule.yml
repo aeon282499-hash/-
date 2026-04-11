@@ -10,6 +10,7 @@ jobs:
       contents: write  # today_signals.json / positions.json のpushに必要
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}

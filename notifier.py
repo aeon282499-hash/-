@@ -286,6 +286,88 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
     print(f"[notifier] 結果レポートを Discord に送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
 
 
+def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None:
+    """空売りシグナルを SELL専用Webhookに送信する。"""
+    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
+    if not url:
+        print("[notifier] DISCORD_WEBHOOK_SELL_URL が未設定 → SELL通知スキップ")
+        return
+
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    if entry_date is None:
+        _d = today + timedelta(days=1)
+        while _d.weekday() >= 5 or jpholiday.is_holiday(_d):
+            _d += timedelta(days=1)
+        entry_date = _d
+    exit_date     = _nth_trading_day(entry_date, 3)
+    exit_date_str = exit_date.strftime("%m月%d日")
+
+    if not signals:
+        resp = requests.post(url, json={
+            "embeds": [{
+                "title":       f"📉【スイング空売り】{date_str} — シグナルなし",
+                "description": "本日の空売りシグナルは0件です。",
+                "color":       COLOR_NONE,
+                "footer":      {"text": f"配信時刻: {time_str}"},
+            }]
+        }, timeout=10)
+        return
+
+    embeds = []
+    for i, sig in enumerate(signals, 1):
+        prev_close = sig.get("prev_close", 0)
+        bb_upper   = sig.get("bb_upper")
+
+        stop_price  = prev_close * 1.03
+        tp_price    = prev_close * 0.97
+        if bb_upper:
+            entry_str = f"**{bb_upper:,.0f}円**（BB上限）付近に指値\n※寄り付き後に上限に近ければ有効"
+        else:
+            entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
+
+        if prev_close > 0:
+            shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
+            invest_amt = shares * prev_close
+            invest_str = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
+        else:
+            invest_str = "**100万円目安**"
+
+        reason_text  = "\n".join(f"・{r}" for r in sig["reason"])
+        turnover_str = f"{sig['turnover']/1e8:.0f}億円"
+
+        embeds.append({
+            "title": f"📉【スイング空売り】#{i}  {sig['name']}（{sig['ticker']}）",
+            "color": 0x1E88E5,  # 青
+            "fields": [
+                {"name": "📌 アクション",       "value": "🔵 **信用売り**（9:00以降、指値推奨）", "inline": False},
+                {"name": "🎯 エントリー目安",   "value": entry_str,   "inline": False},
+                {"name": "💴 推奨株数・投入金額", "value": invest_str, "inline": False},
+                {"name": "🛑 損切りライン",      "value": f"**{stop_price:,.0f}円**（+3%）", "inline": True},
+                {"name": "✅ 利確ライン",        "value": f"**{tp_price:,.0f}円**（-3%）",  "inline": True},
+                {"name": "📅 保有ルール・処分日",
+                 "value": f"最大**3営業日**保有\nRSI回復（≦50）で早期買戻し\n⏰ **処分期限: {exit_date_str}**",
+                 "inline": False},
+                {"name": "🛡️ 流動性",           "value": f"売買代金 **{turnover_str}**",     "inline": False},
+                {"name": "📊 シグナル根拠",      "value": reason_text,  "inline": False},
+            ],
+            "footer": {"text": f"配信時刻: {time_str}"},
+        })
+
+    payload = {
+        "content": (
+            f"## 📉【スイング空売り】シグナル｜{date_str}\n"
+            f"> 本日の売りシグナル: **{len(signals)}銘柄**"
+        ),
+        "embeds": embeds[:10],
+    }
+    resp = requests.post(url, json=payload, timeout=10)
+    if resp.status_code not in (200, 204):
+        print(f"[notifier] SELL Discord送信失敗: HTTP {resp.status_code}")
+    print(f"[notifier] SELL {len(signals)} 件のシグナルを Discord に送信しました。")
+
+
 def send_error(error_message: str, today: date) -> None:
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")

@@ -78,7 +78,7 @@ def main() -> None:
             still_open   = []
 
         # ── ② 新規スクリーニング ─────────────────────────────
-        signals, macro = run_screener()
+        signals, sell_signals, macro = run_screener()
 
         # ── ③ 新シグナルをポジションに追加 ───────────────────
         entry_date = next_trading_day(today)
@@ -87,6 +87,10 @@ def main() -> None:
 
         # ── ④ Discord にシグナル送信 ─────────────────────────
         send_signals(signals, today, macro, entry_date)
+
+        # ── ⑤ SELL シグナルを別チャンネルに送信 ─────────────
+        from notifier import send_sell_signals
+        send_sell_signals(sell_signals, today, entry_date)
 
         # ── ⑤ Twitter に投稿 ────────────────────────────────
         from twitter_notifier import post_swing_signals, post_swing_results
