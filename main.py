@@ -42,8 +42,14 @@ def next_trading_day(d) -> object:
 
 
 def main() -> None:
-    today = datetime.now(JST).date()
-    print(f"[main] 実行日: {today}")
+    now   = datetime.now(JST)
+    today = now.date()
+    print(f"[main] 実行日時: {now.strftime('%Y-%m-%d %H:%M JST')}")
+
+    # 朝7:00〜9:30 JST 以外は誤トリガーとしてスキップ
+    if not (7 <= now.hour < 9 or (now.hour == 9 and now.minute <= 30)):
+        print(f"[main] 配信時間外（{now.strftime('%H:%M')} JST）→ スキップします")
+        sys.exit(0)
 
     if not is_trading_day(today):
         reason = (
