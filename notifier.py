@@ -102,10 +102,8 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
         if direction == "BUY":
             action_str = "🔴 **買い**（9:00 寄り付き成行）"
             color      = COLOR_BUY
-            stop_price = prev_close * 0.97
-            tp_price   = prev_close * 1.05
-            stop_str   = f"**{stop_price:,.0f}円**（前日終値-3%）"
-            tp_str     = f"**{tp_price:,.0f}円**（前日終値+5%）"
+            stop_str   = f"**寄り値 × 0.97**（-3%）"
+            tp_str     = f"**寄り値 × 1.05**（+5%）"
             entry_str  = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
 
         # 株数・投入金額（100万円基準）
@@ -320,12 +318,7 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
         prev_close = sig.get("prev_close", 0)
         bb_upper   = sig.get("bb_upper")
 
-        stop_price  = prev_close * 1.03
-        tp_price    = prev_close * 0.97
-        if bb_upper:
-            entry_str = f"**{bb_upper:,.0f}円**（BB上限）付近に指値\n※寄り付き後に上限に近ければ有効"
-        else:
-            entry_str = f"**{prev_close:,.0f}円**付近（前日終値）"
+        entry_str = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
 
         if prev_close > 0:
             shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
@@ -344,8 +337,8 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
                 {"name": "📌 アクション",       "value": "🔵 **信用売り**（9:00以降、指値推奨）", "inline": False},
                 {"name": "🎯 エントリー目安",   "value": entry_str,   "inline": False},
                 {"name": "💴 推奨株数・投入金額", "value": invest_str, "inline": False},
-                {"name": "🛑 損切りライン",      "value": f"**{stop_price:,.0f}円**（+3%）", "inline": True},
-                {"name": "✅ 利確ライン",        "value": f"**{tp_price:,.0f}円**（-3%）",  "inline": True},
+                {"name": "🛑 損切りライン",      "value": "**寄り値 × 1.03**（+3%）", "inline": True},
+                {"name": "✅ 利確ライン",        "value": "**寄り値 × 0.97**（-3%）", "inline": True},
                 {"name": "📅 保有ルール・処分日",
                  "value": f"最大**3営業日**保有\nRSI回復（≦50）で早期買戻し\n⏰ **処分期限: {exit_date_str}**",
                  "inline": False},
