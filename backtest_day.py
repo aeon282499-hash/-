@@ -27,10 +27,11 @@ from screener_day import (
     judge_signal_day,
     LOOKBACK_DAYS,
     ATR_VOL_CAP,
+    GOOD_MONTHS,
 )
 
 STOP_LOSS      = 3.0   # %
-TAKE_PROFIT    = 5.0   # %
+TAKE_PROFIT    = 3.0   # %
 ATR_VOL_CAP    = 4.0   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（screener_dayと統一）
 SP500_DROP_MAX = -1.5  # S&P500プロキシ前日下落率の下限
 
@@ -70,7 +71,8 @@ def run_day_backtest(start: str, end: str) -> None:
     # 日経225プロキシ（1321.T）を取得済みデータから使用（stooq不要）
     nk_df = all_data.get("1321.T")
     if nk_df is not None and len(nk_df) > 25:
-        nk_df["MA25"] = nk_df["Close"].rolling(25).mean()
+        nk_df["MA25"]  = nk_df["Close"].rolling(25).mean()
+        nk_df["ATR14"] = (nk_df["High"] - nk_df["Low"]).rolling(14).mean()
     else:
         nk_df = None
 
@@ -86,6 +88,10 @@ def run_day_backtest(start: str, end: str) -> None:
     stop_cooldown: dict[str, str] = {}  # ticker → 直近STOP発生の entry_date
 
     for signal_date in trading_days:
+        # 月フィルター（良い月のみ）
+        if int(signal_date[5:7]) not in GOOD_MONTHS:
+            continue
+
         # 前日までのデータでシグナル判定
         for ticker, full_df in all_data.items():
             if ticker in ("1321.T", "1655.T"):
@@ -107,6 +113,16 @@ def run_day_backtest(start: str, end: str) -> None:
                     cur_idx   = all_trading_days.index(signal_date) if signal_date in all_trading_days else -1
                     if last_idx >= 0 and cur_idx >= 0 and cur_idx - last_idx <= 2:
                         continue
+
+                # 市場フィルター③ 日経ボラフィルター（横横除外）
+                # 日経の前日値幅 < ATR14 の場合（動意なし）はスキップ
+                if nk_df is not None:
+                    nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") <= signal_date]
+                    if len(nk_rows) >= 15:
+                        nk_range = float(nk_rows["High"].iloc[-1] - nk_rows["Low"].iloc[-1])
+                        nk_atr   = float(nk_rows["ATR14"].iloc[-1])
+                        if not np.isnan(nk_atr) and nk_atr > 0 and nk_range < nk_atr * 0.8:
+                            continue  # 日経が動いていない日はスキップ
 
                 # 市場フィルター① 日経ETF(1321.T): 終値 ≥ 25日MA
                 if signal["direction"] == "BUY" and nk_df is not None:

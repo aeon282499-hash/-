@@ -487,7 +487,7 @@ def fetch_macro() -> dict:
     if api_key:
         result["dow"]    = _fetch_av_daily_return("SPY",  api_key)  # S&P500 ETF proxy
         time.sleep(12)  # Alpha Vantage 無料プラン: 5req/min = 12秒待機
-        result["nasdaq"] = _fetch_av_daily_return("QQQ", api_key)  # Nasdaq ETF proxy
+        result["nasdaq"] = _fetch_av_daily_return("COMP", api_key)  # Nasdaq 総合指数
     else:
         print("[macro] ALPHA_VANTAGE_API_KEY 未設定 → マクロ取得スキップ")
 
@@ -502,7 +502,7 @@ def fetch_macro() -> dict:
 
     dow_str = f"{dow:+.1f}%" if result["dow"] is not None else "取得不可"
     nas_str = f"{nas:+.1f}%" if result["nasdaq"] is not None else "取得不可"
-    print(f"[macro] NYダウ: {dow_str}  ナスダック: {nas_str}  → {result['bias']}")
+    print(f"[macro] S&P500: {dow_str}  ナスダック総合: {nas_str}  → {result['bias']}")
     return result
 
 
@@ -674,7 +674,7 @@ judge_signal = judge_signal_pre
 
 def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     """急騰後反落型空売り戦略（改良版）
-    条件: 前日比+5%以上の急騰 + RSI≥70 + 乖離+5%以上 + BB2σ上抜け
+    条件: 前日比+5%以上の急騰 + RSI≥70 + 乖離+5%以上
     """
     close = df["Close"].dropna()
     if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
@@ -685,8 +685,6 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
     range_ratio = calc_range_ratio(df)
     vol_ratio   = calc_volume_ratio(df)
     turnover    = calc_turnover(df)
-    bb_upper, bb_lower = calc_bollinger(close, std_dev=2.0)  # 2σ（旧1.5σ）
-
     if any(v is None for v in [rsi, deviation, turnover]):
         return None
 
@@ -716,10 +714,6 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
             and deviation >= DEV_SELL_STRICT):
         return None
 
-    # BB 2σ上抜け
-    if bb_upper is None or last_close <= bb_upper:
-        return None
-
     # ボラ or 出来高（急騰日は通常どちらかが満たされる）
     range_ok = (range_ratio is not None) and (range_ratio >= RANGE_MULT)
     vol_ok   = (vol_ratio   is not None) and (vol_ratio   >= VOL_MULT)
@@ -738,8 +732,7 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
         f"前日比 = {day_change:+.1f}%（≧+{DAY_CHANGE_MIN}%：急騰）",
         f"RSI({RSI_PERIOD}) = {rsi}（≧{RSI_SELL_STRICT}：明確な買われすぎ）",
         f"25MA乖離率 = {deviation:+.1f}%（≧+{DEV_SELL_STRICT}%：上がりすぎ）",
-        f"BB上限(+2σ) = {bb_upper:.0f}（終値{last_close:.0f}が上抜け）",
-        "⑤ " + " / ".join(cond4),
+        "④ " + " / ".join(cond4),
         f"売買代金 = {turnover/1e8:.0f}億円",
     ]
 
@@ -750,8 +743,6 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
         "rsi":         rsi,
         "deviation":   deviation,
         "day_change":  day_change,
-        "bb_upper":    bb_upper,
-        "bb_lower":    bb_lower,
         "range_ratio": range_ratio,
         "vol_ratio":   vol_ratio,
         "turnover":    turnover,

@@ -30,13 +30,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # パラメーター設定
 # ================================================================
 
-PREV_RETURN_BUY_MIN  = -8.0   # 前日騰落率の下限（買い）
-PREV_RETURN_BUY_MAX  = -3.0   # 前日騰落率の上限（買い）
-PREV_RETURN_SELL_MIN =  4.0   # 前日騰落率の下限（売り）
-PREV_RETURN_SELL_MAX =  8.0   # 前日騰落率の上限（売り）
+PREV_RETURN_SELL_MIN =  5.0   # 前日騰落率の下限（売り）
+PREV_RETURN_SELL_MAX =  6.0   # 前日騰落率の上限（売り）※BT最適値
 
-RSI_BUY_MAX    = 50    # BUY: RSIがこの値以下（売られすぎ）
-RSI_SELL_MIN   = 55    # SELL: RSIがこの値以上（買われすぎ）
+RSI_SELL_MIN   = 65    # SELL: RSIがこの値以上（買われすぎ）
 VOL_MULT       = 1.5
 TURNOVER_MIN   = 3_000_000_000   # 30億円
 ATR_VOL_CAP    = 4.0             # ATR/終値(%)上限
@@ -46,6 +43,7 @@ VOL_AVG_PERIOD = 20
 ATR_PERIOD     = 14
 LOOKBACK_DAYS  = 60
 SP500_DROP_MAX = -1.5            # S&P500プロキシ(1655.T)前日下落率の下限
+GOOD_MONTHS    = [5, 7, 8, 9, 10, 11, 12]  # BT結果でPF良好な月のみ
 
 
 # ================================================================
@@ -128,17 +126,13 @@ def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         if (atr / last_close * 100) > ATR_VOL_CAP:
             return None
 
-    # ── ① 前日騰落率フィルター ───────────────────────────
-    if PREV_RETURN_BUY_MIN <= prev_return <= PREV_RETURN_BUY_MAX:
-        direction = "BUY"
-    elif PREV_RETURN_SELL_MIN <= prev_return <= PREV_RETURN_SELL_MAX:
+    # ── ① 前日騰落率フィルター（SELLのみ）──────────────────
+    if PREV_RETURN_SELL_MIN <= prev_return <= PREV_RETURN_SELL_MAX:
         direction = "SELL"
     else:
         return None
 
     # ── ② RSIフィルター ──────────────────────────────────
-    if direction == "BUY" and rsi > RSI_BUY_MAX:
-        return None
     if direction == "SELL" and rsi < RSI_SELL_MIN:
         return None
 
@@ -150,7 +144,7 @@ def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     if turnover < TURNOVER_MIN:
         return None
 
-    rsi_label = f"≦{RSI_BUY_MAX}" if direction == "BUY" else f"≧{RSI_SELL_MIN}"
+    rsi_label = f"≧{RSI_SELL_MIN}"
     reason = [
         f"前日騰落率 = {prev_return:+.1f}%（逆張り{direction}）",
         f"RSI({RSI_PERIOD}) = {rsi:.0f}（{rsi_label}）",
@@ -179,6 +173,13 @@ def run_screener_day() -> tuple[list[dict], dict]:
     """デイトレスクリーニングを実行し (signals, macro) を返す。"""
 
     macro    = fetch_macro()
+
+    from datetime import date as _today_date
+    today_month = _today_date.today().month
+    if today_month not in GOOD_MONTHS:
+        print(f"[screener_day] 月フィルター: {today_month}月はトレード対象外（良い月: {GOOD_MONTHS}）→ シグナルなし")
+        return [], macro
+
     universe = fetch_tse_prime_universe()
     name_map = {t: n for t, n in universe}
     tickers  = [t for t, _ in universe]
@@ -200,37 +201,6 @@ def run_screener_day() -> tuple[list[dict], dict]:
         for t, df in data.items()
     }
 
-    # ── マクロフィルター（BUYシグナルのみ適用）────────────────────
-    # ① 日経ETF(1321.T): 終値が25日MAを上回っているか
-    nikkei_ok = True
-    nk_df = data.get("1321.T")
-    if nk_df is not None and len(nk_df) >= 25:
-        nk_close = float(nk_df["Close"].iloc[-1])
-        nk_ma25  = float(nk_df["Close"].rolling(25).mean().iloc[-1])
-        if not np.isnan(nk_ma25) and nk_close < nk_ma25:
-            nikkei_ok = False
-            print(f"[screener_day] 日経フィルター: NG（終値{nk_close:.0f} < MA25 {nk_ma25:.0f}）→ BUYシグナルなし")
-        else:
-            print(f"[screener_day] 日経フィルター: OK（終値{nk_close:.0f} ≥ MA25 {nk_ma25:.0f}）")
-    else:
-        print("[screener_day] 日経ETFデータ不足 → 日経フィルターOFF")
-
-    # ② S&P500プロキシ(1655.T): 前日の騰落率が SP500_DROP_MAX% 以上か
-    sp500_ok = True
-    sp_df = data.get("1655.T")
-    if sp_df is not None and len(sp_df) >= 2:
-        sp_close_prev = float(sp_df["Close"].iloc[-2])
-        sp_close_last = float(sp_df["Close"].iloc[-1])
-        if sp_close_prev > 0:
-            sp_ret = (sp_close_last - sp_close_prev) / sp_close_prev * 100
-            if sp_ret < SP500_DROP_MAX:
-                sp500_ok = False
-                print(f"[screener_day] S&P500フィルター: NG（前日{sp_ret:+.1f}% < {SP500_DROP_MAX}%）→ BUYシグナルなし")
-            else:
-                print(f"[screener_day] S&P500フィルター: OK（前日{sp_ret:+.1f}%）")
-    else:
-        print("[screener_day] S&P500 ETFデータ不足 → S&P500フィルターOFF")
-
     candidates: list[dict] = []
     for ticker, df in data.items():
         if ticker in ("1321.T", "1655.T"):
@@ -241,10 +211,6 @@ def run_screener_day() -> tuple[list[dict], dict]:
         result = judge_signal_day(ticker, name, df)
         if result is None:
             continue
-        # マクロフィルターはBUYのみ適用
-        if result["direction"] == "BUY":
-            if not nikkei_ok or not sp500_ok:
-                continue
         candidates.append(result)
         print(f"  [HIT] {ticker} {name} {result['direction']} "
               f"前日{result['prev_return']:+.1f}% RSI={result['rsi']:.0f}")

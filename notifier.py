@@ -40,7 +40,7 @@ def _macro_description(macro: dict) -> str:
     bias = macro.get("bias", "neutral")
 
     dow_str = f"S&P500(SPY) {dow:+.1f}%" if dow is not None else "S&P500 取得不可"
-    nas_str = f"ナスダック(QQQ) {nas:+.1f}%" if nas is not None else "ナスダック 取得不可"
+    nas_str = f"ナスダック総合 {nas:+.1f}%" if nas is not None else "ナスダック 取得不可"
 
     if bias == "bearish":
         env = "⚠️ 米国株安"
