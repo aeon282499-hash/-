@@ -1,16 +1,10 @@
 {
-  "date": "2026-03-25",
+  "date": "2026-04-13",
   "signals": [
     {
-      "ticker": "9104.T",
-      "name": "商船三井",
-      "direction": "BUY",
-      "rsi": 60.56,
-      "deviation": 8.42,
-      "range_ratio": 1.33,
-      "vol_ratio": 2.31,
-      "turnover": 107673164800.0,
-      "prev_close": 6382.0
+      "ticker": "2809.T",
+      "name": "キユーピー",
+      "direction": "BUY"
     }
   ]
 }

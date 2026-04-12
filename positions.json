@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "signal_date": "2026-04-13",
+    "entry_date": "2026-04-14",
+    "ticker": "2809.T",
+    "name": "キユーピー",
+    "direction": "BUY",
+    "prev_close": 3880.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  }
+]
