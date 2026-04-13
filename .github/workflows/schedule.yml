@@ -41,4 +41,5 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add positions.json positions_sell.json today_signals.json today_sell_signals.json || true
           git diff --cached --quiet || git commit -m "chore: update positions today_signals [skip ci]"
+          git pull --rebase origin main
           git push origin main
