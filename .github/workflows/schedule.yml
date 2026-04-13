@@ -2,6 +2,8 @@ name: スイングシグナル配信
 
 on:
   workflow_dispatch:           # Cloudflare Workerから起動（毎朝8:05 JST）
+  schedule:
+    - cron: '20 23 * * 0-4'   # バックアップ: 8:20 JST（Cloudflare失敗時の保険）
 
 jobs:
   run:
