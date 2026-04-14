@@ -59,6 +59,16 @@ def main() -> None:
         print(f"[main] {reason} → スキップします")
         sys.exit(0)
 
+    # 重複送信防止: 当日すでに送信済みならスキップ
+    import os, json as _json
+    today_str = today.strftime("%Y-%m-%d")
+    if os.path.exists("today_signals.json"):
+        with open("today_signals.json", encoding="utf-8") as _f:
+            _saved = _json.load(_f)
+        if _saved.get("date") == today_str:
+            print(f"[main] 本日分({today_str})は送信済みです → スキップ")
+            sys.exit(0)
+
     from screener import run_screener
     from notifier import (send_signals, send_results, send_error, send_monthly_report,
                           send_sell_signals, send_sell_results, send_sell_monthly_report)
