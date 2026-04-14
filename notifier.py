@@ -82,17 +82,8 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
         _send_no_signal(date_str, time_str, macro)
         return
 
-    macro_desc = _macro_description(macro)
-
-    # ── ヘッダーEmbed（相場環境） ────────────────────────
-    header_embed = {
-        "title": f"📊【スイング】{date_str} — 相場環境",
-        "description": macro_desc,
-        "color": COLOR_NONE,
-    }
-
     # ── 各銘柄のEmbed ────────────────────────────────────
-    embeds = [header_embed]
+    embeds = []
     for i, sig in enumerate(signals, 1):
         direction    = sig["direction"]
         prev_close   = sig.get("prev_close", 0)
