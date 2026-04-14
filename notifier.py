@@ -15,8 +15,9 @@ COLOR_NONE  = 0x757575   # グレー
 COLOR_ERROR = 0xFDD835   # 黄
 COLOR_WIN   = 0x43A047   # 緑
 
-CAPITAL = 3_000_000   # 総資金（円）
-WEIGHT  = 1 / 3       # 1トレード投入比率（100万 / 300万）
+CAPITAL  = 3_000_000   # 総資金（円）
+WEIGHT   = 1 / 3       # 1トレード投入比率（100万 / 300万）
+MAX_HOLD = 3           # 最大保有営業日数（tracker.py と一致）
 
 
 def _get_webhook_url() -> str:
@@ -250,13 +251,13 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
                 entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
                 cur = entry_dt
                 biz_count = 0
-                while biz_count < 5:
+                while biz_count < MAX_HOLD:
                     cur += timedelta(days=1)
                     if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
                         biz_count += 1
                 deadline = cur
                 deadline_str = deadline.strftime("%m月%d日")
-                remaining = 5 - hold
+                remaining = MAX_HOLD - hold
                 warn = "⚠️ **本日処分！**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに処分）"
             except Exception:
                 warn = ""

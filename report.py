@@ -50,7 +50,7 @@ def fetch_today_ohlc(tickers: list[str]) -> dict[str, dict]:
     today_str = date.today().strftime("%Y-%m-%d")
     result = {}
     for ticker in tickers:
-        code5 = ticker.replace(".T", "").zfill(5)
+        code5 = ticker.replace(".T", "") + "0"   # J-Quants: 4桁コード+"0"（例: 7203→72030）
         try:
             data   = _jquants_get("/equities/daily_quotes",
                                    {"code": code5, "from": today_str, "to": today_str})
