@@ -13,5 +13,20 @@
     "unrealized_pnl": null,
     "exit_type": null,
     "exit_date": null
+  },
+  {
+    "signal_date": "2026-04-14",
+    "entry_date": "2026-04-15",
+    "ticker": "3196.T",
+    "name": "ホットランドホールディングス",
+    "direction": "BUY",
+    "prev_close": 1766.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
   }
 ]
