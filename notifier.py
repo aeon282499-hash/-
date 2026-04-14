@@ -303,6 +303,10 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
                 "footer":      {"text": f"配信時刻: {time_str}"},
             }]
         }, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier] SELL シグナルなし送信失敗: HTTP {resp.status_code}")
+        else:
+            print("[notifier] SELL シグナルなし を送信しました。")
         return
 
     embeds = []
