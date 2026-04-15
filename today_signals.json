@@ -1,4 +1,10 @@
 {
-  "date": "2026-04-15",
-  "signals": []
+  "date": "2026-04-16",
+  "signals": [
+    {
+      "ticker": "5938.T",
+      "name": "ＬＩＸＩＬ",
+      "direction": "BUY"
+    }
+  ]
 }
