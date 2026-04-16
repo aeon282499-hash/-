@@ -1,9 +1,14 @@
 {
-  "date": "2026-04-16",
+  "date": "2026-04-17",
   "signals": [
     {
-      "ticker": "5938.T",
-      "name": "ＬＩＸＩＬ",
+      "ticker": "9021.T",
+      "name": "西日本旅客鉄道",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "3291.T",
+      "name": "飯田グループホールディングス",
       "direction": "BUY"
     }
   ]
