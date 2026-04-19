@@ -1,14 +1,14 @@
 {
-  "date": "2026-04-17",
+  "date": "2026-04-20",
   "signals": [
     {
-      "ticker": "9021.T",
-      "name": "西日本旅客鉄道",
+      "ticker": "8804.T",
+      "name": "東京建物",
       "direction": "BUY"
     },
     {
-      "ticker": "3291.T",
-      "name": "飯田グループホールディングス",
+      "ticker": "5947.T",
+      "name": "リンナイ",
       "direction": "BUY"
     }
   ]
