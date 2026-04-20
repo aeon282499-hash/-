@@ -1,15 +1,4 @@
 {
-  "date": "2026-04-20",
-  "signals": [
-    {
-      "ticker": "8804.T",
-      "name": "東京建物",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "5947.T",
-      "name": "リンナイ",
-      "direction": "BUY"
-    }
-  ]
+  "date": "2026-04-21",
+  "signals": []
 }
