@@ -97,6 +97,16 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
             stop_str   = f"**寄り値 × 0.97**（-3%）"
             tp_str     = f"**寄り値 × 1.05**（+5%）"
             entry_str  = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
+        elif direction == "SELL":
+            action_str = "🔵 **信用売り**（9:00 寄り付き成行）"
+            color      = 0x1E88E5
+            stop_str   = f"**寄り値 × 1.03**（+3%）"
+            tp_str     = f"**寄り値 × 0.97**（-3%）"
+            entry_str  = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
+        else:
+            # 未知の direction はスキップ
+            print(f"[notifier] 未知の direction={direction} → {sig.get('ticker')} をスキップ")
+            continue
 
         # 株数・投入金額（100万円基準）
         if prev_close > 0:

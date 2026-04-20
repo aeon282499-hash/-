@@ -2,17 +2,30 @@
 screener.py — 銘柄選定・売買シグナルロジック
 ================================================
 
-【戦略】RSI(14)モメンタム順張り＋過熱空売り
-  日本株データ: J-Quants API（JPX公式）でレートリミットなし
-  マクロデータ: yfinance（米国市場指数のみ）
+【戦略】
+  BUY : 逆張り平均回帰（RSI売られすぎ＋下方乖離→反発狙い）
+  SELL: 急騰後反落空売り（前日比+5%以上の急騰＋RSI過熱）
 
-■ シグナル判定フロー
-  ① RSI(14)      買い: 60〜79 / 売り: 80以上
-  ② 25MA乖離率   買い: +2.0%以上 / 売り: +5.0%以上
-  ③ ボラ/出来高  値幅≧ATR×1.5 OR 出来高≧平均×1.5
-  ④ 流動性       売買代金≧30億円
-  ⑤ マクロ       米国市場騰落でバイアス調整
-  ⑥ 最終選定     流動性降順で最大3銘柄
+  日本株データ: J-Quants API（JPX公式）でレートリミットなし
+  マクロデータ: Alpha Vantage（米国市場指数のみ）
+  地合い判定 : J-Quants 1321.T（日経225連動ETF）の25日MA比較
+
+■ BUYシグナル判定フロー（judge_signal_pre）
+  ① RSI(14)      ≦ 45（売られすぎ）
+  ② 25MA乖離率   ≦ -1.5%（下がりすぎ）
+  ③ ボラ/出来高  値幅≧ATR×1.5 OR 出来高≧平均×2.0
+  ④ 流動性       売買代金 ≧ 20億円
+  ⑤ 除外         ATR/終値 > 2.5% の高ボラ銘柄はスキップ
+  ⑥ 除外         直近2日以内に決算発表の銘柄はスキップ
+  ⑦ 最終選定     流動性降順で最大 MAX_SIGNALS 銘柄
+
+■ SELLシグナル判定フロー（judge_sell_signal_pre）
+  ① 前日比       ≧ +5.0%（急騰）
+  ② RSI(14)      ≧ 70（明確な買われすぎ）
+  ③ 25MA乖離率   ≧ +5.0%（上がりすぎ）
+  ④ ボラ/出来高  値幅≧ATR×1.5 OR 出来高≧平均×2.0
+  ⑤ 流動性       売買代金 ≧ 20億円
+  ⑥ 最終選定     流動性降順で最大 MAX_SIGNALS 銘柄
 """
 
 import os
@@ -890,8 +903,11 @@ def _nikkei225_universe() -> list[tuple[str, str]]:
 # メインスクリーニング関数
 # ================================================================
 
-def run_screener() -> tuple[list[dict], dict]:
-    """スクリーニングを実行し (signals, macro) を返す。"""
+def run_screener() -> tuple[list[dict], list[dict], dict]:
+    """
+    毎朝のスクリーニング本体。
+    戻り値: (BUYシグナルリスト, SELLシグナルリスト, マクロ情報dict)
+    """
 
     # ── マクロ環境（US市場） ──────────────────────────
     macro = fetch_macro()
@@ -915,18 +931,17 @@ def run_screener() -> tuple[list[dict], dict]:
     # ── 日経225データ取得（市場フィルター用）─────────
     nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可
     try:
-        kwargs_nk = dict(period="60d", interval="1d", auto_adjust=True, progress=False)
-        if _SESSION:
-            kwargs_nk["session"] = _SESSION
-        nk_raw = yf.download("^N225", **kwargs_nk)
-        if len(nk_raw) >= 25:
-            nk_close = float(nk_raw["Close"].iloc[-1])
-            nk_ma25  = float(nk_raw["Close"].rolling(25).mean().iloc[-1])
+        nk_df = data.get("1321.T")
+        if nk_df is not None and len(nk_df) >= 25:
+            nk_close = float(nk_df["Close"].iloc[-1])
+            nk_ma25  = float(nk_df["Close"].rolling(25).mean().iloc[-1])
             nk_above_ma25 = (nk_close >= nk_ma25)
             direction_str = "25MA以上↑" if nk_above_ma25 else "25MA以下↓"
-            print(f"[screener] 日経225: {nk_close:,.0f}円 / 25MA: {nk_ma25:,.0f}円 → {direction_str}")
+            print(f"[screener] 日経ETF(1321.T): {nk_close:,.0f}円 / 25MA: {nk_ma25:,.0f}円 → {direction_str}")
+        else:
+            print("[screener] 1321.T のデータ不足 → 市場フィルターOFF")
     except Exception as e:
-        print(f"[screener] 日経225取得失敗: {e} → 市場フィルターOFF")
+        print(f"[screener] 地合い判定失敗: {e} → 市場フィルターOFF")
 
     # ── シグナル判定 ──────────────────────────────────
     candidates: list[dict] = []
