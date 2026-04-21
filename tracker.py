@@ -154,7 +154,7 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
 
         # entry_date より後、today より前のデータで確認
         post_df = df[
-            (df.index.strftime("%Y-%m-%d") > entry_date_str) &
+            (df.index.strftime("%Y-%m-%d") >= entry_date_str) &
             (df.index.strftime("%Y-%m-%d") < today_str)
         ]
 

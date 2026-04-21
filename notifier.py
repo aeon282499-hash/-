@@ -226,15 +226,21 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
     lines = []
 
     if closed:
-        lines.append("**── 決済済み ──**")
+        lines.append("**── 🔔 本日寄り付きで売却してください ──**")
         for p in closed:
             pnl   = p.get("pnl_pct", 0) or 0
             etype = p.get("exit_type", "?")
             emoji = "✅" if pnl > 0 else "❌"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
+            reason = {
+                "RSI":     "RSI回復（≥50）",
+                "TP":      "利確（+5%）",
+                "STOP":    "損切り（-3%）",
+                "MAXHOLD": "最大保有日数",
+            }.get(etype, etype)
             lines.append(
                 f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
-                f"→ **{pnl:+.2f}%** ［{etype}］"
+                f"→ **{pnl:+.2f}%** ／ 理由: {reason}"
             )
 
     if still_open:
@@ -274,9 +280,10 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
         wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
         lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
 
+    title = f"⚡【売却指示】{date_str}" if closed else f"📋【スイング結果】{date_str}"
     payload = {
         "embeds": [{
-            "title":       f"📋【スイング結果】{date_str}",
+            "title":       title,
             "description": "\n".join(lines),
             "color":       COLOR_WIN if any((p.get("pnl_pct") or 0) > 0 for p in closed) else COLOR_ERROR,
             "footer":      {"text": f"配信時刻: {time_str}"},
