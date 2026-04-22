@@ -686,7 +686,7 @@ judge_signal = judge_signal_pre
 
 
 def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
-    """急騰後反落型空売り戦略（改良版）
+    """急騰後反落型空売り戦略
     条件: 前日比+5%以上の急騰 + RSI≥70 + 乖離+5%以上
     """
     close = df["Close"].dropna()
@@ -717,9 +717,9 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
         return None
     day_change = (last_close - prev_close_val) / prev_close_val * 100
 
-    # 厳格な売り条件
-    RSI_SELL_STRICT  = 70    # RSI70以上（旧55）
-    DEV_SELL_STRICT  = 5.0   # 乖離+5%以上（旧+1.5%）
+    # 売り条件
+    RSI_SELL_STRICT  = 70    # RSI70以上
+    DEV_SELL_STRICT  = 5.0   # 乖離+5%以上
     DAY_CHANGE_MIN   = 5.0   # 前日比+5%以上の急騰
 
     if not (day_change >= DAY_CHANGE_MIN
@@ -974,9 +974,16 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
                       f"RSI={sell_result['rsi']} deviation={sell_result['deviation']:+.1f}% "
                       f"turnover={sell_result['turnover']/1e8:.0f}oku")
 
-    # ── マクロバイアス（参考表示のみ・シグナル絞り込みは行わない）──
+    # ── マクロバイアス（参考表示のみ）──
     bias = macro.get("bias", "neutral")
     print(f"[screener] マクロバイアス: {bias}（参考）")
+
+    # ── SELLは日経25MA以下（下降トレンド）のときのみ配信 ──
+    # BTで確認: 上昇時に売るとPF1.23・MaxDD-19% → 下降時のみでPF2.29・MaxDD-4%
+    if nk_above_ma25 is True:
+        if sell_candidates:
+            print(f"[screener] 日経25MA以上（上昇相場）→ SELL {len(sell_candidates)}件をスキップ")
+        sell_candidates = []
 
     # ── 既存ポジションの銘柄を除外 ───────────────────
     import json as _json

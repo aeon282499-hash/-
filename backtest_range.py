@@ -284,7 +284,11 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
         return
 
     df_all      = pd.DataFrame(trades)
-    df_filtered = df_all[df_all["nk_above_ma25"] == True].copy()
+    # BUY: 上昇トレンド時のみ / SELL: 下降トレンド時のみ（逆向きフィルター）
+    if SELL_ONLY:
+        df_filtered = df_all[df_all["nk_above_ma25"] == False].copy()
+    else:
+        df_filtered = df_all[df_all["nk_above_ma25"] == True].copy()
 
     # ── 全体サマリー ──────────────────────────────────
     s = _summary_stats(df_all)
