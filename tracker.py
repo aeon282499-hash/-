@@ -158,6 +158,7 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
             (df.index.strftime("%Y-%m-%d") < today_str)
         ]
 
+        pos["hold_days"] = 0  # 毎回エントリー日から再計算（累積バグ防止）
         closed = False
         for dt_idx, row in post_df.iterrows():
             pos["hold_days"] += 1
