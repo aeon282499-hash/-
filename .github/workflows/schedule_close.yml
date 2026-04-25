@@ -1,0 +1,33 @@
+name: 大引け前RSI判定
+
+on:
+  workflow_dispatch:           # 手動起動
+  schedule:
+    - cron: '0 6 * * 1-5'      # 15:00 JST（06:00 UTC・月〜金）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 大引け前チェック実行
+        run: python close_check.py

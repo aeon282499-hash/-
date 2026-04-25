@@ -562,3 +562,64 @@ def send_error(error_message: str, today: date) -> None:
         }]
     }
     _post(payload)
+
+
+def send_close_signals(targets: list[dict], today: date) -> None:
+    """大引け前にRSI≥50またはMAXHOLDで処分すべきポジションをDiscord通知する。
+
+    targets: close_check.py が生成した sell_targets リスト
+      [{"ticker", "name", "reason_type": "RSI"|"MAXHOLD", "reason",
+        "today_hold", "rsi_now", "current_price", "entry_open"}]
+    """
+    if not targets:
+        return
+
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    lines = [
+        f"📊【大引け処分指示】{date_str}",
+        f"> クロージングオークション（15:25-15:30）で**成行売り**してください。",
+        f"> 対象: **{len(targets)}銘柄**",
+        "",
+    ]
+
+    for i, t in enumerate(targets, 1):
+        ticker  = t["ticker"].replace(".T", "")
+        name    = t["name"]
+        rtype   = t["reason_type"]
+        reason  = t["reason"]
+        hold    = t.get("today_hold", "?")
+        rsi     = t.get("rsi_now")
+        price   = t.get("current_price")
+        entry   = t.get("entry_open")
+
+        icon = "🔔" if rtype == "RSI" else "⏰"
+        lines.append(f"**{icon} #{i} {name}（{ticker}）**")
+        lines.append(f"・理由: {reason}")
+        lines.append(f"・保有: {hold}日目")
+        if rsi is not None:
+            lines.append(f"・RSI(14): {rsi:.1f}")
+        if price is not None and entry is not None and entry > 0:
+            pnl_now = (price - entry) / entry * 100
+            lines.append(f"・現在値（参考）: {price:,.0f}円 / エントリー{entry:,.0f}円 → {pnl_now:+.2f}%")
+        lines.append("")
+
+    lines.append("**🛒 SBI証券アプリで成行売り（大引け）を発注してください。**")
+    lines.append("約定はクロージングオークションでの板寄せ価格になります。")
+
+    color = COLOR_WIN if any(
+        t.get("current_price") and t.get("entry_open") and t["current_price"] > t["entry_open"]
+        for t in targets
+    ) else COLOR_ERROR
+
+    payload = {
+        "embeds": [{
+            "title":       f"⚡【大引け処分指示】{date_str}",
+            "description": "\n".join(lines),
+            "color":       color,
+            "footer":      {"text": f"配信時刻: {time_str}"},
+        }]
+    }
+    _post(payload)
+    print(f"[notifier] 大引け処分指示を Discord に送信しました（{len(targets)}件）")
