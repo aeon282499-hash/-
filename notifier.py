@@ -69,13 +69,10 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
     time_str = datetime.now(JST).strftime("%H:%M JST")
     macro = macro or {}
 
-    # 処分日（エントリー日から3営業日後）
+    # 処分日（エントリー日含め3営業日・entry_date+2）
     if entry_date is None:
-        _d = today + timedelta(days=1)
-        while _d.weekday() >= 5 or jpholiday.is_holiday(_d):
-            _d += timedelta(days=1)
-        entry_date = _d
-    exit_date = _nth_trading_day(entry_date, 3)
+        entry_date = today
+    exit_date = _nth_trading_day(entry_date, 2)
     exit_date_str = exit_date.strftime("%m月%d日")
 
     if not signals:
@@ -304,11 +301,8 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
     time_str = datetime.now(JST).strftime("%H:%M JST")
 
     if entry_date is None:
-        _d = today + timedelta(days=1)
-        while _d.weekday() >= 5 or jpholiday.is_holiday(_d):
-            _d += timedelta(days=1)
-        entry_date = _d
-    exit_date     = _nth_trading_day(entry_date, 3)
+        entry_date = today
+    exit_date     = _nth_trading_day(entry_date, 2)
     exit_date_str = exit_date.strftime("%m月%d日")
 
     if not signals:

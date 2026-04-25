@@ -108,7 +108,7 @@ def main() -> None:
         signals, sell_signals, macro = run_screener()
 
         # ── ③ 新シグナルをポジションに追加 ───────────────────
-        entry_date     = next_trading_day(today)
+        entry_date     = today  # 当日寄り付きエントリー
         positions      = add_signals_to_positions(positions, signals, today, entry_date)
         sell_positions = add_signals_to_positions(sell_positions, sell_signals, today, entry_date)
         save_positions(positions)
