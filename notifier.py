@@ -341,13 +341,13 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
             "title": f"📉【スイング空売り】#{i}  {sig['name']}（{sig['ticker']}）",
             "color": 0x1E88E5,  # 青
             "fields": [
-                {"name": "📌 アクション",       "value": "🔵 **信用売り**（9:00以降、指値推奨）", "inline": False},
-                {"name": "🎯 エントリー目安",   "value": entry_str,   "inline": False},
+                {"name": "📌 アクション",       "value": "🔵 **信用売り**（9:00 寄り付き成行）", "inline": False},
+                {"name": "🎯 エントリー",       "value": entry_str,   "inline": False},
                 {"name": "💴 推奨株数・投入金額", "value": invest_str, "inline": False},
                 {"name": "🛑 損切りライン",      "value": "**寄り値 × 1.03**（+3%）", "inline": True},
-                {"name": "✅ 利確ライン",        "value": "**寄り値 × 0.97**（-3%）", "inline": True},
+                {"name": "✅ 利確ライン",        "value": "**寄り値 × 0.95**（-5%）", "inline": True},
                 {"name": "📅 保有ルール・処分日",
-                 "value": f"最大**3営業日**保有\nRSI回復（≦50）で早期買戻し\n⏰ **処分期限: {exit_date_str}**",
+                 "value": f"最大**3営業日**保有\nRSI回復（≦50）→ 当日大引けで買戻し\n⏰ **処分期限: {exit_date_str}**（3日目強制大引け）",
                  "inline": False},
                 {"name": "🛡️ 流動性",           "value": f"売買代金 **{turnover_str}**",     "inline": False},
                 {"name": "📊 シグナル根拠",      "value": reason_text,  "inline": False},
@@ -623,3 +623,71 @@ def send_close_signals(targets: list[dict], today: date) -> None:
     }
     _post(payload)
     print(f"[notifier] 大引け処分指示を Discord に送信しました（{len(targets)}件）")
+
+
+def send_close_signals_sell(targets: list[dict], today: date) -> None:
+    """SELL（空売り）ポジションの大引け処分指示を SELL専用Webhookに送信する。
+
+    targets: close_check.py が生成した sell_targets（direction="SELL"）
+    """
+    if not targets:
+        return
+
+    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
+    if not url:
+        print("[notifier] DISCORD_WEBHOOK_SELL_URL 未設定 → SELL大引け処分通知スキップ")
+        return
+
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    lines = [
+        f"📊【空売り大引け処分指示】{date_str}",
+        f"> クロージングオークション（15:25-15:30）で**成行買戻し**してください。",
+        f"> 対象: **{len(targets)}銘柄**",
+        "",
+    ]
+
+    for i, t in enumerate(targets, 1):
+        ticker  = t["ticker"].replace(".T", "")
+        name    = t["name"]
+        rtype   = t["reason_type"]
+        reason  = t["reason"]
+        hold    = t.get("today_hold", "?")
+        rsi     = t.get("rsi_now")
+        price   = t.get("current_price")
+        entry   = t.get("entry_open")
+
+        icon = "🔔" if rtype == "RSI" else "⏰"
+        lines.append(f"**{icon} #{i} {name}（{ticker}）**")
+        lines.append(f"・理由: {reason}")
+        lines.append(f"・保有: {hold}日目")
+        if rsi is not None:
+            lines.append(f"・RSI(14): {rsi:.1f}")
+        if price is not None and entry is not None and entry > 0:
+            # SELL は entry > current で利益
+            pnl_now = (entry - price) / entry * 100
+            lines.append(f"・現在値（参考）: {price:,.0f}円 / エントリー{entry:,.0f}円 → {pnl_now:+.2f}%")
+        lines.append("")
+
+    lines.append("**🛒 SBI証券アプリで成行買戻し（大引け）を発注してください。**")
+    lines.append("約定はクロージングオークションでの板寄せ価格になります。")
+
+    color = COLOR_WIN if any(
+        t.get("current_price") and t.get("entry_open") and t["entry_open"] > t["current_price"]
+        for t in targets
+    ) else COLOR_ERROR
+
+    payload = {
+        "embeds": [{
+            "title":       f"⚡【空売り大引け処分指示】{date_str}",
+            "description": "\n".join(lines),
+            "color":       color,
+            "footer":      {"text": f"配信時刻: {time_str}"},
+        }]
+    }
+    resp = requests.post(url, json=payload, timeout=10)
+    if resp.status_code not in (200, 204):
+        print(f"[notifier] SELL大引け処分通知 失敗: HTTP {resp.status_code}")
+    else:
+        print(f"[notifier] SELL大引け処分指示を Discord に送信しました（{len(targets)}件）")

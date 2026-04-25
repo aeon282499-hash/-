@@ -5,21 +5,24 @@ close_check.py — 大引け前のRSI判定とDiscord通知
 
 実行フロー:
   1. 営業日チェック・時間外スキップ
-  2. positions.json をロード（status=pending/open のBUYポジションのみ対象）
-  3. 各ポジションについて:
+  2. positions.json + positions_sell.json をロード
+  3. status=pending/open のポジションについて:
      - yfinance で当日 current price 取得（~14:45データ・15分遅延）
      - 過去終値（J-Quants）+ current price で RSI(14) 計算
      - 判定:
        * 当日 hold_day == MAX_HOLD: 強制MAXHOLD大引け処分
-       * else if RSI ≥ 50 (BUY): RSI回復で大引け処分推奨
-  4. 該当銘柄があれば notifier.send_close_signals() でDiscord通知
+       * BUY  かつ RSI ≥ 50: RSI回復で大引け処分推奨
+       * SELL かつ RSI ≤ 50: RSI回復で大引け買戻し推奨
+  4. 該当銘柄があれば Discord 通知:
+     - BUY  → DISCORD_WEBHOOK_URL (BUYチャンネル)
+     - SELL → DISCORD_WEBHOOK_SELL_URL (SELLチャンネル)
 
-ユーザーは通知を受けて15:25-15:30のクロージングオークションでSBI証券アプリから成売り発注。
+ユーザーは通知を受けて15:25-15:30のクロージングオークションでSBI証券アプリから成行発注。
 """
 
 import json
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import zoneinfo
 
 import jpholiday
@@ -30,7 +33,8 @@ load_dotenv()
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
-POSITIONS_FILE = "positions.json"
+POSITIONS_FILE      = "positions.json"
+SELL_POSITIONS_FILE = "positions_sell.json"
 MAX_HOLD = 3
 RSI_EXIT_THRESHOLD = 50
 
@@ -56,41 +60,18 @@ def calc_today_hold_day(pos: dict, today: date) -> int:
     return pos.get("hold_days", 0) + 1
 
 
-def main():
-    now = datetime.now(JST)
-    today = now.date()
-    print(f"[close_check] 実行: {now.strftime('%Y-%m-%d %H:%M JST')}")
+def collect_targets(open_positions: list[dict], direction: str, today: date) -> list[dict]:
+    """指定directionのオープンポジションから大引け処分対象を抽出する。
 
-    if not is_trading_day(today):
-        print("[close_check] 休場日のためスキップ")
-        return
-
-    # 14:00〜15:30 JST 以外は誤トリガーとしてスキップ
-    if not (14 <= now.hour <= 15):
-        print(f"[close_check] 時間外スキップ（実行時刻={now.strftime('%H:%M')}）")
-        return
-
-    if not os.path.exists(POSITIONS_FILE):
-        print("[close_check] positions.json なし")
-        return
-    with open(POSITIONS_FILE, encoding="utf-8") as f:
-        positions = json.load(f)
-
-    open_positions = [p for p in positions
-                      if p.get("status") in ("pending", "open")
-                      and p.get("direction") == "BUY"]
+    direction: "BUY" or "SELL"
+    """
     if not open_positions:
-        print("[close_check] BUY オープンポジションなし")
-        return
-
-    print(f"[close_check] 対象 {len(open_positions)} 件")
+        return []
 
     import yfinance as yf
-    from datetime import timedelta
     from screener import calc_rsi, fetch_ticker_ohlcv, _jquants_id_token
 
     token = _jquants_id_token()
-    # 銘柄ごとに過去30営業日分（暦日換算 約45日）取得
     end_str   = (today - timedelta(days=1)).strftime("%Y-%m-%d")
     start_str = (today - timedelta(days=45)).strftime("%Y-%m-%d")
     historical_data: dict = {}
@@ -100,7 +81,7 @@ def main():
         if df is not None and not df.empty:
             historical_data[ticker] = df
 
-    sell_targets = []
+    targets = []
 
     for pos in open_positions:
         ticker = pos["ticker"]
@@ -108,13 +89,14 @@ def main():
         today_hold = calc_today_hold_day(pos, today)
         entry_open = pos.get("entry_open") or pos.get("prev_close")
 
-        print(f"[close_check] {ticker} {name} - day {today_hold}")
+        print(f"[close_check] [{direction}] {ticker} {name} - day {today_hold}")
 
         # MAXHOLD: 強制処分（RSI判定スキップ）
         if today_hold >= MAX_HOLD:
-            sell_targets.append({
+            targets.append({
                 "ticker":        ticker,
                 "name":          name,
+                "direction":     direction,
                 "reason_type":   "MAXHOLD",
                 "reason":        f"保有{today_hold}日目・強制大引け処分",
                 "today_hold":    today_hold,
@@ -141,7 +123,7 @@ def main():
             continue
         df = historical_data[ticker]
         closes = df["Close"].dropna().tolist()
-        closes.append(current_price)  # 当日tentative close
+        closes.append(current_price)
         rsi_now = calc_rsi(pd.Series(closes))
 
         if rsi_now is None:
@@ -150,26 +132,75 @@ def main():
 
         print(f"  RSI={rsi_now:.1f} / current_price={current_price:.0f}")
 
-        if rsi_now >= RSI_EXIT_THRESHOLD:
-            sell_targets.append({
+        rsi_exit = (
+            (direction == "BUY"  and rsi_now >= RSI_EXIT_THRESHOLD) or
+            (direction == "SELL" and rsi_now <= RSI_EXIT_THRESHOLD)
+        )
+        if rsi_exit:
+            cmp = "≥" if direction == "BUY" else "≤"
+            targets.append({
                 "ticker":        ticker,
                 "name":          name,
+                "direction":     direction,
                 "reason_type":   "RSI",
-                "reason":        f"RSI回復（RSI={rsi_now:.1f} ≥ 50）",
+                "reason":        f"RSI回復（RSI={rsi_now:.1f} {cmp} 50）",
                 "today_hold":    today_hold,
                 "rsi_now":       rsi_now,
                 "current_price": current_price,
                 "entry_open":    entry_open,
             })
 
-    if not sell_targets:
-        print("[close_check] 大引け処分対象なし")
+    return targets
+
+
+def main():
+    now = datetime.now(JST)
+    today = now.date()
+    print(f"[close_check] 実行: {now.strftime('%Y-%m-%d %H:%M JST')}")
+
+    if not is_trading_day(today):
+        print("[close_check] 休場日のためスキップ")
         return
 
-    print(f"[close_check] 大引け処分対象 {len(sell_targets)} 件")
+    # 14:00〜15:30 JST 以外は誤トリガーとしてスキップ
+    if not (14 <= now.hour <= 15):
+        print(f"[close_check] 時間外スキップ（実行時刻={now.strftime('%H:%M')}）")
+        return
 
-    from notifier import send_close_signals
-    send_close_signals(sell_targets, today)
+    # ── BUY 処理 ───────────────────────────────────────
+    buy_open: list[dict] = []
+    if os.path.exists(POSITIONS_FILE):
+        with open(POSITIONS_FILE, encoding="utf-8") as f:
+            buy_open = [p for p in json.load(f)
+                        if p.get("status") in ("pending", "open")
+                        and p.get("direction") == "BUY"]
+    print(f"[close_check] BUY オープン {len(buy_open)} 件")
+    buy_targets = collect_targets(buy_open, "BUY", today)
+
+    # ── SELL 処理 ──────────────────────────────────────
+    sell_open: list[dict] = []
+    if os.path.exists(SELL_POSITIONS_FILE):
+        with open(SELL_POSITIONS_FILE, encoding="utf-8") as f:
+            sell_open = [p for p in json.load(f)
+                         if p.get("status") in ("pending", "open")
+                         and p.get("direction") == "SELL"]
+    print(f"[close_check] SELL オープン {len(sell_open)} 件")
+    sell_targets = collect_targets(sell_open, "SELL", today)
+
+    # ── Discord 通知 ───────────────────────────────────
+    if buy_targets:
+        from notifier import send_close_signals
+        send_close_signals(buy_targets, today)
+        print(f"[close_check] BUY 大引け処分通知: {len(buy_targets)} 件")
+    else:
+        print("[close_check] BUY 大引け処分対象なし")
+
+    if sell_targets:
+        from notifier import send_close_signals_sell
+        send_close_signals_sell(sell_targets, today)
+        print(f"[close_check] SELL 大引け処分通知: {len(sell_targets)} 件")
+    else:
+        print("[close_check] SELL 大引け処分対象なし")
 
 
 if __name__ == "__main__":
