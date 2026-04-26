@@ -1,9 +1,44 @@
 {
-  "date": "2026-04-24",
+  "date": "2026-04-27",
   "signals": [
     {
-      "ticker": "2897.T",
-      "name": "日清食品ホールディングス",
+      "ticker": "4661.T",
+      "name": "オリエンタルランド",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "5401.T",
+      "name": "日本製鉄",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "7832.T",
+      "name": "バンダイナムコホールディングス",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "8804.T",
+      "name": "東京建物",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "1571.T",
+      "name": "1571.T",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "4666.T",
+      "name": "パーク２４",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "7476.T",
+      "name": "アズワン",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "7282.T",
+      "name": "豊田合成",
       "direction": "BUY"
     }
   ]
