@@ -162,8 +162,10 @@ def main():
         print("[close_check] 休場日のためスキップ")
         return
 
-    # 14:00〜15:30 JST 以外は誤トリガーとしてスキップ
-    if not (14 <= now.hour <= 15):
+    # 14:00〜17:59 JST 以外は誤トリガーとしてスキップ
+    # （GitHub Actions cron の遅延に備えて上限を17:59まで緩和。15:00定刻が理想だが
+    #  遅延しても通知ゼロを避けるため。15:30以降は大引けに間に合わない可能性あり）
+    if not (14 <= now.hour <= 17):
         print(f"[close_check] 時間外スキップ（実行時刻={now.strftime('%H:%M')}）")
         return
 
