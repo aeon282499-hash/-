@@ -69,15 +69,17 @@ def collect_targets(open_positions: list[dict], direction: str, today: date) -> 
         return []
 
     import yfinance as yf
-    from screener import calc_rsi, fetch_ticker_ohlcv, _jquants_id_token
+    from screener import calc_rsi, batch_download_jquants, _jquants_id_token
 
     token = _jquants_id_token()
     end_str   = (today - timedelta(days=1)).strftime("%Y-%m-%d")
     start_str = (today - timedelta(days=45)).strftime("%Y-%m-%d")
+    # /equities/daily_quotes（個別銘柄エンドポイント）は権限不足で403のため、
+    # 日付ベース全銘柄取得→保有銘柄でフィルタ方式に統一（朝のmain.pyと同じ）
+    all_data = batch_download_jquants(token, start=start_str, end=end_str)
     historical_data: dict = {}
     for ticker in {p["ticker"] for p in open_positions}:
-        code4 = ticker.replace(".T", "")
-        df = fetch_ticker_ohlcv(token, code4, start_str, end_str)
+        df = all_data.get(ticker)
         if df is not None and not df.empty:
             historical_data[ticker] = df
 

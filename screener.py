@@ -237,8 +237,13 @@ def batch_download_jquants(
 
 
 def fetch_ticker_ohlcv(token: str, code4: str, start: str, end: str) -> "pd.DataFrame | None":
-    """特定銘柄のOHLCV日足データをJ-Quantsから取得する（銘柄指定・高速）。"""
-    code5 = code4.zfill(5)
+    """特定銘柄のOHLCV日足データをJ-Quantsから取得する（銘柄指定・高速）。
+
+    注意（2026-04-29時点）: 現在のAPIキーでは /equities/daily_quotes へのアクセス権限がなく
+    全コードで403になる。close_check.py は batch_download_jquants（日付ベース全銘柄取得）に
+    切替済み。この関数を呼ぶ箇所がないため温存だが、使用前に権限確認が必要。
+    """
+    code5 = code4 + "0"
     all_records: list[dict] = []
     pagination_key = None
 
