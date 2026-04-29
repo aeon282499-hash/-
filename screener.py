@@ -61,7 +61,7 @@ VOL_MULT       = 2.0
 TURNOVER_MIN   = 2_000_000_000   # 20億円
 ATR_VOL_CAP    = 2.5             # ATR/終値(%)がこれを超える高ボラ銘柄は除外
 
-MAX_SIGNALS    = 8
+MAX_SIGNALS    = 5      # ※2026-04-29: 8→5 (1件100万・資金500万・MAX5件並列前提)
 BATCH_SIZE     = 100   # yfinanceフォールバック用
 
 _JQUANTS_BASE  = "https://api.jquants.com/v2"
@@ -1003,10 +1003,25 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
     except Exception:
         pass
 
-    # ── 流動性降順ソート → 上位MAX_SIGNALS銘柄 ──────
-    candidates.sort(key=lambda x: x["turnover"], reverse=True)
+    # ── 勝ちやすさスコア降順 → 上位MAX_SIGNALS銘柄（2026-04-29 ver.2）
+    # 経験則ベース:
+    #   RSI 35-42（38付近最高）: 極端じゃない方が反発しやすい
+    #   乖離 -2〜-4%（-3%付近最高）: 浅いと反発不足、深いと落ちナイフ
+    #   流動性: 高いほど良い（板厚で約定確実・退出時も有利）
+    import math
+    def _winprob_score(c: dict) -> float:
+        rsi = c["rsi"]
+        dev = c["deviation"]
+        turn = c["turnover"]
+        # ベル型スコア（中心から離れるほど減点）
+        rsi_score  = 1.0 / (1.0 + ((rsi - 38.0) / 8.0) ** 2)        # 0-1
+        dev_score  = 1.0 / (1.0 + ((dev + 3.0) / 2.0) ** 2)         # 0-1
+        turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0     # 1兆で約1
+        return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
+    candidates.sort(key=_winprob_score, reverse=True)
     signals = candidates[:MAX_SIGNALS]
 
+    # SELLは従来通り流動性降順
     sell_candidates.sort(key=lambda x: x["turnover"], reverse=True)
     sell_signals = sell_candidates[:MAX_SIGNALS]
 

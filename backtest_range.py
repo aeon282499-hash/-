@@ -41,7 +41,7 @@ from screener import (
 )
 
 STOP_LOSS       = 3.0   # % 固定損切り
-TAKE_PROFIT     = 3.0   # % 固定利確
+TAKE_PROFIT     = 5.0   # % 固定利確 ※2026-04-29: 3.0→5.0に修正（tracker.pyと整合）
 MAX_HOLD        = 3     # 最大保有営業日数
 ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
 BUY_ONLY        = True  # TrueにするとBUYシグナルのみ対象
@@ -96,6 +96,17 @@ def run_range_backtest(start: str, end: str) -> None:
     # ── 各営業日でシグナル判定 ────────────────────────
     trades: list[dict] = []
 
+    import math
+    def _buy_score(sig: dict) -> float:
+        # 勝ちやすさスコア（screener.py の _winprob_score と同一）
+        rsi = sig["rsi"]
+        dev = sig["deviation"]
+        turn = sig["turnover"]
+        rsi_score  = 1.0 / (1.0 + ((rsi - 38.0) / 8.0) ** 2)
+        dev_score  = 1.0 / (1.0 + ((dev + 3.0) / 2.0) ** 2)
+        turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0
+        return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
+
     for trade_date in trading_days:
         # 当日オープン中のティッカーを収集（重複エントリー防止）
         open_tickers = {
@@ -103,24 +114,48 @@ def run_range_backtest(start: str, end: str) -> None:
             if t["exit_date"] is None or t["exit_date"] > trade_date
         }
 
+        # ── 当日シグナル候補を1パスで集計 ─────────────────────
+        signal_cache: dict = {}    # ticker -> (signal, pre_df)
+        buy_cands: list = []       # (score, ticker)
+        sell_cands: list = []
+        for _ticker, _full_df in all_data.items():
+            if _ticker in open_tickers:
+                continue
+            try:
+                _pre = _full_df[_full_df.index.strftime("%Y-%m-%d") < trade_date].copy()
+                if len(_pre) < 30:
+                    continue
+                _name = name_map.get(_ticker, _ticker)
+                if SELL_ONLY:
+                    _sig = judge_sell_signal_pre(_ticker, _name, _pre)
+                else:
+                    _sig = judge_signal_pre(_ticker, _name, _pre)
+                if _sig is None:
+                    continue
+                signal_cache[_ticker] = (_sig, _pre)
+                if _sig["direction"] == "BUY":
+                    buy_cands.append((_buy_score(_sig), _ticker))
+                else:
+                    sell_cands.append((_sig["turnover"], _ticker))
+            except Exception:
+                continue
+
+        # ── 上位MAX_SIGNALS銘柄に絞る（BUY/SELL別） ──────────
+        buy_cands.sort(reverse=True)
+        sell_cands.sort(reverse=True)
+        selected_tickers = (
+            {t for _, t in buy_cands[:MAX_SIGNALS]}
+            | {t for _, t in sell_cands[:MAX_SIGNALS]}
+        )
+
         for ticker, full_df in all_data.items():
             if ticker in open_tickers:
                 continue
+            if ticker not in selected_tickers:
+                continue
             try:
-                # 前日までのデータ（ルックアヘッド防止）
-                pre_df = full_df[full_df.index.strftime("%Y-%m-%d") < trade_date].copy()
-                if len(pre_df) < 30:
-                    continue
-
+                signal, pre_df = signal_cache[ticker]
                 name = name_map.get(ticker, ticker)
-
-                # BUY / SELL どちらのシグナル関数を使うか
-                if SELL_ONLY:
-                    signal = judge_sell_signal_pre(ticker, name, pre_df)
-                else:
-                    signal = judge_signal_pre(ticker, name, pre_df)
-                if signal is None:
-                    continue
 
                 # ── 日経MA25状態を記録（フィルター比較用）──────────
                 nk_above = None
