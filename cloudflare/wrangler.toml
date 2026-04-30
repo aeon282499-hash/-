@@ -1,0 +1,10 @@
+name = "close-signal-trigger"
+main = "close-signal-trigger.js"
+compatibility_date = "2025-04-30"
+workers_dev = true
+
+[vars]
+GITHUB_OWNER = "aeon282499-hash"
+GITHUB_REPO = "-"
+WORKFLOW_FILE = "schedule_close.yml"
+GIT_REF = "main"

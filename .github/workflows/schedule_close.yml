@@ -1,9 +1,9 @@
 name: 大引け前RSI判定
 
 on:
-  workflow_dispatch:           # 手動起動
+  workflow_dispatch:           # メイン: cron-job.org → Cloudflare Worker(close-signal-trigger) から 14:55 JST にdispatch
   schedule:
-    - cron: '0 6 * * 1-5'      # 15:00 JST（06:00 UTC・月〜金）
+    - cron: '30 6 * * 1-5'     # バックアップ: 15:30 JST（大引け直前・外部cron失敗時の保険）
 
 concurrency:
   group: ${{ github.workflow }}
