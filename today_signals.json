@@ -1,29 +1,24 @@
 {
-  "date": "2026-04-30",
+  "date": "2026-05-01",
   "signals": [
     {
-      "ticker": "3231.T",
-      "name": "野村不動産ホールディングス",
+      "ticker": "6436.T",
+      "name": "アマノ",
       "direction": "BUY"
     },
     {
-      "ticker": "6902.T",
-      "name": "デンソー",
+      "ticker": "2695.T",
+      "name": "くら寿司",
       "direction": "BUY"
     },
     {
-      "ticker": "3003.T",
-      "name": "ヒューリック",
+      "ticker": "3309.T",
+      "name": "3309.T",
       "direction": "BUY"
     },
     {
-      "ticker": "8972.T",
-      "name": "8972.T",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "9435.T",
-      "name": "光通信",
+      "ticker": "1766.T",
+      "name": "東建コーポレーション",
       "direction": "BUY"
     }
   ]
