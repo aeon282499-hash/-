@@ -88,11 +88,52 @@ def premium_score(c: dict) -> float:
 
 
 # ================================================================
+# ETF/ETN/REIT 判定（個別株のみ採用するため除外）
+# ================================================================
+
+# 名称ベースのETFキーワード（強い特徴語のみ・誤検出を避ける）
+_ETF_NAME_KEYWORDS = (
+    "ETF", "ETN", "REIT",
+    "インバース", "レバレッジ", "ベア", "ブル",
+    "上場投信", "上場インデックス", "上場ベア", "上場ブル",
+    "iシェアーズ", "MAXIS", "NEXT FUNDS",
+    "ダイワ上場投信", "野村NF",
+    "指数連動", "純金信託", "金価格連動",
+)
+
+# ETF/ETN/REITの代表的コード帯（補助的フォールバック・名称取得失敗時）
+_ETF_CODE_PREFIXES = ("13", "14", "15", "16", "17", "18", "21", "22", "23", "25", "26")
+
+# 上記コード帯でも個別株として除外したくない例外（必要に応じて追加）
+_ETF_CODE_EXCEPTIONS = {
+    # 例外があれば追加
+}
+
+
+def is_etf_ticker(ticker: str, name: str | None = None) -> bool:
+    """ETF/ETN/REITか判定。名称優先・コード帯フォールバック。"""
+    if name:
+        for kw in _ETF_NAME_KEYWORDS:
+            if kw in name:
+                return True
+        # 名称があり、ETFキーワードを含まない → 個別株とみなす
+        return False
+    code = ticker.replace(".T", "")
+    if code in _ETF_CODE_EXCEPTIONS:
+        return False
+    return any(code.startswith(p) for p in _ETF_CODE_PREFIXES)
+
+
+# ================================================================
 # シグナル判定（至高版）
 # ================================================================
 
 def judge_signal_premium(ticker: str, name: str, df) -> dict | None:
-    """至高版・厳選買い判定（BUYのみ）。"""
+    """至高版・厳選買い判定（BUYのみ・ETF除外）。"""
+    # ── ETF/ETN/REIT 除外（個別株のみ採用） ────────────
+    if is_etf_ticker(ticker, name):
+        return None
+
     close = df["Close"].dropna()
     if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
         return None
