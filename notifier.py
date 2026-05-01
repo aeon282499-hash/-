@@ -262,7 +262,7 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
                 deadline = cur
                 deadline_str = deadline.strftime("%m月%d日")
                 remaining = MAX_HOLD - hold
-                warn = f"⚠️ **本日処分！**（{deadline_str}）" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに処分）"
+                warn = f"⚠️ **{deadline_str} 大引けに処分**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに処分）"
             except Exception:
                 warn = ""
 
@@ -473,7 +473,7 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
                         biz_count += 1
                 deadline_str = cur.strftime("%m月%d日")
                 remaining    = MAX_HOLD - hold
-                warn = f"⚠️ **本日処分！**（{deadline_str}）" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに買戻し）"
+                warn = f"⚠️ **{deadline_str} 大引けに買戻し**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに買戻し）"
             except Exception:
                 warn = ""
             lines.append(

@@ -1,0 +1,46 @@
+name: 至高シグナル配信
+
+on:
+  workflow_dispatch:           # 手動実行 / Cloudflare Workerから起動可能
+  schedule:
+    - cron: '20 23 * * 0-4'   # 8:20 JST（既存と同タイミング・別チャンネル）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # positions_premium.json / today_signals_premium.json のpushに必要
+    env:
+      DISCORD_WEBHOOK_URL_PREMIUM: ${{ secrets.DISCORD_WEBHOOK_URL_PREMIUM }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 至高シグナル配信実行
+        run: python main_premium.py
+
+      - name: ポジション保存（positions_premium.json をコミット）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add positions_premium.json today_signals_premium.json || true
+          git diff --cached --quiet || git commit -m "chore: update premium positions [skip ci]"
+          git pull --rebase origin main
+          git push origin main
