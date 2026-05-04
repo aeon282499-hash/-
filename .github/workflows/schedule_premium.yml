@@ -1,9 +1,11 @@
-name: 至高シグナル配信
+name: 至高シグナル配信（停止中・2026-05-05）
 
+# 2026-05-05 停止: 4年通しBTで通常スイング(PF1.21/+479%)に劣ることが判明（極PF1.15/+138%）。
+# 復活させる場合は schedule の cron 行のコメントアウトを解除すること。
 on:
-  workflow_dispatch:           # 手動実行 / Cloudflare Workerから起動可能
-  schedule:
-    - cron: '20 23 * * 0-4'   # 8:20 JST（既存と同タイミング・別チャンネル）
+  workflow_dispatch:           # 手動実行のみ残す（緊急時の復旧用）
+  # schedule:
+  #   - cron: '20 23 * * 0-4'   # 8:20 JST（既存と同タイミング・別チャンネル）
 
 concurrency:
   group: ${{ github.workflow }}
