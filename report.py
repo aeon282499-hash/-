@@ -44,23 +44,23 @@ def _jquants_get(path: str, params: dict | None = None) -> dict:
 
 
 def fetch_today_ohlc(tickers: list[str]) -> dict[str, dict]:
-    """J-Quantsで当日の始値・終値を取得する。"""
+    """J-Quants V2 /equities/bars/daily で当日の始値・終値を取得する。"""
     if not tickers:
         return {}
-    today_str = date.today().strftime("%Y-%m-%d")
+    today_compact = date.today().strftime("%Y%m%d")
     result = {}
     for ticker in tickers:
         code5 = ticker.replace(".T", "") + "0"   # J-Quants: 4桁コード+"0"（例: 7203→72030）
         try:
-            data   = _jquants_get("/equities/daily_quotes",
-                                   {"code": code5, "from": today_str, "to": today_str})
-            quotes = data.get("daily_quotes", [])
+            data   = _jquants_get("/equities/bars/daily",
+                                   {"code": code5, "from": today_compact, "to": today_compact})
+            quotes = data.get("data", [])
             if not quotes:
                 print(f"  [report] {ticker}: 本日データなし")
                 continue
             q = quotes[0]
-            o = q.get("AdjustmentOpen")  or q.get("Open")
-            c = q.get("AdjustmentClose") or q.get("Close")
+            o = q.get("AdjO") or q.get("O")
+            c = q.get("AdjC") or q.get("C")
             if o and c and float(o) > 0 and float(c) > 0:
                 result[ticker] = {"open": float(o), "close": float(c)}
             time.sleep(0.5)
