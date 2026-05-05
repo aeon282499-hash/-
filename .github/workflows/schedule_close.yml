@@ -3,7 +3,7 @@ name: 大引け前RSI判定
 on:
   workflow_dispatch:           # メイン: cron-job.org → Cloudflare Worker(close-signal-trigger) から 14:55 JST にdispatch
   schedule:
-    - cron: '30 6 * * 1-5'     # バックアップ: 15:30 JST（大引け直前・外部cron失敗時の保険）
+    - cron: '0 5 * * 1-5'      # バックアップ: 14:00 JST想定（GitHub cronは1-2h遅延するため大引け15:00に間に合うよう前倒し）
 
 concurrency:
   group: ${{ github.workflow }}
