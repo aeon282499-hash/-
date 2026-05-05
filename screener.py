@@ -114,7 +114,7 @@ def fetch_earnings_tickers(days: int = 2) -> set[str]:
 
 
 def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
-    """J-Quants /listed/info から上場銘柄を取得する。"""
+    """J-Quants /equities/master から上場銘柄を取得する（V2）。"""
     if token is None:
         try:
             token = _jquants_id_token()
@@ -122,16 +122,15 @@ def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
             print(f"[universe] J-Quants認証失敗: {e} → フォールバック使用")
             return _nikkei225_universe()
     try:
-        from datetime import date as _date
-        data  = _jquants_get("/listed/info", token, {"date": _date.today().strftime("%Y-%m-%d")})
-        items = data.get("info", [])
+        data  = _jquants_get("/equities/master", token)
+        items = data.get("data", [])
         target_keywords = ["プライム", "スタンダード", "グロース"]
         universe = []
         for item in items:
-            market = item.get("MarketCodeName", "")
+            market = item.get("MktNm", "")
             if any(k in market for k in target_keywords):
                 code   = str(item.get("Code", ""))[:4]
-                name   = item.get("CompanyName", code)
+                name   = item.get("CoName", code)
                 ticker = code + ".T"
                 universe.append((ticker, name))
         print(f"[universe] J-Quants: {len(universe)} 銘柄取得完了")
@@ -237,23 +236,21 @@ def batch_download_jquants(
 
 
 def fetch_ticker_ohlcv(token: str, code4: str, start: str, end: str) -> "pd.DataFrame | None":
-    """特定銘柄のOHLCV日足データをJ-Quantsから取得する（銘柄指定・高速）。
-
-    注意（2026-04-29時点）: 現在のAPIキーでは /equities/daily_quotes へのアクセス権限がなく
-    全コードで403になる。close_check.py は batch_download_jquants（日付ベース全銘柄取得）に
-    切替済み。この関数を呼ぶ箇所がないため温存だが、使用前に権限確認が必要。
-    """
+    """特定銘柄のOHLCV日足データをJ-Quantsから取得する（V2 /equities/bars/daily）。"""
     code5 = code4 + "0"
     all_records: list[dict] = []
     pagination_key = None
 
+    start_compact = start.replace("-", "")
+    end_compact   = end.replace("-", "")
+
     while True:
-        params: dict = {"code": code5, "from": start, "to": end}
+        params: dict = {"code": code5, "from": start_compact, "to": end_compact}
         if pagination_key:
             params["pagination_key"] = pagination_key
         try:
-            data           = _jquants_get("/equities/daily_quotes", token, params)
-            records        = data.get("daily_quotes", [])
+            data           = _jquants_get("/equities/bars/daily", token, params)
+            records        = data.get("data", [])
             all_records.extend(records)
             pagination_key = data.get("pagination_key")
             if not pagination_key:
@@ -270,11 +267,11 @@ def fetch_ticker_ohlcv(token: str, code4: str, start: str, end: str) -> "pd.Data
     df["Date"] = pd.to_datetime(df["Date"])
     df = df.set_index("Date").sort_index()
     df = df.rename(columns={
-        "AdjustmentOpen":   "Open",
-        "AdjustmentHigh":   "High",
-        "AdjustmentLow":    "Low",
-        "AdjustmentClose":  "Close",
-        "AdjustmentVolume": "Volume",
+        "AdjO":  "Open",
+        "AdjH":  "High",
+        "AdjL":  "Low",
+        "AdjC":  "Close",
+        "AdjVo": "Volume",
     })
     if "Close" not in df.columns:
         print(f"[fetch_ticker] {code4} Closeカラムなし")
@@ -624,8 +621,33 @@ def calc_trend(close: pd.Series, period: int = 200) -> str | None:
 # シグナル判定
 # ================================================================
 
+_ETF_NAME_KEYWORDS = (
+    "ETF", "ETN", "REIT",
+    "インバース", "レバレッジ", "ベア", "ブル",
+    "上場投信", "上場インデックス", "上場ベア", "上場ブル",
+    "iシェアーズ", "MAXIS", "NEXT FUNDS",
+    "ダイワ上場投信", "野村NF",
+    "指数連動", "純金信託", "金価格連動",
+)
+_ETF_CODE_PREFIXES = ("13", "14", "15", "16", "17", "18", "21", "22", "23", "25", "26")
+
+
+def is_etf_ticker(ticker: str, name: str | None = None) -> bool:
+    """ETF/ETN/REITか判定。名称優先・コード帯フォールバック。個別株のみ採用するため除外用。"""
+    if name:
+        for kw in _ETF_NAME_KEYWORDS:
+            if kw in name:
+                return True
+        return False
+    code = ticker.replace(".T", "")
+    return any(code.startswith(p) for p in _ETF_CODE_PREFIXES)
+
+
 def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
     """逆張り平均回帰戦略でシグナル判定（RSI + 乖離率 + ボラ/出来高 + 流動性）。"""
+    if is_etf_ticker(ticker, name):
+        return None
+
     close = df["Close"].dropna()
     if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD, 20) + 5:
         return None
@@ -917,8 +939,8 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
     # ── マクロ環境（US市場） ──────────────────────────
     macro = fetch_macro()
 
-    # ── ユニバース取得（東証プライム全銘柄）──────────
-    universe = fetch_tse_prime_universe()
+    # ── ユニバース取得（東証全銘柄: プライム/スタンダード/グロース・ETF/REIT除外）──────────
+    universe = fetch_tse_universe()
     name_map = {t: n for t, n in universe}
     tickers  = [t for t, _ in universe]
     print(f"[screener] ユニバース: {len(tickers)} 銘柄")
