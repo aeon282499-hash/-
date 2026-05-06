@@ -744,10 +744,10 @@ def judge_sell_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | No
         return None
     day_change = (last_close - prev_close_val) / prev_close_val * 100
 
-    # 売り条件
-    RSI_SELL_STRICT  = 70    # RSI70以上
-    DEV_SELL_STRICT  = 5.0   # 乖離+5%以上
-    DAY_CHANGE_MIN   = 5.0   # 前日比+5%以上の急騰
+    # 売り条件（2026-05-06更新: BTで月2.7件・PF1.31・4年累積+43.5%が最適と確認）
+    RSI_SELL_STRICT  = 60    # RSI60以上（旧70）
+    DEV_SELL_STRICT  = 4.0   # 乖離+4%以上（旧5.0）
+    DAY_CHANGE_MIN   = 3.0   # 前日比+3%以上の急騰（旧5.0）
 
     if not (day_change >= DAY_CHANGE_MIN
             and rsi >= RSI_SELL_STRICT
