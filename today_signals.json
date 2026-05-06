@@ -1,24 +1,29 @@
 {
-  "date": "2026-05-01",
+  "date": "2026-05-07",
   "signals": [
     {
-      "ticker": "6436.T",
-      "name": "アマノ",
+      "ticker": "4452.T",
+      "name": "花王",
       "direction": "BUY"
     },
     {
-      "ticker": "2695.T",
-      "name": "くら寿司",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
       "direction": "BUY"
     },
     {
-      "ticker": "3309.T",
-      "name": "3309.T",
+      "ticker": "1911.T",
+      "name": "住友林業",
       "direction": "BUY"
     },
     {
-      "ticker": "1766.T",
-      "name": "東建コーポレーション",
+      "ticker": "1878.T",
+      "name": "大東建託",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "9142.T",
+      "name": "九州旅客鉄道",
       "direction": "BUY"
     }
   ]
