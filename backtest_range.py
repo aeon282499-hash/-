@@ -43,7 +43,8 @@ from screener import (
 STOP_LOSS       = 3.0   # % 固定損切り
 TAKE_PROFIT     = 5.0   # % 固定利確 ※2026-04-29: 3.0→5.0に修正（tracker.pyと整合）
 MAX_HOLD        = 3     # 最大保有営業日数
-ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外
+ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（売り用）
+ATR_VOL_CAP_BUY = 3.0   # 買いは2026-05-07 BT検証で3.0が最適
 BUY_ONLY        = True  # TrueにするとBUYシグナルのみ対象
 SELL_ONLY       = False # TrueにするとSELLシグナルのみ（信用売り専用）
 
@@ -180,7 +181,7 @@ def run_range_backtest(start: str, end: str) -> None:
                 if entry_open <= 0 or np.isnan(entry_open):
                     continue
 
-                # ── 高ボラ銘柄フィルター（ATR/終値 > 3% は除外）──────
+                # ── 高ボラ銘柄フィルター（買い:3.0% / 売り:2.5%）──
                 direction = signal["direction"]
                 if BUY_ONLY and direction != "BUY":
                     continue
@@ -189,7 +190,8 @@ def run_range_backtest(start: str, end: str) -> None:
                 atr = calc_atr(pre_df)
                 last_close = float(pre_df["Close"].iloc[-1])
                 if atr is not None and last_close > 0:
-                    if (atr / last_close * 100) > ATR_VOL_CAP:
+                    cap = ATR_VOL_CAP_BUY if direction == "BUY" else ATR_VOL_CAP
+                    if (atr / last_close * 100) > cap:
                         continue  # 高ボラ銘柄をスキップ
 
                 # ── 固定ストップ・利確計算 ─────────────────────────
