@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-07",
+  "date": "2026-05-08",
   "signals": [
     {
-      "ticker": "4452.T",
-      "name": "花王",
+      "ticker": "7741.T",
+      "name": "ＨＯＹＡ",
       "direction": "BUY"
     },
     {
-      "ticker": "8113.T",
-      "name": "ユニ・チャーム",
+      "ticker": "6758.T",
+      "name": "ソニーグループ",
       "direction": "BUY"
     },
     {
-      "ticker": "1911.T",
-      "name": "住友林業",
+      "ticker": "3941.T",
+      "name": "レンゴー",
       "direction": "BUY"
     },
     {
-      "ticker": "1878.T",
-      "name": "大東建託",
+      "ticker": "8601.T",
+      "name": "大和証券グループ本社",
       "direction": "BUY"
     },
     {
-      "ticker": "9142.T",
-      "name": "九州旅客鉄道",
+      "ticker": "7269.T",
+      "name": "スズキ",
       "direction": "BUY"
     }
   ]
