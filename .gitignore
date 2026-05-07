@@ -2,3 +2,30 @@
 __pycache__/
 *.pyc
 .venv/
+
+# 開発時の大容量データキャッシュ
+jquants_cache.pkl
+*.pkl
+
+# バックテスト結果ログ・CSV
+bt_*.txt
+bt_*.log
+cache_log.txt
+*_grid_log.txt
+*_grid_results.csv
+
+# バックテスト出力CSV（手元で残すが共有不要）
+backtest_*.csv
+backtest_day_*.csv
+backtest_premium_*.csv
+backtest_1570_*.csv
+breakout_*.csv
+daytrade_*.csv
+bt2025_new.log
+bt_premium_*.log
+bt_range_*.log
+
+# 検証用使い捨てスクリプト
+check_bt*.py
+debug_*.py
+test_universe.py
