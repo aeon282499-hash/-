@@ -1,3 +1,54 @@
 {
-  "trades": []
+  "trades": [
+    {
+      "date": "2026-05-07",
+      "ticker": "4452.T",
+      "name": "花王",
+      "direction": "BUY",
+      "open": 5879.0,
+      "close": 5991.0,
+      "pnl": 1.91,
+      "win": true
+    },
+    {
+      "date": "2026-05-07",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
+      "direction": "BUY",
+      "open": 926.0,
+      "close": 935.0,
+      "pnl": 0.97,
+      "win": true
+    },
+    {
+      "date": "2026-05-07",
+      "ticker": "1911.T",
+      "name": "住友林業",
+      "direction": "BUY",
+      "open": 1379.0,
+      "close": 1375.0,
+      "pnl": -0.29,
+      "win": false
+    },
+    {
+      "date": "2026-05-07",
+      "ticker": "1878.T",
+      "name": "大東建託",
+      "direction": "BUY",
+      "open": 3524.0,
+      "close": 3579.0,
+      "pnl": 1.56,
+      "win": true
+    },
+    {
+      "date": "2026-05-07",
+      "ticker": "9142.T",
+      "name": "九州旅客鉄道",
+      "direction": "BUY",
+      "open": 3616.0,
+      "close": 3669.0,
+      "pnl": 1.47,
+      "win": true
+    }
+  ]
 }
