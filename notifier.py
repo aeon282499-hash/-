@@ -188,21 +188,23 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
     lines = []
 
     if closed:
-        lines.append("**── 🔔 本日寄り付きで売却してください ──**")
+        lines.append("**── 📋 決済済み（OCO・大引け処分） ──**")
         for p in closed:
             pnl   = p.get("pnl_pct", 0) or 0
             etype = p.get("exit_type", "?")
             emoji = "✅" if pnl > 0 else "❌"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
             reason = {
-                "RSI":     "RSI回復（≥50）",
-                "TP":      "利確（+5%）",
-                "STOP":    "損切り（-3%）",
-                "MAXHOLD": "最大保有日数",
+                "RSI":     "RSI回復（≥50・大引け）",
+                "TP":      "利確（+5%・OCO）",
+                "STOP":    "損切り（-3%・OCO）",
+                "MAXHOLD": "最大保有日数（大引け）",
             }.get(etype, etype)
+            exit_d = p.get("exit_date", "")
+            exit_str = f"（{exit_d[5:].replace('-', '/')}）" if exit_d else ""
             lines.append(
                 f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
-                f"→ **{pnl:+.2f}%** ／ 理由: {reason}"
+                f"→ **{pnl:+.2f}%** ／ {reason}{exit_str}"
             )
 
     if still_open:
@@ -242,7 +244,7 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
         wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
         lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
 
-    title = f"⚡【売却指示】{date_str}" if closed else f"📋【スイング結果】{date_str}"
+    title = f"📋【スイング決済結果】{date_str}" if closed else f"📋【スイング保有中】{date_str}"
     payload = {
         "embeds": [{
             "title":       title,
@@ -422,14 +424,22 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
     lines = []
 
     if closed:
-        lines.append("**── 決済済み（買い戻し） ──**")
+        lines.append("**── 📋 決済済み（買戻し・OCO/大引け） ──**")
         for p in closed:
             pnl   = p.get("pnl_pct", 0) or 0
             etype = p.get("exit_type", "?")
             emoji = "✅" if pnl > 0 else "❌"
+            reason = {
+                "RSI":     "RSI回復（≤50・大引け）",
+                "TP":      "利確（-5%・OCO）",
+                "STOP":    "損切り（+3%・OCO）",
+                "MAXHOLD": "最大保有日数（大引け）",
+            }.get(etype, etype)
+            exit_d = p.get("exit_date", "")
+            exit_str = f"（{exit_d[5:].replace('-', '/')}）" if exit_d else ""
             lines.append(
                 f"{emoji} **{p['name']}**（{p['ticker']}）空売り "
-                f"→ **{pnl:+.2f}%** ［{etype}］"
+                f"→ **{pnl:+.2f}%** ／ {reason}{exit_str}"
             )
 
     if still_open:

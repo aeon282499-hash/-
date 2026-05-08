@@ -52,7 +52,7 @@ LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 RSI_BUY_MAX    = 45     # RSIがこの値以下 → 買い候補（売られすぎ）
 DEV_BUY_MAX    = -1.5  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
-RSI_SELL_MIN   = 55     # RSIがこの値以上 → 売り候補（買われすぎ）
+# SELL基準は judge_sell_signal_pre 内のローカル定数（RSI_SELL_STRICT=60 等）に統一済み
 DEV_SELL_MIN   = +1.5  # 乖離率がこの値(%)以上 → 売り候補（上がりすぎ）
 
 
@@ -951,7 +951,7 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
     data = batch_download_jquants(token, lookback_trading_days=LOOKBACK_DAYS)
     if not data:
         print("[screener] J-Quantsデータ取得失敗 → シグナルなし")
-        return [], macro
+        return [], [], macro
 
     # ── 決算発表銘柄の除外リスト取得 ─────────────────
     earnings_exclude = fetch_earnings_tickers(days=2)
