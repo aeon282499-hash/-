@@ -12,7 +12,6 @@ import os
 import sys
 import time
 import requests
-from collections import defaultdict
 from datetime import datetime, date
 import zoneinfo
 
@@ -20,52 +19,41 @@ from dotenv import load_dotenv
 
 load_dotenv()
 JST              = zoneinfo.ZoneInfo("Asia/Tokyo")
-_JQUANTS_BASE    = "https://api.jquants.com/v2"
 HISTORY_FILE      = "trade_history.json"
 SELL_HISTORY_FILE = "trade_history_sell.json"
 
 
 # ================================================================
-# J-Quants
+# J-Quants（screener.batch_download_jquants と同じ日付ベース全銘柄取得方式）
+# Light プランでは個別銘柄取得 (?code=) が制限されるため、close_check.py と
+# 同じく当日全銘柄を一括取得→ticker フィルタで処理する。
 # ================================================================
 
-def _jquants_get(path: str, params: dict | None = None) -> dict:
-    api_key = os.getenv("JQUANTS_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("JQUANTS_API_KEY が未設定です")
-    resp = requests.get(
-        f"{_JQUANTS_BASE}{path}",
-        headers={"x-api-key": api_key},
-        params=params or {},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
 def fetch_today_ohlc(tickers: list[str]) -> dict[str, dict]:
-    """J-Quants V2 /equities/bars/daily で当日の始値・終値を取得する。"""
+    """当日の {ticker: {"open": float, "close": float}} を返す。"""
     if not tickers:
         return {}
-    today_compact = date.today().strftime("%Y%m%d")
-    result = {}
+    from screener import batch_download_jquants, _jquants_id_token
+
+    today_str = date.today().strftime("%Y-%m-%d")
+    print(f"[report] J-Quantsで {today_str} の全銘柄を取得中...")
+    token    = _jquants_id_token()
+    all_data = batch_download_jquants(token, start=today_str, end=today_str)
+
+    result: dict[str, dict] = {}
     for ticker in tickers:
-        code5 = ticker.replace(".T", "") + "0"   # J-Quants: 4桁コード+"0"（例: 7203→72030）
+        df = all_data.get(ticker)
+        if df is None or df.empty:
+            print(f"  [report] {ticker}: 本日データなし")
+            continue
         try:
-            data   = _jquants_get("/equities/bars/daily",
-                                   {"code": code5, "from": today_compact, "to": today_compact})
-            quotes = data.get("data", [])
-            if not quotes:
-                print(f"  [report] {ticker}: 本日データなし")
-                continue
-            q = quotes[0]
-            o = q.get("AdjO") or q.get("O")
-            c = q.get("AdjC") or q.get("C")
-            if o and c and float(o) > 0 and float(c) > 0:
-                result[ticker] = {"open": float(o), "close": float(c)}
-            time.sleep(0.5)
+            o = float(df["Open"].iloc[-1])
+            c = float(df["Close"].iloc[-1])
+            if o > 0 and c > 0:
+                result[ticker] = {"open": o, "close": c}
         except Exception as e:
-            print(f"  [report] {ticker} 取得失敗: {e}")
+            print(f"  [report] {ticker} パース失敗: {e}")
+    print(f"[report] {len(result)}/{len(tickers)} 銘柄のOHLC取得完了")
     return result
 
 
@@ -132,41 +120,6 @@ def calc_stats(trades: list[dict]) -> dict:
     }
 
 
-CAPITAL     = 3_000_000   # 総資金（円）
-PER_TRADE   = 1_000_000   # 1トレード投入額（円）
-WEIGHT      = PER_TRADE / CAPITAL  # 資金比率 = 1/3
-
-
-def monthly_return(trades: list[dict]) -> float:
-    """月利（資金300万円・1トレード100万円基準）。"""
-    return round(sum(t["pnl"] for t in trades) * WEIGHT, 2)
-
-
-def build_monthly_summary(trades: list[dict]) -> list[str]:
-    """当年のみ月別累計テキストを生成する。"""
-    current_year = date.today().year
-    year_trades  = [t for t in trades if t["date"].startswith(str(current_year))]
-
-    monthly = defaultdict(list)
-    for t in year_trades:
-        monthly[t["date"][:7]].append(t)
-
-    lines = []
-    for month in sorted(monthly.keys()):
-        s    = calc_stats(monthly[month])
-        mr   = monthly_return(monthly[month])
-        yen  = mr / 100 * CAPITAL
-        sign = "+" if mr >= 0 else ""
-        lines.append(
-            f"`{month}` {s['count']}件 "
-            f"勝率{s['win_rate']}% "
-            f"平均{'+' if s['avg_pnl']>=0 else ''}{s['avg_pnl']}% "
-            f"PF{s['pf']} "
-            f"**月利{sign}{mr}%**（{sign}{yen/10000:.1f}万円）"
-        )
-    return lines
-
-
 # ================================================================
 # Discord 送信
 # ================================================================
@@ -179,6 +132,7 @@ def _post(url: str, payload: dict) -> None:
 
 
 def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -> None:
+    """夕方の1日目スナップショット結果をDiscord送信（実現損益は朝の月次レポートで配信）。"""
     url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
     if not url:
         print("[report] DISCORD_WEBHOOK_URL が未設定です")
@@ -188,7 +142,6 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
     time_str = datetime.now(JST).strftime("%H:%M JST")
     today_s  = calc_stats(results)
 
-    # ── 本日結果 ────────────────────────────────────
     lines = []
     for r in results:
         mark      = "✅" if r["pnl"] > 0 else "❌"
@@ -202,7 +155,7 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
         summary = (
             f"**{today_s['count']}銘柄** エントリー｜"
             f"勝率 {today_s['wins']}/{today_s['count']}（{today_s['win_rate']}%）｜"
-            f"平均損益 **{today_s['avg_pnl']:+.2f}%**"
+            f"平均 **{today_s['avg_pnl']:+.2f}%**"
         )
         color = 0x43A047 if today_s["avg_pnl"] >= 0 else 0xE53935
     else:
@@ -210,51 +163,21 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
         color   = 0x757575
 
     _post(url, {
-        "content": f"## 📊 本日の売買結果｜{date_str}",
+        "content": f"## 📊 本日のシグナル日中結果｜{date_str}",
         "embeds": [{
-            "description": f"{summary}\n\n" + "\n".join(lines),
+            "description": (
+                f"※1日目寄付→終値スナップショット（参考値・実現損益とは別）\n\n"
+                f"{summary}\n\n" + "\n".join(lines)
+            ),
             "color":  color,
             "footer": {"text": f"集計時刻: {time_str}（大引け後）"},
         }],
     })
-
-    # ── 月別 + 年間累計 ─────────────────────────────
-    current_year  = date.today().year
-    year_trades   = [t for t in all_trades if t["date"].startswith(str(current_year))]
-    year_s        = calc_stats(year_trades)
-    monthly_lines = build_monthly_summary(all_trades)
-
-    if not monthly_lines:
-        return
-
-    # 年利 = 当年全トレードの合計pnl × 資金比率
-    annual_return = round(sum(t["pnl"] for t in year_trades) * WEIGHT, 2)
-    annual_yen    = annual_return / 100 * CAPITAL
-    ar_sign       = "+" if annual_return >= 0 else ""
-    yr_sign       = "+" if year_s["avg_pnl"] >= 0 else ""
-
-    year_text = (
-        f"**{current_year}年合計** {year_s['count']}件｜"
-        f"勝率{year_s['win_rate']}%｜"
-        f"平均{yr_sign}{year_s['avg_pnl']}%｜"
-        f"PF **{year_s['pf']}**｜"
-        f"**年利{ar_sign}{annual_return}%**（{ar_sign}{annual_yen/10000:.1f}万円）"
-    )
-
-    _post(url, {
-        "embeds": [{
-            "title":       f"📈 {current_year}年 月別・年間累計",
-            "description": "\n".join(monthly_lines) + f"\n\n{year_text}",
-            "color":       0x1565C0,
-            "footer":      {"text": f"※資金300万円・1トレード100万円基準"},
-        }],
-    })
-
-    print(f"[report] レポート送信完了（本日{today_s['count']}件 / 年間{year_s['count']}件）")
+    print(f"[report] BUYレポート送信完了（本日{today_s['count']}件）")
 
 
 def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dict]) -> None:
-    """空売り結果をSELL専用Webhookに送信する。"""
+    """空売り1日目スナップショット結果をSELL専用Webhookに送信。"""
     url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
     if not url:
         print("[report] DISCORD_WEBHOOK_SELL_URL が未設定 → SELLレポートスキップ")
@@ -276,7 +199,7 @@ def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dic
         summary = (
             f"**{today_s['count']}銘柄** エントリー｜"
             f"勝率 {today_s['wins']}/{today_s['count']}（{today_s['win_rate']}%）｜"
-            f"平均損益 **{today_s['avg_pnl']:+.2f}%**"
+            f"平均 **{today_s['avg_pnl']:+.2f}%**"
         )
         color = 0x43A047 if today_s["avg_pnl"] >= 0 else 0xE53935
     else:
@@ -284,46 +207,17 @@ def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dic
         color   = 0x757575
 
     _post(url, {
-        "content": f"## 📉 本日の空売り結果｜{date_str}",
+        "content": f"## 📉 本日の空売り日中結果｜{date_str}",
         "embeds": [{
-            "description": f"{summary}\n\n" + "\n".join(lines),
+            "description": (
+                f"※1日目寄付→終値スナップショット（参考値・実現損益とは別）\n\n"
+                f"{summary}\n\n" + "\n".join(lines)
+            ),
             "color":  color,
             "footer": {"text": f"集計時刻: {time_str}（大引け後）"},
         }],
     })
-
-    # 月別・年間累計
-    current_year  = date.today().year
-    year_trades   = [t for t in all_trades if t["date"].startswith(str(current_year))]
-    year_s        = calc_stats(year_trades)
-    monthly_lines = build_monthly_summary(all_trades)
-
-    if not monthly_lines:
-        return
-
-    annual_return = round(sum(t["pnl"] for t in year_trades) * WEIGHT, 2)
-    annual_yen    = annual_return / 100 * CAPITAL
-    ar_sign       = "+" if annual_return >= 0 else ""
-    yr_sign       = "+" if year_s["avg_pnl"] >= 0 else ""
-
-    year_text = (
-        f"**{current_year}年合計** {year_s['count']}件｜"
-        f"勝率{year_s['win_rate']}%｜"
-        f"平均{yr_sign}{year_s['avg_pnl']}%｜"
-        f"PF **{year_s['pf']}**｜"
-        f"**年利{ar_sign}{annual_return}%**（{ar_sign}{annual_yen/10000:.1f}万円）"
-    )
-
-    _post(url, {
-        "embeds": [{
-            "title":       f"📉 {current_year}年 月別・年間累計（空売り）",
-            "description": "\n".join(monthly_lines) + f"\n\n{year_text}",
-            "color":       0x1E88E5,
-            "footer":      {"text": "※資金300万円・1トレード100万円基準"},
-        }],
-    })
-
-    print(f"[report] SELL レポート送信完了（本日{today_s['count']}件 / 年間{year_s['count']}件）")
+    print(f"[report] SELL レポート送信完了（本日{today_s['count']}件）")
 
 
 # ================================================================
