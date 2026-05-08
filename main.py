@@ -136,10 +136,13 @@ def main() -> None:
         print(f"[main] today_signals.json ({len(signals)}件) / today_sell_signals.json ({len(sell_signals)}件) 保存")
 
         # ── ⑤ Twitter に投稿 ────────────────────────────────
-        from twitter_notifier import post_swing_signals, post_swing_results
-        post_swing_signals(signals, today, macro)
+        from twitter_notifier import post_swing_signals, post_swing_results, post_monthly_summary
+        post_swing_signals(signals, today, macro, sell_signals=sell_signals)
         if closed_today:
             post_swing_results(closed_today, today)
+        # 月初（1日）は前月の月次サマリーも投稿
+        if today.day == 1:
+            post_monthly_summary(today)
 
         print("[main] 正常終了")
 
