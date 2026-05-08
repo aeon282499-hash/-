@@ -35,6 +35,7 @@ JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
 POSITIONS_FILE      = "positions.json"
 SELL_POSITIONS_FILE = "positions_sell.json"
+LAST_RUN_FILE       = "last_close_check.json"
 MAX_HOLD = 3
 RSI_EXIT_THRESHOLD = 50
 
@@ -171,6 +172,18 @@ def main():
         print(f"[close_check] 時間外スキップ（実行時刻={now.strftime('%H:%M')}）")
         return
 
+    # 重複送信防止: 当日すでに送信済みならスキップ（cron-job.org経路とGitHub cronバックアップの二重発火対策）
+    today_str = today.strftime("%Y-%m-%d")
+    if os.path.exists(LAST_RUN_FILE):
+        try:
+            with open(LAST_RUN_FILE, encoding="utf-8") as _f:
+                _last = json.load(_f)
+            if _last.get("date") == today_str:
+                print(f"[close_check] 本日分({today_str})は送信済みです → スキップ")
+                return
+        except Exception as _e:
+            print(f"[close_check] {LAST_RUN_FILE} 読込失敗: {_e} → 続行")
+
     # ── BUY 処理 ───────────────────────────────────────
     buy_open: list[dict] = []
     if os.path.exists(POSITIONS_FILE):
@@ -205,6 +218,16 @@ def main():
         print(f"[close_check] SELL 大引け処分通知: {len(sell_targets)} 件")
     else:
         print("[close_check] SELL 大引け処分対象なし")
+
+    # 当日処理済みマーカーを書き出し（コミット対象・重複送信防止）
+    with open(LAST_RUN_FILE, "w", encoding="utf-8") as f:
+        json.dump({
+            "date":     today_str,
+            "buy":      [t["ticker"] for t in buy_targets],
+            "sell":     [t["ticker"] for t in sell_targets],
+            "ran_at":   now.strftime("%Y-%m-%d %H:%M JST"),
+        }, f, ensure_ascii=False, indent=2)
+    print(f"[close_check] {LAST_RUN_FILE} 更新（{today_str}）")
 
 
 if __name__ == "__main__":

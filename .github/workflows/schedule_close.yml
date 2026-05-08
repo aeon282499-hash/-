@@ -13,14 +13,17 @@ jobs:
   run:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # last_close_check.json のpushに必要
     env:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       PYTHONIOENCODING: utf-8
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-python@v5
         with:
@@ -31,3 +34,13 @@ jobs:
 
       - name: 大引け前チェック実行
         run: python close_check.py
+
+      - name: マーカー保存（last_close_check.json をコミット）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add last_close_check.json || true
+          git diff --cached --quiet || git commit -m "chore: update last_close_check [skip ci]"
+          git pull --rebase origin main
+          git push origin main
