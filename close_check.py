@@ -49,16 +49,25 @@ def is_trading_day(d) -> bool:
 
 
 def calc_today_hold_day(pos: dict, today: date) -> int:
-    """positions.jsonのhold_days（朝tracker処理後の累計）から当日が第何日目か計算。
+    """エントリー日から today までの実営業日数（両端含む）を返す = 当日の保有日目。
 
-    - entry_date == today: 当日エントリー → 1日目
-    - それ以外: 朝tracker.pyが「前日までの完了日数」をhold_daysにセットしている → +1で当日
+    pos['hold_days'] には依存しない（tracker.py が失敗 / push 失敗で stale だと
+    日数判定がズレてMAXHOLD通知が漏れる事故が起きるため、カレンダー直計算）。
+
+    - entry_date == today: 1日目（当日エントリー）
+    - 通常: entry_date から today まで（土日祝除外）の営業日カウント
     """
-    entry_date_str = pos["entry_date"]
-    today_str = today.strftime("%Y-%m-%d")
-    if entry_date_str == today_str:
+    entry_dt = datetime.strptime(pos["entry_date"], "%Y-%m-%d").date()
+    if entry_dt > today:
+        return 0  # まだエントリー日が来ていない
+    if entry_dt == today:
         return 1
-    return pos.get("hold_days", 0) + 1
+    cur, count = entry_dt, 0
+    while cur <= today:
+        if is_trading_day(cur):
+            count += 1
+        cur += timedelta(days=1)
+    return count
 
 
 def collect_targets(open_positions: list[dict], direction: str, today: date) -> list[dict]:

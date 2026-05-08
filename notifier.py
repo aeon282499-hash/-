@@ -19,8 +19,8 @@ COLOR_SELL  = 0x1E88E5   # 青
 # 表示の分岐用しきい値（screener.VOL_MULT と整合）
 VOL_MULT_THRESHOLD = 2.0
 
-CAPITAL  = 3_000_000   # 総資金（円）
-WEIGHT   = 1 / 3       # 1トレード投入比率（100万 / 300万）
+CAPITAL  = 5_000_000   # 総資金（円）= 100万 × MAX_SIGNALS5並列
+WEIGHT   = 1 / 5       # 1トレード投入比率（100万 / 500万）
 MAX_HOLD = 3           # 最大保有営業日数（tracker.py と一致）
 
 
@@ -66,6 +66,25 @@ def _nth_trading_day(d, n: int):
         if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
             count += 1
     return cur
+
+
+def _calc_today_hold_day(entry_date_str: str, today: date) -> int:
+    """エントリー日から today までの実営業日数（両端含む）= 当日の保有日目。
+    hold_days に依存しない（tracker.py の更新失敗でズレないよう堅牢化）。"""
+    try:
+        entry_dt = datetime.strptime(entry_date_str, "%Y-%m-%d").date()
+    except Exception:
+        return 0
+    if entry_dt > today:
+        return 0
+    if entry_dt == today:
+        return 1
+    cur, count = entry_dt, 0
+    while cur <= today:
+        if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+            count += 1
+        cur += timedelta(days=1)
+    return count
 
 
 def send_signals(signals: list[dict], today: date, macro: dict | None = None, entry_date=None) -> None:
@@ -214,7 +233,7 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
         for p in still_open:
             upnl    = p.get("unrealized_pnl", 0) or 0
             # hold_days は「前日までの完了日数」(tracker.py仕様) → +1で当日の日目
-            today_hold = p.get("hold_days", 0) + 1
+            today_hold = _calc_today_hold_day(p.get("entry_date", ""), today)
             emoji   = "📈" if upnl >= 0 else "📉"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
 
@@ -397,7 +416,7 @@ def send_monthly_report(positions: list[dict], today: date) -> None:
             "title":       f"📈 {current_year}年 月別・年間損益（スイング）",
             "description": desc,
             "color":       color,
-            "footer":      {"text": "※資金300万・1トレード100万基準"},
+            "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
         }]
     })
     print(f"[notifier] 月別・年間損益レポートを送信しました")
@@ -448,7 +467,7 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
         lines.append("**── 保有中（売りポジション持ち越し） ──**")
         for p in still_open:
             upnl = p.get("unrealized_pnl", 0) or 0
-            today_hold = p.get("hold_days", 0) + 1
+            today_hold = _calc_today_hold_day(p.get("entry_date", ""), today)
             emoji = "📈" if upnl >= 0 else "📉"
             try:
                 entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
@@ -531,7 +550,7 @@ def send_sell_monthly_report(positions: list[dict], today: date) -> None:
             "title":       f"📉 {current_year}年 月別・年間損益（スイング空売り）",
             "description": desc,
             "color":       0x43A047 if annual_pct >= 0 else 0xFDD835,
-            "footer":      {"text": "※資金300万・1トレード100万基準"},
+            "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
         }]
     })
     print(f"[notifier] SELL月別・年間損益レポートを送信しました")

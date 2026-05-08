@@ -265,31 +265,29 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
 def main() -> None:
     today_str = date.today().strftime("%Y-%m-%d")
 
-    # BUY シグナル処理
-    buy_signals = _load_signals_file("today_signals.json", today_str)
+    buy_signals  = _load_signals_file("today_signals.json", today_str)
+    sell_signals = _load_signals_file("today_sell_signals.json", today_str)
+
+    # BUY/SELL のtickerをまとめて1回だけJ-Quants取得（batch_download_jquantsは
+    # 全銘柄ダウンロードするので二重呼び出しは無駄）
+    union_tickers = sorted({
+        s["ticker"]
+        for sigs in (buy_signals or [], sell_signals or [])
+        for s in sigs
+    })
+    if not union_tickers:
+        print("[report] 本日シグナル0件 → 取得スキップ")
+        ohlc = {}
+    else:
+        ohlc = fetch_today_ohlc(union_tickers)
+
     if buy_signals is not None:
-        all_tickers = [s["ticker"] for s in buy_signals]
-        print(f"[report] BUY {len(all_tickers)} 銘柄の終値をJ-Quantsで取得中...")
-        ohlc = fetch_today_ohlc(all_tickers)
         results, all_trades = _process_signals(buy_signals, ohlc, today_str, HISTORY_FILE)
         send_report(results, today_str, all_trades)
-    else:
-        ohlc = None
 
-    # SELL シグナル処理
-    sell_signals = _load_signals_file("today_sell_signals.json", today_str)
     if sell_signals is not None:
-        # OHLCデータの取得（BUYで未取得の銘柄だけ追加取得）
-        sell_tickers = [s["ticker"] for s in sell_signals]
-        missing = [t for t in sell_tickers if ohlc is None or t not in ohlc]
-        if missing:
-            print(f"[report] SELL {len(missing)} 銘柄の終値をJ-Quantsで取得中...")
-            sell_ohlc = fetch_today_ohlc(missing)
-            combined_ohlc = {**(ohlc or {}), **sell_ohlc}
-        else:
-            combined_ohlc = ohlc or {}
         results_sell, all_sell_trades = _process_signals(
-            sell_signals, combined_ohlc, today_str, SELL_HISTORY_FILE)
+            sell_signals, ohlc, today_str, SELL_HISTORY_FILE)
         send_sell_report(results_sell, today_str, all_sell_trades)
 
 
