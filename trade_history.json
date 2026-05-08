@@ -49,6 +49,56 @@
       "close": 3669.0,
       "pnl": 1.47,
       "win": true
+    },
+    {
+      "date": "2026-05-08",
+      "ticker": "7741.T",
+      "name": "ＨＯＹＡ",
+      "direction": "BUY",
+      "open": 27410.0,
+      "close": 27470.0,
+      "pnl": 0.22,
+      "win": true
+    },
+    {
+      "date": "2026-05-08",
+      "ticker": "6758.T",
+      "name": "ソニーグループ",
+      "direction": "BUY",
+      "open": 3088.0,
+      "close": 3114.0,
+      "pnl": 0.84,
+      "win": true
+    },
+    {
+      "date": "2026-05-08",
+      "ticker": "3941.T",
+      "name": "レンゴー",
+      "direction": "BUY",
+      "open": 1233.5,
+      "close": 1240.0,
+      "pnl": 0.53,
+      "win": true
+    },
+    {
+      "date": "2026-05-08",
+      "ticker": "8601.T",
+      "name": "大和証券グループ本社",
+      "direction": "BUY",
+      "open": 1479.5,
+      "close": 1445.0,
+      "pnl": -2.33,
+      "win": false
+    },
+    {
+      "date": "2026-05-08",
+      "ticker": "7269.T",
+      "name": "スズキ",
+      "direction": "BUY",
+      "open": 1801.5,
+      "close": 1808.0,
+      "pnl": 0.36,
+      "win": true
     }
   ]
 }
