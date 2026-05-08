@@ -14,6 +14,10 @@ COLOR_BUY   = 0xE53935   # 赤
 COLOR_NONE  = 0x757575   # グレー
 COLOR_ERROR = 0xFDD835   # 黄
 COLOR_WIN   = 0x43A047   # 緑
+COLOR_SELL  = 0x1E88E5   # 青
+
+# 表示の分岐用しきい値（screener.VOL_MULT と整合）
+VOL_MULT_THRESHOLD = 2.0
 
 CAPITAL  = 3_000_000   # 総資金（円）
 WEIGHT   = 1 / 3       # 1トレード投入比率（100万 / 300万）
@@ -65,115 +69,76 @@ def _nth_trading_day(d, n: int):
 
 
 def send_signals(signals: list[dict], today: date, macro: dict | None = None, entry_date=None) -> None:
+    """買いシグナルを1embedにまとめて送信（共通ルールはヘッダ・銘柄は2行コンパクト）。"""
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
     macro = macro or {}
 
-    # 処分日（エントリー日含め3営業日・entry_date+2）
     if entry_date is None:
         entry_date = today
     exit_date = _nth_trading_day(entry_date, 2)
-    exit_date_str = exit_date.strftime("%m月%d日")
+    exit_date_str = exit_date.strftime("%m/%d")
 
     if not signals:
         _send_no_signal(date_str, time_str, macro)
         return
 
-    # ── 各銘柄のEmbed ────────────────────────────────────
-    embeds = []
-    for i, sig in enumerate(signals, 1):
-        direction    = sig["direction"]
-        prev_close   = sig.get("prev_close", 0)
+    # BUYのみ対象（SELLはsend_sell_signalsで別配信）
+    buy_signals = [s for s in signals if s.get("direction") == "BUY"]
+    if not buy_signals:
+        print("[notifier] BUYシグナルなし → send_signalsスキップ")
+        return
 
-        bb_upper = sig.get("bb_upper")
-        bb_lower = sig.get("bb_lower")
+    sep = "─" * 24
+    lines = [
+        f"🎯 **9:00 寄り付き成行**・1件100万円",
+        f"🛑 損切 寄値×0.97 (-3%)  ✅ 利確 寄値×1.05 (+5%)",
+        f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_date_str}**",
+        sep,
+    ]
 
-        if direction == "BUY":
-            action_str = "🔴 **買い**（9:00 寄り付き成行）"
-            color      = COLOR_BUY
-            stop_str   = f"**寄り値 × 0.97**（-3%）"
-            tp_str     = f"**寄り値 × 1.05**（+5%）"
-            entry_str  = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
-        elif direction == "SELL":
-            action_str = "🔵 **信用売り**（9:00 寄り付き成行）"
-            color      = 0x1E88E5
-            stop_str   = f"**寄り値 × 1.03**（+3%）"
-            tp_str     = f"**寄り値 × 0.97**（-3%）"
-            entry_str  = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
-        else:
-            # 未知の direction はスキップ
-            print(f"[notifier] 未知の direction={direction} → {sig.get('ticker')} をスキップ")
-            continue
+    for i, sig in enumerate(buy_signals, 1):
+        ticker     = sig["ticker"].replace(".T", "")
+        name       = sig["name"]
+        prev_close = sig.get("prev_close", 0) or 0
+        rsi        = sig.get("rsi")
+        deviation  = sig.get("deviation")
+        range_r    = sig.get("range_ratio")
+        vol_r      = sig.get("vol_ratio")
+        turnover   = sig.get("turnover", 0) or 0
 
-        # 株数・投入金額（100万円基準）
         if prev_close > 0:
-            shares      = max(100, int(1_000_000 / prev_close / 100) * 100)
-            invest_amt  = shares * prev_close
-            invest_str  = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
+            shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
+            invest_amt = shares * prev_close
+            line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
         else:
-            invest_str  = "**100万円目安**"
+            line1      = f"**#{i} {name}** ({ticker}) 100万円目安"
 
-        reason_text  = "\n".join(f"・{r}" for r in sig["reason"])
-        turnover_str = f"{sig['turnover']/1e8:.0f}億円"
+        parts = []
+        if rsi is not None:
+            parts.append(f"RSI={rsi:.1f}")
+        if deviation is not None:
+            parts.append(f"乖離{deviation:+.1f}%")
+        if vol_r is not None and vol_r >= VOL_MULT_THRESHOLD:
+            parts.append(f"出来高×{vol_r:.1f}")
+        elif range_r is not None:
+            parts.append(f"値幅/ATR={range_r:.1f}")
+        if turnover > 0:
+            parts.append(f"代金{turnover/1e8:.0f}億")
+        line2 = "   " + "・".join(parts)
 
-        embed = {
-            "title": f"📊【スイング】#{i}  {sig['name']}（{sig['ticker']}）",
-            "color": color,
-            "fields": [
-                {
-                    "name":   "📌 アクション",
-                    "value":  action_str,
-                    "inline": False,
-                },
-                {
-                    "name":   "🎯 エントリー",
-                    "value":  entry_str,
-                    "inline": False,
-                },
-                {
-                    "name":   "💴 推奨株数・投入金額",
-                    "value":  invest_str,
-                    "inline": False,
-                },
-                {
-                    "name":   "🛑 損切りライン（目安）",
-                    "value":  stop_str,
-                    "inline": True,
-                },
-                {
-                    "name":   "✅ 利確ライン（目安）",
-                    "value":  tp_str,
-                    "inline": True,
-                },
-                {
-                    "name":   "📅 保有ルール・処分日",
-                    "value":  f"最大**3営業日**保有\nRSI回復（≧50）で早期決済\n⏰ **処分期限: {exit_date_str}**（3営業日後終値）",
-                    "inline": False,
-                },
-                {
-                    "name":   "🛡️ 流動性",
-                    "value":  f"売買代金 **{turnover_str}**（スリッページ軽微）",
-                    "inline": False,
-                },
-                {
-                    "name":   "📊 シグナル根拠",
-                    "value":  reason_text,
-                    "inline": False,
-                },
-            ],
-            "footer": {"text": f"配信時刻: {time_str}"},
-        }
-        embeds.append(embed)
+        lines.append(line1)
+        lines.append(line2)
+        lines.append("")
 
-    payload = {
-        "content": (
-            f"## 📊【スイング】自動売買シグナル｜{date_str}\n"
-            f"> 本日の買いシグナル: **{len(signals)}銘柄**"
-        ),
-        "embeds": embeds[:10],  # Discord上限10
+    embed = {
+        "title":       f"📊【スイング】{date_str} — 買い{len(buy_signals)}銘柄",
+        "description": "\n".join(lines).rstrip(),
+        "color":       COLOR_BUY,
+        "footer":      {"text": f"配信時刻: {time_str}"},
     }
-    _post(payload)
-    print(f"[notifier] {len(signals)} 件のシグナルを Discord に送信しました。")
+    _post({"embeds": [embed]})
+    print(f"[notifier] {len(buy_signals)} 件のシグナルを Discord に送信しました。")
 
 
 def _send_no_signal(date_str: str, time_str: str, macro: dict) -> None:
@@ -320,47 +285,59 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
             print("[notifier] SELL シグナルなし を送信しました。")
         return
 
-    embeds = []
-    for i, sig in enumerate(signals, 1):
-        prev_close = sig.get("prev_close", 0)
-        bb_upper   = sig.get("bb_upper")
+    sep = "─" * 24
+    exit_date_short = exit_date.strftime("%m/%d")
+    lines = [
+        f"🎯 **9:00 寄り付き成行（信用売り）**・1件100万円",
+        f"🛑 損切 寄値×1.03 (+3%)  ✅ 利確 寄値×0.95 (-5%)",
+        f"📅 最大3営業日・RSI≤50で早期買戻し・処分期限 **{exit_date_short}**",
+        sep,
+    ]
 
-        entry_str = f"**9:00 寄り付き成行**\n参考: 前日終値 {prev_close:,.0f}円"
+    for i, sig in enumerate(signals, 1):
+        ticker     = sig["ticker"].replace(".T", "")
+        name       = sig["name"]
+        prev_close = sig.get("prev_close", 0) or 0
+        rsi        = sig.get("rsi")
+        deviation  = sig.get("deviation")
+        day_change = sig.get("day_change")
+        range_r    = sig.get("range_ratio")
+        vol_r      = sig.get("vol_ratio")
+        turnover   = sig.get("turnover", 0) or 0
 
         if prev_close > 0:
             shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
             invest_amt = shares * prev_close
-            invest_str = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
+            line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
         else:
-            invest_str = "**100万円目安**"
+            line1      = f"**#{i} {name}** ({ticker}) 100万円目安"
 
-        reason_text  = "\n".join(f"・{r}" for r in sig["reason"])
-        turnover_str = f"{sig['turnover']/1e8:.0f}億円"
+        parts = []
+        if day_change is not None:
+            parts.append(f"前日比{day_change:+.1f}%")
+        if rsi is not None:
+            parts.append(f"RSI={rsi:.1f}")
+        if deviation is not None:
+            parts.append(f"乖離{deviation:+.1f}%")
+        if vol_r is not None and vol_r >= VOL_MULT_THRESHOLD:
+            parts.append(f"出来高×{vol_r:.1f}")
+        elif range_r is not None:
+            parts.append(f"値幅/ATR={range_r:.1f}")
+        if turnover > 0:
+            parts.append(f"代金{turnover/1e8:.0f}億")
+        line2 = "   " + "・".join(parts)
 
-        embeds.append({
-            "title": f"📉【スイング空売り】#{i}  {sig['name']}（{sig['ticker']}）",
-            "color": 0x1E88E5,  # 青
-            "fields": [
-                {"name": "📌 アクション",       "value": "🔵 **信用売り**（9:00 寄り付き成行）", "inline": False},
-                {"name": "🎯 エントリー",       "value": entry_str,   "inline": False},
-                {"name": "💴 推奨株数・投入金額", "value": invest_str, "inline": False},
-                {"name": "🛑 損切りライン",      "value": "**寄り値 × 1.03**（+3%）", "inline": True},
-                {"name": "✅ 利確ライン",        "value": "**寄り値 × 0.95**（-5%）", "inline": True},
-                {"name": "📅 保有ルール・処分日",
-                 "value": f"最大**3営業日**保有\nRSI回復（≦50）→ 当日大引けで買戻し\n⏰ **処分期限: {exit_date_str}**（3日目強制大引け）",
-                 "inline": False},
-                {"name": "🛡️ 流動性",           "value": f"売買代金 **{turnover_str}**",     "inline": False},
-                {"name": "📊 シグナル根拠",      "value": reason_text,  "inline": False},
-            ],
-            "footer": {"text": f"配信時刻: {time_str}"},
-        })
+        lines.append(line1)
+        lines.append(line2)
+        lines.append("")
 
     payload = {
-        "content": (
-            f"## 📉【スイング空売り】シグナル｜{date_str}\n"
-            f"> 本日の売りシグナル: **{len(signals)}銘柄**"
-        ),
-        "embeds": embeds[:10],
+        "embeds": [{
+            "title":       f"📉【スイング空売り】{date_str} — 売り{len(signals)}銘柄",
+            "description": "\n".join(lines).rstrip(),
+            "color":       COLOR_SELL,
+            "footer":      {"text": f"配信時刻: {time_str}"},
+        }]
     }
     resp = requests.post(url, json=payload, timeout=10)
     if resp.status_code not in (200, 204):
@@ -574,39 +551,37 @@ def send_close_signals(targets: list[dict], today: date) -> None:
     if not targets:
         return
 
-    date_str = today.strftime("%Y年%m月%d日")
+    date_str = today.strftime("%m/%d")
     time_str = datetime.now(JST).strftime("%H:%M JST")
+    sep = "─" * 22
 
     lines = [
-        f"📊【大引け処分指示】{date_str}",
-        f"> クロージングオークション（15:25-15:30）で**成行売り**してください。",
-        f"> 対象: **{len(targets)}銘柄**",
-        "",
+        f"🛒 **15:25-15:30 クロージング**で成行売り（SBI証券）",
+        f"対象: **{len(targets)}銘柄**",
+        sep,
     ]
 
     for i, t in enumerate(targets, 1):
         ticker  = t["ticker"].replace(".T", "")
         name    = t["name"]
         rtype   = t["reason_type"]
-        reason  = t["reason"]
         hold    = t.get("today_hold", "?")
         rsi     = t.get("rsi_now")
         price   = t.get("current_price")
         entry   = t.get("entry_open")
 
-        icon = "🔔" if rtype == "RSI" else "⏰"
-        lines.append(f"**{icon} #{i} {name}（{ticker}）**")
-        lines.append(f"・理由: {reason}")
-        lines.append(f"・保有: {hold}日目")
-        if rsi is not None:
-            lines.append(f"・RSI(14): {rsi:.1f}")
+        if rtype == "RSI":
+            icon = "🔔"
+            tag  = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
+        else:
+            icon = "⏰"
+            tag  = f"{hold}日目MAXHOLD"
+
+        line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
         if price is not None and entry is not None and entry > 0:
             pnl_now = (price - entry) / entry * 100
-            lines.append(f"・現在値（参考）: {price:,.0f}円 / エントリー{entry:,.0f}円 → {pnl_now:+.2f}%")
-        lines.append("")
-
-    lines.append("**🛒 SBI証券アプリで成行売り（大引け）を発注してください。**")
-    lines.append("約定はクロージングオークションでの板寄せ価格になります。")
+            line += f" / {pnl_now:+.2f}%"
+        lines.append(line)
 
     color = COLOR_WIN if any(
         t.get("current_price") and t.get("entry_open") and t["current_price"] > t["entry_open"]
@@ -638,40 +613,38 @@ def send_close_signals_sell(targets: list[dict], today: date) -> None:
         print("[notifier] DISCORD_WEBHOOK_SELL_URL 未設定 → SELL大引け処分通知スキップ")
         return
 
-    date_str = today.strftime("%Y年%m月%d日")
+    date_str = today.strftime("%m/%d")
     time_str = datetime.now(JST).strftime("%H:%M JST")
+    sep = "─" * 22
 
     lines = [
-        f"📊【空売り大引け処分指示】{date_str}",
-        f"> クロージングオークション（15:25-15:30）で**成行買戻し**してください。",
-        f"> 対象: **{len(targets)}銘柄**",
-        "",
+        f"🛒 **15:25-15:30 クロージング**で成行買戻し（SBI証券・信用）",
+        f"対象: **{len(targets)}銘柄**",
+        sep,
     ]
 
     for i, t in enumerate(targets, 1):
         ticker  = t["ticker"].replace(".T", "")
         name    = t["name"]
         rtype   = t["reason_type"]
-        reason  = t["reason"]
         hold    = t.get("today_hold", "?")
         rsi     = t.get("rsi_now")
         price   = t.get("current_price")
         entry   = t.get("entry_open")
 
-        icon = "🔔" if rtype == "RSI" else "⏰"
-        lines.append(f"**{icon} #{i} {name}（{ticker}）**")
-        lines.append(f"・理由: {reason}")
-        lines.append(f"・保有: {hold}日目")
-        if rsi is not None:
-            lines.append(f"・RSI(14): {rsi:.1f}")
+        if rtype == "RSI":
+            icon = "🔔"
+            tag  = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
+        else:
+            icon = "⏰"
+            tag  = f"{hold}日目MAXHOLD"
+
+        line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
         if price is not None and entry is not None and entry > 0:
             # SELL は entry > current で利益
             pnl_now = (entry - price) / entry * 100
-            lines.append(f"・現在値（参考）: {price:,.0f}円 / エントリー{entry:,.0f}円 → {pnl_now:+.2f}%")
-        lines.append("")
-
-    lines.append("**🛒 SBI証券アプリで成行買戻し（大引け）を発注してください。**")
-    lines.append("約定はクロージングオークションでの板寄せ価格になります。")
+            line += f" / {pnl_now:+.2f}%"
+        lines.append(line)
 
     color = COLOR_WIN if any(
         t.get("current_price") and t.get("entry_open") and t["entry_open"] > t["current_price"]
