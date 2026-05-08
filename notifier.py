@@ -232,7 +232,6 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
         lines.append("**── 保有中（持ち越し） ──**")
         for p in still_open:
             upnl    = p.get("unrealized_pnl", 0) or 0
-            # hold_days は「前日までの完了日数」(tracker.py仕様) → +1で当日の日目
             today_hold = _calc_today_hold_day(p.get("entry_date", ""), today)
             emoji   = "📈" if upnl >= 0 else "📉"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
