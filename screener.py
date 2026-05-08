@@ -497,28 +497,28 @@ def fetch_av_history(symbol: str, api_key: str) -> "dict[str, float]":
 
 
 def fetch_macro() -> dict:
-    """前日の米国市場（NYダウ・ナスダック）騰落率を取得する。"""
-    result = {"dow": None, "nasdaq": None, "bias": "neutral"}
+    """前日の米国市場（S&P500・ナスダック総合）騰落率を取得する。"""
+    result = {"sp500": None, "nasdaq": None, "bias": "neutral"}
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
     if api_key:
-        result["dow"]    = _fetch_av_daily_return("SPY",  api_key)  # S&P500 ETF proxy
+        result["sp500"]  = _fetch_av_daily_return("SPY",  api_key)  # S&P500 ETF proxy
         time.sleep(12)  # Alpha Vantage 無料プラン: 5req/min = 12秒待機
         result["nasdaq"] = _fetch_av_daily_return("COMP", api_key)  # Nasdaq 総合指数
     else:
         print("[macro] ALPHA_VANTAGE_API_KEY 未設定 → マクロ取得スキップ")
 
-    dow = result.get("dow") or 0
+    sp = result.get("sp500")  or 0
     nas = result.get("nasdaq") or 0
-    if dow < -1.0 and nas < -1.0:
+    if sp < -1.0 and nas < -1.0:
         result["bias"] = "bearish"
-    elif dow > 1.0 and nas > 1.0:
+    elif sp > 1.0 and nas > 1.0:
         result["bias"] = "bullish"
     else:
         result["bias"] = "neutral"
 
-    dow_str = f"{dow:+.1f}%" if result["dow"] is not None else "取得不可"
+    sp_str  = f"{sp:+.1f}%"  if result["sp500"]  is not None else "取得不可"
     nas_str = f"{nas:+.1f}%" if result["nasdaq"] is not None else "取得不可"
-    print(f"[macro] S&P500: {dow_str}  ナスダック総合: {nas_str}  → {result['bias']}")
+    print(f"[macro] S&P500: {sp_str}  ナスダック総合: {nas_str}  → {result['bias']}")
     return result
 
 

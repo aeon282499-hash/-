@@ -42,14 +42,14 @@ def _post(payload: dict) -> None:
 
 
 def _macro_description(macro: dict) -> str:
-    dow  = macro.get("dow")
+    sp   = macro.get("sp500")
     nas  = macro.get("nasdaq")
     bias = macro.get("bias", "neutral")
 
-    dow_str = f"S&P500(SPY) {dow:+.1f}%" if dow is not None else "S&P500 取得不可"
+    sp_str  = f"S&P500(SPY) {sp:+.1f}%"  if sp  is not None else "S&P500 取得不可"
     nas_str = f"ナスダック総合 {nas:+.1f}%" if nas is not None else "ナスダック 取得不可"
     env = "⚠️ 米国株安" if bias == "bearish" else "🌕 米国株高" if bias == "bullish" else "⚖️ 米国市場はほぼ横ばい"
-    return f"{dow_str} ／ {nas_str}\n{env}"
+    return f"{sp_str} ／ {nas_str}\n{env}"
 
 
 def _nth_trading_day(d, n: int):

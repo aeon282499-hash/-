@@ -40,11 +40,11 @@ def _post(payload: dict) -> None:
 
 def _macro_description(macro: dict) -> str:
     """マクロ環境の説明文を生成する。"""
-    dow = macro.get("dow")
-    nas = macro.get("nasdaq")
+    sp   = macro.get("sp500")
+    nas  = macro.get("nasdaq")
     bias = macro.get("bias", "neutral")
 
-    dow_str = f"S&P500(SPY) {dow:+.1f}%" if dow is not None else "S&P500 取得不可"
+    sp_str  = f"S&P500(SPY) {sp:+.1f}%"  if sp  is not None else "S&P500 取得不可"
     nas_str = f"ナスダック総合 {nas:+.1f}%" if nas is not None else "ナスダック 取得不可"
 
     if bias == "bearish":
@@ -54,7 +54,7 @@ def _macro_description(macro: dict) -> str:
     else:
         env = "⚖️ 米国市場はほぼ横ばい"
 
-    return f"{dow_str} ／ {nas_str}\n{env}"
+    return f"{sp_str} ／ {nas_str}\n{env}"
 
 
 def _nth_trading_day(d, n: int):
@@ -176,24 +176,6 @@ def _send_no_signal(date_str: str, time_str: str, macro: dict) -> None:
     }
     _post(payload)
     print("[notifier] シグナル 0 件の通知を送信しました。")
-
-
-def send_no_signal(today: date) -> None:
-    date_str = today.strftime("%Y年%m月%d日")
-    time_str = datetime.now(JST).strftime("%H:%M JST")
-    _send_no_signal(date_str, time_str, {})
-
-
-def send_skip(reason: str, today: date) -> None:
-    date_str = today.strftime("%Y年%m月%d日")
-    payload = {
-        "embeds": [{
-            "title":       f"🗓️ {date_str} — 配信スキップ",
-            "description": reason,
-            "color":       COLOR_NONE,
-        }]
-    }
-    _post(payload)
 
 
 def send_results(closed: list[dict], still_open: list[dict], today: date) -> None:
