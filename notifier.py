@@ -211,29 +211,29 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
         lines.append("**── 保有中（持ち越し） ──**")
         for p in still_open:
             upnl    = p.get("unrealized_pnl", 0) or 0
-            hold    = p.get("hold_days", 0)
+            # hold_days は「前日までの完了日数」(tracker.py仕様) → +1で当日の日目
+            today_hold = p.get("hold_days", 0) + 1
             emoji   = "📈" if upnl >= 0 else "📉"
             dir_str = "買い" if p["direction"] == "BUY" else "売り"
 
-            # 処分期限日（entry_dateから5営業日目）を計算
+            # 処分期限日: entry日含めて MAX_HOLD 営業日目（= entry + (MAX_HOLD-1) 営業日後）
             try:
                 entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
-                cur = entry_dt
-                biz_count = 0
-                while biz_count < MAX_HOLD:
-                    cur += timedelta(days=1)
-                    if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
-                        biz_count += 1
-                deadline = cur
+                deadline = _nth_trading_day(entry_dt, MAX_HOLD - 1)
                 deadline_str = deadline.strftime("%m月%d日")
-                remaining = MAX_HOLD - hold
-                warn = f"⚠️ **{deadline_str} 大引けに処分**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに処分）"
+                remaining = MAX_HOLD - today_hold  # 今日を除く残り営業日
+                if remaining <= 0:
+                    warn = "⚠️ **本日大引けに処分**"
+                elif remaining == 1:
+                    warn = f"⚠️ **あと1日／{deadline_str} 大引けに処分**"
+                else:
+                    warn = f"（あと{remaining}日／{deadline_str}までに処分）"
             except Exception:
                 warn = ""
 
             lines.append(
                 f"{emoji} **{p['name']}**（{p['ticker']}）{dir_str} "
-                f"含み **{upnl:+.2f}%** — {hold}日目 {warn}"
+                f"含み **{upnl:+.2f}%** — {today_hold}日目 {warn}"
             )
 
     # 合計損益
@@ -438,23 +438,23 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
         lines.append("**── 保有中（売りポジション持ち越し） ──**")
         for p in still_open:
             upnl = p.get("unrealized_pnl", 0) or 0
-            hold = p.get("hold_days", 0)
+            today_hold = p.get("hold_days", 0) + 1
             emoji = "📈" if upnl >= 0 else "📉"
             try:
-                entry_dt  = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
-                cur       = entry_dt
-                biz_count = 0
-                while biz_count < MAX_HOLD:
-                    cur += timedelta(days=1)
-                    if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
-                        biz_count += 1
-                deadline_str = cur.strftime("%m月%d日")
-                remaining    = MAX_HOLD - hold
-                warn = f"⚠️ **{deadline_str} 大引けに買戻し**" if remaining <= 1 else f"（あと{remaining}日／{deadline_str}までに買戻し）"
+                entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
+                deadline = _nth_trading_day(entry_dt, MAX_HOLD - 1)
+                deadline_str = deadline.strftime("%m月%d日")
+                remaining = MAX_HOLD - today_hold
+                if remaining <= 0:
+                    warn = "⚠️ **本日大引けに買戻し**"
+                elif remaining == 1:
+                    warn = f"⚠️ **あと1日／{deadline_str} 大引けに買戻し**"
+                else:
+                    warn = f"（あと{remaining}日／{deadline_str}までに買戻し）"
             except Exception:
                 warn = ""
             lines.append(
-                f"{emoji} **{p['name']}**（{p['ticker']}）含み **{upnl:+.2f}%** — {hold}日目 {warn}"
+                f"{emoji} **{p['name']}**（{p['ticker']}）含み **{upnl:+.2f}%** — {today_hold}日目 {warn}"
             )
 
     if closed:
