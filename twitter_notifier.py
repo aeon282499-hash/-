@@ -75,8 +75,9 @@ def post_swing_signals(
     sell_signals: list[dict] | None = None,
 ) -> None:
     """
-    スイングシグナルの『件数のみ』をツイートする。
-    銘柄名は出さない（有料導線維持のため）。
+    スイングシグナルの『件数 + チラ見せ1銘柄ずつ』をツイートする。
+    チラ見せは screener の勝ちやすさスコア1位（先頭要素）。銘柄名+コードのみ。
+    買値・STOP・TP・買い理由は note メンバーシップ限定。
     """
     sell_signals = sell_signals or []
     if not buy_signals and not sell_signals:
@@ -90,12 +91,28 @@ def post_swing_signals(
     if sell_signals:
         lines.append(f"🔵 SELL {len(sell_signals)}件")
 
+    # チラ見せ：各方向のスコア1位を銘柄名+コードだけ公開
+    teaser_lines = []
+    if buy_signals:
+        top = buy_signals[0]
+        code = top["ticker"].replace(".T", "")
+        teaser_lines.append(f"  {code} {top['name']}（BUY）")
+    if sell_signals:
+        top = sell_signals[0]
+        code = top["ticker"].replace(".T", "")
+        teaser_lines.append(f"  {code} {top['name']}（SELL）")
+    if teaser_lines:
+        lines.append("")
+        lines.append("▶ 本日のチラ見せ（スコア1位）")
+        lines.extend(teaser_lines)
+
     sp  = macro.get("sp500")
     nas = macro.get("nasdaq")
     if sp is not None and nas is not None:
+        lines.append("")
         lines.append(f"米市況: S&P500 {sp:+.2f}% / NASDAQ {nas:+.2f}%")
 
-    lines.append("#日本株 #スイングトレード #売買シグナル")
+    lines.append("#日本株 #スイングトレード")
     _post("\n".join(lines) + _cta())
 
 
