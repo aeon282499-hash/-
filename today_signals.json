@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-08",
+  "date": "2026-05-11",
   "signals": [
     {
-      "ticker": "7741.T",
-      "name": "ＨＯＹＡ",
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "6758.T",
-      "name": "ソニーグループ",
+      "ticker": "4613.T",
+      "name": "関西ペイント",
       "direction": "BUY"
     },
     {
-      "ticker": "3941.T",
-      "name": "レンゴー",
+      "ticker": "2587.T",
+      "name": "サントリービバレッジ＆フード",
       "direction": "BUY"
     },
     {
-      "ticker": "8601.T",
-      "name": "大和証券グループ本社",
+      "ticker": "8952.T",
+      "name": "8952.T",
       "direction": "BUY"
     },
     {
-      "ticker": "7269.T",
-      "name": "スズキ",
+      "ticker": "8953.T",
+      "name": "8953.T",
       "direction": "BUY"
     }
   ]
