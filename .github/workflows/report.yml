@@ -29,6 +29,9 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
+          DISCORD_WEBHOOK_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_URL_PUBLIC }}
+          DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
+          DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python report.py
 

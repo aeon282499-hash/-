@@ -24,6 +24,28 @@ WEIGHT   = 1 / 5       # 1トレード投入比率（100万 / 500万）
 MAX_HOLD = 3           # 最大保有営業日数（tracker.py と一致）
 
 
+# 公開（note メンバー向け）Discord Webhook URLs
+# 副業運用：株AI Discord サーバーの各チャンネルに並行送信する
+PUBLIC_BUY     = os.getenv("DISCORD_WEBHOOK_URL_PUBLIC", "").strip()
+PUBLIC_SELL    = os.getenv("DISCORD_WEBHOOK_SELL_URL_PUBLIC", "").strip()
+PUBLIC_CLOSE   = os.getenv("DISCORD_WEBHOOK_CLOSE_URL_PUBLIC", "").strip()
+PUBLIC_MONTHLY = os.getenv("DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC", "").strip()
+
+_MIRROR_DEFAULT = "__USE_DEFAULT__"  # sentinel: Noneと区別するため
+
+
+def _mirror_to_public(payload: dict, url: str) -> None:
+    """公開Discordへ並行送信。失敗しても本送信を止めない。"""
+    if not url:
+        return
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier-public] mirror HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"[notifier-public] mirror failed: {e}")
+
+
 def _get_webhook_url() -> str:
     url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
     if not url:
@@ -31,11 +53,27 @@ def _get_webhook_url() -> str:
     return url
 
 
-def _post(payload: dict) -> None:
-    url  = _get_webhook_url()
-    resp = requests.post(url, json=payload, timeout=10)
-    if resp.status_code not in (200, 204):
-        raise RuntimeError(f"Discord送信失敗: HTTP {resp.status_code}\n{resp.text}")
+def _post(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
+    """個人用BUY Webhookに送信し、公開Discord(PUBLIC_BUY by default)にも並行送信する。
+
+    mirror引数で上書き可能：
+        - 省略時: PUBLIC_BUY にミラー（buy/results/no_signal用）
+        - mirror=PUBLIC_CLOSE / PUBLIC_MONTHLY: 別チャンネルに出したい場合
+        - mirror=None: ミラーしない
+
+    個人用送信が失敗しても公開ミラーは試行する（運用上：個人用壊れ時の救済）。
+    """
+    try:
+        url  = _get_webhook_url()
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier] 個人用送信失敗: HTTP {resp.status_code} {resp.text[:200]}")
+    except Exception as e:
+        print(f"[notifier] 個人用送信失敗: {e}")
+    # 公開用ミラー
+    target = PUBLIC_BUY if mirror == _MIRROR_DEFAULT else mirror
+    if target:
+        _mirror_to_public(payload, target)
 
 
 def _macro_description(macro: dict) -> str:
@@ -258,12 +296,7 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
 
 
 def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None:
-    """空売りシグナルを SELL専用Webhookに送信する。"""
-    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
-    if not url:
-        print("[notifier] DISCORD_WEBHOOK_SELL_URL が未設定 → SELL通知スキップ")
-        return
-
+    """空売りシグナルを SELL専用Webhook + 公開SELL Discordに送信する。"""
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
 
@@ -273,18 +306,15 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
     exit_date_str = exit_date.strftime("%m月%d日")
 
     if not signals:
-        resp = requests.post(url, json={
+        _post_sell({
             "embeds": [{
                 "title":       f"📉【スイング空売り】{date_str} — シグナルなし",
                 "description": "本日の空売りシグナルは0件です。",
                 "color":       COLOR_NONE,
                 "footer":      {"text": f"配信時刻: {time_str}"},
             }]
-        }, timeout=10)
-        if resp.status_code not in (200, 204):
-            print(f"[notifier] SELL シグナルなし送信失敗: HTTP {resp.status_code}")
-        else:
-            print("[notifier] SELL シグナルなし を送信しました。")
+        })
+        print("[notifier] SELL シグナルなし を送信しました。")
         return
 
     sep = "─" * 24
@@ -341,9 +371,7 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
             "footer":      {"text": f"配信時刻: {time_str}"},
         }]
     }
-    resp = requests.post(url, json=payload, timeout=10)
-    if resp.status_code not in (200, 204):
-        print(f"[notifier] SELL Discord送信失敗: HTTP {resp.status_code}")
+    _post_sell(payload)
     print(f"[notifier] SELL {len(signals)} 件のシグナルを Discord に送信しました。")
 
 
@@ -399,18 +427,23 @@ def send_monthly_report(positions: list[dict], today: date) -> None:
             "color":       color,
             "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
         }]
-    })
+    }, mirror=PUBLIC_MONTHLY)
     print(f"[notifier] 月別・年間損益レポートを送信しました")
 
 
-def _post_sell(payload: dict) -> None:
+def _post_sell(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
+    """個人用SELL Webhookに送信し、公開Discord(PUBLIC_SELL by default)にも並行送信する。"""
     url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
     if not url:
         print("[notifier] DISCORD_WEBHOOK_SELL_URL が未設定 → SELL通知スキップ")
-        return
-    resp = requests.post(url, json=payload, timeout=10)
-    if resp.status_code not in (200, 204):
-        print(f"[notifier] SELL Discord送信失敗: HTTP {resp.status_code}")
+    else:
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier] SELL Discord送信失敗: HTTP {resp.status_code}")
+    # 公開用ミラー
+    target = PUBLIC_SELL if mirror == _MIRROR_DEFAULT else mirror
+    if target:
+        _mirror_to_public(payload, target)
 
 
 def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
@@ -533,7 +566,7 @@ def send_sell_monthly_report(positions: list[dict], today: date) -> None:
             "color":       0x43A047 if annual_pct >= 0 else 0xFDD835,
             "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
         }]
-    })
+    }, mirror=PUBLIC_MONTHLY)
     print(f"[notifier] SELL月別・年間損益レポートを送信しました")
 
 
@@ -606,21 +639,16 @@ def send_close_signals(targets: list[dict], today: date) -> None:
             "footer":      {"text": f"配信時刻: {time_str}"},
         }]
     }
-    _post(payload)
+    _post(payload, mirror=PUBLIC_CLOSE)
     print(f"[notifier] 大引け処分指示を Discord に送信しました（{len(targets)}件）")
 
 
 def send_close_signals_sell(targets: list[dict], today: date) -> None:
-    """SELL（空売り）ポジションの大引け処分指示を SELL専用Webhookに送信する。
+    """SELL（空売り）ポジションの大引け処分指示を SELL専用Webhook + 公開CLOSE Discordに送信する。
 
     targets: close_check.py が生成した sell_targets（direction="SELL"）
     """
     if not targets:
-        return
-
-    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
-    if not url:
-        print("[notifier] DISCORD_WEBHOOK_SELL_URL 未設定 → SELL大引け処分通知スキップ")
         return
 
     date_str = today.strftime("%m/%d")
@@ -669,8 +697,5 @@ def send_close_signals_sell(targets: list[dict], today: date) -> None:
             "footer":      {"text": f"配信時刻: {time_str}"},
         }]
     }
-    resp = requests.post(url, json=payload, timeout=10)
-    if resp.status_code not in (200, 204):
-        print(f"[notifier] SELL大引け処分通知 失敗: HTTP {resp.status_code}")
-    else:
-        print(f"[notifier] SELL大引け処分指示を Discord に送信しました（{len(targets)}件）")
+    _post_sell(payload, mirror=PUBLIC_CLOSE)
+    print(f"[notifier] SELL大引け処分指示を Discord に送信しました（{len(targets)}件）")
