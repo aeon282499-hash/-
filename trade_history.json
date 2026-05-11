@@ -99,6 +99,56 @@
       "close": 1808.0,
       "pnl": 0.36,
       "win": true
+    },
+    {
+      "date": "2026-05-11",
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
+      "direction": "BUY",
+      "open": 1321.5,
+      "close": 1326.0,
+      "pnl": 0.34,
+      "win": true
+    },
+    {
+      "date": "2026-05-11",
+      "ticker": "4613.T",
+      "name": "関西ペイント",
+      "direction": "BUY",
+      "open": 2350.0,
+      "close": 2366.0,
+      "pnl": 0.68,
+      "win": true
+    },
+    {
+      "date": "2026-05-11",
+      "ticker": "2587.T",
+      "name": "サントリービバレッジ＆フード",
+      "direction": "BUY",
+      "open": 4396.0,
+      "close": 4475.0,
+      "pnl": 1.8,
+      "win": true
+    },
+    {
+      "date": "2026-05-11",
+      "ticker": "8952.T",
+      "name": "8952.T",
+      "direction": "BUY",
+      "open": 116800.0,
+      "close": 116900.0,
+      "pnl": 0.09,
+      "win": true
+    },
+    {
+      "date": "2026-05-11",
+      "ticker": "8953.T",
+      "name": "8953.T",
+      "direction": "BUY",
+      "open": 114800.0,
+      "close": 114700.0,
+      "pnl": -0.09,
+      "win": false
     }
   ]
 }
