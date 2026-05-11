@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-11",
+  "date": "2026-05-12",
   "signals": [
     {
-      "ticker": "3289.T",
-      "name": "東急不動産ホールディングス",
+      "ticker": "7164.T",
+      "name": "全国保証",
       "direction": "BUY"
     },
     {
-      "ticker": "4613.T",
-      "name": "関西ペイント",
+      "ticker": "8972.T",
+      "name": "8972.T",
       "direction": "BUY"
     },
     {
-      "ticker": "2587.T",
-      "name": "サントリービバレッジ＆フード",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "8952.T",
-      "name": "8952.T",
+      "ticker": "2871.T",
+      "name": "ニチレイ",
       "direction": "BUY"
     },
     {
-      "ticker": "8953.T",
-      "name": "8953.T",
+      "ticker": "5108.T",
+      "name": "ブリヂストン",
       "direction": "BUY"
     }
   ]
