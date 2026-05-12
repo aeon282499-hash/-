@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-12",
+  "date": "2026-05-13",
   "signals": [
     {
-      "ticker": "7164.T",
-      "name": "全国保証",
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
       "direction": "BUY"
     },
     {
-      "ticker": "8972.T",
-      "name": "8972.T",
+      "ticker": "9432.T",
+      "name": "ＮＴＴ",
       "direction": "BUY"
     },
     {
-      "ticker": "2503.T",
-      "name": "キリンホールディングス",
+      "ticker": "1398.T",
+      "name": "1398.T",
       "direction": "BUY"
     },
     {
-      "ticker": "2871.T",
-      "name": "ニチレイ",
+      "ticker": "3462.T",
+      "name": "3462.T",
       "direction": "BUY"
     },
     {
-      "ticker": "5108.T",
-      "name": "ブリヂストン",
+      "ticker": "9509.T",
+      "name": "北海道電力",
       "direction": "BUY"
     }
   ]
