@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-13",
+  "date": "2026-05-14",
   "signals": [
     {
-      "ticker": "9433.T",
-      "name": "ＫＤＤＩ",
+      "ticker": "7532.T",
+      "name": "パン・パシフィック・インターナショナルホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "9432.T",
-      "name": "ＮＴＴ",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
       "direction": "BUY"
     },
     {
-      "ticker": "1398.T",
-      "name": "1398.T",
+      "ticker": "9064.T",
+      "name": "ヤマトホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "3462.T",
-      "name": "3462.T",
+      "ticker": "5411.T",
+      "name": "ＪＦＥホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "9509.T",
-      "name": "北海道電力",
+      "ticker": "7616.T",
+      "name": "コロワイド",
       "direction": "BUY"
     }
   ]
