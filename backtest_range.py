@@ -122,11 +122,13 @@ def run_range_backtest(start: str, end: str) -> None:
         for _ticker, _full_df in all_data.items():
             if _ticker in open_tickers:
                 continue
+            if _ticker not in name_map:
+                continue
             try:
                 _pre = _full_df[_full_df.index.strftime("%Y-%m-%d") < trade_date].copy()
                 if len(_pre) < 30:
                     continue
-                _name = name_map.get(_ticker, _ticker)
+                _name = name_map[_ticker]
                 if SELL_ONLY:
                     _sig = judge_sell_signal_pre(_ticker, _name, _pre)
                 else:
@@ -156,7 +158,7 @@ def run_range_backtest(start: str, end: str) -> None:
                 continue
             try:
                 signal, pre_df = signal_cache[ticker]
-                name = name_map.get(ticker, ticker)
+                name = name_map[ticker]
 
                 # ── 日経MA25状態を記録（フィルター比較用）──────────
                 nk_above = None
