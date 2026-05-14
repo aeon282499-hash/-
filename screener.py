@@ -975,10 +975,12 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
     candidates: list[dict] = []
     sell_candidates: list[dict] = []
     for ticker, df in data.items():
+        if ticker not in name_map:
+            continue
         close = df["Close"].dropna()
         if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD) + 5:
             continue
-        name = name_map.get(ticker, ticker)
+        name = name_map[ticker]
 
         # BUY判定
         result = judge_signal_pre(ticker, name, df)
