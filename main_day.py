@@ -47,7 +47,7 @@ def save_day_signals(signals_data: list[dict]) -> None:
 
 
 def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[dict]:
-    """前日のシグナルの実際の損益を計算して返す。"""
+    """前日のシグナル結果を計算（v2: 寄り→引け・MAX指値の執行可否判定）。"""
     if not yesterday_signals:
         return []
 
@@ -61,9 +61,9 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
 
     results = []
     for sig in yesterday_signals:
-        ticker     = sig["ticker"]
-        entry_date = sig.get("entry_date")
-        direction  = sig["direction"]
+        ticker          = sig["ticker"]
+        entry_date      = sig.get("entry_date")
+        max_entry_price = sig.get("max_entry_price")
         df = all_data.get(ticker)
         if df is None or df.empty or not entry_date:
             continue
@@ -74,45 +74,36 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
 
         entry_open  = float(entry_rows["Open"].iloc[0])
         entry_close = float(entry_rows["Close"].iloc[0])
-        entry_high  = float(entry_rows["High"].iloc[0])
-        entry_low   = float(entry_rows["Low"].iloc[0])
 
-        STOP = 3.0
-        TP   = 5.0
+        # MAX指値判定: 寄り値が指値以下なら執行、超過なら見送り
+        if max_entry_price is not None and entry_open > max_entry_price:
+            results.append({
+                **sig,
+                "entry_open":  entry_open,
+                "entry_close": entry_close,
+                "pnl_pct":     0.0,
+                "exit_type":   "SKIP",
+                "win":         False,
+            })
+            continue
 
-        if direction == "BUY":
-            stop_p = entry_open * (1 - STOP / 100)
-            tp_p   = entry_open * (1 + TP   / 100)
-            if entry_low <= stop_p:
-                pnl, etype = -STOP, "STOP"
-            elif entry_high >= tp_p:
-                pnl, etype = +TP, "TP"
-            else:
-                pnl   = (entry_close - entry_open) / entry_open * 100
-                etype = "CLOSE"
-        else:
-            stop_p = entry_open * (1 + STOP / 100)
-            tp_p   = entry_open * (1 - TP   / 100)
-            if entry_high >= stop_p:
-                pnl, etype = -STOP, "STOP"
-            elif entry_low <= tp_p:
-                pnl, etype = +TP, "TP"
-            else:
-                pnl   = (entry_open - entry_close) / entry_open * 100
-                etype = "CLOSE"
+        # v2: 寄り買い → 引け売り（1日完結・損切り利確なし）
+        pnl_pct = (entry_close - entry_open) / entry_open * 100
 
         results.append({
             **sig,
-            "pnl_pct":   round(pnl, 3),
-            "exit_type": etype,
-            "win":       pnl > 0,
+            "entry_open":  entry_open,
+            "entry_close": entry_close,
+            "pnl_pct":     round(pnl_pct, 3),
+            "exit_type":   "CLOSE",
+            "win":         pnl_pct > 0,
         })
 
     return results
 
 
 def send_day_results(results: list[dict], today: date) -> None:
-    """デイトレ結果を Discord に送信する。"""
+    """デイトレ結果を Discord に送信（v2: 寄り→引け、SKIP含む）。"""
     if not results:
         return
 
@@ -122,27 +113,44 @@ def send_day_results(results: list[dict], today: date) -> None:
         return
 
     date_str = today.strftime("%Y年%m月%d日")
-    lines    = ["**── 前日デイトレ結果 ──**"]
+    lines    = ["**── 前日デイトレ結果（v2）──**"]
 
     for r in results:
         pnl   = r["pnl_pct"]
         etype = r["exit_type"]
-        emoji = "✅" if pnl > 0 else "❌"
-        dir_str = "買い" if r["direction"] == "BUY" else "売り"
-        lines.append(
-            f"{emoji} **{r['name']}**（{r['ticker']}）{dir_str} "
-            f"前日{r['prev_return']:+.1f}% → **{pnl:+.2f}%** [{etype}]"
-        )
+        if etype == "SKIP":
+            emoji = "⏭️"
+            entry_open = r.get("entry_open", 0)
+            max_p = r.get("max_entry_price", 0)
+            lines.append(
+                f"{emoji} **{r['name']}**（{r['ticker']}）見送り "
+                f"寄り{entry_open:,.0f}円 > MAX指値{max_p:,.0f}円"
+            )
+        else:
+            emoji = "✅" if pnl > 0 else "❌"
+            entry_open  = r.get("entry_open", 0)
+            entry_close = r.get("entry_close", 0)
+            lines.append(
+                f"{emoji} **{r['name']}**（{r['ticker']}）"
+                f"寄{entry_open:,.0f}→引{entry_close:,.0f}円 → **{pnl:+.2f}%**"
+            )
 
-    wins    = sum(1 for r in results if r["win"])
-    avg_pnl = sum(r["pnl_pct"] for r in results) / len(results)
-    lines.append(f"\n合計: {len(results)}件 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
+    executed = [r for r in results if r["exit_type"] != "SKIP"]
+    skipped  = [r for r in results if r["exit_type"] == "SKIP"]
+    if executed:
+        wins    = sum(1 for r in executed if r["win"])
+        avg_pnl = sum(r["pnl_pct"] for r in executed) / len(executed)
+        lines.append(f"\n執行: {len(executed)}件 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}% / 見送り{len(skipped)}件")
+        color = 0x43A047 if avg_pnl > 0 else 0xFDD835
+    else:
+        lines.append(f"\n全件見送り: {len(skipped)}件（全銘柄MAX指値超過）")
+        color = 0x757575
 
     payload = {
         "embeds": [{
-            "title":       f"📋【デイトレ結果】{date_str}",
+            "title":       f"📋【デイトレv2結果】{date_str}",
             "description": "\n".join(lines),
-            "color":       0x43A047 if avg_pnl > 0 else 0xFDD835,
+            "color":       color,
         }]
     }
     requests.post(url, json=payload, timeout=10)
@@ -174,56 +182,46 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
         print("[main_day] シグナルなし通知を送信しました")
         return
 
-    buys  = sum(1 for s in signals if s["direction"] == "BUY")
-    sells = len(signals) - buys
-
     embeds = []
     for i, sig in enumerate(signals, 1):
-        direction  = sig["direction"]
-        prev_close = sig.get("prev_close", 0)
+        prev_close      = sig.get("prev_close", 0)
+        high_20         = sig.get("high_20", 0)
+        max_entry_price = sig.get("max_entry_price", 0)
 
-        if direction == "BUY":
-            action_str = "🔴 **寄り成り 買い**（9:00エントリー → 15:30大引け決済）"
-            color      = 0xE53935
-            stop_price = prev_close * 0.97
-            tp_price   = prev_close * 1.05
-            stop_str   = f"**{stop_price:,.0f}円**（始値-3%）"
-            tp_str     = f"**{tp_price:,.0f}円**（始値+5%）"
-        else:
-            action_str = "🔵 **寄り成り 売り（空売り）**（9:00エントリー → 15:30大引け決済）"
-            color      = 0x1E88E5
-            stop_price = prev_close * 1.03
-            tp_price   = prev_close * 0.95
-            stop_str   = f"**{stop_price:,.0f}円**（始値+3%）"
-            tp_str     = f"**{tp_price:,.0f}円**（始値-5%）"
+        action_str = (
+            f"🟢 **MAX指値 ¥{max_entry_price:,.0f} で寄成買い**\n"
+            f"（寄り値が指値以下なら執行 / 超えたら見送り）\n"
+            f"→ 同日 **15:00 引成 返済売り** で決済"
+        )
 
-        if prev_close > 0:
-            shares     = max(100, int(3_000_000 / prev_close / 100) * 100)
-            invest_amt = shares * prev_close
-            invest_str = f"**{shares:,}株**（約{invest_amt/1e4:.0f}万円）※前日終値{prev_close:,.0f}円基準"
+        if max_entry_price > 0:
+            shares     = max(100, int(4_000_000 / max_entry_price / 100) * 100)
+            invest_amt = shares * max_entry_price
+            invest_str = f"**{shares:,}株** × ¥{max_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円（信用400万フル例）"
         else:
-            invest_str = "**100万円目安**"
+            invest_str = "**400万円目安**"
 
         reason_text = "\n".join(f"・{r}" for r in sig["reason"])
 
         embeds.append({
-            "title": f"⚡【デイトレ】#{i}  {sig['name']}（{sig['ticker']}）",
-            "color": color,
+            "title": f"🚀【デイトレv2】#{i}  {sig['name']}（{sig['ticker']}）",
+            "color": 0xE53935,
             "fields": [
                 {"name": "📌 アクション",        "value": action_str,   "inline": False},
-                {"name": "💴 推奨株数・金額",    "value": invest_str,   "inline": False},
-                {"name": "🛑 損切り（目安）",    "value": stop_str,     "inline": True},
-                {"name": "✅ 利確（目安）",      "value": tp_str,       "inline": True},
-                {"name": "⚠️ 必ず当日決済",     "value": "**15:30大引けで必ず決済**（翌日持ち越し禁止）", "inline": False},
-                {"name": "📊 シグナル根拠",      "value": reason_text,  "inline": False},
+                {"name": "💰 MAX指値",           "value": f"**¥{max_entry_price:,.0f}**（20日高値+{int((max_entry_price/high_20-1)*100)}%）", "inline": True},
+                {"name": "🎯 20日高値",          "value": f"¥{high_20:,.0f}",      "inline": True},
+                {"name": "📈 前日終値",          "value": f"¥{prev_close:,.0f}",   "inline": True},
+                {"name": "💴 推奨株数",          "value": invest_str,              "inline": False},
+                {"name": "⚠️ 必ず当日決済",     "value": "**15:00 引成 返済売り**（翌日持ち越し禁止）", "inline": False},
+                {"name": "📊 シグナル根拠",      "value": reason_text,             "inline": False},
             ],
             "footer": {"text": f"配信時刻: {time_str}"},
         })
 
     payload = {
         "content": (
-            f"## ⚡【デイトレ】シグナル｜{date_str}\n"
-            f"> 本日: **{len(signals)}銘柄**（買い {buys} / 売り {sells}）"
+            f"## 🚀【デイトレv2】シグナル｜{date_str}\n"
+            f"> 本日: **{len(signals)}銘柄**（MAX指値運用・買いのみ）"
         ),
         "embeds": embeds[:10],
     }

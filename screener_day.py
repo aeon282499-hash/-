@@ -1,20 +1,30 @@
 """
-screener_day.py — デイトレ用シグナルロジック（前日大幅変動逆張り）
-====================================================================
+screener_day.py — デイトレv2シグナルロジック（ブレイクアウト+出来高+ギャップ）
+================================================================================
 
 【戦略】
-  前日に -3〜-8% 急落 → 翌日寄りで買い（当日引け15:30決済）
-  前日に +3〜+8% 急騰 → 翌日寄りで売り（当日引け15:30決済）
+  前日大引け確定後にスクリーニング。翌日寄り成り（MAX指値）→ 同日大引け決済。
+  当日終値が20日高値を更新 + 出来高爆発 + 終値が日中レンジ上位 の銘柄を選ぶ。
 
-  根拠: 大幅変動後の翌日は平均回帰しやすい。
-  ±8% 超えは決算・テーマ相場等の特殊要因の可能性があるため除外。
+【シグナル条件】
+  A: 当日終値が過去20日高値を更新（終値 >= 過去20日の最高値）
+  B: 当日出来高が20日平均出来高の VOL_RATIO_MIN 倍以上（10倍）
+  C: 当日終値が日中レンジの上位30%以内
+     (Close - Low) / (High - Low) >= CLOSE_RANGE_MIN
 
-【フィルター】
-  ① 前日騰落率   BUY: -8〜-3% / SELL: +3〜+8%
-  ② RSI(14)      BUY: ≦50 / SELL: ≧50
-  ③ 出来高比     前日出来高 ≧ 20日平均の1.5倍
-  ④ 売買代金     ≧ 30億円（流動性確保）
-  ⑤ 高ボラ除外   ATR/終値 > 4% の銘柄はスキップ
+【MAX指値運用】
+  翌朝の寄り値が 20日高値 × (1 + GAP_MAX/100) 以下なら執行・超えたら見送り
+  実装: 配信時に max_entry_price を計算して表示、利用者がその値で指値発注。
+
+【BTで実証された数字（2023-2025）】
+  n=68 / PF 2.81 / 勝率57% / 平均+1.0% / 3年連続プラス
+  月収（400万信用1ポジ）約7.5万円見込み
+
+【フィルター（追加）】
+  日経225 ETF (1321.T) 終値 >= 25日MA（地合いフィルター）
+  価格 >= 300円
+  平均出来高 >= 10万株
+  ATR/終値 <= ATR_VOL_CAP%
 """
 
 import time
@@ -30,20 +40,16 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # パラメーター設定
 # ================================================================
 
-PREV_RETURN_SELL_MIN =  5.0   # 前日騰落率の下限（売り）
-PREV_RETURN_SELL_MAX =  6.0   # 前日騰落率の上限（売り）※BT最適値
-
-RSI_SELL_MIN   = 65    # SELL: RSIがこの値以上（買われすぎ）
-VOL_MULT       = 1.5
-TURNOVER_MIN   = 3_000_000_000   # 30億円
-ATR_VOL_CAP    = 4.0             # ATR/終値(%)上限
-MAX_SIGNALS    = 5
-RSI_PERIOD     = 14
-VOL_AVG_PERIOD = 20
-ATR_PERIOD     = 14
-LOOKBACK_DAYS  = 60
-SP500_DROP_MAX = -1.5            # S&P500プロキシ(1655.T)前日下落率の下限
-GOOD_MONTHS    = [5, 7, 8, 9, 10, 11, 12]  # BT結果でPF良好な月のみ
+BREAKOUT_DAYS    = 20
+VOL_RATIO_MIN    = 10.0   # 出来高比 20日平均の10倍以上
+CLOSE_RANGE_MIN  = 0.7    # 終値が日中レンジ上位30%以内
+GAP_MAX          = 20.0   # 翌朝寄り値の上限: 20日高値+20%まで
+MIN_PRICE        = 300
+MIN_AVG_VOLUME   = 100_000
+ATR_VOL_CAP      = 3.0    # ATR/終値(%)上限
+MAX_SIGNALS      = 3
+LOOKBACK_DAYS    = 60
+USE_MARKET_FILTER = True  # 日経25MA割れの日は買いシグナル出さない
 
 
 # ================================================================
@@ -52,52 +58,11 @@ GOOD_MONTHS    = [5, 7, 8, 9, 10, 11, 12]  # BT結果でPF良好な月のみ
 
 from screener import (
     fetch_tse_prime_universe,
-    _nikkei225_universe,
     batch_download_jquants,
     _jquants_id_token,
-    calc_rsi,
     calc_atr,
     fetch_macro,
 )
-
-
-# ================================================================
-# テクニカル指標（デイトレ専用）
-# ================================================================
-
-def calc_prev_return(df: pd.DataFrame) -> float | None:
-    """前日（最新行）の終値騰落率(%)を返す。"""
-    close = df["Close"].dropna()
-    if len(close) < 2:
-        return None
-    prev2 = float(close.iloc[-2])
-    prev1 = float(close.iloc[-1])
-    if prev2 <= 0:
-        return None
-    return round((prev1 - prev2) / prev2 * 100, 2)
-
-
-def calc_volume_ratio_day(df: pd.DataFrame, period: int = VOL_AVG_PERIOD) -> float | None:
-    """シグナル当日出来高 / 過去N日平均出来高を返す。"""
-    vol = df["Volume"].dropna()
-    if len(vol) < period + 2:
-        return None
-    avg_vol  = float(vol.iloc[-(period + 1):-1].mean())
-    prev_vol = float(vol.iloc[-1])
-    if avg_vol <= 0:
-        return None
-    return round(prev_vol / avg_vol, 2)
-
-
-def calc_turnover_day(df: pd.DataFrame) -> float | None:
-    """シグナル当日の売買代金を返す。"""
-    if len(df) < 1:
-        return None
-    prev_close  = float(df["Close"].iloc[-1])
-    prev_volume = float(df["Volume"].iloc[-1])
-    if prev_volume <= 0:
-        return None
-    return prev_close * prev_volume
 
 
 # ================================================================
@@ -105,63 +70,74 @@ def calc_turnover_day(df: pd.DataFrame) -> float | None:
 # ================================================================
 
 def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
-    """デイトレ用シグナル判定（前日大幅変動逆張り）。"""
-    if len(df) < RSI_PERIOD + VOL_AVG_PERIOD + 5:
+    """デイトレv2シグナル判定（ブレイクアウト+出来高+終値日中上位）。"""
+    if len(df) < BREAKOUT_DAYS + 5:
         return None
 
-    close = df["Close"].dropna()
+    close  = df["Close"]
+    volume = df["Volume"]
+    high   = df["High"]
+    low    = df["Low"]
 
-    prev_return = calc_prev_return(df)
-    rsi         = calc_rsi(close)
-    vol_ratio   = calc_volume_ratio_day(df)
-    turnover    = calc_turnover_day(df)
-    atr         = calc_atr(df)
+    last_close  = float(close.iloc[-1])
+    last_high   = float(high.iloc[-1])
+    last_low    = float(low.iloc[-1])
+    last_volume = float(volume.iloc[-1])
 
-    if any(v is None for v in [prev_return, rsi, turnover]):
+    # 基本フィルター
+    if last_close < MIN_PRICE:
         return None
 
-    # ── ⑤ 高ボラ除外 ──────────────────────────────────────
-    last_close = float(close.iloc[-1])
-    if atr is not None and last_close > 0:
-        if (atr / last_close * 100) > ATR_VOL_CAP:
-            return None
-
-    # ── ① 前日騰落率フィルター（SELLのみ）──────────────────
-    if PREV_RETURN_SELL_MIN <= prev_return <= PREV_RETURN_SELL_MAX:
-        direction = "SELL"
-    else:
+    vol_avg = float(volume.iloc[:-1].tail(BREAKOUT_DAYS).mean())
+    if vol_avg < MIN_AVG_VOLUME:
         return None
 
-    # ── ② RSIフィルター ──────────────────────────────────
-    if direction == "SELL" and rsi < RSI_SELL_MIN:
+    atr = calc_atr(df)
+    if atr is None or last_close == 0:
+        return None
+    atr_pct = atr / last_close * 100
+    if atr_pct > ATR_VOL_CAP:
         return None
 
-    # ── ③ 出来高フィルター ────────────────────────────────
-    if vol_ratio is None or vol_ratio < VOL_MULT:
+    # 条件A: 当日終値が過去20日の最高値を更新
+    high_20 = float(high.iloc[:-1].tail(BREAKOUT_DAYS).max())
+    if last_close < high_20:
         return None
 
-    # ── ④ 流動性フィルター ────────────────────────────────
-    if turnover < TURNOVER_MIN:
+    # 条件B: 当日出来高が20日平均の VOL_RATIO_MIN 倍以上
+    vol_ratio = last_volume / vol_avg if vol_avg > 0 else 0.0
+    if vol_ratio < VOL_RATIO_MIN:
         return None
 
-    rsi_label = f"≧{RSI_SELL_MIN}"
+    # 条件C: 終値が日中レンジ上位30%以内
+    day_range = last_high - last_low
+    if day_range == 0:
+        return None
+    close_position = (last_close - last_low) / day_range
+    if close_position < CLOSE_RANGE_MIN:
+        return None
+
+    # MAX指値価格（翌朝の寄り値上限）
+    max_entry_price = high_20 * (1 + GAP_MAX / 100)
+
     reason = [
-        f"前日騰落率 = {prev_return:+.1f}%（逆張り{direction}）",
-        f"RSI({RSI_PERIOD}) = {rsi:.0f}（{rsi_label}）",
-        f"出来高比 = {vol_ratio:.1f}（≧{VOL_MULT}）",
-        f"売買代金 = {turnover/1e8:.0f}億円",
+        f"20日高値ブレイク（前日終値 {last_close:,.0f}円 ≧ 20日高値 {high_20:,.0f}円）",
+        f"出来高 = 20日平均の {vol_ratio:.1f}倍（≧{VOL_RATIO_MIN}倍）",
+        f"終値が日中レンジ上位 {close_position*100:.0f}%（≧{CLOSE_RANGE_MIN*100:.0f}%）",
+        f"ATR/終値 = {atr_pct:.1f}%（≦{ATR_VOL_CAP}%）",
     ]
 
     return {
-        "ticker":      ticker,
-        "name":        name,
-        "direction":   direction,
-        "prev_return": prev_return,
-        "rsi":         rsi,
-        "vol_ratio":   vol_ratio,
-        "turnover":    turnover,
-        "prev_close":  last_close,
-        "reason":      reason,
+        "ticker":          ticker,
+        "name":            name,
+        "direction":       "BUY",
+        "prev_close":      last_close,
+        "high_20":         high_20,
+        "vol_ratio":       round(vol_ratio, 2),
+        "close_position":  round(close_position, 3),
+        "atr_pct":         round(atr_pct, 2),
+        "max_entry_price": round(max_entry_price, 1),
+        "reason":          reason,
     }
 
 
@@ -170,23 +146,16 @@ def judge_signal_day(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
 # ================================================================
 
 def run_screener_day() -> tuple[list[dict], dict]:
-    """デイトレスクリーニングを実行し (signals, macro) を返す。"""
+    """デイトレv2スクリーニングを実行し (signals, macro) を返す。"""
 
-    macro    = fetch_macro()
-
-    from datetime import date as _today_date
-    today_month = _today_date.today().month
-    if today_month not in GOOD_MONTHS:
-        print(f"[screener_day] 月フィルター: {today_month}月はトレード対象外（良い月: {GOOD_MONTHS}）→ シグナルなし")
-        return [], macro
+    macro = fetch_macro()
 
     universe = fetch_tse_prime_universe()
     name_map = {t: n for t, n in universe}
     tickers  = [t for t, _ in universe]
-    for proxy in ["1321.T", "1655.T"]:
-        if proxy not in tickers:
-            tickers.append(proxy)
-    print(f"[screener_day] ユニバース: {len(tickers)} 銘柄（マクロETF含む）")
+    if "1321.T" not in tickers:
+        tickers.append("1321.T")
+    print(f"[screener_day] ユニバース: {len(tickers)} 銘柄")
 
     from datetime import date as _date, timedelta as _td
     today_str  = _date.today().strftime("%Y-%m-%d")
@@ -196,28 +165,49 @@ def run_screener_day() -> tuple[list[dict], dict]:
     if not data:
         print("[screener_day] データ取得失敗")
         return [], macro
+
+    # 当日のデータは含めない（前日大引け確定までを判定対象に）
     data = {
         t: df[df.index.strftime("%Y-%m-%d") < today_str]
         for t, df in data.items()
     }
 
+    # 地合いフィルター: 日経ETF(1321.T) 終値 >= 25日MA
+    market_ok = True
+    if USE_MARKET_FILTER:
+        nk_df = data.get("1321.T")
+        if nk_df is not None and len(nk_df) >= 25:
+            ma25 = nk_df["Close"].rolling(25).mean().iloc[-1]
+            nk_close = float(nk_df["Close"].iloc[-1])
+            if not np.isnan(ma25):
+                market_ok = (nk_close >= ma25)
+                print(f"[screener_day] 地合い: 日経終値 {nk_close:,.0f} vs 25MA {ma25:,.0f} → {'OK' if market_ok else 'NG（買い見送り）'}")
+        else:
+            print("[screener_day] 日経データ不足 → 地合いチェックOFF")
+
+    if not market_ok:
+        bias = macro.get("bias", "neutral")
+        print(f"[screener_day] 地合いNG → シグナル0件で終了")
+        return [], macro
+
     candidates: list[dict] = []
     for ticker, df in data.items():
-        if ticker in ("1321.T", "1655.T"):
+        if ticker == "1321.T":
             continue
-        if len(df) < RSI_PERIOD + VOL_AVG_PERIOD + 5:
+        if len(df) < BREAKOUT_DAYS + 5:
             continue
         name   = name_map.get(ticker, ticker)
         result = judge_signal_day(ticker, name, df)
         if result is None:
             continue
         candidates.append(result)
-        print(f"  [HIT] {ticker} {name} {result['direction']} "
-              f"前日{result['prev_return']:+.1f}% RSI={result['rsi']:.0f}")
+        print(f"  [HIT] {ticker} {name} 出来高{result['vol_ratio']}倍 "
+              f"高値{result['high_20']:,.0f}→終値{result['prev_close']:,.0f} MAX指値{result['max_entry_price']:,.0f}")
 
     bias = macro.get("bias", "neutral")
     print(f"[screener_day] マクロバイアス: {bias}（参考）")
 
+    # 出来高比の高い順に上位 MAX_SIGNALS 件
     candidates.sort(key=lambda x: x["vol_ratio"], reverse=True)
     signals = candidates[:MAX_SIGNALS]
 
