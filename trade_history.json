@@ -249,6 +249,56 @@
       "close": 999.2,
       "pnl": -0.63,
       "win": false
+    },
+    {
+      "date": "2026-05-14",
+      "ticker": "7532.T",
+      "name": "パン・パシフィック・インターナショナルホールディングス",
+      "direction": "BUY",
+      "open": 868.6,
+      "close": 858.0,
+      "pnl": -1.22,
+      "win": false
+    },
+    {
+      "date": "2026-05-14",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
+      "direction": "BUY",
+      "open": 940.5,
+      "close": 924.0,
+      "pnl": -1.75,
+      "win": false
+    },
+    {
+      "date": "2026-05-14",
+      "ticker": "9064.T",
+      "name": "ヤマトホールディングス",
+      "direction": "BUY",
+      "open": 1747.0,
+      "close": 1780.0,
+      "pnl": 1.89,
+      "win": true
+    },
+    {
+      "date": "2026-05-14",
+      "ticker": "5411.T",
+      "name": "ＪＦＥホールディングス",
+      "direction": "BUY",
+      "open": 1724.0,
+      "close": 1690.5,
+      "pnl": -1.94,
+      "win": false
+    },
+    {
+      "date": "2026-05-14",
+      "ticker": "7616.T",
+      "name": "コロワイド",
+      "direction": "BUY",
+      "open": 1855.0,
+      "close": 1867.5,
+      "pnl": 0.67,
+      "win": true
     }
   ]
 }
