@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-14",
+  "date": "2026-05-15",
   "signals": [
     {
-      "ticker": "7532.T",
-      "name": "パン・パシフィック・インターナショナルホールディングス",
+      "ticker": "4613.T",
+      "name": "関西ペイント",
       "direction": "BUY"
     },
     {
-      "ticker": "8113.T",
-      "name": "ユニ・チャーム",
+      "ticker": "9143.T",
+      "name": "ＳＧホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "9064.T",
-      "name": "ヤマトホールディングス",
+      "ticker": "2212.T",
+      "name": "山崎製パン",
       "direction": "BUY"
     },
     {
-      "ticker": "5411.T",
-      "name": "ＪＦＥホールディングス",
+      "ticker": "4202.T",
+      "name": "ダイセル",
       "direction": "BUY"
     },
     {
-      "ticker": "7616.T",
-      "name": "コロワイド",
+      "ticker": "9744.T",
+      "name": "メイテックグループホールディングス",
       "direction": "BUY"
     }
   ]
