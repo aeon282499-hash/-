@@ -163,8 +163,18 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
     from datetime import datetime as _dt
     import zoneinfo as _zi
 
+    # 診断: どのenv varが見つかったか出力（URL本体は出さない）
+    found_var = None
+    for name in ("DISCORD_WEBHOOK_DAY_URL", "DISCORD_WEBHOOK_URL_DAY", "DISCORD_WEBHOOK_URL"):
+        v = os.getenv(name, "").strip()
+        if v:
+            found_var = name
+            break
+    print(f"[diag] webhook env: found={found_var} url_len={len(os.getenv(found_var, '')) if found_var else 0}")
+
     url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
+        print("[diag] webhook URL未設定 → 通知スキップ")
         return
 
     date_str = today.strftime("%Y年%m月%d日")
@@ -178,8 +188,8 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
                 "color":       0x757575,
             }]
         }
-        requests.post(url, json=payload, timeout=10)
-        print("[main_day] シグナルなし通知を送信しました")
+        resp = requests.post(url, json=payload, timeout=10)
+        print(f"[main_day] シグナルなし通知を送信: HTTP {resp.status_code} body={resp.text[:200]}")
         return
 
     embeds = []
