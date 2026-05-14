@@ -108,7 +108,7 @@ def send_day_results(results: list[dict], today: date) -> None:
         return
 
     import os, requests
-    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         return
 
@@ -163,7 +163,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
     from datetime import datetime as _dt
     import zoneinfo as _zi
 
-    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         return
 
@@ -286,7 +286,7 @@ def main() -> None:
         import traceback, os, requests as req
         err_msg = traceback.format_exc()
         print(f"[main_day] エラー:\n{err_msg}", file=sys.stderr)
-        url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL", ""))
+        url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
         if url:
             req.post(url, json={"content": f"[デイトレ] エラー発生:\n```{err_msg[:1500]}```"}, timeout=10)
         sys.exit(1)
