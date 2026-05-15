@@ -23,6 +23,9 @@ CAPITAL  = 5_000_000   # 総資金（円）= 100万 × MAX_SIGNALS5並列
 WEIGHT   = 1 / 5       # 1トレード投入比率（100万 / 500万）
 MAX_HOLD = 3           # 最大保有営業日数（tracker.py と一致）
 
+# 中資金（2026-05-15開始）: 50万 × 5並列 = 250万 / 同じシグナルを別Discord通知ミラー
+MID_SIZE_PER_TRADE = 500_000
+
 
 # 公開（note メンバー向け）Discord Webhook URLs
 # 副業運用：株AI Discord サーバーの各チャンネルに並行送信する
@@ -30,6 +33,9 @@ PUBLIC_BUY     = os.getenv("DISCORD_WEBHOOK_URL_PUBLIC", "").strip()
 PUBLIC_SELL    = os.getenv("DISCORD_WEBHOOK_SELL_URL_PUBLIC", "").strip()
 PUBLIC_CLOSE   = os.getenv("DISCORD_WEBHOOK_CLOSE_URL_PUBLIC", "").strip()
 PUBLIC_MONTHLY = os.getenv("DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC", "").strip()
+
+# 中資金（個人運用）: 既存BUY/結果/大引け処分通知をすべて同じ内容でミラー
+BUY_MID = os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip()
 
 _MIRROR_DEFAULT = "__USE_DEFAULT__"  # sentinel: Noneと区別するため
 
@@ -44,6 +50,27 @@ def _mirror_to_public(payload: dict, url: str) -> None:
             print(f"[notifier-public] mirror HTTP {resp.status_code}")
     except Exception as e:
         print(f"[notifier-public] mirror failed: {e}")
+
+
+def _mirror_to_mid(payload: dict) -> None:
+    """中資金口座用Discordへミラー。embedに『中資金 50万円/件』を併記する。"""
+    if not BUY_MID:
+        return
+    import copy
+    mid_payload = copy.deepcopy(payload)
+    for embed in mid_payload.get("embeds", []):
+        title = embed.get("title", "")
+        if title and "中資金" not in title:
+            embed["title"] = f"🔵【中資金】{title}"
+        desc = embed.get("description", "") or ""
+        mid_header = f"💼 **中資金口座用：1件 {MID_SIZE_PER_TRADE//10000}万円 × 5並列（資金{MID_SIZE_PER_TRADE*5//10000}万）**\n"
+        embed["description"] = mid_header + desc
+    try:
+        resp = requests.post(BUY_MID, json=mid_payload, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier-mid] mirror HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"[notifier-mid] mirror failed: {e}")
 
 
 def _get_webhook_url() -> str:
@@ -74,6 +101,8 @@ def _post(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_BUY if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
+    # 中資金口座ミラー（BUY系の通知に「中資金 50万円/件」併記版を送信）
+    _mirror_to_mid(payload)
 
 
 def _macro_description(macro: dict) -> str:
