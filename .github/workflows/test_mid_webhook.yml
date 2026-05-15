@@ -1,0 +1,35 @@
+name: 中資金SELL Webhookテスト送信
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISCORD_WEBHOOK_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_MID_URL }}
+    steps:
+      - name: テストメッセージ送信
+        run: |
+          python - << 'PYEOF'
+          import os, requests
+          url = os.environ.get("DISCORD_WEBHOOK_SELL_MID_URL", "").strip()
+          if not url:
+              print("DISCORD_WEBHOOK_SELL_MID_URL 未設定")
+              exit(1)
+          payload = {
+              "embeds": [{
+                  "title": "🔵【中資金】✅ SELL Webhookテスト",
+                  "description": "💼 **中資金口座用：1件 50万円 × 5並列（資金 250万）**\n\nこのメッセージが見えていれば、明朝から空売りシグナル・決済結果・大引け買戻し通知がここにミラー配信されます。",
+                  "color": 0x1E88E5,
+                  "footer": {"text": "test_mid_webhook.yml (SELL)"}
+              }]
+          }
+          r = requests.post(url, json=payload, timeout=10)
+          print(f"status: {r.status_code}")
+          if r.status_code not in (200, 204):
+              print(f"body: {r.text[:300]}")
+              exit(1)
+          print("送信成功")
+          PYEOF
