@@ -1,0 +1,102 @@
+name: 年別×サイズ別BT集計
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: '開始日 (YYYY-MM-DD)'
+        required: true
+        default: '2024-02-01'
+      end:
+        description: '終了日 (YYYY-MM-DD)'
+        required: true
+        default: '2026-05-15'
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: バックテスト実行
+        run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} --buy 2>&1 | tee bt_size.log
+
+      - name: 年別×サイズ別集計してDiscord送信
+        run: |
+          python - << 'PYEOF'
+          import os, pandas as pd, requests
+          start = "${{ github.event.inputs.start }}"
+          end   = "${{ github.event.inputs.end }}"
+          csv_path = f"backtest_{start}_{end}.csv"
+          df = pd.read_csv(csv_path, encoding="utf-8-sig")
+          df["year"] = df["entry_date"].str[:4]
+          print(f"全件数: {len(df)} / 年: {sorted(df['year'].unique())}")
+
+          SIZES = [
+              (1_000_000, "大100万"),
+              (500_000,   "中 50万"),
+              (300_000,   "小 30万"),
+          ]
+
+          def stats(sub):
+              n = len(sub)
+              if n == 0:
+                  return None
+              wins = sub[sub["pnl_pct"] > 0]
+              losses = sub[sub["pnl_pct"] <= 0]
+              sw = wins["pnl_pct"].sum()
+              sl = abs(losses["pnl_pct"].sum())
+              pf = sw / sl if sl > 0 else float("inf")
+              total = sub["pnl_pct"].sum()
+              return {"n": n, "winrate": len(wins)/n*100, "avg": total/n, "total": total, "pf": pf}
+
+          years = sorted(df["year"].unique())
+          lines = [f"**期間: {start} 〜 {end}**", ""]
+          for yr in years:
+              y_df = df[df["year"] == yr]
+              lines.append(f"## {yr}年（全銘柄 {len(y_df)}件）")
+              lines.append("| サイズ | 件数 | 勝率 | 平均 | PF | 累積% | 円換算 |")
+              lines.append("|---|---|---|---|---|---|---|")
+              for budget, label in SIZES:
+                  max_price = budget / 100
+                  sub = y_df[y_df["entry_open"] <= max_price]
+                  s = stats(sub)
+                  if s is None:
+                      continue
+                  yen = s["total"] / 100 * budget   # 累積% × 1件サイズ円
+                  lines.append(
+                      f"| {label} | {s['n']} | {s['winrate']:.1f}% | "
+                      f"{s['avg']:+.3f}% | **{s['pf']:.2f}** | "
+                      f"{s['total']:+.0f}% | **{yen/10000:+.1f}万** |"
+                  )
+              lines.append("")
+
+          lines.append("**注:** 円換算 = 累積% × 1件サイズ。実運用は5並列なので最大5倍。")
+
+          payload = {
+              "embeds": [{
+                  "title": "📊 年別×サイズ別BT結果",
+                  "description": "\n".join(lines)[:4000],
+                  "color": 0x1976D2,
+              }]
+          }
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          if url:
+              r = requests.post(url, json=payload, timeout=10)
+              print(f"Discord送信: {r.status_code}")
+              if r.status_code not in (200, 204):
+                  print(f"body: {r.text[:300]}")
+          for ln in lines:
+              print(ln)
+          PYEOF
