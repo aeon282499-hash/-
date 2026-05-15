@@ -1,0 +1,35 @@
+name: 本番BUY Webhook動作確認
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    steps:
+      - name: テストメッセージ送信
+        run: |
+          python - << 'PYEOF'
+          import os, requests
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+          if not url:
+              print("DISCORD_WEBHOOK_URL 未設定")
+              exit(1)
+          print(f"URL prefix: {url[:60]}...")
+          payload = {
+              "embeds": [{
+                  "title": "🔧 本番BUY Webhook 動作確認",
+                  "description": "サイズ別BT送信で404が出たため動作確認テスト。これが届いていれば明朝8:30配信は問題なし。届かなければWebhook URLを再発行・GitHub Secret再登録が必要。",
+                  "color": 0xFDD835,
+              }]
+          }
+          r = requests.post(url, json=payload, timeout=10)
+          print(f"status: {r.status_code}")
+          print(f"body: {r.text[:500]}")
+          if r.status_code not in (200, 204):
+              exit(1)
+          print("送信成功")
+          PYEOF
