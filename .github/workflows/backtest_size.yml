@@ -1,0 +1,107 @@
+name: サイズ別BT（買える銘柄だけ運用）
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: '開始日 (YYYY-MM-DD)'
+        required: true
+        default: '2024-02-01'
+      end:
+        description: '終了日 (YYYY-MM-DD)'
+        required: true
+        default: '2026-05-14'
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: バックテスト実行
+        run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} --buy 2>&1 | tee bt_size.log
+
+      - name: サイズ別集計してDiscord送信
+        run: |
+          python - << 'PYEOF'
+          import os, pandas as pd, requests, json
+          start = "${{ github.event.inputs.start }}"
+          end   = "${{ github.event.inputs.end }}"
+          csv_path = f"backtest_{start}_{end}.csv"
+          df = pd.read_csv(csv_path, encoding="utf-8-sig")
+          print(f"全件数: {len(df)}")
+
+          SIZES = [
+              (1_000_000, "大資金 100万"),
+              (500_000,   "中資金  50万"),
+              (300_000,   "（参考） 30万"),
+              (200_000,   "小資金  20万"),
+          ]
+
+          def stats(sub):
+              n = len(sub)
+              if n == 0:
+                  return None
+              wins = sub[sub["pnl_pct"] > 0]
+              losses = sub[sub["pnl_pct"] <= 0]
+              winrate = len(wins) / n * 100
+              total = sub["pnl_pct"].sum()
+              avg = total / n
+              sw = wins["pnl_pct"].sum()
+              sl = abs(losses["pnl_pct"].sum())
+              pf = sw / sl if sl > 0 else float("inf")
+              return {"n": n, "winrate": winrate, "avg": avg, "total": total, "pf": pf}
+
+          base = stats(df)
+          print(f"全体: n={base['n']} 勝率={base['winrate']:.1f}% 平均={base['avg']:+.3f}% PF={base['pf']:.2f} 累積={base['total']:+.0f}%")
+
+          results = [("全銘柄", base, base["n"])]
+          for budget, label in SIZES:
+              max_price = budget / 100
+              sub = df[df["entry_open"] <= max_price]
+              s = stats(sub)
+              cover_pct = len(sub) / len(df) * 100
+              if s:
+                  results.append((label, s, cover_pct))
+                  print(f"{label}: 件数={s['n']}({cover_pct:.0f}%) 勝率={s['winrate']:.1f}% 平均={s['avg']:+.3f}% PF={s['pf']:.2f} 累積={s['total']:+.0f}%")
+
+          lines = [f"**期間: {start} 〜 {end}**", ""]
+          lines.append("| サイズ | カバー | 件数 | 勝率 | 平均 | PF | 累積 |")
+          lines.append("|---|---|---|---|---|---|---|")
+          for label, s, cov in results:
+              if label == "全銘柄":
+                  cov_str = "100%"
+              else:
+                  cov_str = f"{cov:.0f}%"
+              lines.append(f"| {label} | {cov_str} | {s['n']} | {s['winrate']:.1f}% | {s['avg']:+.3f}% | **{s['pf']:.2f}** | {s['total']:+.0f}% |")
+
+          lines.append("")
+          lines.append("**読み方:**")
+          lines.append("「カバー」=サイズで100株単元購入可能な銘柄の割合")
+          lines.append("件数減でも勝率/PFが維持されれば、小資金でも実質運用可能と判断")
+
+          payload = {
+              "embeds": [{
+                  "title": f"📊 サイズ別BT結果（買える銘柄だけ運用シミュレーション）",
+                  "description": "\n".join(lines),
+                  "color": 0x1976D2,
+              }]
+          }
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          if url:
+              r = requests.post(url, json=payload, timeout=10)
+              print(f"Discord送信: {r.status_code}")
+          PYEOF
