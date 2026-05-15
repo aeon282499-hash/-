@@ -44,7 +44,7 @@ SUB_ACCOUNTS = [
     {
         "label":    "小資金",
         "emoji":    "🟢",
-        "size":     200_000,    # 1件20万 × 5並列 = 100万
+        "size":     300_000,    # 1件30万 × 5並列 = 150万
         "buy_url":  os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL",  "").strip(),
         "sell_url": os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
     },
