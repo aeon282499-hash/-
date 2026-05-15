@@ -35,7 +35,8 @@ PUBLIC_CLOSE   = os.getenv("DISCORD_WEBHOOK_CLOSE_URL_PUBLIC", "").strip()
 PUBLIC_MONTHLY = os.getenv("DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC", "").strip()
 
 # 中資金（個人運用）: 既存BUY/結果/大引け処分通知をすべて同じ内容でミラー
-BUY_MID = os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip()
+BUY_MID  = os.getenv("DISCORD_WEBHOOK_BUY_MID_URL",  "").strip()
+SELL_MID = os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip()
 
 _MIRROR_DEFAULT = "__USE_DEFAULT__"  # sentinel: Noneと区別するため
 
@@ -52,9 +53,11 @@ def _mirror_to_public(payload: dict, url: str) -> None:
         print(f"[notifier-public] mirror failed: {e}")
 
 
-def _mirror_to_mid(payload: dict) -> None:
-    """中資金口座用Discordへミラー。embedに『中資金 50万円/件』を併記する。"""
-    if not BUY_MID:
+def _mirror_to_mid(payload: dict, *, side: str = "BUY") -> None:
+    """中資金口座用Discordへミラー。embedに『中資金 50万円/件』を併記する。
+    side='BUY' なら BUY_MID、'SELL' なら SELL_MID に送る。"""
+    url = BUY_MID if side == "BUY" else SELL_MID
+    if not url:
         return
     import copy
     mid_payload = copy.deepcopy(payload)
@@ -66,11 +69,11 @@ def _mirror_to_mid(payload: dict) -> None:
         mid_header = f"💼 **中資金口座用：1件 {MID_SIZE_PER_TRADE//10000}万円 × 5並列（資金{MID_SIZE_PER_TRADE*5//10000}万）**\n"
         embed["description"] = mid_header + desc
     try:
-        resp = requests.post(BUY_MID, json=mid_payload, timeout=10)
+        resp = requests.post(url, json=mid_payload, timeout=10)
         if resp.status_code not in (200, 204):
-            print(f"[notifier-mid] mirror HTTP {resp.status_code}")
+            print(f"[notifier-mid-{side}] mirror HTTP {resp.status_code}")
     except Exception as e:
-        print(f"[notifier-mid] mirror failed: {e}")
+        print(f"[notifier-mid-{side}] mirror failed: {e}")
 
 
 def _get_webhook_url() -> str:
@@ -473,6 +476,8 @@ def _post_sell(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_SELL if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
+    # 中資金SELL口座ミラー
+    _mirror_to_mid(payload, side="SELL")
 
 
 def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
