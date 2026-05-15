@@ -1,0 +1,39 @@
+name: 小資金Webhookテスト送信
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+      DISCORD_WEBHOOK_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_SMALL_URL }}
+    steps:
+      - name: BUY+SELL両方にテストメッセージ送信
+        run: |
+          python - << 'PYEOF'
+          import os, requests
+          targets = [
+              ("BUY",  os.environ.get("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip()),
+              ("SELL", os.environ.get("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip()),
+          ]
+          for side, url in targets:
+              if not url:
+                  print(f"[{side}] Webhook未設定")
+                  continue
+              payload = {
+                  "embeds": [{
+                      "title": f"🟢【小資金】✅ {side} Webhookテスト",
+                      "description": "💼 **小資金口座用：1件 20万円 × 5並列（資金 100万）**\n\nこのメッセージが見えていれば、明朝から実際のシグナル・決済結果・大引け処分通知がここにミラー配信されます。",
+                      "color": 0x43A047,
+                      "footer": {"text": f"test_small_webhook.yml ({side})"}
+                  }]
+              }
+              r = requests.post(url, json=payload, timeout=10)
+              print(f"[{side}] status: {r.status_code}")
+              if r.status_code not in (200, 204):
+                  print(f"[{side}] body: {r.text[:300]}")
+          print("テスト完了")
+          PYEOF
