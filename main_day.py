@@ -74,21 +74,36 @@ def check_yesterday_results(yesterday_signals: list[dict], today: date) -> list[
 
         entry_open  = float(entry_rows["Open"].iloc[0])
         entry_close = float(entry_rows["Close"].iloc[0])
+        direction   = sig.get("direction", "BUY")
 
-        # MAX指値判定: 寄り値が指値以下なら執行、超過なら見送り
-        if max_entry_price is not None and entry_open > max_entry_price:
-            results.append({
-                **sig,
-                "entry_open":  entry_open,
-                "entry_close": entry_close,
-                "pnl_pct":     0.0,
-                "exit_type":   "SKIP",
-                "win":         False,
-            })
-            continue
-
-        # v2: 寄り買い → 引け売り（1日完結・損切り利確なし）
-        pnl_pct = (entry_close - entry_open) / entry_open * 100
+        if direction == "BUY":
+            # MAX指値判定: 寄り > MAX → 見送り
+            if max_entry_price is not None and entry_open > max_entry_price:
+                results.append({
+                    **sig,
+                    "entry_open":  entry_open,
+                    "entry_close": entry_close,
+                    "pnl_pct":     0.0,
+                    "exit_type":   "SKIP",
+                    "win":         False,
+                })
+                continue
+            pnl_pct = (entry_close - entry_open) / entry_open * 100
+        else:
+            # SELL: MIN指値判定 寄り < MIN → 見送り（ギャップダウン済）
+            min_entry_price = sig.get("min_entry_price")
+            if min_entry_price is not None and entry_open < min_entry_price:
+                results.append({
+                    **sig,
+                    "entry_open":  entry_open,
+                    "entry_close": entry_close,
+                    "pnl_pct":     0.0,
+                    "exit_type":   "SKIP",
+                    "win":         False,
+                })
+                continue
+            # SELL: (寄値 - 引値) / 寄値 が利益
+            pnl_pct = (entry_open - entry_close) / entry_open * 100
 
         results.append({
             **sig,
@@ -118,21 +133,29 @@ def send_day_results(results: list[dict], today: date) -> None:
     for r in results:
         pnl   = r["pnl_pct"]
         etype = r["exit_type"]
+        direction = r.get("direction", "BUY")
+        dir_emoji = "🟢買" if direction == "BUY" else "🔴売"
         if etype == "SKIP":
-            emoji = "⏭️"
             entry_open = r.get("entry_open", 0)
-            max_p = r.get("max_entry_price", 0)
-            lines.append(
-                f"{emoji} **{r['name']}**（{r['ticker']}）見送り "
-                f"寄り{entry_open:,.0f}円 > MAX指値{max_p:,.0f}円"
-            )
+            if direction == "BUY":
+                limit_p = r.get("max_entry_price", 0)
+                lines.append(
+                    f"⏭️{dir_emoji} **{r['name']}**（{r['ticker']}）見送り "
+                    f"寄{entry_open:,.0f} > MAX指値{limit_p:,.0f}"
+                )
+            else:
+                limit_p = r.get("min_entry_price", 0)
+                lines.append(
+                    f"⏭️{dir_emoji} **{r['name']}**（{r['ticker']}）見送り "
+                    f"寄{entry_open:,.0f} < MIN指値{limit_p:,.0f}（ギャップダウン）"
+                )
         else:
             emoji = "✅" if pnl > 0 else "❌"
             entry_open  = r.get("entry_open", 0)
             entry_close = r.get("entry_close", 0)
             lines.append(
-                f"{emoji} **{r['name']}**（{r['ticker']}）"
-                f"寄{entry_open:,.0f}→引{entry_close:,.0f}円 → **{pnl:+.2f}%**"
+                f"{emoji}{dir_emoji} **{r['name']}**（{r['ticker']}）"
+                f"寄{entry_open:,.0f}→引{entry_close:,.0f} → **{pnl:+.2f}%**"
             )
 
     executed = [r for r in results if r["exit_type"] != "SKIP"]
@@ -194,44 +217,75 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
 
     embeds = []
     for i, sig in enumerate(signals, 1):
-        prev_close      = sig.get("prev_close", 0)
-        high_20         = sig.get("high_20", 0)
-        max_entry_price = sig.get("max_entry_price", 0)
-
-        action_str = (
-            f"🟢 **MAX指値 ¥{max_entry_price:,.0f} で寄成買い**\n"
-            f"（寄り値が指値以下なら執行 / 超えたら見送り）\n"
-            f"→ 同日 **15:00 引成 返済売り** で決済"
-        )
-
-        if max_entry_price > 0:
-            shares     = max(100, int(4_000_000 / max_entry_price / 100) * 100)
-            invest_amt = shares * max_entry_price
-            invest_str = f"**{shares:,}株** × ¥{max_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円（信用400万フル例）"
-        else:
-            invest_str = "**400万円目安**"
-
+        direction  = sig.get("direction", "BUY")
+        prev_close = sig.get("prev_close", 0)
         reason_text = "\n".join(f"・{r}" for r in sig["reason"])
 
-        embeds.append({
-            "title": f"🚀【デイトレv2】#{i}  {sig['name']}（{sig['ticker']}）",
-            "color": 0xE53935,
-            "fields": [
-                {"name": "📌 アクション",        "value": action_str,   "inline": False},
-                {"name": "💰 MAX指値",           "value": f"**¥{max_entry_price:,.0f}**（20日高値+{int((max_entry_price/high_20-1)*100)}%）", "inline": True},
-                {"name": "🎯 20日高値",          "value": f"¥{high_20:,.0f}",      "inline": True},
-                {"name": "📈 前日終値",          "value": f"¥{prev_close:,.0f}",   "inline": True},
-                {"name": "💴 推奨株数",          "value": invest_str,              "inline": False},
-                {"name": "⚠️ 必ず当日決済",     "value": "**15:00 引成 返済売り**（翌日持ち越し禁止）", "inline": False},
-                {"name": "📊 シグナル根拠",      "value": reason_text,             "inline": False},
-            ],
-            "footer": {"text": f"配信時刻: {time_str}"},
-        })
+        if direction == "BUY":
+            high_20         = sig.get("high_20", 0)
+            max_entry_price = sig.get("max_entry_price", 0)
+            action_str = (
+                f"🟢 **MAX指値 ¥{max_entry_price:,.0f} で寄成買い**\n"
+                f"（寄り≦指値なら執行・超えたら見送り）\n"
+                f"→ 同日 **15:00 引成 返済売り** で決済"
+            )
+            if max_entry_price > 0:
+                shares     = max(100, int(4_000_000 / max_entry_price / 100) * 100)
+                invest_amt = shares * max_entry_price
+                invest_str = f"**{shares:,}株** × ¥{max_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円"
+            else:
+                invest_str = "**400万円目安**"
+            embeds.append({
+                "title": f"🚀【デイトレv2 BUY】#{i}  {sig['name']}（{sig['ticker']}）",
+                "color": 0xE53935,
+                "fields": [
+                    {"name": "📌 アクション",     "value": action_str, "inline": False},
+                    {"name": "💰 MAX指値",        "value": f"**¥{max_entry_price:,.0f}**（20日高値+{int((max_entry_price/high_20-1)*100)}%）" if high_20 else f"¥{max_entry_price:,.0f}", "inline": True},
+                    {"name": "🎯 20日高値",       "value": f"¥{high_20:,.0f}", "inline": True},
+                    {"name": "📈 前日終値",       "value": f"¥{prev_close:,.0f}", "inline": True},
+                    {"name": "💴 推奨株数",       "value": invest_str, "inline": False},
+                    {"name": "⚠️ 当日決済必須",  "value": "**15:00 引成 返済売り**", "inline": False},
+                    {"name": "📊 根拠",           "value": reason_text, "inline": False},
+                ],
+                "footer": {"text": f"配信時刻: {time_str}"},
+            })
+        else:
+            # SELL（信用売り）
+            min_entry_price = sig.get("min_entry_price", 0)
+            daily_gain      = sig.get("daily_gain", 0)
+            action_str = (
+                f"🔴 **MIN指値 ¥{min_entry_price:,.0f} で寄成 信用売り**\n"
+                f"（寄り≧指値なら執行・下回ったら見送り）\n"
+                f"→ 同日 **15:00 引成 返済買い** で決済\n"
+                f"※ 信用売り規制チェック必須"
+            )
+            if min_entry_price > 0:
+                shares     = max(100, int(4_000_000 / min_entry_price / 100) * 100)
+                invest_amt = shares * min_entry_price
+                invest_str = f"**{shares:,}株** × ¥{min_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円"
+            else:
+                invest_str = "**400万円目安**"
+            embeds.append({
+                "title": f"🚀【デイトレv2 SELL】#{i}  {sig['name']}（{sig['ticker']}）",
+                "color": 0x1E88E5,
+                "fields": [
+                    {"name": "📌 アクション",     "value": action_str, "inline": False},
+                    {"name": "💰 MIN指値",        "value": f"**¥{min_entry_price:,.0f}**（前日終値）", "inline": True},
+                    {"name": "🔥 前日急騰",       "value": f"+{daily_gain:.1f}%", "inline": True},
+                    {"name": "📈 前日終値",       "value": f"¥{prev_close:,.0f}", "inline": True},
+                    {"name": "💴 推奨株数",       "value": invest_str, "inline": False},
+                    {"name": "⚠️ 当日決済必須",  "value": "**15:00 引成 返済買い**（連続S高リスクあり）", "inline": False},
+                    {"name": "📊 根拠",           "value": reason_text, "inline": False},
+                ],
+                "footer": {"text": f"配信時刻: {time_str}"},
+            })
 
+    n_buy  = sum(1 for s in signals if s.get("direction", "BUY") == "BUY")
+    n_sell = sum(1 for s in signals if s.get("direction") == "SELL")
     payload = {
         "content": (
             f"## 🚀【デイトレv2】シグナル｜{date_str}\n"
-            f"> 本日: **{len(signals)}銘柄**（MAX指値運用・買いのみ）"
+            f"> 本日: **{len(signals)}銘柄**（🟢買い {n_buy} / 🔴売り {n_sell}）"
         ),
         "embeds": embeds[:10],
     }
@@ -248,6 +302,7 @@ def main() -> None:
         sys.exit(0)
 
     from screener_day import run_screener_day
+    from screener_sell_day import run_screener_sell_day
 
     try:
         # ── ① 前日シグナルの結果チェック ──────────────────
@@ -260,8 +315,11 @@ def main() -> None:
             results = check_yesterday_results(prev_signals, today)
             send_day_results(results, today)
 
-        # ── ② 新規スクリーニング ─────────────────────────
-        signals, macro = run_screener_day()
+        # ── ② 新規スクリーニング（BUY + SELL）─────────────
+        buy_signals, macro  = run_screener_day()
+        sell_signals, _     = run_screener_sell_day()
+        signals = buy_signals + sell_signals
+        print(f"[main_day] BUY {len(buy_signals)}件 / SELL {len(sell_signals)}件")
 
         # ── ③ シグナルを保存 ──────────────────────────────
         from datetime import timedelta as _td
