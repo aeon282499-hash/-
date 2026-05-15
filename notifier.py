@@ -23,9 +23,6 @@ CAPITAL  = 5_000_000   # 総資金（円）= 100万 × MAX_SIGNALS5並列
 WEIGHT   = 1 / 5       # 1トレード投入比率（100万 / 500万）
 MAX_HOLD = 3           # 最大保有営業日数（tracker.py と一致）
 
-# 中資金（2026-05-15開始）: 50万 × 5並列 = 250万 / 同じシグナルを別Discord通知ミラー
-MID_SIZE_PER_TRADE = 500_000
-
 
 # 公開（note メンバー向け）Discord Webhook URLs
 # 副業運用：株AI Discord サーバーの各チャンネルに並行送信する
@@ -34,9 +31,24 @@ PUBLIC_SELL    = os.getenv("DISCORD_WEBHOOK_SELL_URL_PUBLIC", "").strip()
 PUBLIC_CLOSE   = os.getenv("DISCORD_WEBHOOK_CLOSE_URL_PUBLIC", "").strip()
 PUBLIC_MONTHLY = os.getenv("DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC", "").strip()
 
-# 中資金（個人運用）: 既存BUY/結果/大引け処分通知をすべて同じ内容でミラー
-BUY_MID  = os.getenv("DISCORD_WEBHOOK_BUY_MID_URL",  "").strip()
-SELL_MID = os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip()
+# サブアカウント（個人運用・サイズ違い口座）: 既存通知を別Discordにミラー
+# 追加する場合は SUB_ACCOUNTS にエントリを追加するだけ。env未設定なら自動スキップ。
+SUB_ACCOUNTS = [
+    {
+        "label":    "中資金",
+        "emoji":    "🔵",
+        "size":     500_000,    # 1件50万 × 5並列 = 250万
+        "buy_url":  os.getenv("DISCORD_WEBHOOK_BUY_MID_URL",  "").strip(),
+        "sell_url": os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip(),
+    },
+    {
+        "label":    "小資金",
+        "emoji":    "🟢",
+        "size":     200_000,    # 1件20万 × 5並列 = 100万
+        "buy_url":  os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL",  "").strip(),
+        "sell_url": os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
+    },
+]
 
 _MIRROR_DEFAULT = "__USE_DEFAULT__"  # sentinel: Noneと区別するため
 
@@ -53,27 +65,31 @@ def _mirror_to_public(payload: dict, url: str) -> None:
         print(f"[notifier-public] mirror failed: {e}")
 
 
-def _mirror_to_mid(payload: dict, *, side: str = "BUY") -> None:
-    """中資金口座用Discordへミラー。embedに『中資金 50万円/件』を併記する。
-    side='BUY' なら BUY_MID、'SELL' なら SELL_MID に送る。"""
-    url = BUY_MID if side == "BUY" else SELL_MID
-    if not url:
-        return
+def _mirror_to_subaccounts(payload: dict, *, side: str = "BUY") -> None:
+    """サブアカウント（中資金/小資金等）の各Discordへミラー。
+    SUB_ACCOUNTS の各エントリのbuy_url/sell_urlに送信。embedにラベルとサイズを併記。"""
     import copy
-    mid_payload = copy.deepcopy(payload)
-    for embed in mid_payload.get("embeds", []):
-        title = embed.get("title", "")
-        if title and "中資金" not in title:
-            embed["title"] = f"🔵【中資金】{title}"
-        desc = embed.get("description", "") or ""
-        mid_header = f"💼 **中資金口座用：1件 {MID_SIZE_PER_TRADE//10000}万円 × 5並列（資金{MID_SIZE_PER_TRADE*5//10000}万）**\n"
-        embed["description"] = mid_header + desc
-    try:
-        resp = requests.post(url, json=mid_payload, timeout=10)
-        if resp.status_code not in (200, 204):
-            print(f"[notifier-mid-{side}] mirror HTTP {resp.status_code}")
-    except Exception as e:
-        print(f"[notifier-mid-{side}] mirror failed: {e}")
+    for acc in SUB_ACCOUNTS:
+        url = acc["buy_url"] if side == "BUY" else acc["sell_url"]
+        if not url:
+            continue
+        sub_payload = copy.deepcopy(payload)
+        for embed in sub_payload.get("embeds", []):
+            title = embed.get("title", "")
+            if title and acc["label"] not in title:
+                embed["title"] = f"{acc['emoji']}【{acc['label']}】{title}"
+            desc = embed.get("description", "") or ""
+            header = (
+                f"💼 **{acc['label']}口座用：1件 {acc['size']//10000}万円 × 5並列"
+                f"（資金{acc['size']*5//10000}万）**\n"
+            )
+            embed["description"] = header + desc
+        try:
+            resp = requests.post(url, json=sub_payload, timeout=10)
+            if resp.status_code not in (200, 204):
+                print(f"[notifier-{acc['label']}-{side}] mirror HTTP {resp.status_code}")
+        except Exception as e:
+            print(f"[notifier-{acc['label']}-{side}] mirror failed: {e}")
 
 
 def _get_webhook_url() -> str:
@@ -104,8 +120,8 @@ def _post(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_BUY if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
-    # 中資金口座ミラー（BUY系の通知に「中資金 50万円/件」併記版を送信）
-    _mirror_to_mid(payload)
+    # サブアカウントミラー（中資金/小資金等のBUY系チャンネル）
+    _mirror_to_subaccounts(payload, side="BUY")
 
 
 def _macro_description(macro: dict) -> str:
@@ -476,8 +492,8 @@ def _post_sell(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_SELL if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
-    # 中資金SELL口座ミラー
-    _mirror_to_mid(payload, side="SELL")
+    # サブアカウントミラー（中資金/小資金等のSELL系チャンネル）
+    _mirror_to_subaccounts(payload, side="SELL")
 
 
 def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
