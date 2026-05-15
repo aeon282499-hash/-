@@ -299,6 +299,56 @@
       "close": 1867.5,
       "pnl": 0.67,
       "win": true
+    },
+    {
+      "date": "2026-05-15",
+      "ticker": "4613.T",
+      "name": "関西ペイント",
+      "direction": "BUY",
+      "open": 2260.0,
+      "close": 2300.0,
+      "pnl": 1.77,
+      "win": true
+    },
+    {
+      "date": "2026-05-15",
+      "ticker": "9143.T",
+      "name": "ＳＧホールディングス",
+      "direction": "BUY",
+      "open": 1443.0,
+      "close": 1444.0,
+      "pnl": 0.07,
+      "win": true
+    },
+    {
+      "date": "2026-05-15",
+      "ticker": "2212.T",
+      "name": "山崎製パン",
+      "direction": "BUY",
+      "open": 3052.0,
+      "close": 3111.0,
+      "pnl": 1.93,
+      "win": true
+    },
+    {
+      "date": "2026-05-15",
+      "ticker": "4202.T",
+      "name": "ダイセル",
+      "direction": "BUY",
+      "open": 1192.0,
+      "close": 1186.5,
+      "pnl": -0.46,
+      "win": false
+    },
+    {
+      "date": "2026-05-15",
+      "ticker": "9744.T",
+      "name": "メイテックグループホールディングス",
+      "direction": "BUY",
+      "open": 3015.0,
+      "close": 3022.0,
+      "pnl": 0.23,
+      "win": true
     }
   ]
 }
