@@ -65,31 +65,24 @@ def _mirror_to_public(payload: dict, url: str) -> None:
         print(f"[notifier-public] mirror failed: {e}")
 
 
-def _mirror_to_subaccounts(payload: dict, *, side: str = "BUY") -> None:
-    """サブアカウント（中資金/小資金等）の各Discordへミラー。
-    SUB_ACCOUNTS の各エントリのbuy_url/sell_urlに送信。embedにラベルとサイズを併記。"""
-    import copy
-    for acc in SUB_ACCOUNTS:
-        url = acc["buy_url"] if side == "BUY" else acc["sell_url"]
-        if not url:
-            continue
-        sub_payload = copy.deepcopy(payload)
-        for embed in sub_payload.get("embeds", []):
-            title = embed.get("title", "")
-            if title and acc["label"] not in title:
-                embed["title"] = f"{acc['emoji']}【{acc['label']}】{title}"
-            desc = embed.get("description", "") or ""
-            header = (
-                f"💼 **{acc['label']}口座用：1件 {acc['size']//10000}万円 × 5並列"
-                f"（資金{acc['size']*5//10000}万）**\n"
-            )
-            embed["description"] = header + desc
-        try:
-            resp = requests.post(url, json=sub_payload, timeout=10)
-            if resp.status_code not in (200, 204):
-                print(f"[notifier-{acc['label']}-{side}] mirror HTTP {resp.status_code}")
-        except Exception as e:
-            print(f"[notifier-{acc['label']}-{side}] mirror failed: {e}")
+def _affordable(price: float, size_yen: int) -> bool:
+    """100株単元で size_yen 以内で買えるか判定。price=0/未取得は買えない扱い。"""
+    if not price or price <= 0:
+        return False
+    return price * 100 <= size_yen
+
+
+def _post_to_subaccount(payload: dict, *, side: str, acc: dict) -> None:
+    """サブ口座Webhookへ送信。失敗してもメイン送信は影響しない。"""
+    url = acc["buy_url"] if side == "BUY" else acc["sell_url"]
+    if not url:
+        return
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code not in (200, 204):
+            print(f"[notifier-{acc['label']}-{side}] HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"[notifier-{acc['label']}-{side}] failed: {e}")
 
 
 def _get_webhook_url() -> str:
@@ -120,8 +113,7 @@ def _post(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_BUY if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
-    # サブアカウントミラー（中資金/小資金等のBUY系チャンネル）
-    _mirror_to_subaccounts(payload, side="BUY")
+    # サブ口座（中資金/小資金等）は各 send_* 関数でサイズ別フィルタ・再構築して送信する
 
 
 def _macro_description(macro: dict) -> str:
@@ -173,6 +165,66 @@ def _calc_today_hold_day(entry_date_str: str, today: date) -> int:
     return count
 
 
+def _build_buy_embed(buy_signals: list[dict], size_yen: int, *, date_str: str, time_str: str,
+                     exit_date_str: str, label: str | None = None, emoji: str | None = None) -> dict:
+    """BUYシグナルからembedを構築。size_yen=1件あたりの投入額。
+    label/emoji 指定時はサブ口座用タイトル＆ヘッダ付き。"""
+    size_man = size_yen // 10000
+    sep = "─" * 24
+    lines = [
+        f"🎯 **9:00 寄り付き成行**・1件{size_man}万円",
+        f"🛑 損切 寄値×0.97 (-3%)  ✅ 利確 寄値×1.05 (+5%)",
+        f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_date_str}**",
+        sep,
+    ]
+
+    for i, sig in enumerate(buy_signals, 1):
+        ticker     = sig["ticker"].replace(".T", "")
+        name       = sig["name"]
+        prev_close = sig.get("prev_close", 0) or 0
+        rsi        = sig.get("rsi")
+        deviation  = sig.get("deviation")
+        range_r    = sig.get("range_ratio")
+        vol_r      = sig.get("vol_ratio")
+        turnover   = sig.get("turnover", 0) or 0
+
+        if prev_close > 0:
+            shares     = max(100, int(size_yen / prev_close / 100) * 100)
+            invest_amt = shares * prev_close
+            line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
+        else:
+            line1      = f"**#{i} {name}** ({ticker}) {size_man}万円目安"
+
+        parts = []
+        if rsi is not None:
+            parts.append(f"RSI={rsi:.1f}")
+        if deviation is not None:
+            parts.append(f"乖離{deviation:+.1f}%")
+        if vol_r is not None and vol_r >= VOL_MULT_THRESHOLD:
+            parts.append(f"出来高×{vol_r:.1f}")
+        elif range_r is not None:
+            parts.append(f"値幅/ATR={range_r:.1f}")
+        if turnover > 0:
+            parts.append(f"代金{turnover/1e8:.0f}億")
+        line2 = "   " + "・".join(parts)
+
+        lines.append(line1)
+        lines.append(line2)
+        lines.append("")
+
+    if label:
+        title = f"{emoji or ''}【{label}】📊スイング {date_str} — 買い{len(buy_signals)}銘柄"
+    else:
+        title = f"📊【スイング】{date_str} — 買い{len(buy_signals)}銘柄"
+
+    return {
+        "title":       title,
+        "description": "\n".join(lines).rstrip(),
+        "color":       COLOR_BUY,
+        "footer":      {"text": f"配信時刻: {time_str}"},
+    }
+
+
 def send_signals(signals: list[dict], today: date, macro: dict | None = None, entry_date=None) -> None:
     """買いシグナルを1embedにまとめて送信（共通ルールはヘッダ・銘柄は2行コンパクト）。"""
     date_str = today.strftime("%Y年%m月%d日")
@@ -194,56 +246,39 @@ def send_signals(signals: list[dict], today: date, macro: dict | None = None, en
         print("[notifier] BUYシグナルなし → send_signalsスキップ")
         return
 
-    sep = "─" * 24
-    lines = [
-        f"🎯 **9:00 寄り付き成行**・1件100万円",
-        f"🛑 損切 寄値×0.97 (-3%)  ✅ 利確 寄値×1.05 (+5%)",
-        f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_date_str}**",
-        sep,
-    ]
-
-    for i, sig in enumerate(buy_signals, 1):
-        ticker     = sig["ticker"].replace(".T", "")
-        name       = sig["name"]
-        prev_close = sig.get("prev_close", 0) or 0
-        rsi        = sig.get("rsi")
-        deviation  = sig.get("deviation")
-        range_r    = sig.get("range_ratio")
-        vol_r      = sig.get("vol_ratio")
-        turnover   = sig.get("turnover", 0) or 0
-
-        if prev_close > 0:
-            shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
-            invest_amt = shares * prev_close
-            line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
-        else:
-            line1      = f"**#{i} {name}** ({ticker}) 100万円目安"
-
-        parts = []
-        if rsi is not None:
-            parts.append(f"RSI={rsi:.1f}")
-        if deviation is not None:
-            parts.append(f"乖離{deviation:+.1f}%")
-        if vol_r is not None and vol_r >= VOL_MULT_THRESHOLD:
-            parts.append(f"出来高×{vol_r:.1f}")
-        elif range_r is not None:
-            parts.append(f"値幅/ATR={range_r:.1f}")
-        if turnover > 0:
-            parts.append(f"代金{turnover/1e8:.0f}億")
-        line2 = "   " + "・".join(parts)
-
-        lines.append(line1)
-        lines.append(line2)
-        lines.append("")
-
-    embed = {
-        "title":       f"📊【スイング】{date_str} — 買い{len(buy_signals)}銘柄",
-        "description": "\n".join(lines).rstrip(),
-        "color":       COLOR_BUY,
-        "footer":      {"text": f"配信時刻: {time_str}"},
-    }
+    # メイン送信（大資金100万）
+    embed = _build_buy_embed(
+        buy_signals, size_yen=1_000_000,
+        date_str=date_str, time_str=time_str, exit_date_str=exit_date_str,
+    )
     _post({"embeds": [embed]})
     print(f"[notifier] {len(buy_signals)} 件のシグナルを Discord に送信しました。")
+
+    # サブ口座（中資金/小資金）: 100株単元で買える銘柄だけにフィルタ→個別embed
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("buy_url"):
+            continue
+        sub_signals = [s for s in buy_signals if _affordable(s.get("prev_close", 0) or 0, acc["size"])]
+        if not sub_signals:
+            # サイズで買える銘柄ゼロでも「該当なし」を投げて欠落を避ける
+            payload = {"embeds": [{
+                "title":       f"{acc['emoji']}【{acc['label']}】📊スイング {date_str} — 該当なし",
+                "description": (
+                    f"💼 1件{acc['size']//10000}万円枠で買える銘柄は本日ありません。\n"
+                    f"（大資金側のシグナル{len(buy_signals)}件すべて株価が枠超過）"
+                ),
+                "color":       COLOR_NONE,
+                "footer":      {"text": f"配信時刻: {time_str}"},
+            }]}
+            _post_to_subaccount(payload, side="BUY", acc=acc)
+            continue
+        sub_embed = _build_buy_embed(
+            sub_signals, size_yen=acc["size"],
+            date_str=date_str, time_str=time_str, exit_date_str=exit_date_str,
+            label=acc["label"], emoji=acc["emoji"],
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="BUY", acc=acc)
+        print(f"[notifier-{acc['label']}-BUY] {len(sub_signals)}/{len(buy_signals)} 件配信")
 
 
 def _send_no_signal(date_str: str, time_str: str, macro: dict) -> None:
@@ -262,17 +297,32 @@ def _send_no_signal(date_str: str, time_str: str, macro: dict) -> None:
     }
     _post(payload)
     print("[notifier] シグナル 0 件の通知を送信しました。")
+    # サブ口座にも「シグナルなし」を配信（口座サイズ問わず共通）
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("buy_url"):
+            continue
+        sub_payload = {"embeds": [{
+            "title":       f"{acc['emoji']}【{acc['label']}】📊スイング {date_str} — シグナルなし",
+            "description": (
+                f"💼 1件{acc['size']//10000}万円枠 — 本日は買いシグナル0件です。"
+            ),
+            "color":  COLOR_NONE,
+            "footer": {"text": f"配信時刻: {time_str}"},
+        }]}
+        _post_to_subaccount(sub_payload, side="BUY", acc=acc)
 
 
-def send_results(closed: list[dict], still_open: list[dict], today: date) -> None:
-    """前日シグナルの損益結果を Discord に送信する。"""
-    if not closed and not still_open:
-        return
-
+def _build_results_embed(closed: list[dict], still_open: list[dict], today: date,
+                         *, label: str | None = None, emoji_acc: str | None = None,
+                         size_yen: int | None = None) -> dict:
+    """決済結果embedを構築。label指定時はサブ口座用ヘッダ付き。"""
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
-
     lines = []
+
+    if label and size_yen:
+        lines.append(f"💼 **{label}口座（1件{size_yen//10000}万円枠）**")
+        lines.append("")
 
     if closed:
         lines.append("**── 📋 決済済み（OCO・大引け処分） ──**")
@@ -299,17 +349,16 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
             lines.append("")
         lines.append("**── 保有中（持ち越し） ──**")
         for p in still_open:
-            upnl    = p.get("unrealized_pnl", 0) or 0
+            upnl       = p.get("unrealized_pnl", 0) or 0
             today_hold = _calc_today_hold_day(p.get("entry_date", ""), today)
-            emoji   = "📈" if upnl >= 0 else "📉"
-            dir_str = "買い" if p["direction"] == "BUY" else "売り"
+            emoji      = "📈" if upnl >= 0 else "📉"
+            dir_str    = "買い" if p["direction"] == "BUY" else "売り"
 
-            # 処分期限日: entry日含めて MAX_HOLD 営業日目（= entry + (MAX_HOLD-1) 営業日後）
             try:
                 entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
                 deadline = _nth_trading_day(entry_dt, MAX_HOLD - 1)
                 deadline_str = deadline.strftime("%m月%d日")
-                remaining = MAX_HOLD - today_hold  # 今日を除く残り営業日
+                remaining = MAX_HOLD - today_hold
                 if remaining <= 0:
                     warn = "⚠️ **本日大引けに処分**"
                 elif remaining == 1:
@@ -324,51 +373,63 @@ def send_results(closed: list[dict], still_open: list[dict], today: date) -> Non
                 f"含み **{upnl:+.2f}%** — {today_hold}日目 {warn}"
             )
 
-    # 合計損益
     if closed:
         avg_pnl = sum(p.get("pnl_pct", 0) or 0 for p in closed) / len(closed)
         wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
         lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
 
-    title = f"📋【スイング決済結果】{date_str}" if closed else f"📋【スイング保有中】{date_str}"
-    payload = {
-        "embeds": [{
-            "title":       title,
-            "description": "\n".join(lines),
-            "color":       COLOR_WIN if any((p.get("pnl_pct") or 0) > 0 for p in closed) else COLOR_ERROR,
-            "footer":      {"text": f"配信時刻: {time_str}"},
-        }]
+    if label:
+        title = (
+            f"{emoji_acc or ''}【{label}】📋スイング決済結果 {date_str}"
+            if closed else
+            f"{emoji_acc or ''}【{label}】📋スイング保有中 {date_str}"
+        )
+    else:
+        title = f"📋【スイング決済結果】{date_str}" if closed else f"📋【スイング保有中】{date_str}"
+
+    color = COLOR_WIN if any((p.get("pnl_pct") or 0) > 0 for p in closed) else COLOR_ERROR
+    return {
+        "title":       title,
+        "description": "\n".join(lines),
+        "color":       color,
+        "footer":      {"text": f"配信時刻: {time_str}"},
     }
-    _post(payload)
-    print(f"[notifier] 結果レポートを Discord に送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
 
 
-def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None:
-    """空売りシグナルを SELL専用Webhook + 公開SELL Discordに送信する。"""
-    date_str = today.strftime("%Y年%m月%d日")
-    time_str = datetime.now(JST).strftime("%H:%M JST")
-
-    if entry_date is None:
-        entry_date = today
-    exit_date     = _nth_trading_day(entry_date, 2)
-    exit_date_str = exit_date.strftime("%m月%d日")
-
-    if not signals:
-        _post_sell({
-            "embeds": [{
-                "title":       f"📉【スイング空売り】{date_str} — シグナルなし",
-                "description": "本日の空売りシグナルは0件です。",
-                "color":       COLOR_NONE,
-                "footer":      {"text": f"配信時刻: {time_str}"},
-            }]
-        })
-        print("[notifier] SELL シグナルなし を送信しました。")
+def send_results(closed: list[dict], still_open: list[dict], today: date) -> None:
+    """前日シグナルの損益結果を Discord に送信する。"""
+    if not closed and not still_open:
         return
 
+    # メイン送信
+    embed = _build_results_embed(closed, still_open, today)
+    _post({"embeds": [embed]})
+    print(f"[notifier] 結果レポートを Discord に送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
+
+    # サブ口座: entry_open でその口座サイズで買えていた銘柄だけにフィルタ
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("buy_url"):
+            continue
+        size = acc["size"]
+        sub_closed     = [p for p in closed     if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        sub_still_open = [p for p in still_open if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        if not sub_closed and not sub_still_open:
+            continue
+        sub_embed = _build_results_embed(
+            sub_closed, sub_still_open, today,
+            label=acc["label"], emoji_acc=acc["emoji"], size_yen=size,
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="BUY", acc=acc)
+        print(f"[notifier-{acc['label']}-RESULT] 決済{len(sub_closed)}/保有中{len(sub_still_open)}")
+
+
+def _build_sell_embed(signals: list[dict], size_yen: int, *, date_str: str, time_str: str,
+                      exit_date_short: str, label: str | None = None, emoji: str | None = None) -> dict:
+    """SELLシグナルからembedを構築。"""
+    size_man = size_yen // 10000
     sep = "─" * 24
-    exit_date_short = exit_date.strftime("%m/%d")
     lines = [
-        f"🎯 **9:00 寄り付き成行（信用売り）**・1件100万円",
+        f"🎯 **9:00 寄り付き成行（信用売り）**・1件{size_man}万円",
         f"🛑 損切 寄値×1.03 (+3%)  ✅ 利確 寄値×0.95 (-5%)",
         f"📅 最大3営業日・RSI≤50で早期買戻し・処分期限 **{exit_date_short}**",
         sep,
@@ -386,11 +447,11 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
         turnover   = sig.get("turnover", 0) or 0
 
         if prev_close > 0:
-            shares     = max(100, int(1_000_000 / prev_close / 100) * 100)
+            shares     = max(100, int(size_yen / prev_close / 100) * 100)
             invest_amt = shares * prev_close
             line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
         else:
-            line1      = f"**#{i} {name}** ({ticker}) 100万円目安"
+            line1      = f"**#{i} {name}** ({ticker}) {size_man}万円目安"
 
         parts = []
         if day_change is not None:
@@ -411,30 +472,92 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None
         lines.append(line2)
         lines.append("")
 
-    payload = {
-        "embeds": [{
-            "title":       f"📉【スイング空売り】{date_str} — 売り{len(signals)}銘柄",
-            "description": "\n".join(lines).rstrip(),
-            "color":       COLOR_SELL,
-            "footer":      {"text": f"配信時刻: {time_str}"},
-        }]
+    if label:
+        title = f"{emoji or ''}【{label}】📉スイング空売り {date_str} — 売り{len(signals)}銘柄"
+    else:
+        title = f"📉【スイング空売り】{date_str} — 売り{len(signals)}銘柄"
+
+    return {
+        "title":       title,
+        "description": "\n".join(lines).rstrip(),
+        "color":       COLOR_SELL,
+        "footer":      {"text": f"配信時刻: {time_str}"},
     }
-    _post_sell(payload)
-    print(f"[notifier] SELL {len(signals)} 件のシグナルを Discord に送信しました。")
 
 
-def send_monthly_report(positions: list[dict], today: date) -> None:
-    """月別・年間損益をDiscordに送信する。"""
-    from collections import defaultdict
+def send_sell_signals(signals: list[dict], today: date, entry_date=None) -> None:
+    """空売りシグナルを SELL専用Webhook + 公開SELL Discordに送信する。"""
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
 
-    closed = [
-        p for p in positions
-        if p.get("status") == "closed" and p.get("pnl_pct") is not None
-    ]
-    if not closed:
+    if entry_date is None:
+        entry_date = today
+    exit_date       = _nth_trading_day(entry_date, 2)
+    exit_date_short = exit_date.strftime("%m/%d")
+
+    if not signals:
+        _post_sell({
+            "embeds": [{
+                "title":       f"📉【スイング空売り】{date_str} — シグナルなし",
+                "description": "本日の空売りシグナルは0件です。",
+                "color":       COLOR_NONE,
+                "footer":      {"text": f"配信時刻: {time_str}"},
+            }]
+        })
+        print("[notifier] SELL シグナルなし を送信しました。")
+        # サブ口座にも「シグナルなし」を配信
+        for acc in SUB_ACCOUNTS:
+            if not acc.get("sell_url"):
+                continue
+            sub_payload = {"embeds": [{
+                "title":       f"{acc['emoji']}【{acc['label']}】📉スイング空売り {date_str} — シグナルなし",
+                "description": f"💼 1件{acc['size']//10000}万円枠 — 本日は空売りシグナル0件です。",
+                "color":       COLOR_NONE,
+                "footer":      {"text": f"配信時刻: {time_str}"},
+            }]}
+            _post_to_subaccount(sub_payload, side="SELL", acc=acc)
         return
 
-    # exit_date で月別集計
+    # メイン送信（大資金100万）
+    embed = _build_sell_embed(
+        signals, size_yen=1_000_000,
+        date_str=date_str, time_str=time_str, exit_date_short=exit_date_short,
+    )
+    _post_sell({"embeds": [embed]})
+    print(f"[notifier] SELL {len(signals)} 件のシグナルを Discord に送信しました。")
+
+    # サブ口座: 100株単元で建てられる銘柄だけにフィルタ
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("sell_url"):
+            continue
+        sub_signals = [s for s in signals if _affordable(s.get("prev_close", 0) or 0, acc["size"])]
+        if not sub_signals:
+            sub_payload = {"embeds": [{
+                "title":       f"{acc['emoji']}【{acc['label']}】📉スイング空売り {date_str} — 該当なし",
+                "description": (
+                    f"💼 1件{acc['size']//10000}万円枠で建てられる銘柄は本日ありません。\n"
+                    f"（大資金側のSELLシグナル{len(signals)}件すべて株価が枠超過）"
+                ),
+                "color":       COLOR_NONE,
+                "footer":      {"text": f"配信時刻: {time_str}"},
+            }]}
+            _post_to_subaccount(sub_payload, side="SELL", acc=acc)
+            continue
+        sub_embed = _build_sell_embed(
+            sub_signals, size_yen=acc["size"],
+            date_str=date_str, time_str=time_str, exit_date_short=exit_date_short,
+            label=acc["label"], emoji=acc["emoji"],
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="SELL", acc=acc)
+        print(f"[notifier-{acc['label']}-SELL] {len(sub_signals)}/{len(signals)} 件配信")
+
+
+def _build_monthly_embed(closed: list[dict], today: date, *, size_yen: int,
+                         label: str | None = None, emoji_acc: str | None = None,
+                         sell: bool = False) -> dict | None:
+    """月別・年間損益embedを構築。closedはサイズで事前フィルタ済みである前提。"""
+    from collections import defaultdict
+
     monthly = defaultdict(list)
     for p in closed:
         ym = (p.get("exit_date") or "")[:7]
@@ -443,16 +566,19 @@ def send_monthly_report(positions: list[dict], today: date) -> None:
 
     current_year = str(today.year)
     year_months  = {ym: pnls for ym, pnls in monthly.items() if ym.startswith(current_year)}
-
     if not year_months:
-        return
+        return None
+
+    one_size = size_yen
+    capital  = size_yen * 5  # MAX5並列
+    weight   = 1 / 5
 
     lines = []
     for ym in sorted(year_months.keys()):
         pnls  = year_months[ym]
-        mr    = sum(pnls) * WEIGHT
+        mr    = sum(pnls) * weight
         wins  = sum(1 for p in pnls if p > 0)
-        yen   = mr / 100 * CAPITAL
+        yen   = mr / 100 * capital
         sign  = "+" if mr >= 0 else ""
         lines.append(
             f"`{ym}` {len(pnls)}件 勝率{wins}/{len(pnls)} "
@@ -460,23 +586,60 @@ def send_monthly_report(positions: list[dict], today: date) -> None:
         )
 
     year_pnls  = [p for pnls in year_months.values() for p in pnls]
-    annual_pct = sum(year_pnls) * WEIGHT
-    annual_yen = annual_pct / 100 * CAPITAL
+    annual_pct = sum(year_pnls) * weight
+    annual_yen = annual_pct / 100 * capital
     a_sign     = "+" if annual_pct >= 0 else ""
 
-    desc = "\n".join(lines)
+    desc  = "\n".join(lines)
     desc += f"\n\n**{current_year}年合計: {a_sign}{annual_pct:.1f}%（{a_sign}{annual_yen/10000:.1f}万円）**"
 
+    kind = "空売り" if sell else "スイング"
+    if label:
+        title = f"{emoji_acc or ''}【{label}】📈 {current_year}年 月別・年間損益（{kind}）"
+    else:
+        title = f"📈 {current_year}年 月別・年間損益（{kind}）" if not sell else \
+                f"📉 {current_year}年 月別・年間損益（{kind}）"
+
     color = COLOR_WIN if annual_pct >= 0 else COLOR_ERROR
-    _post({
-        "embeds": [{
-            "title":       f"📈 {current_year}年 月別・年間損益（スイング）",
-            "description": desc,
-            "color":       color,
-            "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
-        }]
-    }, mirror=PUBLIC_MONTHLY)
-    print(f"[notifier] 月別・年間損益レポートを送信しました")
+    if sell:
+        color = 0x43A047 if annual_pct >= 0 else 0xFDD835
+
+    return {
+        "title":       title,
+        "description": desc,
+        "color":       color,
+        "footer":      {"text": f"※資金{capital//10000}万・1トレード{one_size//10000}万・MAX5並列基準"},
+    }
+
+
+def send_monthly_report(positions: list[dict], today: date) -> None:
+    """月別・年間損益をDiscordに送信する。"""
+    closed = [
+        p for p in positions
+        if p.get("status") == "closed" and p.get("pnl_pct") is not None
+    ]
+    if not closed:
+        return
+
+    # メイン送信（大資金100万）
+    embed = _build_monthly_embed(closed, today, size_yen=1_000_000)
+    if embed:
+        _post({"embeds": [embed]}, mirror=PUBLIC_MONTHLY)
+        print(f"[notifier] 月別・年間損益レポートを送信しました")
+
+    # サブ口座: その口座サイズで実際に買えていた銘柄のみで集計
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("buy_url"):
+            continue
+        size = acc["size"]
+        sub_closed = [p for p in closed if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        sub_embed = _build_monthly_embed(
+            sub_closed, today, size_yen=size,
+            label=acc["label"], emoji_acc=acc["emoji"],
+        )
+        if sub_embed:
+            _post_to_subaccount({"embeds": [sub_embed]}, side="BUY", acc=acc)
+            print(f"[notifier-{acc['label']}-MONTHLY] {len(sub_closed)}件")
 
 
 def _post_sell(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
@@ -492,19 +655,20 @@ def _post_sell(payload: dict, *, mirror: str = _MIRROR_DEFAULT) -> None:
     target = PUBLIC_SELL if mirror == _MIRROR_DEFAULT else mirror
     if target:
         _mirror_to_public(payload, target)
-    # サブアカウントミラー（中資金/小資金等のSELL系チャンネル）
-    _mirror_to_subaccounts(payload, side="SELL")
+    # サブ口座（中資金/小資金等）は各 send_* 関数でサイズ別フィルタ・再構築して送信する
 
 
-def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
-    """空売りポジションの損益結果をSELL専用Webhookに送信する。"""
-    if not closed and not still_open:
-        return
-
+def _build_sell_results_embed(closed: list[dict], still_open: list[dict], today: date,
+                              *, label: str | None = None, emoji_acc: str | None = None,
+                              size_yen: int | None = None) -> dict:
+    """空売り結果embedを構築。"""
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
-
     lines = []
+
+    if label and size_yen:
+        lines.append(f"💼 **{label}口座（1件{size_yen//10000}万円枠・信用売り）**")
+        lines.append("")
 
     if closed:
         lines.append("**── 📋 決済済み（買戻し・OCO/大引け） ──**")
@@ -530,9 +694,9 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
             lines.append("")
         lines.append("**── 保有中（売りポジション持ち越し） ──**")
         for p in still_open:
-            upnl = p.get("unrealized_pnl", 0) or 0
+            upnl       = p.get("unrealized_pnl", 0) or 0
             today_hold = _calc_today_hold_day(p.get("entry_date", ""), today)
-            emoji = "📈" if upnl >= 0 else "📉"
+            emoji      = "📈" if upnl >= 0 else "📉"
             try:
                 entry_dt = datetime.strptime(p["entry_date"], "%Y-%m-%d").date()
                 deadline = _nth_trading_day(entry_dt, MAX_HOLD - 1)
@@ -555,21 +719,48 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -
         wins    = sum(1 for p in closed if (p.get("pnl_pct") or 0) > 0)
         lines.append(f"\n合計: {len(closed)}件決済 / 勝ち{wins}件 / 平均{avg_pnl:+.2f}%")
 
-    _post_sell({
-        "embeds": [{
-            "title":       f"📋【スイング空売り結果】{date_str}",
-            "description": "\n".join(lines),
-            "color":       0x43A047 if any((p.get("pnl_pct") or 0) > 0 for p in closed) else 0xFDD835,
-            "footer":      {"text": f"配信時刻: {time_str}"},
-        }]
-    })
+    if label:
+        title = f"{emoji_acc or ''}【{label}】📋スイング空売り結果 {date_str}"
+    else:
+        title = f"📋【スイング空売り結果】{date_str}"
+
+    return {
+        "title":       title,
+        "description": "\n".join(lines),
+        "color":       0x43A047 if any((p.get("pnl_pct") or 0) > 0 for p in closed) else 0xFDD835,
+        "footer":      {"text": f"配信時刻: {time_str}"},
+    }
+
+
+def send_sell_results(closed: list[dict], still_open: list[dict], today: date) -> None:
+    """空売りポジションの損益結果をSELL専用Webhookに送信する。"""
+    if not closed and not still_open:
+        return
+
+    # メイン送信
+    embed = _build_sell_results_embed(closed, still_open, today)
+    _post_sell({"embeds": [embed]})
     print(f"[notifier] SELL結果レポートを送信しました（決済{len(closed)}件 / 保有中{len(still_open)}件）")
+
+    # サブ口座: entry_open でフィルタ
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("sell_url"):
+            continue
+        size = acc["size"]
+        sub_closed     = [p for p in closed     if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        sub_still_open = [p for p in still_open if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        if not sub_closed and not sub_still_open:
+            continue
+        sub_embed = _build_sell_results_embed(
+            sub_closed, sub_still_open, today,
+            label=acc["label"], emoji_acc=acc["emoji"], size_yen=size,
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="SELL", acc=acc)
+        print(f"[notifier-{acc['label']}-SELL-RESULT] 決済{len(sub_closed)}/保有中{len(sub_still_open)}")
 
 
 def send_sell_monthly_report(positions: list[dict], today: date) -> None:
     """空売りの月別・年間損益をSELL専用Webhookに送信する。"""
-    from collections import defaultdict
-
     closed = [
         p for p in positions
         if p.get("status") == "closed" and p.get("pnl_pct") is not None
@@ -577,47 +768,25 @@ def send_sell_monthly_report(positions: list[dict], today: date) -> None:
     if not closed:
         return
 
-    monthly = defaultdict(list)
-    for p in closed:
-        ym = (p.get("exit_date") or "")[:7]
-        if ym:
-            monthly[ym].append(p["pnl_pct"])
+    # メイン送信
+    embed = _build_monthly_embed(closed, today, size_yen=1_000_000, sell=True)
+    if embed:
+        _post_sell({"embeds": [embed]}, mirror=PUBLIC_MONTHLY)
+        print(f"[notifier] SELL月別・年間損益レポートを送信しました")
 
-    current_year = str(today.year)
-    year_months  = {ym: pnls for ym, pnls in monthly.items() if ym.startswith(current_year)}
-
-    if not year_months:
-        return
-
-    lines = []
-    for ym in sorted(year_months.keys()):
-        pnls = year_months[ym]
-        mr   = sum(pnls) * WEIGHT
-        wins = sum(1 for p in pnls if p > 0)
-        yen  = mr / 100 * CAPITAL
-        sign = "+" if mr >= 0 else ""
-        lines.append(
-            f"`{ym}` {len(pnls)}件 勝率{wins}/{len(pnls)} "
-            f"**月利{sign}{mr:.1f}%**（{sign}{yen/10000:.1f}万円）"
+    # サブ口座: フィルタして再集計
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("sell_url"):
+            continue
+        size = acc["size"]
+        sub_closed = [p for p in closed if _affordable(p.get("entry_open") or p.get("prev_close") or 0, size)]
+        sub_embed = _build_monthly_embed(
+            sub_closed, today, size_yen=size, sell=True,
+            label=acc["label"], emoji_acc=acc["emoji"],
         )
-
-    year_pnls  = [p for pnls in year_months.values() for p in pnls]
-    annual_pct = sum(year_pnls) * WEIGHT
-    annual_yen = annual_pct / 100 * CAPITAL
-    a_sign     = "+" if annual_pct >= 0 else ""
-
-    desc  = "\n".join(lines)
-    desc += f"\n\n**{current_year}年合計: {a_sign}{annual_pct:.1f}%（{a_sign}{annual_yen/10000:.1f}万円）**"
-
-    _post_sell({
-        "embeds": [{
-            "title":       f"📉 {current_year}年 月別・年間損益（スイング空売り）",
-            "description": desc,
-            "color":       0x43A047 if annual_pct >= 0 else 0xFDD835,
-            "footer":      {"text": "※資金500万・1トレード100万・MAX5並列基準"},
-        }]
-    }, mirror=PUBLIC_MONTHLY)
-    print(f"[notifier] SELL月別・年間損益レポートを送信しました")
+        if sub_embed:
+            _post_to_subaccount({"embeds": [sub_embed]}, side="SELL", acc=acc)
+            print(f"[notifier-{acc['label']}-SELL-MONTHLY] {len(sub_closed)}件")
 
 
 def send_error(error_message: str, today: date) -> None:
@@ -634,6 +803,72 @@ def send_error(error_message: str, today: date) -> None:
     _post(payload)
 
 
+def _build_close_embed(targets: list[dict], today: date, *, sell: bool = False,
+                       label: str | None = None, emoji_acc: str | None = None,
+                       size_yen: int | None = None) -> dict:
+    """大引け処分指示embedを構築。sell=Trueなら空売り買戻し版。"""
+    date_str = today.strftime("%m/%d")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+    sep = "─" * 22
+
+    if sell:
+        header = "🛒 **15:25-15:30 クロージング**で成行買戻し（SBI証券・信用）"
+        title_kind = "空売り大引け処分指示"
+    else:
+        header = "🛒 **15:25-15:30 クロージング**で成行売り（SBI証券）"
+        title_kind = "大引け処分指示"
+
+    lines = []
+    if label and size_yen:
+        lines.append(f"💼 **{label}口座（1件{size_yen//10000}万円枠）**")
+    lines += [header, f"対象: **{len(targets)}銘柄**", sep]
+
+    for i, t in enumerate(targets, 1):
+        ticker = t["ticker"].replace(".T", "")
+        name   = t["name"]
+        rtype  = t["reason_type"]
+        hold   = t.get("today_hold", "?")
+        rsi    = t.get("rsi_now")
+        price  = t.get("current_price")
+        entry  = t.get("entry_open")
+
+        if rtype == "RSI":
+            icon = "🔔"
+            tag  = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
+        else:
+            icon = "⏰"
+            tag  = f"{hold}日目MAXHOLD"
+
+        line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
+        if price is not None and entry is not None and entry > 0:
+            pnl_now = (entry - price) / entry * 100 if sell else (price - entry) / entry * 100
+            line += f" / {pnl_now:+.2f}%"
+        lines.append(line)
+
+    if sell:
+        color = COLOR_WIN if any(
+            t.get("current_price") and t.get("entry_open") and t["entry_open"] > t["current_price"]
+            for t in targets
+        ) else COLOR_ERROR
+    else:
+        color = COLOR_WIN if any(
+            t.get("current_price") and t.get("entry_open") and t["current_price"] > t["entry_open"]
+            for t in targets
+        ) else COLOR_ERROR
+
+    if label:
+        title = f"{emoji_acc or ''}【{label}】⚡{title_kind} {date_str}"
+    else:
+        title = f"⚡【{title_kind}】{date_str}"
+
+    return {
+        "title":       title,
+        "description": "\n".join(lines),
+        "color":       color,
+        "footer":      {"text": f"配信時刻: {time_str}"},
+    }
+
+
 def send_close_signals(targets: list[dict], today: date) -> None:
     """大引け前にRSI≥50またはMAXHOLDで処分すべきポジションをDiscord通知する。
 
@@ -644,108 +879,47 @@ def send_close_signals(targets: list[dict], today: date) -> None:
     if not targets:
         return
 
-    date_str = today.strftime("%m/%d")
-    time_str = datetime.now(JST).strftime("%H:%M JST")
-    sep = "─" * 22
-
-    lines = [
-        f"🛒 **15:25-15:30 クロージング**で成行売り（SBI証券）",
-        f"対象: **{len(targets)}銘柄**",
-        sep,
-    ]
-
-    for i, t in enumerate(targets, 1):
-        ticker  = t["ticker"].replace(".T", "")
-        name    = t["name"]
-        rtype   = t["reason_type"]
-        hold    = t.get("today_hold", "?")
-        rsi     = t.get("rsi_now")
-        price   = t.get("current_price")
-        entry   = t.get("entry_open")
-
-        if rtype == "RSI":
-            icon = "🔔"
-            tag  = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
-        else:
-            icon = "⏰"
-            tag  = f"{hold}日目MAXHOLD"
-
-        line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
-        if price is not None and entry is not None and entry > 0:
-            pnl_now = (price - entry) / entry * 100
-            line += f" / {pnl_now:+.2f}%"
-        lines.append(line)
-
-    color = COLOR_WIN if any(
-        t.get("current_price") and t.get("entry_open") and t["current_price"] > t["entry_open"]
-        for t in targets
-    ) else COLOR_ERROR
-
-    payload = {
-        "embeds": [{
-            "title":       f"⚡【大引け処分指示】{date_str}",
-            "description": "\n".join(lines),
-            "color":       color,
-            "footer":      {"text": f"配信時刻: {time_str}"},
-        }]
-    }
-    _post(payload, mirror=PUBLIC_CLOSE)
+    # メイン送信
+    embed = _build_close_embed(targets, today)
+    _post({"embeds": [embed]}, mirror=PUBLIC_CLOSE)
     print(f"[notifier] 大引け処分指示を Discord に送信しました（{len(targets)}件）")
+
+    # サブ口座: そのサイズで実際に持っていた銘柄だけ
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("buy_url"):
+            continue
+        size = acc["size"]
+        sub_targets = [t for t in targets if _affordable(t.get("entry_open") or 0, size)]
+        if not sub_targets:
+            continue
+        sub_embed = _build_close_embed(
+            sub_targets, today,
+            label=acc["label"], emoji_acc=acc["emoji"], size_yen=size,
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="BUY", acc=acc)
+        print(f"[notifier-{acc['label']}-CLOSE] {len(sub_targets)}/{len(targets)} 件")
 
 
 def send_close_signals_sell(targets: list[dict], today: date) -> None:
-    """SELL（空売り）ポジションの大引け処分指示を SELL専用Webhook + 公開CLOSE Discordに送信する。
-
-    targets: close_check.py が生成した sell_targets（direction="SELL"）
-    """
+    """SELL（空売り）ポジションの大引け処分指示を SELL専用Webhook + 公開CLOSE Discordに送信する。"""
     if not targets:
         return
 
-    date_str = today.strftime("%m/%d")
-    time_str = datetime.now(JST).strftime("%H:%M JST")
-    sep = "─" * 22
-
-    lines = [
-        f"🛒 **15:25-15:30 クロージング**で成行買戻し（SBI証券・信用）",
-        f"対象: **{len(targets)}銘柄**",
-        sep,
-    ]
-
-    for i, t in enumerate(targets, 1):
-        ticker  = t["ticker"].replace(".T", "")
-        name    = t["name"]
-        rtype   = t["reason_type"]
-        hold    = t.get("today_hold", "?")
-        rsi     = t.get("rsi_now")
-        price   = t.get("current_price")
-        entry   = t.get("entry_open")
-
-        if rtype == "RSI":
-            icon = "🔔"
-            tag  = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
-        else:
-            icon = "⏰"
-            tag  = f"{hold}日目MAXHOLD"
-
-        line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
-        if price is not None and entry is not None and entry > 0:
-            # SELL は entry > current で利益
-            pnl_now = (entry - price) / entry * 100
-            line += f" / {pnl_now:+.2f}%"
-        lines.append(line)
-
-    color = COLOR_WIN if any(
-        t.get("current_price") and t.get("entry_open") and t["entry_open"] > t["current_price"]
-        for t in targets
-    ) else COLOR_ERROR
-
-    payload = {
-        "embeds": [{
-            "title":       f"⚡【空売り大引け処分指示】{date_str}",
-            "description": "\n".join(lines),
-            "color":       color,
-            "footer":      {"text": f"配信時刻: {time_str}"},
-        }]
-    }
-    _post_sell(payload, mirror=PUBLIC_CLOSE)
+    embed = _build_close_embed(targets, today, sell=True)
+    _post_sell({"embeds": [embed]}, mirror=PUBLIC_CLOSE)
     print(f"[notifier] SELL大引け処分指示を Discord に送信しました（{len(targets)}件）")
+
+    # サブ口座
+    for acc in SUB_ACCOUNTS:
+        if not acc.get("sell_url"):
+            continue
+        size = acc["size"]
+        sub_targets = [t for t in targets if _affordable(t.get("entry_open") or 0, size)]
+        if not sub_targets:
+            continue
+        sub_embed = _build_close_embed(
+            sub_targets, today, sell=True,
+            label=acc["label"], emoji_acc=acc["emoji"], size_yen=size,
+        )
+        _post_to_subaccount({"embeds": [sub_embed]}, side="SELL", acc=acc)
+        print(f"[notifier-{acc['label']}-CLOSE-SELL] {len(sub_targets)}/{len(targets)} 件")
