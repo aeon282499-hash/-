@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-15",
+  "date": "2026-05-18",
   "signals": [
     {
-      "ticker": "4613.T",
-      "name": "関西ペイント",
+      "ticker": "4502.T",
+      "name": "武田薬品工業",
       "direction": "BUY"
     },
     {
-      "ticker": "9143.T",
-      "name": "ＳＧホールディングス",
+      "ticker": "5401.T",
+      "name": "日本製鉄",
       "direction": "BUY"
     },
     {
-      "ticker": "2212.T",
-      "name": "山崎製パン",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
       "direction": "BUY"
     },
     {
-      "ticker": "4202.T",
-      "name": "ダイセル",
+      "ticker": "9435.T",
+      "name": "光通信",
       "direction": "BUY"
     },
     {
-      "ticker": "9744.T",
-      "name": "メイテックグループホールディングス",
+      "ticker": "2229.T",
+      "name": "カルビー",
       "direction": "BUY"
     }
   ]
