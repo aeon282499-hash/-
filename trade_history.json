@@ -349,6 +349,56 @@
       "close": 3022.0,
       "pnl": 0.23,
       "win": true
+    },
+    {
+      "date": "2026-05-18",
+      "ticker": "4502.T",
+      "name": "武田薬品工業",
+      "direction": "BUY",
+      "open": 5291.0,
+      "close": 5249.0,
+      "pnl": -0.79,
+      "win": false
+    },
+    {
+      "date": "2026-05-18",
+      "ticker": "5401.T",
+      "name": "日本製鉄",
+      "direction": "BUY",
+      "open": 560.0,
+      "close": 549.0,
+      "pnl": -1.96,
+      "win": false
+    },
+    {
+      "date": "2026-05-18",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
+      "direction": "BUY",
+      "open": 3370.0,
+      "close": 3339.0,
+      "pnl": -0.92,
+      "win": false
+    },
+    {
+      "date": "2026-05-18",
+      "ticker": "9435.T",
+      "name": "光通信",
+      "direction": "BUY",
+      "open": 37660.0,
+      "close": 36960.0,
+      "pnl": -1.86,
+      "win": false
+    },
+    {
+      "date": "2026-05-18",
+      "ticker": "2229.T",
+      "name": "カルビー",
+      "direction": "BUY",
+      "open": 2912.5,
+      "close": 2930.0,
+      "pnl": 0.6,
+      "win": true
     }
   ]
 }
