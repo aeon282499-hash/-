@@ -1,0 +1,112 @@
+name: Phase2 階層独立 シグナルシミュレーション
+# screener.run_screener() を実行し、各階層(大100万/中50万/小30万)の独立top5を
+# Discordに表示する1回限りの確認用ワークフロー。発注は行わない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: Phase2 独立シミュレーション
+        run: |
+          python - << 'PYEOF'
+          import json, os, requests
+          from datetime import date
+          from screener import run_screener
+
+          print("[sim] screener起動中...")
+          signals, sell_signals, macro, all_buy, all_sell = run_screener()
+          print(f"[sim] 全BUY候補 {len(all_buy)}件 / 全SELL候補 {len(all_sell)}件")
+
+          TIERS = [
+              ("main",  "大100万", 1_000_000, "positions.json"),
+              ("mid",   "中 50万",   500_000, "positions_mid.json"),
+              ("small", "小 30万",   300_000, "positions_small.json"),
+          ]
+
+          today_str = date.today().strftime("%Y-%m-%d")
+          lines = [f"# Phase2 階層独立シミュレーション ({today_str})"]
+          lines.append(f"**スコア降順全候補: BUY {len(all_buy)}件 / SELL {len(all_sell)}件**")
+          lines.append("")
+
+          for key, label, size, pos_file in TIERS:
+              try:
+                  with open(pos_file, encoding="utf-8") as f:
+                      open_set = {p["ticker"] for p in json.load(f)
+                                  if p.get("status") in ("pending", "open")}
+              except Exception:
+                  open_set = set()
+
+              buy_pool = [c for c in all_buy
+                          if c.get("prev_close", 0) * 100 <= size
+                          and c["ticker"] not in open_set]
+              sell_pool = [c for c in all_sell
+                           if c.get("prev_close", 0) * 100 <= size
+                           and c["ticker"] not in open_set]
+
+              buy_top = buy_pool[:5]
+              sell_top = sell_pool[:5]
+
+              lines.append(f"## {label} (1件{size//10000}万円・保有中{len(open_set)}件)")
+              lines.append(f"BUY候補プール {len(buy_pool)}件 → top{len(buy_top)}:")
+              for i, c in enumerate(buy_top, 1):
+                  pc = c.get("prev_close", 0)
+                  shares = max(100, int(size/pc/100)*100) if pc > 0 else 0
+                  cost = shares*pc/10000 if pc > 0 else 0
+                  rsi = c.get("rsi", 0)
+                  dev = c.get("deviation", 0)
+                  lines.append(
+                      f"  {i}. **{c['ticker']}** {c['name']} 前日{pc:,.0f}円 "
+                      f"{shares}株/約{cost:.0f}万 RSI={rsi:.1f} 乖離{dev:+.1f}%"
+                  )
+              if sell_top:
+                  lines.append(f"SELL候補プール {len(sell_pool)}件 → top{len(sell_top)}:")
+                  for i, c in enumerate(sell_top, 1):
+                      pc = c.get("prev_close", 0)
+                      lines.append(
+                          f"  {i}. **{c['ticker']}** {c['name']} 前日{pc:,.0f}円"
+                      )
+              else:
+                  lines.append("SELL: 候補なし")
+              lines.append("")
+
+          desc = "\n".join(lines)
+          print(desc)
+
+          # Discord送信(分割対応)
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          if url and desc:
+              chunks = []
+              while desc:
+                  if len(desc) <= 3800:
+                      chunks.append(desc); break
+                  cut = desc.rfind("\n", 0, 3800)
+                  if cut == -1: cut = 3800
+                  chunks.append(desc[:cut])
+                  desc = desc[cut:].lstrip()
+              for i, chunk in enumerate(chunks):
+                  r = requests.post(url, json={
+                      "embeds": [{
+                          "title": f"🔬 Phase2 階層独立シミュレーション ({i+1}/{len(chunks)})" if len(chunks)>1 else "🔬 Phase2 階層独立シミュレーション",
+                          "description": chunk,
+                          "color": 0x9C27B0,
+                      }]
+                  }, timeout=10)
+                  print(f"Discord chunk{i+1}: {r.status_code}")
+          PYEOF
