@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-18",
+  "date": "2026-05-19",
   "signals": [
     {
-      "ticker": "4502.T",
-      "name": "武田薬品工業",
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "5401.T",
-      "name": "日本製鉄",
+      "ticker": "1719.T",
+      "name": "安藤・間",
       "direction": "BUY"
     },
     {
-      "ticker": "1928.T",
-      "name": "積水ハウス",
+      "ticker": "4114.T",
+      "name": "日本触媒",
       "direction": "BUY"
     },
     {
-      "ticker": "9435.T",
-      "name": "光通信",
+      "ticker": "5929.T",
+      "name": "三和ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "2229.T",
-      "name": "カルビー",
+      "ticker": "7532.T",
+      "name": "パン・パシフィック・インターナショナルホールディングス",
       "direction": "BUY"
     }
   ]
