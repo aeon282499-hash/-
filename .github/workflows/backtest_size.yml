@@ -1,4 +1,6 @@
-name: 年別×サイズ別BT集計
+name: Phase2 3階層独立BT
+# 各階層(大100万/中50万/小30万)が独立に「サイズで買える銘柄からスコア降順top5」を
+# 選定するシミュレーション。backtest_range.py が階層別CSVを3本出力。
 
 on:
   workflow_dispatch:
@@ -29,74 +31,115 @@ jobs:
       - name: パッケージインストール
         run: pip install -r requirements.txt
 
-      - name: バックテスト実行
-        run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} --buy 2>&1 | tee bt_size.log
+      - name: Phase2 3階層独立BT実行
+        run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} --buy 2>&1 | tee bt_phase2.log
 
-      - name: 年別×サイズ別集計してDiscord送信
+      - name: 階層別集計してDiscord送信
         run: |
           python - << 'PYEOF'
           import os, pandas as pd, requests
           start = "${{ github.event.inputs.start }}"
           end   = "${{ github.event.inputs.end }}"
-          csv_path = f"backtest_{start}_{end}.csv"
-          df = pd.read_csv(csv_path, encoding="utf-8-sig")
-          df["year"] = df["entry_date"].str[:4]
-          print(f"全件数: {len(df)} / 年: {sorted(df['year'].unique())}")
 
-          SIZES = [
-              (1_000_000, "大100万"),
-              (500_000,   "中 50万"),
-              (300_000,   "小 30万"),
+          TIERS = [
+              ("main",  "大100万", 1_000_000),
+              ("mid",   "中 50万",   500_000),
+              ("small", "小 30万",   300_000),
           ]
 
-          def stats(sub):
-              n = len(sub)
+          def stats(df):
+              n = len(df)
               if n == 0:
                   return None
-              wins = sub[sub["pnl_pct"] > 0]
-              losses = sub[sub["pnl_pct"] <= 0]
-              sw = wins["pnl_pct"].sum()
-              sl = abs(losses["pnl_pct"].sum())
-              pf = sw / sl if sl > 0 else float("inf")
-              total = sub["pnl_pct"].sum()
-              return {"n": n, "winrate": len(wins)/n*100, "avg": total/n, "total": total, "pf": pf}
+              wins = df[df["pnl_pct"] > 0]
+              losses = df[df["pnl_pct"] <= 0]
+              pf = wins["pnl_pct"].sum() / abs(losses["pnl_pct"].sum()) if abs(losses["pnl_pct"].sum()) > 0 else float("inf")
+              return {
+                  "n": n,
+                  "winrate": len(wins)/n*100,
+                  "avg": df["pnl_pct"].mean(),
+                  "total": df["pnl_pct"].sum(),
+                  "pf": pf,
+              }
 
-          years = sorted(df["year"].unique())
-          lines = [f"**期間: {start} 〜 {end}**", ""]
-          for yr in years:
-              y_df = df[df["year"] == yr]
-              lines.append(f"## {yr}年（全銘柄 {len(y_df)}件）")
-              lines.append("| サイズ | 件数 | 勝率 | 平均 | PF | 累積% | 円換算 |")
+          lines = [f"**Phase2 3階層独立BT  期間: {start} 〜 {end}**", ""]
+          lines.append("## 全期間サマリ")
+          lines.append("| 階層 | 1件 | 件数 | 勝率 | 平均% | PF | 累積% | 円換算 |")
+          lines.append("|---|---|---|---|---|---|---|---|")
+          dfs = {}
+          for key, label, size in TIERS:
+              path = f"backtest_{start}_{end}_{key}.csv"
+              try:
+                  df = pd.read_csv(path, encoding="utf-8-sig")
+              except FileNotFoundError:
+                  lines.append(f"| {label} | {size//10000}万 | (CSVなし) | - | - | - | - | - |")
+                  continue
+              dfs[key] = df
+              s = stats(df)
+              if s is None:
+                  continue
+              yen = s["total"] / 100 * size
+              lines.append(
+                  f"| {label} | {size//10000}万 | {s['n']} | {s['winrate']:.1f}% | "
+                  f"{s['avg']:+.3f}% | **{s['pf']:.2f}** | "
+                  f"{s['total']:+.0f}% | **{yen/10000:+.1f}万** |"
+              )
+
+          lines.append("")
+          lines.append("## 年別")
+          for key, label, size in TIERS:
+              if key not in dfs:
+                  continue
+              df = dfs[key]
+              df["year"] = df["entry_date"].str[:4]
+              years = sorted(df["year"].unique())
+              lines.append(f"### {label} ({size//10000}万)")
+              lines.append("| 年 | 件数 | 勝率 | 平均% | PF | 累積% | 円換算 |")
               lines.append("|---|---|---|---|---|---|---|")
-              for budget, label in SIZES:
-                  max_price = budget / 100
-                  sub = y_df[y_df["entry_open"] <= max_price]
+              for yr in years:
+                  sub = df[df["year"] == yr]
                   s = stats(sub)
                   if s is None:
                       continue
-                  yen = s["total"] / 100 * budget   # 累積% × 1件サイズ円
+                  yen = s["total"] / 100 * size
                   lines.append(
-                      f"| {label} | {s['n']} | {s['winrate']:.1f}% | "
+                      f"| {yr} | {s['n']} | {s['winrate']:.1f}% | "
                       f"{s['avg']:+.3f}% | **{s['pf']:.2f}** | "
                       f"{s['total']:+.0f}% | **{yen/10000:+.1f}万** |"
                   )
               lines.append("")
 
           lines.append("**注:** 円換算 = 累積% × 1件サイズ。実運用は5並列なので最大5倍。")
+          lines.append("Phase 2 設計: 各階層が独立に「自分のサイズで買える宇宙からスコア降順top5」を選定。")
 
-          payload = {
-              "embeds": [{
-                  "title": "📊 年別×サイズ別BT結果",
-                  "description": "\n".join(lines)[:4000],
-                  "color": 0x1976D2,
-              }]
-          }
+          # Discord は4000字制限。分割送信。
+          desc = "\n".join(lines)
+          chunks = []
+          while desc:
+              if len(desc) <= 3800:
+                  chunks.append(desc)
+                  break
+              # 改行で分割
+              cut = desc.rfind("\n", 0, 3800)
+              if cut == -1:
+                  cut = 3800
+              chunks.append(desc[:cut])
+              desc = desc[cut:].lstrip()
+
           url = os.environ.get("DISCORD_WEBHOOK_URL", "")
-          if url:
-              r = requests.post(url, json=payload, timeout=10)
-              print(f"Discord送信: {r.status_code}")
-              if r.status_code not in (200, 204):
-                  print(f"body: {r.text[:300]}")
+          for i, chunk in enumerate(chunks):
+              payload = {
+                  "embeds": [{
+                      "title": f"📊 Phase2 階層独立BT結果 ({i+1}/{len(chunks)})" if len(chunks) > 1 else "📊 Phase2 階層独立BT結果",
+                      "description": chunk,
+                      "color": 0x1976D2,
+                  }]
+              }
+              if url:
+                  r = requests.post(url, json=payload, timeout=10)
+                  print(f"Discord送信 chunk{i+1}: {r.status_code}")
+                  if r.status_code not in (200, 204):
+                      print(f"body: {r.text[:300]}")
           for ln in lines:
               print(ln)
           PYEOF

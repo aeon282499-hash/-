@@ -48,6 +48,13 @@ ATR_VOL_CAP_BUY = 3.0   # 買いは2026-05-07 BT検証で3.0が最適
 BUY_ONLY        = True  # TrueにするとBUYシグナルのみ対象
 SELL_ONLY       = False # TrueにするとSELLシグナルのみ（信用売り専用）
 
+# Phase 2: 3階層独立BT定義（main.py の TIERS と整合）
+TIERS_BT = [
+    {"key": "main",  "label": "大100万", "size": 1_000_000},
+    {"key": "mid",   "label": "中 50万", "size":   500_000},
+    {"key": "small", "label": "小 30万", "size":   300_000},
+]
+
 
 def get_trading_days(start: str, end: str) -> list[str]:
     """指定期間内の日本株営業日リスト（文字列）を返す。"""
@@ -94,12 +101,11 @@ def run_range_backtest(start: str, end: str) -> None:
     # 全営業日インデックス（エグジット日探索用）
     all_trading_days = get_trading_days(fetch_start, fetch_end)
 
-    # ── 各営業日でシグナル判定 ────────────────────────
-    trades: list[dict] = []
+    # ── 各営業日でシグナル判定（Phase 2: 3階層独立）────────────────────
+    trades_per_tier: dict[str, list[dict]] = {t["key"]: [] for t in TIERS_BT}
 
     import math
     def _buy_score(sig: dict) -> float:
-        # 勝ちやすさスコア（screener.py の _winprob_score と同一）
         rsi = sig["rsi"]
         dev = sig["deviation"]
         turn = sig["turnover"]
@@ -109,19 +115,21 @@ def run_range_backtest(start: str, end: str) -> None:
         return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
 
     for trade_date in trading_days:
-        # 当日オープン中のティッカーを収集（重複エントリー防止）
-        open_tickers = {
-            t["ticker"] for t in trades
-            if t["exit_date"] is None or t["exit_date"] > trade_date
-        }
+        # 階層別のオープン中ティッカー（同一階層内で重複エントリー防止）
+        open_per_tier: dict[str, set] = {}
+        for tier in TIERS_BT:
+            open_per_tier[tier["key"]] = {
+                t["ticker"] for t in trades_per_tier[tier["key"]]
+                if t["exit_date"] is None or t["exit_date"] > trade_date
+            }
+        # 全階層の和集合（シグナル判定スキップ判定用）
+        any_open = set().union(*open_per_tier.values())
 
         # ── 当日シグナル候補を1パスで集計 ─────────────────────
-        signal_cache: dict = {}    # ticker -> (signal, pre_df)
-        buy_cands: list = []       # (score, ticker)
-        sell_cands: list = []
+        signal_cache: dict = {}                     # ticker -> (signal, pre_df, prev_close)
+        buy_cands: list = []                        # (score, ticker, prev_close)
+        sell_cands: list = []                       # (turnover, ticker, prev_close)
         for _ticker, _full_df in all_data.items():
-            if _ticker in open_tickers:
-                continue
             if _ticker not in name_map:
                 continue
             try:
@@ -135,29 +143,42 @@ def run_range_backtest(start: str, end: str) -> None:
                     _sig = judge_signal_pre(_ticker, _name, _pre)
                 if _sig is None:
                     continue
-                signal_cache[_ticker] = (_sig, _pre)
+                _prev_close = float(_sig.get("prev_close") or _pre["Close"].iloc[-1])
+                signal_cache[_ticker] = (_sig, _pre, _prev_close)
                 if _sig["direction"] == "BUY":
-                    buy_cands.append((_buy_score(_sig), _ticker))
+                    buy_cands.append((_buy_score(_sig), _ticker, _prev_close))
                 else:
-                    sell_cands.append((_sig["turnover"], _ticker))
+                    sell_cands.append((_sig["turnover"], _ticker, _prev_close))
             except Exception:
                 continue
 
-        # ── 上位MAX_SIGNALS銘柄に絞る（BUY/SELL別） ──────────
-        buy_cands.sort(reverse=True)
-        sell_cands.sort(reverse=True)
-        selected_tickers = (
-            {t for _, t in buy_cands[:MAX_SIGNALS]}
-            | {t for _, t in sell_cands[:MAX_SIGNALS]}
-        )
+        buy_cands.sort(reverse=True, key=lambda x: x[0])
+        sell_cands.sort(reverse=True, key=lambda x: x[0])
+
+        # ── 階層別に上位MAX_SIGNALS銘柄を選定（サイズ&open除外） ──
+        selected_per_tier: dict[str, set] = {}
+        for tier in TIERS_BT:
+            size = tier["size"]
+            buy_pool = [
+                tk for (_, tk, pc) in buy_cands
+                if pc * 100 <= size and tk not in open_per_tier[tier["key"]]
+            ]
+            sell_pool = [
+                tk for (_, tk, pc) in sell_cands
+                if pc * 100 <= size and tk not in open_per_tier[tier["key"]]
+            ]
+            selected_per_tier[tier["key"]] = (
+                set(buy_pool[:MAX_SIGNALS]) | set(sell_pool[:MAX_SIGNALS])
+            )
+
+        # シミュレーション対象 = どこかの階層で選ばれた銘柄の和集合
+        selected_tickers = set().union(*selected_per_tier.values())
 
         for ticker, full_df in all_data.items():
-            if ticker in open_tickers:
-                continue
             if ticker not in selected_tickers:
                 continue
             try:
-                signal, pre_df = signal_cache[ticker]
+                signal, pre_df, _prev_close = signal_cache[ticker]
                 name = name_map[ticker]
 
                 # ── 日経MA25状態を記録（フィルター比較用）──────────
@@ -271,7 +292,7 @@ def run_range_backtest(start: str, end: str) -> None:
                 if pnl_pct is None:
                     continue
 
-                trades.append({
+                trade_record = {
                     "signal_date": trade_date,
                     "entry_date":  entry_date,
                     "exit_date":   exit_date,
@@ -280,15 +301,20 @@ def run_range_backtest(start: str, end: str) -> None:
                     "name":        name,
                     "direction":   direction,
                     "entry_open":  entry_open,
+                    "prev_close":  _prev_close,
                     "pnl_pct":     round(pnl_pct, 3),
                     "win":         pnl_pct > 0,
                     "nk_above_ma25": nk_above,
-                })
+                }
+                # この銘柄を選んだ階層 全てに記録（同じシミュレーション結果を共有）
+                for tier in TIERS_BT:
+                    if ticker in selected_per_tier[tier["key"]]:
+                        trades_per_tier[tier["key"]].append(trade_record)
 
             except Exception:
                 continue
 
-    _print_results(trades, start, end)
+    _print_results_per_tier(trades_per_tier, start, end)
 
 
 def _summary_stats(df: pd.DataFrame) -> dict:
@@ -312,7 +338,47 @@ def _summary_stats(df: pd.DataFrame) -> dict:
     }
 
 
-def _print_results(trades: list[dict], start: str, end: str) -> None:
+def _print_results_per_tier(trades_per_tier: dict[str, list[dict]], start: str, end: str) -> None:
+    """3階層分のBT結果を順次表示＋CSV出力。"""
+    print(f"\n{'#'*60}")
+    print(f"#  Phase 2: 3階層独立BT 結果まとめ ({start} 〜 {end})")
+    print(f"{'#'*60}")
+    summary_rows = []
+    for tier in TIERS_BT:
+        key = tier["key"]
+        trades = trades_per_tier[key]
+        print(f"\n\n{'#'*60}")
+        print(f"#  [{tier['label']} / 1件{tier['size']//10000}万円]  trades={len(trades)}件")
+        print(f"{'#'*60}")
+        _print_results(trades, start, end, tier_suffix=f"_{key}")
+
+        if trades:
+            df = pd.DataFrame(trades)
+            s = _summary_stats(df)
+            summary_rows.append({
+                "tier":     tier["label"],
+                "size_万":  tier["size"]//10000,
+                "件数":     s["total"],
+                "勝率":     f"{s['win_rate']:.1f}%",
+                "平均":     f"{s['avg_pnl']:+.3f}%",
+                "PF":       f"{s['pf']:.2f}",
+                "累積%":    f"{s['cum_pnl']:+.1f}%",
+                "MaxDD":    f"{s['max_dd']:+.1f}%",
+            })
+
+    # 階層別サマリ表
+    print(f"\n\n{'='*72}")
+    print(f"  Phase 2 階層別サマリ ({start} 〜 {end})")
+    print(f"{'='*72}")
+    print(f"  {'階層':<8} {'1件':>5} {'件数':>6} {'勝率':>7} {'平均':>8} {'PF':>5} {'累積%':>9} {'MaxDD':>8}")
+    print(f"  {'-'*70}")
+    for r in summary_rows:
+        print(f"  {r['tier']:<8} {r['size_万']:>3}万 {r['件数']:>6} {r['勝率']:>7} "
+              f"{r['平均']:>8} {r['PF']:>5} {r['累積%']:>9} {r['MaxDD']:>8}")
+    print(f"{'='*72}\n")
+
+
+def _print_results(trades: list[dict], start: str, end: str, *, tier_suffix: str = "") -> None:
     print(f"\n{'='*60}")
     print(f"  バックテスト結果 ({start} 〜 {end})  [スイング戦略]")
     print(f"{'='*60}")
@@ -368,8 +434,8 @@ def _print_results(trades: list[dict], start: str, end: str) -> None:
 
     print(f"\n{'='*60}\n")
 
-    # CSV 出力（nk_above_ma25カラム付き）
-    out_path = f"backtest_{start}_{end}.csv"
+    # CSV 出力（tier別: backtest_{start}_{end}{_tier}.csv）
+    out_path = f"backtest_{start}_{end}{tier_suffix}.csv"
     df_all.to_csv(out_path, index=False, encoding="utf-8-sig")
     print(f"  詳細結果を {out_path} に保存しました。\n")
 
