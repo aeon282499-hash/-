@@ -1,0 +1,150 @@
+name: BT 2026年 月別×階層
+# 2026-01-01〜2026-05-15 のPhase2階層独立BTを実行し、月別×階層損益をDiscordに送る。
+# 期間が短いので backtest_size.yml(全期間4年半)より短時間(60-90分予測)で完了する想定。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 2026年BT実行
+        run: python -u backtest_range.py 2026-01-01 2026-05-15 --buy 2>&1 | tee bt_2026.log
+
+      - name: 月別×階層集計してDiscord送信
+        run: |
+          python - << 'PYEOF'
+          import os, pandas as pd, requests
+          start = "2026-01-01"
+          end   = "2026-05-15"
+          TIERS = [
+              ("main",  "大100万", 1_000_000),
+              ("mid",   "中 50万",   500_000),
+              ("small", "小 30万",   300_000),
+          ]
+
+          def stats(df):
+              n = len(df)
+              if n == 0:
+                  return None
+              wins = df[df["pnl_pct"] > 0]
+              losses = df[df["pnl_pct"] <= 0]
+              pf = wins["pnl_pct"].sum() / abs(losses["pnl_pct"].sum()) if abs(losses["pnl_pct"].sum()) > 0 else float("inf")
+              return {"n": n, "winrate": len(wins)/n*100, "avg": df["pnl_pct"].mean(), "total": df["pnl_pct"].sum(), "pf": pf}
+
+          lines = [f"**Phase2 2026年(〜5/15) 階層×月別BT**", ""]
+
+          # 階層別の月別表
+          dfs = {}
+          for key, label, size in TIERS:
+              path = f"backtest_{start}_{end}_{key}.csv"
+              try:
+                  df = pd.read_csv(path, encoding="utf-8-sig")
+              except FileNotFoundError:
+                  lines.append(f"### {label} → CSV欠落")
+                  continue
+              df["ym"] = df["exit_date"].str[:7]
+              dfs[key] = df
+
+              months = sorted(df["ym"].unique())
+              lines.append(f"### {label} (1件{size//10000}万円)")
+              lines.append("| 月 | 件数 | 勝率 | 平均% | PF | 単純合計% | 5並列月利% | 5並列円換算 |")
+              lines.append("|---|---|---|---|---|---|---|---|")
+              year_total = 0
+              year_count = 0
+              year_wins = 0
+              for ym in months:
+                  sub = df[df["ym"] == ym]
+                  s = stats(sub)
+                  if s is None:
+                      continue
+                  weight = 1/5
+                  capital = size * 5
+                  mr = s["total"] * weight   # 5並列換算月利%
+                  yen = mr / 100 * capital   # 5並列換算円
+                  lines.append(
+                      f"| {ym} | {s['n']} | {s['winrate']:.1f}% | "
+                      f"{s['avg']:+.3f}% | **{s['pf']:.2f}** | "
+                      f"{s['total']:+.2f}% | **{mr:+.2f}%** | **{yen/10000:+.1f}万** |"
+                  )
+                  year_total += s["total"]
+                  year_count += s["n"]
+                  year_wins += len(sub[sub["pnl_pct"] > 0])
+              # 年計
+              if year_count > 0:
+                  mr = year_total * (1/5)
+                  yen = mr / 100 * (size * 5)
+                  lines.append(
+                      f"| **合計** | **{year_count}** | "
+                      f"**{year_wins/year_count*100:.1f}%** | - | - | "
+                      f"**{year_total:+.2f}%** | **{mr:+.2f}%** | **{yen/10000:+.1f}万** |"
+                  )
+              lines.append("")
+
+          # 月別の3階層合算（5並列・実運用換算）
+          lines.append("### 全階層合計（5並列・大500万+中250万+小150万=元金900万）")
+          lines.append("| 月 | 大100万 | 中50万 | 小30万 | 合計 |")
+          lines.append("|---|---|---|---|---|")
+          all_months = sorted(set().union(*(dfs[k]["ym"].unique() for k in dfs)))
+          gtot = 0
+          for ym in all_months:
+              row_cells = [ym]
+              month_total_yen = 0
+              for key, label, size in TIERS:
+                  if key not in dfs:
+                      row_cells.append("-")
+                      continue
+                  sub = dfs[key][dfs[key]["ym"] == ym]
+                  if len(sub) == 0:
+                      row_cells.append("0万")
+                      continue
+                  total = sub["pnl_pct"].sum()
+                  mr = total * (1/5)
+                  yen = mr / 100 * (size * 5)
+                  row_cells.append(f"{yen/10000:+.1f}万")
+                  month_total_yen += yen
+              row_cells.append(f"**{month_total_yen/10000:+.1f}万**")
+              gtot += month_total_yen
+              lines.append("| " + " | ".join(row_cells) + " |")
+          lines.append(f"| **合計** | | | | **{gtot/10000:+.1f}万** |")
+          lines.append("")
+          lines.append(f"※ 5並列・各階層MAX5件・1月〜5/15基準。実運用は4月末から大資金100万化スタート。")
+
+          desc = "\n".join(lines)
+          chunks = []
+          while desc:
+              if len(desc) <= 3800:
+                  chunks.append(desc); break
+              cut = desc.rfind("\n", 0, 3800)
+              if cut == -1: cut = 3800
+              chunks.append(desc[:cut])
+              desc = desc[cut:].lstrip()
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          for i, chunk in enumerate(chunks):
+              payload = {
+                  "embeds": [{
+                      "title": f"📅 2026年 月別×階層BT ({i+1}/{len(chunks)})" if len(chunks) > 1 else "📅 2026年 月別×階層BT",
+                      "description": chunk,
+                      "color": 0x1976D2,
+                  }]
+              }
+              if url:
+                  r = requests.post(url, json=payload, timeout=10)
+                  print(f"Discord chunk{i+1}: {r.status_code}")
+          for ln in lines:
+              print(ln)
+          PYEOF
