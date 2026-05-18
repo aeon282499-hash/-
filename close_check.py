@@ -1,11 +1,11 @@
 """
-close_check.py — 大引け前のRSI判定とDiscord通知
+close_check.py — 大引け前のRSI判定とDiscord通知（Phase 2: 3階層対応）
 ==================================================
 毎営業日 15:00 JST に GitHub Actions から呼ばれる。
 
 実行フロー:
   1. 営業日チェック・時間外スキップ
-  2. positions.json + positions_sell.json をロード
+  2. 各階層（大資金/中資金/小資金）の positions_*.json をロード
   3. status=pending/open のポジションについて:
      - yfinance で当日 current price 取得（~14:45データ・15分遅延）
      - 過去終値（J-Quants）+ current price で RSI(14) 計算
@@ -13,9 +13,7 @@ close_check.py — 大引け前のRSI判定とDiscord通知
        * 当日 hold_day == MAX_HOLD: 強制MAXHOLD大引け処分
        * BUY  かつ RSI ≥ 50: RSI回復で大引け処分推奨
        * SELL かつ RSI ≤ 50: RSI回復で大引け買戻し推奨
-  4. 該当銘柄があれば Discord 通知:
-     - BUY  → DISCORD_WEBHOOK_URL (BUYチャンネル)
-     - SELL → DISCORD_WEBHOOK_SELL_URL (SELLチャンネル)
+  4. 該当銘柄があれば階層別Discordチャンネルに通知
 
 ユーザーは通知を受けて15:25-15:30のクロージングオークションでSBI証券アプリから成行発注。
 """
@@ -33,11 +31,46 @@ load_dotenv()
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
-POSITIONS_FILE      = "positions.json"
-SELL_POSITIONS_FILE = "positions_sell.json"
-LAST_RUN_FILE       = "last_close_check.json"
+LAST_RUN_FILE = "last_close_check.json"
 MAX_HOLD = 3
 RSI_EXIT_THRESHOLD = 50
+
+# 階層定義（main.py の TIERS と整合）
+TIERS = [
+    {
+        "key":           "main",
+        "label":         "大資金",
+        "emoji":         "",
+        "size":          1_000_000,
+        "buy_pos_file":  "positions.json",
+        "sell_pos_file": "positions_sell.json",
+        "buy_webhook":   os.getenv("DISCORD_WEBHOOK_URL", "").strip(),
+        "sell_webhook":  os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip(),
+        "public_mirror": True,
+    },
+    {
+        "key":           "mid",
+        "label":         "中資金",
+        "emoji":         "🔵",
+        "size":          500_000,
+        "buy_pos_file":  "positions_mid.json",
+        "sell_pos_file": "positions_sell_mid.json",
+        "buy_webhook":   os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip(),
+        "sell_webhook": os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip(),
+        "public_mirror": False,
+    },
+    {
+        "key":           "small",
+        "label":         "小資金",
+        "emoji":         "🟢",
+        "size":          300_000,
+        "buy_pos_file":  "positions_small.json",
+        "sell_pos_file": "positions_sell_small.json",
+        "buy_webhook":   os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip(),
+        "sell_webhook": os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
+        "public_mirror": False,
+    },
+]
 
 
 def is_trading_day(d) -> bool:
@@ -49,17 +82,9 @@ def is_trading_day(d) -> bool:
 
 
 def calc_today_hold_day(pos: dict, today: date) -> int:
-    """エントリー日から today までの実営業日数（両端含む）を返す = 当日の保有日目。
-
-    pos['hold_days'] には依存しない（tracker.py が失敗 / push 失敗で stale だと
-    日数判定がズレてMAXHOLD通知が漏れる事故が起きるため、カレンダー直計算）。
-
-    - entry_date == today: 1日目（当日エントリー）
-    - 通常: entry_date から today まで（土日祝除外）の営業日カウント
-    """
     entry_dt = datetime.strptime(pos["entry_date"], "%Y-%m-%d").date()
     if entry_dt > today:
-        return 0  # まだエントリー日が来ていない
+        return 0
     if entry_dt == today:
         return 1
     cur, count = entry_dt, 0
@@ -70,31 +95,17 @@ def calc_today_hold_day(pos: dict, today: date) -> int:
     return count
 
 
-def collect_targets(open_positions: list[dict], direction: str, today: date) -> list[dict]:
+def collect_targets(open_positions: list[dict], direction: str, today: date,
+                    historical_data: dict) -> list[dict]:
     """指定directionのオープンポジションから大引け処分対象を抽出する。
-
-    direction: "BUY" or "SELL"
-    """
+    historical_data は事前にbatch取得した J-Quants 日足データ。"""
     if not open_positions:
         return []
 
     import yfinance as yf
-    from screener import calc_rsi, batch_download_jquants, _jquants_id_token
-
-    token = _jquants_id_token()
-    end_str   = (today - timedelta(days=1)).strftime("%Y-%m-%d")
-    start_str = (today - timedelta(days=45)).strftime("%Y-%m-%d")
-    # /equities/daily_quotes（個別銘柄エンドポイント）は権限不足で403のため、
-    # 日付ベース全銘柄取得→保有銘柄でフィルタ方式に統一（朝のmain.pyと同じ）
-    all_data = batch_download_jquants(token, start=start_str, end=end_str)
-    historical_data: dict = {}
-    for ticker in {p["ticker"] for p in open_positions}:
-        df = all_data.get(ticker)
-        if df is not None and not df.empty:
-            historical_data[ticker] = df
+    from screener import calc_rsi
 
     targets = []
-
     for pos in open_positions:
         ticker = pos["ticker"]
         name = pos["name"]
@@ -103,7 +114,6 @@ def collect_targets(open_positions: list[dict], direction: str, today: date) -> 
 
         print(f"[close_check] [{direction}] {ticker} {name} - day {today_hold}")
 
-        # MAXHOLD: 強制処分（RSI判定スキップ）
         if today_hold >= MAX_HOLD:
             targets.append({
                 "ticker":        ticker,
@@ -118,7 +128,6 @@ def collect_targets(open_positions: list[dict], direction: str, today: date) -> 
             })
             continue
 
-        # RSI判定（hold_day < MAX_HOLD）
         try:
             yf_obj = yf.Ticker(ticker)
             intraday = yf_obj.history(period="1d", interval="5m")
@@ -165,6 +174,15 @@ def collect_targets(open_positions: list[dict], direction: str, today: date) -> 
     return targets
 
 
+def _load_active(path: str, direction: str) -> list[dict]:
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        return [p for p in json.load(f)
+                if p.get("status") in ("pending", "open")
+                and p.get("direction") == direction]
+
+
 def main():
     now = datetime.now(JST)
     today = now.date()
@@ -174,14 +192,10 @@ def main():
         print("[close_check] 休場日のためスキップ")
         return
 
-    # 14:00〜17:59 JST 以外は誤トリガーとしてスキップ
-    # （GitHub Actions cron の遅延に備えて上限を17:59まで緩和。15:00定刻が理想だが
-    #  遅延しても通知ゼロを避けるため。15:30以降は大引けに間に合わない可能性あり）
     if not (14 <= now.hour <= 17):
         print(f"[close_check] 時間外スキップ（実行時刻={now.strftime('%H:%M')}）")
         return
 
-    # 重複送信防止: 当日すでに送信済みならスキップ（cron-job.org経路とGitHub cronバックアップの二重発火対策）
     today_str = today.strftime("%Y-%m-%d")
     if os.path.exists(LAST_RUN_FILE):
         try:
@@ -193,49 +207,62 @@ def main():
         except Exception as _e:
             print(f"[close_check] {LAST_RUN_FILE} 読込失敗: {_e} → 続行")
 
-    # ── BUY 処理 ───────────────────────────────────────
-    buy_open: list[dict] = []
-    if os.path.exists(POSITIONS_FILE):
-        with open(POSITIONS_FILE, encoding="utf-8") as f:
-            buy_open = [p for p in json.load(f)
-                        if p.get("status") in ("pending", "open")
-                        and p.get("direction") == "BUY"]
-    print(f"[close_check] BUY オープン {len(buy_open)} 件")
-    buy_targets = collect_targets(buy_open, "BUY", today)
+    # ── 全階層の保有銘柄を一覧化→J-Quants一括取得（1回だけ） ──────────
+    from screener import batch_download_jquants, _jquants_id_token
 
-    # ── SELL 処理 ──────────────────────────────────────
-    sell_open: list[dict] = []
-    if os.path.exists(SELL_POSITIONS_FILE):
-        with open(SELL_POSITIONS_FILE, encoding="utf-8") as f:
-            sell_open = [p for p in json.load(f)
-                         if p.get("status") in ("pending", "open")
-                         and p.get("direction") == "SELL"]
-    print(f"[close_check] SELL オープン {len(sell_open)} 件")
-    sell_targets = collect_targets(sell_open, "SELL", today)
+    all_tickers = set()
+    tier_positions = {}
+    for tier in TIERS:
+        if not tier["buy_webhook"] and tier["key"] != "main":
+            continue
+        buy_open  = _load_active(tier["buy_pos_file"],  "BUY")
+        sell_open = _load_active(tier["sell_pos_file"], "SELL")
+        tier_positions[tier["key"]] = {"buy": buy_open, "sell": sell_open}
+        all_tickers.update(p["ticker"] for p in buy_open + sell_open)
 
-    # ── Discord 通知 ───────────────────────────────────
-    if buy_targets:
-        from notifier import send_close_signals
-        send_close_signals(buy_targets, today)
-        print(f"[close_check] BUY 大引け処分通知: {len(buy_targets)} 件")
-    else:
-        print("[close_check] BUY 大引け処分対象なし")
+    print(f"[close_check] 全階層合計の保有銘柄: {len(all_tickers)} 銘柄")
+    historical_data: dict = {}
+    if all_tickers:
+        token = _jquants_id_token()
+        end_str   = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        start_str = (today - timedelta(days=45)).strftime("%Y-%m-%d")
+        all_data = batch_download_jquants(token, start=start_str, end=end_str)
+        for ticker in all_tickers:
+            df = all_data.get(ticker)
+            if df is not None and not df.empty:
+                historical_data[ticker] = df
 
-    if sell_targets:
-        from notifier import send_close_signals_sell
-        send_close_signals_sell(sell_targets, today)
-        print(f"[close_check] SELL 大引け処分通知: {len(sell_targets)} 件")
-    else:
-        print("[close_check] SELL 大引け処分対象なし")
+    # ── 階層ごとに大引け処分判定＆通知 ────────────────────
+    marker_payload = {"date": today_str, "ran_at": now.strftime("%Y-%m-%d %H:%M JST"), "tiers": {}}
 
-    # 当日処理済みマーカーを書き出し（コミット対象・重複送信防止）
+    for tier in TIERS:
+        key = tier["key"]
+        if key not in tier_positions:
+            continue
+        buy_open  = tier_positions[key]["buy"]
+        sell_open = tier_positions[key]["sell"]
+        print(f"\n[close_check-{tier['label']}] BUY {len(buy_open)} / SELL {len(sell_open)} 件")
+
+        buy_targets  = collect_targets(buy_open,  "BUY",  today, historical_data)
+        sell_targets = collect_targets(sell_open, "SELL", today, historical_data)
+
+        if buy_targets:
+            from notifier import send_close_signals
+            send_close_signals(buy_targets, today, tier=tier)
+        if sell_targets:
+            from notifier import send_close_signals_sell
+            send_close_signals_sell(sell_targets, today, tier=tier)
+        if not buy_targets and not sell_targets:
+            print(f"[close_check-{tier['label']}] 大引け処分対象なし")
+
+        marker_payload["tiers"][key] = {
+            "buy":  [t["ticker"] for t in buy_targets],
+            "sell": [t["ticker"] for t in sell_targets],
+        }
+
+    # 当日処理済みマーカーを書き出し
     with open(LAST_RUN_FILE, "w", encoding="utf-8") as f:
-        json.dump({
-            "date":     today_str,
-            "buy":      [t["ticker"] for t in buy_targets],
-            "sell":     [t["ticker"] for t in sell_targets],
-            "ran_at":   now.strftime("%Y-%m-%d %H:%M JST"),
-        }, f, ensure_ascii=False, indent=2)
+        json.dump(marker_payload, f, ensure_ascii=False, indent=2)
     print(f"[close_check] {LAST_RUN_FILE} 更新（{today_str}）")
 
 

@@ -22,6 +22,46 @@ JST              = zoneinfo.ZoneInfo("Asia/Tokyo")
 HISTORY_FILE      = "trade_history.json"
 SELL_HISTORY_FILE = "trade_history_sell.json"
 
+# 階層定義（main.py / close_check.py の TIERS と整合）
+TIERS = [
+    {
+        "key":              "main",
+        "label":            "大資金",
+        "emoji":            "",
+        "size":             1_000_000,
+        "buy_sig_file":     "today_signals.json",
+        "sell_sig_file":    "today_sell_signals.json",
+        "buy_history_file": "trade_history.json",
+        "sell_history_file": "trade_history_sell.json",
+        "buy_webhook":      os.getenv("DISCORD_WEBHOOK_URL", "").strip(),
+        "sell_webhook":     os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip(),
+    },
+    {
+        "key":              "mid",
+        "label":            "中資金",
+        "emoji":            "🔵",
+        "size":             500_000,
+        "buy_sig_file":     "today_signals_mid.json",
+        "sell_sig_file":    "today_sell_signals_mid.json",
+        "buy_history_file": "trade_history_mid.json",
+        "sell_history_file": "trade_history_sell_mid.json",
+        "buy_webhook":      os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip(),
+        "sell_webhook":     os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip(),
+    },
+    {
+        "key":              "small",
+        "label":            "小資金",
+        "emoji":            "🟢",
+        "size":             300_000,
+        "buy_sig_file":     "today_signals_small.json",
+        "sell_sig_file":    "today_sell_signals_small.json",
+        "buy_history_file": "trade_history_small.json",
+        "sell_history_file": "trade_history_sell_small.json",
+        "buy_webhook":      os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip(),
+        "sell_webhook":     os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
+    },
+]
+
 
 # ================================================================
 # J-Quants（screener.batch_download_jquants と同じ日付ベース全銘柄取得方式）
@@ -131,11 +171,20 @@ def _post(url: str, payload: dict) -> None:
     time.sleep(0.5)
 
 
-def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -> None:
-    """夕方の1日目スナップショット結果をDiscord送信（実現損益は朝の月次レポートで配信）。"""
-    url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+def _tier_prefix(tier: dict) -> str:
+    if tier["key"] == "main":
+        return ""
+    return f"{tier['emoji']}【{tier['label']}】"
+
+
+def send_report(results: list[dict], signal_date: str, all_trades: list[dict],
+                tier: dict | None = None) -> None:
+    """夕方の1日目スナップショット結果をDiscord送信。"""
+    if tier is None:
+        tier = TIERS[0]
+    url = tier["buy_webhook"]
     if not url:
-        print("[report] DISCORD_WEBHOOK_URL が未設定です")
+        print(f"[report-{tier['label']}] buy_webhook未設定 → スキップ")
         return
 
     date_str = datetime.strptime(signal_date, "%Y-%m-%d").strftime("%Y年%m月%d日")
@@ -163,24 +212,27 @@ def send_report(results: list[dict], signal_date: str, all_trades: list[dict]) -
         color   = 0x757575
 
     _post(url, {
-        "content": f"## 📊 本日のシグナル日中結果｜{date_str}",
+        "content": f"## {_tier_prefix(tier)}📊 本日のシグナル日中結果｜{date_str}",
         "embeds": [{
             "description": (
                 f"※1日目寄付→終値スナップショット（参考値・実現損益とは別）\n\n"
                 f"{summary}\n\n" + "\n".join(lines)
             ),
             "color":  color,
-            "footer": {"text": f"集計時刻: {time_str}（大引け後）"},
+            "footer": {"text": f"集計時刻: {time_str}（大引け後）/ 1件{tier['size']//10000}万円枠"},
         }],
     })
-    print(f"[report] BUYレポート送信完了（本日{today_s['count']}件）")
+    print(f"[report-{tier['label']}] BUY {today_s['count']}件 送信")
 
 
-def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dict]) -> None:
-    """空売り1日目スナップショット結果をSELL専用Webhookに送信。"""
-    url = os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip()
+def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dict],
+                     tier: dict | None = None) -> None:
+    """空売り1日目スナップショット結果。"""
+    if tier is None:
+        tier = TIERS[0]
+    url = tier["sell_webhook"]
     if not url:
-        print("[report] DISCORD_WEBHOOK_SELL_URL が未設定 → SELLレポートスキップ")
+        print(f"[report-{tier['label']}] sell_webhook未設定 → SELLスキップ")
         return
 
     date_str = datetime.strptime(signal_date, "%Y-%m-%d").strftime("%Y年%m月%d日")
@@ -207,17 +259,17 @@ def send_sell_report(results: list[dict], signal_date: str, all_trades: list[dic
         color   = 0x757575
 
     _post(url, {
-        "content": f"## 📉 本日の空売り日中結果｜{date_str}",
+        "content": f"## {_tier_prefix(tier)}📉 本日の空売り日中結果｜{date_str}",
         "embeds": [{
             "description": (
                 f"※1日目寄付→終値スナップショット（参考値・実現損益とは別）\n\n"
                 f"{summary}\n\n" + "\n".join(lines)
             ),
             "color":  color,
-            "footer": {"text": f"集計時刻: {time_str}（大引け後）"},
+            "footer": {"text": f"集計時刻: {time_str}（大引け後）/ 1件{tier['size']//10000}万円枠"},
         }],
     })
-    print(f"[report] SELL レポート送信完了（本日{today_s['count']}件）")
+    print(f"[report-{tier['label']}] SELL {today_s['count']}件 送信")
 
 
 # ================================================================
@@ -265,30 +317,40 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
 def main() -> None:
     today_str = date.today().strftime("%Y-%m-%d")
 
-    buy_signals  = _load_signals_file("today_signals.json", today_str)
-    sell_signals = _load_signals_file("today_sell_signals.json", today_str)
+    # 全階層のsignalsをまずロードしてticker集合を作る
+    tier_signals = {}
+    union_tickers = set()
+    for tier in TIERS:
+        if not tier["buy_webhook"] and tier["key"] != "main":
+            continue
+        buy_sigs  = _load_signals_file(tier["buy_sig_file"],  today_str)
+        sell_sigs = _load_signals_file(tier["sell_sig_file"], today_str)
+        tier_signals[tier["key"]] = (buy_sigs, sell_sigs)
+        for sigs in (buy_sigs or [], sell_sigs or []):
+            union_tickers.update(s["ticker"] for s in sigs)
 
-    # BUY/SELL のtickerをまとめて1回だけJ-Quants取得（batch_download_jquantsは
-    # 全銘柄ダウンロードするので二重呼び出しは無駄）
-    union_tickers = sorted({
-        s["ticker"]
-        for sigs in (buy_signals or [], sell_signals or [])
-        for s in sigs
-    })
     if not union_tickers:
         print("[report] 本日シグナル0件 → 取得スキップ")
         ohlc = {}
     else:
-        ohlc = fetch_today_ohlc(union_tickers)
+        ohlc = fetch_today_ohlc(sorted(union_tickers))
 
-    if buy_signals is not None:
-        results, all_trades = _process_signals(buy_signals, ohlc, today_str, HISTORY_FILE)
-        send_report(results, today_str, all_trades)
+    for tier in TIERS:
+        key = tier["key"]
+        if key not in tier_signals:
+            continue
+        buy_sigs, sell_sigs = tier_signals[key]
+        print(f"\n[report-{tier['label']}] 処理開始")
 
-    if sell_signals is not None:
-        results_sell, all_sell_trades = _process_signals(
-            sell_signals, ohlc, today_str, SELL_HISTORY_FILE)
-        send_sell_report(results_sell, today_str, all_sell_trades)
+        if buy_sigs is not None:
+            results, all_trades = _process_signals(
+                buy_sigs, ohlc, today_str, tier["buy_history_file"])
+            send_report(results, today_str, all_trades, tier=tier)
+
+        if sell_sigs is not None:
+            results_sell, all_sell_trades = _process_signals(
+                sell_sigs, ohlc, today_str, tier["sell_history_file"])
+            send_sell_report(results_sell, today_str, all_sell_trades, tier=tier)
 
 
 if __name__ == "__main__":

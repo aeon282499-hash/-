@@ -931,10 +931,13 @@ def _nikkei225_universe() -> list[tuple[str, str]]:
 # メインスクリーニング関数
 # ================================================================
 
-def run_screener() -> tuple[list[dict], list[dict], dict]:
+def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]]:
     """
     毎朝のスクリーニング本体。
-    戻り値: (BUYシグナルリスト, SELLシグナルリスト, マクロ情報dict)
+
+    戻り値: (大資金用BUY top5, 大資金用SELL top5, マクロ情報, スコア降順BUY全候補, スコア降順SELL全候補)
+    - 末尾2要素は3階層独立選定用。main.py が口座サイズで絞って各階層の top5 を作る。
+    - 既存ポジション除外はここでは行わず、main.py が階層ごとの positions_*.json で除外する。
     """
 
     # ── マクロ環境（US市場） ──────────────────────────
@@ -951,7 +954,7 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
     data = batch_download_jquants(token, lookback_trading_days=LOOKBACK_DAYS)
     if not data:
         print("[screener] J-Quantsデータ取得失敗 → シグナルなし")
-        return [], [], macro
+        return [], [], macro, [], []
 
     # ── 決算発表銘柄の除外リスト取得 ─────────────────
     earnings_exclude = fetch_earnings_tickers(days=2)
@@ -1015,20 +1018,9 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
             print(f"[screener] 日経25MA以上（上昇相場）→ SELL {len(sell_candidates)}件をスキップ")
         sell_candidates = []
 
-    # ── 既存ポジションの銘柄を除外 ───────────────────
-    import json as _json
-    try:
-        with open("positions.json", encoding="utf-8") as _f:
-            _positions = _json.load(_f)
-        open_tickers = {p["ticker"] for p in _positions if p.get("status") in ("pending", "open")}
-        if open_tickers:
-            before = len(candidates)
-            candidates = [c for c in candidates if c["ticker"] not in open_tickers]
-            print(f"[screener] 保有中銘柄を除外: {before - len(candidates)}件 {open_tickers}")
-    except Exception:
-        pass
-
-    # ── 勝ちやすさスコア降順 → 上位MAX_SIGNALS銘柄（2026-04-29 ver.2）
+    # ── 勝ちやすさスコア降順（2026-04-29 ver.2 / 2026-05-18 Phase 2 改修）
+    # 階層別の口座サイズ・既存ポジションは main.py 側で適用するため、
+    # ここではフィルタ通過した全候補をスコア降順で並べて返す。
     # 経験則ベース:
     #   RSI 35-42（38付近最高）: 極端じゃない方が反発しやすい
     #   乖離 -2〜-4%（-3%付近最高）: 浅いと反発不足、深いと落ちナイフ
@@ -1038,18 +1030,27 @@ def run_screener() -> tuple[list[dict], list[dict], dict]:
         rsi = c["rsi"]
         dev = c["deviation"]
         turn = c["turnover"]
-        # ベル型スコア（中心から離れるほど減点）
-        rsi_score  = 1.0 / (1.0 + ((rsi - 38.0) / 8.0) ** 2)        # 0-1
-        dev_score  = 1.0 / (1.0 + ((dev + 3.0) / 2.0) ** 2)         # 0-1
-        turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0     # 1兆で約1
+        rsi_score  = 1.0 / (1.0 + ((rsi - 38.0) / 8.0) ** 2)
+        dev_score  = 1.0 / (1.0 + ((dev + 3.0) / 2.0) ** 2)
+        turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0
         return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
     candidates.sort(key=_winprob_score, reverse=True)
-    signals = candidates[:MAX_SIGNALS]
-
-    # SELLは従来通り流動性降順
+    # SELLは流動性降順
     sell_candidates.sort(key=lambda x: x["turnover"], reverse=True)
+
+    # 大資金（=既定）はここで positions.json を読んで除外＆top5切り出し（後方互換）
+    import json as _json
+    open_tickers = set()
+    try:
+        with open("positions.json", encoding="utf-8") as _f:
+            _positions = _json.load(_f)
+        open_tickers = {p["ticker"] for p in _positions if p.get("status") in ("pending", "open")}
+    except Exception:
+        pass
+    main_candidates = [c for c in candidates if c["ticker"] not in open_tickers]
+    signals = main_candidates[:MAX_SIGNALS]
     sell_signals = sell_candidates[:MAX_SIGNALS]
 
-    print(f"[screener] BUY候補{len(candidates)}銘柄 → {len(signals)}銘柄")
-    print(f"[screener] SELL候補{len(sell_candidates)}銘柄 → {len(sell_signals)}銘柄")
-    return signals, sell_signals, macro
+    print(f"[screener] BUY全候補{len(candidates)}銘柄 / 大資金除外後{len(main_candidates)} → 大資金top{len(signals)}")
+    print(f"[screener] SELL全候補{len(sell_candidates)}銘柄 → 大資金top{len(sell_signals)}")
+    return signals, sell_signals, macro, candidates, sell_candidates

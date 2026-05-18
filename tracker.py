@@ -36,30 +36,30 @@ TAKE_PROFIT    = 5.0   # %
 MAX_HOLD       = 3     # 営業日
 
 
-def load_positions() -> list[dict]:
-    if os.path.exists(POSITIONS_FILE):
-        with open(POSITIONS_FILE, "r", encoding="utf-8") as f:
+def load_positions(path: str = POSITIONS_FILE) -> list[dict]:
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
 
-def save_positions(positions: list[dict]) -> None:
-    with open(POSITIONS_FILE, "w", encoding="utf-8") as f:
+def save_positions(positions: list[dict], path: str = POSITIONS_FILE) -> None:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(positions, f, ensure_ascii=False, indent=2)
-    print(f"[tracker] positions.json を保存しました（{len(positions)}件）")
+    print(f"[tracker] {path} を保存しました（{len(positions)}件）")
 
 
-def load_sell_positions() -> list[dict]:
-    if os.path.exists(SELL_POSITIONS_FILE):
-        with open(SELL_POSITIONS_FILE, "r", encoding="utf-8") as f:
+def load_sell_positions(path: str = SELL_POSITIONS_FILE) -> list[dict]:
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
 
-def save_sell_positions(positions: list[dict]) -> None:
-    with open(SELL_POSITIONS_FILE, "w", encoding="utf-8") as f:
+def save_sell_positions(positions: list[dict], path: str = SELL_POSITIONS_FILE) -> None:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(positions, f, ensure_ascii=False, indent=2)
-    print(f"[tracker] positions_sell.json を保存しました（{len(positions)}件）")
+    print(f"[tracker] {path} を保存しました（{len(positions)}件）")
 
 
 def add_signals_to_positions(

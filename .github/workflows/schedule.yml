@@ -49,12 +49,18 @@ jobs:
       - name: シグナル配信実行
         run: python main.py
 
-      - name: ポジション保存（positions.json をコミット）
+      - name: ポジション保存（3階層分の positions / today_signals をコミット）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add positions.json positions_sell.json today_signals.json today_sell_signals.json || true
-          git diff --cached --quiet || git commit -m "chore: update positions today_signals [skip ci]"
+          git add \
+            positions.json positions_sell.json \
+            positions_mid.json positions_sell_mid.json \
+            positions_small.json positions_sell_small.json \
+            today_signals.json today_sell_signals.json \
+            today_signals_mid.json today_sell_signals_mid.json \
+            today_signals_small.json today_sell_signals_small.json || true
+          git diff --cached --quiet || git commit -m "chore: update positions today_signals (3 tiers) [skip ci]"
           git pull --rebase origin main
           git push origin main

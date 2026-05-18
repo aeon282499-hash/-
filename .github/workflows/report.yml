@@ -29,17 +29,24 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
+          DISCORD_WEBHOOK_BUY_MID_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_MID_URL }}
+          DISCORD_WEBHOOK_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_MID_URL }}
+          DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+          DISCORD_WEBHOOK_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_SMALL_URL }}
           DISCORD_WEBHOOK_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_URL_PUBLIC }}
           DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
           DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python report.py
 
-      - name: 取引履歴を保存（trade_history.json をコミット）
+      - name: 取引履歴を保存（3階層分の trade_history をコミット）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add trade_history.json trade_history_sell.json || true
-          git diff --cached --quiet || git commit -m "chore: update trade_history.json trade_history_sell.json [skip ci]"
+          git add \
+            trade_history.json trade_history_sell.json \
+            trade_history_mid.json trade_history_sell_mid.json \
+            trade_history_small.json trade_history_sell_small.json || true
+          git diff --cached --quiet || git commit -m "chore: update trade_history (3 tiers) [skip ci]"
           git push origin main
