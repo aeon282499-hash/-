@@ -1,29 +1,19 @@
 {
-  "date": "2026-05-19",
+  "date": "2026-05-20",
   "signals": [
     {
-      "ticker": "5401.T",
-      "name": "日本製鉄",
+      "ticker": "3861.T",
+      "name": "王子ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "2229.T",
-      "name": "カルビー",
+      "ticker": "8425.T",
+      "name": "みずほリース",
       "direction": "BUY"
     },
     {
-      "ticker": "3289.T",
-      "name": "東急不動産ホールディングス",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "1719.T",
-      "name": "安藤・間",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "4114.T",
-      "name": "日本触媒",
+      "ticker": "9404.T",
+      "name": "日本テレビホールディングス",
       "direction": "BUY"
     }
   ]
