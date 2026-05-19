@@ -1,1 +1,54 @@
-{"trades": []}
+{
+  "trades": [
+    {
+      "date": "2026-05-19",
+      "ticker": "5401.T",
+      "name": "日本製鉄",
+      "direction": "BUY",
+      "open": 553.0,
+      "close": 550.0,
+      "pnl": -0.54,
+      "win": false
+    },
+    {
+      "date": "2026-05-19",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
+      "direction": "BUY",
+      "open": 3355.0,
+      "close": 3402.0,
+      "pnl": 1.4,
+      "win": true
+    },
+    {
+      "date": "2026-05-19",
+      "ticker": "2229.T",
+      "name": "カルビー",
+      "direction": "BUY",
+      "open": 2940.0,
+      "close": 3000.0,
+      "pnl": 2.04,
+      "win": true
+    },
+    {
+      "date": "2026-05-19",
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
+      "direction": "BUY",
+      "open": 1306.0,
+      "close": 1319.0,
+      "pnl": 1.0,
+      "win": true
+    },
+    {
+      "date": "2026-05-19",
+      "ticker": "1719.T",
+      "name": "安藤・間",
+      "direction": "BUY",
+      "open": 1840.0,
+      "close": 1859.5,
+      "pnl": 1.06,
+      "win": true
+    }
+  ]
+}
