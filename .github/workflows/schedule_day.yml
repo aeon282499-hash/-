@@ -1,9 +1,11 @@
-name: デイトレv2シグナル配信
+name: デイトレv2シグナル配信（停止中・schedule.yml に統合済み 2026-05-19）
 
+# 2026-05-19: schedule.yml に統合（スイング8:13後にmain_day.pyも実行）。
+# このworkflowは緊急時の手動実行用にのみ残す。
 on:
-  workflow_dispatch:           # 手動実行・Cloudflare Workerから起動可能
-  schedule:
-    - cron: '34 23 * * 0-4'    # 毎朝 8:34 JST（スイング 8:20 の後）
+  workflow_dispatch:           # 手動実行のみ
+  # schedule:
+  #   - cron: '34 23 * * 0-4'  # 旧 8:34 JST cron は schedule.yml に統合のため停止
 
 concurrency:
   group: ${{ github.workflow }}

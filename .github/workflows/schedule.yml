@@ -25,6 +25,8 @@ jobs:
       DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
       DISCORD_WEBHOOK_CLOSE_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_CLOSE_URL_PUBLIC }}
       DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
+      DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
+      DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
@@ -46,10 +48,14 @@ jobs:
       - name: パッケージインストール
         run: pip install -r requirements.txt
 
-      - name: シグナル配信実行
+      - name: スイングシグナル配信実行
         run: python main.py
 
-      - name: ポジション保存（3階層分の positions / today_signals をコミット）
+      - name: デイトレv2シグナル配信実行（スイング後すぐ・寄り付き9:00に余裕を持って配信）
+        # main.py が失敗しても発火させる（continue-on-error: 通常時のみ実行）
+        run: python main_day.py
+
+      - name: ポジション保存（スイング3階層分 + デイトレ）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -60,7 +66,8 @@ jobs:
             positions_small.json positions_sell_small.json \
             today_signals.json today_sell_signals.json \
             today_signals_mid.json today_sell_signals_mid.json \
-            today_signals_small.json today_sell_signals_small.json || true
-          git diff --cached --quiet || git commit -m "chore: update positions today_signals (3 tiers) [skip ci]"
+            today_signals_small.json today_sell_signals_small.json \
+            day_signals.json || true
+          git diff --cached --quiet || git commit -m "chore: update positions today_signals + day_signals [skip ci]"
           git pull --rebase origin main
           git push origin main
