@@ -1,0 +1,135 @@
+name: BT C案(全部厳しめ) vs 現状
+# C案: RSI<=40, DEV<=-2.0, VOL>=2.5, ATR<=2.5, TURNOVER>=30億
+# 現状: RSI<=45, DEV<=-1.5, VOL>=2.0, ATR<=3.0, TURNOVER>=20億
+# 期間: 2024-02-01〜2026-05-15 (現状BTと完全比較可能・約3時間)
+# 注意: screener.py を runner 内だけ一時書き換え。リポジトリには push しない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: C案パラメータに一時書き換え
+        run: |
+          sed -i 's/^RSI_BUY_MAX    = 45/RSI_BUY_MAX    = 40/'          screener.py
+          sed -i 's/^DEV_BUY_MAX    = -1.5/DEV_BUY_MAX    = -2.0/'      screener.py
+          sed -i 's/^VOL_MULT       = 2.0/VOL_MULT       = 2.5/'        screener.py
+          sed -i 's/^TURNOVER_MIN   = 2_000_000_000/TURNOVER_MIN   = 3_000_000_000/' screener.py
+          sed -i 's/^ATR_VOL_CAP_BUY = 3.0/ATR_VOL_CAP_BUY = 2.5/'      screener.py
+          echo "=== 書き換え結果 ==="
+          grep -E "^(RSI_BUY_MAX|DEV_BUY_MAX|VOL_MULT|TURNOVER_MIN|ATR_VOL_CAP_BUY)" screener.py
+
+      - name: C案 3階層独立BT実行
+        run: python -u backtest_range.py 2024-02-01 2026-05-15 --buy 2>&1 | tee bt_C.log
+
+      - name: 結果集計してDiscord送信
+        run: |
+          python - << 'PYEOF'
+          import os, pandas as pd, requests
+          start = "2024-02-01"
+          end   = "2026-05-15"
+
+          # 現状値(比較用) - memory記録から
+          CURRENT = {
+              "main":  {"label": "大100万", "n": 1686, "wr": 51.6, "pf": 1.25, "cum": 367, "yen": 367.5},
+              "mid":   {"label": "中 50万", "n": 1613, "wr": 52.3, "pf": 1.28, "cum": 390, "yen": 194.8},
+              "small": {"label": "小 30万", "n": 1349, "wr": 52.7, "pf": 1.27, "cum": 330, "yen": 99.0},
+          }
+          SIZES = {"main": 1_000_000, "mid": 500_000, "small": 300_000}
+
+          def stats(df):
+              n = len(df)
+              if n == 0: return None
+              wins = df[df["pnl_pct"] > 0]
+              losses = df[df["pnl_pct"] <= 0]
+              pf = wins["pnl_pct"].sum() / abs(losses["pnl_pct"].sum()) if abs(losses["pnl_pct"].sum()) > 0 else float("inf")
+              return {"n": n, "winrate": len(wins)/n*100, "avg": df["pnl_pct"].mean(), "total": df["pnl_pct"].sum(), "pf": pf}
+
+          lines = [f"# BT C案(全部厳しめ) vs 現状", ""]
+          lines.append("**C案パラメータ:** RSI≤40 / 乖離≤-2.0% / 出来高≥2.5倍 / ATR≤2.5% / 代金≥30億")
+          lines.append(f"**期間:** {start} 〜 {end} (3階層独立)")
+          lines.append("")
+          lines.append("## C案 結果")
+          lines.append("| 階層 | 件数 | 勝率 | 平均% | PF | 累積% | 円換算 |")
+          lines.append("|---|---|---|---|---|---|---|")
+
+          c_results = {}
+          for key in ["main", "mid", "small"]:
+              path = f"backtest_{start}_{end}_{key}.csv"
+              try:
+                  df = pd.read_csv(path, encoding="utf-8-sig")
+              except FileNotFoundError:
+                  lines.append(f"| {CURRENT[key]['label']} | (CSV欠落) | | | | | |")
+                  continue
+              s = stats(df)
+              if s is None:
+                  continue
+              yen = s["total"] / 100 * SIZES[key]
+              c_results[key] = {"n": s["n"], "wr": s["winrate"], "pf": s["pf"], "cum": s["total"], "yen": yen/10000}
+              lines.append(
+                  f"| {CURRENT[key]['label']} | {s['n']} | {s['winrate']:.1f}% | "
+                  f"{s['avg']:+.3f}% | **{s['pf']:.2f}** | {s['total']:+.1f}% | **{yen/10000:+.1f}万** |"
+              )
+          lines.append("")
+
+          lines.append("## 現状 vs C案 比較")
+          lines.append("| 階層 | 指標 | 現状 | C案 | 差分 |")
+          lines.append("|---|---|---|---|---|")
+          for key in ["main", "mid", "small"]:
+              if key not in c_results: continue
+              cur = CURRENT[key]
+              new = c_results[key]
+              lines.append(f"| {cur['label']} | 件数 | {cur['n']} | {new['n']} | {new['n']-cur['n']:+d} ({(new['n']/cur['n']-1)*100:+.0f}%) |")
+              lines.append(f"| {cur['label']} | 勝率 | {cur['wr']}% | {new['wr']:.1f}% | {new['wr']-cur['wr']:+.1f}pt |")
+              lines.append(f"| {cur['label']} | PF | {cur['pf']} | **{new['pf']:.2f}** | {new['pf']-cur['pf']:+.2f} |")
+              lines.append(f"| {cur['label']} | 円換算 | +{cur['yen']}万 | +{new['yen']:.1f}万 | {new['yen']-cur['yen']:+.1f}万 |")
+          lines.append("")
+
+          # 合算3階層比較
+          if all(k in c_results for k in ["main", "mid", "small"]):
+              cur_total = sum(CURRENT[k]['yen'] for k in CURRENT)
+              new_total = sum(c_results[k]['yen'] for k in c_results)
+              lines.append(f"## 3階層合算（元金900万 5並列）")
+              lines.append(f"- 現状: **+{cur_total:.1f}万**")
+              lines.append(f"- C案: **+{new_total:.1f}万**")
+              lines.append(f"- 差分: **{new_total-cur_total:+.1f}万** ({(new_total/cur_total-1)*100:+.0f}%)")
+
+          desc = "\n".join(lines)
+          chunks = []
+          while desc:
+              if len(desc) <= 3800:
+                  chunks.append(desc); break
+              cut = desc.rfind("\n", 0, 3800)
+              if cut == -1: cut = 3800
+              chunks.append(desc[:cut])
+              desc = desc[cut:].lstrip()
+          url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+          for i, chunk in enumerate(chunks):
+              payload = {
+                  "embeds": [{
+                      "title": f"🔬 BT C案 vs 現状 ({i+1}/{len(chunks)})" if len(chunks)>1 else "🔬 BT C案 vs 現状",
+                      "description": chunk,
+                      "color": 0x00BCD4,
+                  }]
+              }
+              if url:
+                  r = requests.post(url, json=payload, timeout=10)
+                  print(f"Discord chunk{i+1}: {r.status_code}")
+          for ln in lines:
+              print(ln)
+          PYEOF
