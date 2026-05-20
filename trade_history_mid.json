@@ -49,6 +49,56 @@
       "close": 1859.5,
       "pnl": 1.06,
       "win": true
+    },
+    {
+      "date": "2026-05-20",
+      "ticker": "3861.T",
+      "name": "王子ホールディングス",
+      "direction": "BUY",
+      "open": 820.0,
+      "close": 806.6,
+      "pnl": -1.63,
+      "win": false
+    },
+    {
+      "date": "2026-05-20",
+      "ticker": "2269.T",
+      "name": "明治ホールディングス",
+      "direction": "BUY",
+      "open": 3818.0,
+      "close": 3813.0,
+      "pnl": -0.13,
+      "win": false
+    },
+    {
+      "date": "2026-05-20",
+      "ticker": "8253.T",
+      "name": "クレディセゾン",
+      "direction": "BUY",
+      "open": 4372.0,
+      "close": 4169.0,
+      "pnl": -4.64,
+      "win": false
+    },
+    {
+      "date": "2026-05-20",
+      "ticker": "8425.T",
+      "name": "みずほリース",
+      "direction": "BUY",
+      "open": 1361.0,
+      "close": 1355.0,
+      "pnl": -0.44,
+      "win": false
+    },
+    {
+      "date": "2026-05-20",
+      "ticker": "4746.T",
+      "name": "東計電算",
+      "direction": "BUY",
+      "open": 4120.0,
+      "close": 4030.0,
+      "pnl": -2.18,
+      "win": false
     }
   ]
 }
