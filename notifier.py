@@ -40,7 +40,9 @@ def _default_tier() -> dict:
         "size":          1_000_000,
         "buy_webhook":   os.getenv("DISCORD_WEBHOOK_URL", "").strip(),
         "sell_webhook":  os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip(),
-        "public_mirror": True,
+        # 2026-05-21: DISCORD_WEBHOOK_URL_PUBLIC が大資金チャンネルを指していて
+        # 二重投稿状態になっていたため一時無効化。note専用チャンネルWebhook用意後にTrueへ戻す。
+        "public_mirror": False,
     }
 
 
