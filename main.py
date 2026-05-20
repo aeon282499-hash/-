@@ -173,12 +173,16 @@ def main() -> None:
             print(f"[main-{label}] BUYオープン {len(active)}件 / SELLオープン "
                   f"{len([p for p in sell_positions if p['status'] in ('pending','open')])}件")
 
+            # 月別・年間損益レポートは毎週金曜日のみ配信（2026-05-21〜・3階層共通）
+            is_friday = today.weekday() == 4
+
             closed_today = []
             still_open   = []
             if active:
                 positions, closed_today, still_open = update_positions(positions, today)
                 send_results(closed_today, still_open, today, tier=tier)
-                send_monthly_report(positions, today, tier=tier)
+                if is_friday:
+                    send_monthly_report(positions, today, tier=tier)
 
             sell_closed_today = []
             sell_still_open   = []
@@ -186,7 +190,8 @@ def main() -> None:
             if sell_active:
                 sell_positions, sell_closed_today, sell_still_open = update_positions(sell_positions, today)
                 send_sell_results(sell_closed_today, sell_still_open, today, tier=tier)
-                send_sell_monthly_report(sell_positions, today, tier=tier)
+                if is_friday:
+                    send_sell_monthly_report(sell_positions, today, tier=tier)
 
             # 階層別シグナル選定
             tier_signals, tier_sell_signals = _select_tier_signals(
