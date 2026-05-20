@@ -345,8 +345,10 @@ def main() -> None:
         send_day_signals(signals, today, macro)
 
         # ── ⑤ Twitter に投稿 ────────────────────────────────
-        from twitter_notifier import post_day_signals
-        post_day_signals(signals, today)
+        # TWITTER_PAUSED: 2026-05-21 ユーザー指示で一時停止（PEADフィルタB案BT中）。再開時はコメント解除。
+        # from twitter_notifier import post_day_signals
+        # post_day_signals(signals, today)
+        print("[main_day] Twitter配信は一時停止中（TWITTER_PAUSED）")
 
         print("[main_day] 正常終了")
 

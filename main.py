@@ -235,12 +235,14 @@ def main() -> None:
               f"today_sell_signals.json ({len(first_tier_sell_signals)}件) 保存")
 
         # ── ④ Twitter（大資金分のみ・既存挙動）──────────────────
-        from twitter_notifier import post_swing_signals, post_swing_results, post_monthly_summary
-        post_swing_signals(first_tier_signals, today, macro, sell_signals=first_tier_sell_signals)
-        if first_tier_closed:
-            post_swing_results(first_tier_closed, today)
-        if today.day == 1:
-            post_monthly_summary(today)
+        # TWITTER_PAUSED: 2026-05-21 ユーザー指示で一時停止（PEADフィルタB案BT中）。再開時はコメント解除。
+        # from twitter_notifier import post_swing_signals, post_swing_results, post_monthly_summary
+        # post_swing_signals(first_tier_signals, today, macro, sell_signals=first_tier_sell_signals)
+        # if first_tier_closed:
+        #     post_swing_results(first_tier_closed, today)
+        # if today.day == 1:
+        #     post_monthly_summary(today)
+        print("[main] Twitter配信は一時停止中（TWITTER_PAUSED）")
 
         print("[main] 正常終了")
 
