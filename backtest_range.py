@@ -32,6 +32,7 @@ from screener import (
     fetch_tse_universe,
     judge_signal_pre,
     judge_sell_signal_pre,
+    has_recent_event_move,
     batch_download_jquants,
     _jquants_id_token,
     calc_rsi,
@@ -125,6 +126,16 @@ def run_range_backtest(start: str, end: str) -> None:
         # 全階層の和集合（シグナル判定スキップ判定用）
         any_open = set().union(*open_per_tier.values())
 
+        # ── 当日の日経25MA状態を1回だけ算出（PEAD除外の条件判定に使用）──
+        nk_above_today: bool | None = None
+        if nk_df is not None:
+            _nk_rows = nk_df[nk_df.index.strftime("%Y-%m-%d") < trade_date]
+            if len(_nk_rows) >= 25:
+                _nk_close = float(_nk_rows["Close"].iloc[-1])
+                _nk_ma25  = float(_nk_rows["MA25"].iloc[-1])
+                if not np.isnan(_nk_ma25):
+                    nk_above_today = (_nk_close >= _nk_ma25)
+
         # ── 当日シグナル候補を1パスで集計 ─────────────────────
         signal_cache: dict = {}                     # ticker -> (signal, pre_df, prev_close)
         buy_cands: list = []                        # (score, ticker, prev_close)
@@ -143,6 +154,10 @@ def run_range_backtest(start: str, end: str) -> None:
                     _sig = judge_signal_pre(_ticker, _name, _pre)
                 if _sig is None:
                     continue
+                # B案: BUY側は日経25MA以下=下降相場のときだけPEAD除外を適用
+                if _sig["direction"] == "BUY" and nk_above_today is False:
+                    if has_recent_event_move(_pre, "BUY"):
+                        continue
                 _prev_close = float(_sig.get("prev_close") or _pre["Close"].iloc[-1])
                 signal_cache[_ticker] = (_sig, _pre, _prev_close)
                 if _sig["direction"] == "BUY":
