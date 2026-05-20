@@ -1,29 +1,29 @@
 {
-  "date": "2026-05-20",
+  "date": "2026-05-21",
   "signals": [
     {
-      "ticker": "3861.T",
-      "name": "王子ホールディングス",
+      "ticker": "8252.T",
+      "name": "丸井グループ",
       "direction": "BUY"
     },
     {
-      "ticker": "2269.T",
-      "name": "明治ホールディングス",
+      "ticker": "3231.T",
+      "name": "野村不動産ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "8253.T",
-      "name": "クレディセゾン",
+      "ticker": "2784.T",
+      "name": "アルフレッサ　ホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "8425.T",
-      "name": "みずほリース",
+      "ticker": "5110.T",
+      "name": "住友ゴム工業",
       "direction": "BUY"
     },
     {
-      "ticker": "4922.T",
-      "name": "コーセーホールディングス",
+      "ticker": "8593.T",
+      "name": "三菱ＨＣキャピタル",
       "direction": "BUY"
     }
   ]
