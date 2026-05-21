@@ -16,7 +16,7 @@ screener.py — 銘柄選定・売買シグナルロジック
   ③ ボラ/出来高  値幅≧ATR×1.5 OR 出来高≧平均×2.0
   ④ 流動性       売買代金 ≧ 20億円
   ⑤ 除外         ATR/終値 > 2.5% の高ボラ銘柄はスキップ
-  ⑥ 除外         直近2日以内に決算発表の銘柄はスキップ
+  ⑥ 除外         決算開示日±3日内の銘柄はスキップ（2026-05-21 BT検証済み・PF1.25→1.30改善）
   ⑦ 最終選定     流動性降順で最大 MAX_SIGNALS 銘柄
 
 ■ SELLシグナル判定フロー（judge_sell_signal_pre）
@@ -67,6 +67,48 @@ BATCH_SIZE     = 100   # yfinanceフォールバック用
 
 _JQUANTS_BASE  = "https://api.jquants.com/v2"
 
+# ── 決算除外フィルタ（2026-05-21本番反映・BT効果確認済み）
+# BT結果（2024-02〜2026-05・大100万）: ベース PF1.25 → 決算除外 PF1.30 / 累積+367%→+408% / DD-65%→-55%
+# シグナル日が銘柄の決算開示日±N日内なら BUY をスキップ（決算IRナイフキャッチ回避）
+EARNINGS_EXCLUSION_DAYS = 3
+_EARNINGS_EXCLUDED_DATES: dict[str, set[str]] = {}
+
+
+def _load_earnings_calendar(days: int = EARNINGS_EXCLUSION_DAYS) -> None:
+    """earnings_calendar.json から (ticker → 除外日set) を構築する。
+    決算開示日 ±N日（カレンダー日ベース）をシグナル日として除外対象にする。
+    JSON はリポジトリ同梱（build_earnings_calendar.py で生成・週次自動更新）。
+    """
+    import json
+    from datetime import datetime, timedelta
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "earnings_calendar.json")
+    if not os.path.exists(path):
+        print(f"[screener] earnings_calendar.json が見つかりません → 決算除外フィルタOFF")
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            cal = json.load(f)
+    except Exception as e:
+        print(f"[screener] earnings_calendar.json 読込失敗: {e} → 決算除外フィルタOFF")
+        return
+    _EARNINGS_EXCLUDED_DATES.clear()
+    for ticker, dates in cal.items():
+        excl: set[str] = set()
+        for d_str in dates:
+            try:
+                d = datetime.strptime(d_str, "%Y-%m-%d").date()
+                for offset in range(-days, days + 1):
+                    excl.add((d + timedelta(days=offset)).strftime("%Y-%m-%d"))
+            except Exception:
+                continue
+        if excl:
+            _EARNINGS_EXCLUDED_DATES[ticker] = excl
+    print(f"[screener] 決算カレンダー: {len(_EARNINGS_EXCLUDED_DATES)}銘柄ロード（±{days}日窓）")
+
+
+def _is_near_earnings(ticker: str, sig_date: str) -> bool:
+    return sig_date in _EARNINGS_EXCLUDED_DATES.get(ticker, set())
+
 
 # ================================================================
 # J-Quants API 認証・データ取得（V2 APIキー方式）
@@ -90,28 +132,6 @@ def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
     )
     resp.raise_for_status()
     return resp.json()
-
-
-def fetch_earnings_tickers(days: int = 2) -> set[str]:
-    """直近N日以内に決算発表した銘柄のtickerセットを返す。取得失敗時は空セット。"""
-    from datetime import date as _date, timedelta
-    try:
-        token = _jquants_id_token()
-        today = _date.today()
-        result: set[str] = set()
-        for i in range(days + 1):
-            d = (today - timedelta(days=i)).strftime("%Y-%m-%d")
-            data = _jquants_get("/fins/announcement", token, {"date": d})
-            for item in data.get("announcement", []):
-                code = str(item.get("Code", ""))[:4]
-                if code:
-                    result.add(code + ".T")
-        if result:
-            print(f"[screener] 決算除外銘柄: {len(result)}件")
-        return result
-    except Exception as e:
-        print(f"[screener] 決算カレンダー取得失敗（フィルターOFF）: {e}")
-        return set()
 
 
 def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
@@ -956,8 +976,10 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
         print("[screener] J-Quantsデータ取得失敗 → シグナルなし")
         return [], [], macro, [], []
 
-    # ── 決算発表銘柄の除外リスト取得 ─────────────────
-    earnings_exclude = fetch_earnings_tickers(days=2)
+    # ── 決算カレンダー読み込み（BT効果確認済み・PF1.25→1.30）─────────────────
+    _load_earnings_calendar()
+    from datetime import date as _date
+    today_str = _date.today().strftime("%Y-%m-%d")
 
     # ── 日経225データ取得（市場フィルター用）─────────
     nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可
@@ -985,27 +1007,24 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
             continue
         name = name_map[ticker]
 
-        # BUY判定
+        # BUY判定（決算日±3日除外フィルタ適用：BT検証済み・PF1.30）
         result = judge_signal_pre(ticker, name, df)
         if result:
-            if ticker in earnings_exclude:
-                print(f"  [SKIP] {ticker} 直近決算発表のため除外")
+            if _is_near_earnings(ticker, today_str):
+                print(f"  [SKIP EARNINGS] {ticker} 決算日±3日内のため除外")
             else:
                 candidates.append(result)
                 print(f"  [BUY HIT] [{ticker}] {name} "
                       f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "
                       f"turnover={result['turnover']/1e8:.0f}oku")
 
-        # SELL判定
+        # SELL判定（SELLには決算除外を適用しない・元々日経MA以下時のみ配信）
         sell_result = judge_sell_signal_pre(ticker, name, df)
         if sell_result:
-            if ticker in earnings_exclude:
-                print(f"  [SKIP SELL] {ticker} 直近決算発表のため除外")
-            else:
-                sell_candidates.append(sell_result)
-                print(f"  [SELL HIT] [{ticker}] {name} "
-                      f"RSI={sell_result['rsi']} deviation={sell_result['deviation']:+.1f}% "
-                      f"turnover={sell_result['turnover']/1e8:.0f}oku")
+            sell_candidates.append(sell_result)
+            print(f"  [SELL HIT] [{ticker}] {name} "
+                  f"RSI={sell_result['rsi']} deviation={sell_result['deviation']:+.1f}% "
+                  f"turnover={sell_result['turnover']/1e8:.0f}oku")
 
     # ── マクロバイアス（参考表示のみ）──
     bias = macro.get("bias", "neutral")
