@@ -217,6 +217,15 @@ def run_range_backtest(start: str, end: str) -> None:
                     if (atr / last_close * 100) > cap:
                         continue  # 高ボラ銘柄をスキップ
 
+                # ── 寄付きギャップダウン回避フィルタ（BT検証用・2026-05-21追加） ──
+                # 実運用-3%損切17件のうち5件(33%)が寄値-1%以上ギャップダウンしていた事実から検証。
+                # screener.py は変更していないため本番稼働には影響なし。BT効果確認後に本番反映判断。
+                GAP_DOWN_CUTOFF = -1.0  # %
+                if direction == "BUY" and _prev_close > 0:
+                    gap_pct = (entry_open / _prev_close - 1) * 100
+                    if gap_pct <= GAP_DOWN_CUTOFF:
+                        continue  # 寄付き時点で-1%以上ギャップダウン → エントリー見送り
+
                 # ── 固定ストップ・利確計算 ─────────────────────────
                 if direction == "BUY":
                     stop_price = entry_open * (1 - STOP_LOSS   / 100)
