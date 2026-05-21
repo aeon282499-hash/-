@@ -34,6 +34,16 @@ jobs:
       - name: バックテスト実行
         run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_result.txt
 
+      - name: 取引明細CSVをartifactにupload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-csv-${{ github.event.inputs.start }}-${{ github.event.inputs.end }}
+          path: |
+            backtest_*.csv
+            backtest_result.txt
+          retention-days: 30
+
       - name: 結果をDiscordに送信
         run: |
           python - << 'PYEOF'
