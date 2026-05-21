@@ -37,6 +37,9 @@ jobs:
           END_DATE=$(date -u -d 'yesterday' +%Y-%m-%d)
           python -u build_earnings_calendar.py 2022-01-01 "$END_DATE"
 
+      - name: 未来決算予想日を追加（過去パターンから±90日推定）
+        run: python -u predict_next_earnings.py
+
       - name: 差分があればコミット
         run: |
           git config user.name 'github-actions[bot]'
