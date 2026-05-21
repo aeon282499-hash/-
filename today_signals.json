@@ -1,29 +1,19 @@
 {
-  "date": "2026-05-21",
+  "date": "2026-05-22",
   "signals": [
     {
-      "ticker": "8252.T",
-      "name": "丸井グループ",
+      "ticker": "1878.T",
+      "name": "大東建託",
       "direction": "BUY"
     },
     {
-      "ticker": "3231.T",
-      "name": "野村不動産ホールディングス",
+      "ticker": "9989.T",
+      "name": "サンドラッグ",
       "direction": "BUY"
     },
     {
-      "ticker": "2784.T",
-      "name": "アルフレッサ　ホールディングス",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "5110.T",
-      "name": "住友ゴム工業",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "8593.T",
-      "name": "三菱ＨＣキャピタル",
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
       "direction": "BUY"
     }
   ]
