@@ -342,18 +342,15 @@ def main() -> None:
         buy_sigs, sell_sigs = tier_signals[key]
         print(f"\n[report-{tier['label']}] 処理開始")
 
-        # REPORT_PAUSED: 2026-05-21 ユーザー指示で夕方スナップショットDiscord配信を停止。
-        # trade_history.json への蓄積は継続（_process_signals 内部で更新）。再開時は send_* のコメント解除。
         if buy_sigs is not None:
             results, all_trades = _process_signals(
                 buy_sigs, ohlc, today_str, tier["buy_history_file"])
-            # send_report(results, today_str, all_trades, tier=tier)
+            send_report(results, today_str, all_trades, tier=tier)
 
         if sell_sigs is not None:
             results_sell, all_sell_trades = _process_signals(
                 sell_sigs, ohlc, today_str, tier["sell_history_file"])
-            # send_sell_report(results_sell, today_str, all_sell_trades, tier=tier)
-        print(f"[report-{tier['label']}] 夕方Discord配信は一時停止中（REPORT_PAUSED）・trade_history更新は継続")
+            send_sell_report(results_sell, today_str, all_sell_trades, tier=tier)
 
 
 if __name__ == "__main__":
