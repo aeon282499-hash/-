@@ -11,6 +11,10 @@ on:
         description: '終了日 (YYYY-MM-DD) ※推奨: 2年以内'
         required: true
         default: '2025-12-31'
+      post_only:
+        description: 'true で決算後3日のみ除外(本番想定)、空欄で前後3日両側(BT基準)'
+        required: false
+        default: ''
 
 jobs:
   backtest:
@@ -32,7 +36,12 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: バックテスト実行
-        run: python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} 2>&1 | tee backtest_result.txt
+        run: |
+          FLAGS=""
+          if [ "${{ github.event.inputs.post_only }}" = "true" ]; then
+            FLAGS="--post-only"
+          fi
+          python -u backtest_range.py ${{ github.event.inputs.start }} ${{ github.event.inputs.end }} $FLAGS 2>&1 | tee backtest_result.txt
 
       - name: 取引明細CSVをartifactにupload
         if: always()
