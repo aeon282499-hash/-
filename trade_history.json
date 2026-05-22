@@ -549,6 +549,36 @@
       "close": 1333.0,
       "pnl": -1.26,
       "win": false
+    },
+    {
+      "date": "2026-05-22",
+      "ticker": "1878.T",
+      "name": "大東建託",
+      "direction": "BUY",
+      "open": 3350.0,
+      "close": 3293.0,
+      "pnl": -1.7,
+      "win": false
+    },
+    {
+      "date": "2026-05-22",
+      "ticker": "9989.T",
+      "name": "サンドラッグ",
+      "direction": "BUY",
+      "open": 3714.0,
+      "close": 3712.0,
+      "pnl": -0.05,
+      "win": false
+    },
+    {
+      "date": "2026-05-22",
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
+      "direction": "BUY",
+      "open": 2226.0,
+      "close": 2219.5,
+      "pnl": -0.29,
+      "win": false
     }
   ]
 }
