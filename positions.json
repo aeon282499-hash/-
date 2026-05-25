@@ -1192,12 +1192,12 @@
     "direction": "BUY",
     "prev_close": 2334.0,
     "entry_open": 2229.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -1.301,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-05-25"
   },
   {
     "signal_date": "2026-05-21",
@@ -1207,12 +1207,12 @@
     "direction": "BUY",
     "prev_close": 1935.0,
     "entry_open": 1960.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 4.413,
     "unrealized_pnl": -2.194,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-05-25"
   },
   {
     "signal_date": "2026-05-21",
@@ -1222,12 +1222,12 @@
     "direction": "BUY",
     "prev_close": 1344.0,
     "entry_open": 1350.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -2.593,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-05-25"
   },
   {
     "signal_date": "2026-05-22",
@@ -1237,12 +1237,12 @@
     "direction": "BUY",
     "prev_close": 3401.0,
     "entry_open": 3350.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -1.701,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-05-25"
   },
   {
     "signal_date": "2026-05-22",
@@ -1253,9 +1253,9 @@
     "prev_close": 3721.0,
     "entry_open": 3714.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": -0.054,
+    "unrealized_pnl": -1.023,
     "exit_type": null,
     "exit_date": null
   },
@@ -1267,12 +1267,12 @@
     "direction": "BUY",
     "prev_close": 2193.0,
     "entry_open": 2226.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -0.292,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-05-25"
   },
   {
     "signal_date": "2026-05-25",
@@ -1281,11 +1281,11 @@
     "name": "野村不動産ホールディングス",
     "direction": "BUY",
     "prev_close": 902.0,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
+    "entry_open": 917.0,
+    "status": "open",
+    "hold_days": 1,
     "pnl_pct": null,
-    "unrealized_pnl": null,
+    "unrealized_pnl": -1.33,
     "exit_type": null,
     "exit_date": null
   }
