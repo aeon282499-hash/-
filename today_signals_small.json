@@ -1,4 +1,10 @@
 {
-  "date": "2026-05-26",
-  "signals": []
+  "date": "2026-05-27",
+  "signals": [
+    {
+      "ticker": "3003.T",
+      "name": "ヒューリック",
+      "direction": "BUY"
+    }
+  ]
 }
