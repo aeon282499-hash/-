@@ -56,16 +56,9 @@ def _fmt_signal_embed(s: dict, rank: int) -> dict:
 
 def send_signals(signals: list[dict], macro: dict, diag: dict | None = None) -> None:
     today = date.today().strftime("%Y-%m-%d (%a)")
-    title = f"🟣 スイングセクターローテ — {today}"
+    title = f"🟣 本日のシグナル — {today}"
     if not signals:
-        body = "本日該当銘柄なし"
-        if diag:
-            body += (
-                f"\n\n診断: 素のBUY {diag.get('raw_buy',0)} 件 / "
-                f"決算除外 {diag.get('earnings_skip',0)} / "
-                f"sector通過 {diag.get('sector_pass',0)} / "
-                f"theme通過 {diag.get('theme_pass',0)}"
-            )
+        body = "本日は買いシグナル0件です。"
         _post({"embeds": [{
             "title": title, "description": body, "color": COLOR_NONE
         }]}, tag="-empty")
@@ -74,30 +67,12 @@ def send_signals(signals: list[dict], macro: dict, diag: dict | None = None) -> 
     embeds = []
     head = {
         "title": title,
-        "description": (
-            f"フィルタ: スイング売買シグナル + "
-            f"(セクター上位50% [w=20] OR テーマ語ヒット)\n"
-            f"top {len(signals)} 件 / BT実績(2022-2026): "
-            f"PF1.31 / +459% / MaxDD-50.5% / 2026年PF1.48"
-        ),
+        "description": f"本日の買いシグナルは {len(signals)} 件です。",
         "color": COLOR_BUY,
     }
     embeds.append(head)
     for i, s in enumerate(signals, 1):
         embeds.append(_fmt_signal_embed(s, i))
-    if diag:
-        embeds.append({
-            "title": "📊 診断",
-            "description": (
-                f"素のBUY: {diag.get('raw_buy',0)} / "
-                f"決算除外: {diag.get('earnings_skip',0)}\n"
-                f"sector通過: {diag.get('sector_pass',0)} / "
-                f"theme通過: {diag.get('theme_pass',0)} / "
-                f"OR通過 (最終): {diag.get('or_pass',0)} / "
-                f"両方通過: {diag.get('both_pass',0)}"
-            ),
-            "color": COLOR_NONE,
-        })
 
     # Discord は 1 メッセージに embed 10 個まで
     for chunk_start in range(0, len(embeds), 10):
