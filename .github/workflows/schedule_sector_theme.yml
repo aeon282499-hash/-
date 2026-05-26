@@ -1,0 +1,46 @@
+name: スイングセクターローテ配信
+
+on:
+  workflow_dispatch:           # 手動実行 (確認用)
+  schedule:
+    - cron: '25 23 * * 0-4'   # 8:25 JST (毎営業日朝・本番より5分後)
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_URL_SECTOR_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: スイングセクターローテ配信実行
+        run: python main_sector_theme.py
+
+      - name: 当日シグナル履歴保存
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add today_signals_sector_theme.json || true
+          git diff --cached --quiet || git commit -m "chore: update today_signals_sector_theme [skip ci]"
+          git pull --rebase origin main
+          git push origin main

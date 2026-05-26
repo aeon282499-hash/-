@@ -1,0 +1,43 @@
+{
+  "_comment": "世界首位/世界級の技術を持つ日本企業ホワイトリスト (Phase 2 用)",
+  "_created": "2026-05-26",
+  "_categories": {
+    "semiconductor_equipment": "半導体製造装置",
+    "semiconductor_material": "半導体素材",
+    "semiconductor_device": "半導体デバイス",
+    "electronic_parts": "電子部品",
+    "fa_robotics": "FA・ロボット (フィジカルAI)",
+    "defense_aerospace": "防衛・航空・宇宙",
+    "medical_device": "医療機器"
+  },
+  "tickers": {
+    "6920.T": {"name": "レーザーテック",     "category": "semiconductor_equipment", "reason": "EUVマスク検査独占"},
+    "6146.T": {"name": "ディスコ",           "category": "semiconductor_equipment", "reason": "ダイシング/グラインダー世界首位"},
+    "6857.T": {"name": "アドバンテスト",      "category": "semiconductor_equipment", "reason": "メモリテスター世界首位"},
+    "7735.T": {"name": "SCREEN HD",          "category": "semiconductor_equipment", "reason": "枚葉式洗浄装置世界首位"},
+    "8035.T": {"name": "東京エレクトロン",    "category": "semiconductor_equipment", "reason": "前工程装置世界トップ3"},
+    "7741.T": {"name": "HOYA",               "category": "semiconductor_material",  "reason": "EUVマスクブランク独占"},
+    "4063.T": {"name": "信越化学工業",        "category": "semiconductor_material",  "reason": "シリコンウエハー世界首位"},
+    "3436.T": {"name": "SUMCO",              "category": "semiconductor_material",  "reason": "シリコンウエハー世界2位"},
+    "4185.T": {"name": "JSR",                "category": "semiconductor_material",  "reason": "フォトレジスト世界級"},
+    "4186.T": {"name": "東京応化工業",        "category": "semiconductor_material",  "reason": "フォトレジスト世界級"},
+    "6963.T": {"name": "ローム",             "category": "semiconductor_device",    "reason": "SiCパワー半導体"},
+    "6526.T": {"name": "ソシオネクスト",      "category": "semiconductor_device",    "reason": "SoC設計"},
+    "6723.T": {"name": "ルネサスエレクトロニクス", "category": "semiconductor_device", "reason": "車載マイコン世界首位"},
+    "6981.T": {"name": "村田製作所",          "category": "electronic_parts",        "reason": "MLCC世界首位"},
+    "6762.T": {"name": "TDK",                "category": "electronic_parts",        "reason": "電子部品/二次電池"},
+    "6758.T": {"name": "ソニーグループ",      "category": "electronic_parts",        "reason": "CMOSセンサー世界首位"},
+    "6594.T": {"name": "ニデック",            "category": "electronic_parts",        "reason": "HDDモーター世界首位/車載駆動拡大"},
+    "6954.T": {"name": "ファナック",          "category": "fa_robotics",             "reason": "CNC/産業ロボット世界トップ"},
+    "6861.T": {"name": "キーエンス",          "category": "fa_robotics",             "reason": "FAセンサー圧倒的シェア"},
+    "6506.T": {"name": "安川電機",            "category": "fa_robotics",             "reason": "ACサーボ/ロボット世界トップ級"},
+    "6273.T": {"name": "SMC",                "category": "fa_robotics",             "reason": "空圧機器世界首位"},
+    "6324.T": {"name": "ハーモニック・ドライブ・システムズ", "category": "fa_robotics", "reason": "波動歯車減速機独占"},
+    "6268.T": {"name": "ナブテスコ",          "category": "fa_robotics",             "reason": "RV減速機独占級"},
+    "6645.T": {"name": "オムロン",            "category": "fa_robotics",             "reason": "FA・制御機器世界級"},
+    "7011.T": {"name": "三菱重工業",          "category": "defense_aerospace",       "reason": "防衛/宇宙/原子力"},
+    "7012.T": {"name": "川崎重工業",          "category": "defense_aerospace",       "reason": "防衛/航空/ロボット"},
+    "7013.T": {"name": "IHI",                "category": "defense_aerospace",       "reason": "航空エンジン/宇宙"},
+    "6869.T": {"name": "シスメックス",        "category": "medical_device",          "reason": "血球計数装置世界首位"}
+  }
+}

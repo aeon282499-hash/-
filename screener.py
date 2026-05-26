@@ -123,12 +123,16 @@ def _jquants_id_token() -> str:
     return key
 
 
+_JQUANTS_VERIFY_SSL = os.getenv("JQUANTS_VERIFY_SSL", "true").lower() not in ("0", "false", "no")
+
+
 def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
     resp = requests.get(
         f"{_JQUANTS_BASE}{path}",
         headers={"x-api-key": token},
         params=params or {},
         timeout=60,
+        verify=_JQUANTS_VERIFY_SSL,
     )
     resp.raise_for_status()
     return resp.json()
