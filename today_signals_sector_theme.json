@@ -1,0 +1,13 @@
+{
+  "date": "2026-05-26",
+  "fetched_at": "2026-05-26 21:42:50",
+  "signals": [],
+  "diag": {
+    "raw_buy": 2,
+    "earnings_skip": 0,
+    "sector_pass": 0,
+    "theme_pass": 0,
+    "or_pass": 0,
+    "both_pass": 0
+  }
+}
