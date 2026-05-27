@@ -149,6 +149,16 @@
       "close": 904.8,
       "pnl": -1.33,
       "win": false
+    },
+    {
+      "date": "2026-05-27",
+      "ticker": "3003.T",
+      "name": "ヒューリック",
+      "direction": "BUY",
+      "open": 1675.0,
+      "close": 1663.0,
+      "pnl": -0.72,
+      "win": false
     }
   ]
 }
