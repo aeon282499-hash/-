@@ -1,9 +1,14 @@
 {
-  "date": "2026-05-27",
+  "date": "2026-05-28",
   "signals": [
     {
-      "ticker": "3003.T",
-      "name": "ヒューリック",
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
       "direction": "BUY"
     }
   ]
