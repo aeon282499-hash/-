@@ -32,6 +32,16 @@ jobs:
       - name: パッケージインストール
         run: pip install -r requirements.txt
 
+      - name: セクターマップ月次リフレッシュ (JST月初3日)
+        run: |
+          day=$(TZ=Asia/Tokyo date +%d)
+          if [ "$day" -le "03" ]; then
+            echo "JST $day日: sector33_map.json を /equities/master から再取得"
+            python -c "from sector_filter import fetch_sector33_map; fetch_sector33_map(force_refresh=True)"
+          else
+            echo "JST $day日: 月初ではないのでスキップ"
+          fi
+
       - name: スイングセクターローテ配信実行
         run: python main_sector_theme.py
 
@@ -40,7 +50,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add today_signals_sector_theme.json || true
-          git diff --cached --quiet || git commit -m "chore: update today_signals_sector_theme [skip ci]"
+          git add today_signals_sector_theme.json sector33_map.json || true
+          git diff --cached --quiet || git commit -m "chore: daily update (signals/sector_map) [skip ci]"
           git pull --rebase origin main
           git push origin main
