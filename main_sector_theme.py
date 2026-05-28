@@ -20,6 +20,7 @@ from screener_sector_theme import run_sector_theme_screener
 from notifier_sector_theme import send_signals, send_error
 
 TODAY_SIGNALS = Path("today_signals_sector_theme.json")
+DIAG_LOG = Path("logs/sector_theme_diag.jsonl")
 
 
 def is_today_trading_day() -> bool:
@@ -90,6 +91,25 @@ def main():
     with open(TODAY_SIGNALS, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
     print(f"[main_st] {TODAY_SIGNALS} 保存完了")
+
+    # 日次 diag ログを JSONL 形式で追記（過去履歴の保全）
+    DIAG_LOG.parent.mkdir(parents=True, exist_ok=True)
+    already_logged = False
+    if DIAG_LOG.exists():
+        with open(DIAG_LOG, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    if json.loads(line).get("date") == today_str:
+                        already_logged = True
+                        break
+                except Exception:
+                    continue
+    if not already_logged:
+        with open(DIAG_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        print(f"[main_st] {DIAG_LOG} 追記完了")
+    else:
+        print(f"[main_st] {DIAG_LOG} 既に {today_str} 記録済み → 追記スキップ")
 
 
 if __name__ == "__main__":

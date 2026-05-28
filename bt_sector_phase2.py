@@ -30,6 +30,7 @@ from bt_sector_filter import (
     RSI_MAX, DEV_MAX, ATR_CAP, TURNOVER_MIN, RANGE_MULT, VOL_MULT,
     MAX_SIGNALS, MAX_HOLD, STOP_LOSS, TAKE_PROFIT, RSI_PERIOD, buy_score,
 )
+from screener import _load_earnings_calendar, _is_near_earnings
 import math
 import numpy as np
 
@@ -53,7 +54,10 @@ def simulate_mode(
     sector_map: dict[str, str],
     sector_ranking: dict[str, set[str]],
     whitelist: set[str],
+    apply_earnings_exclusion: bool = True,
 ) -> list[dict]:
+    if apply_earnings_exclusion:
+        _load_earnings_calendar()
     base = df_long[
         (df_long["RSI"] <= RSI_MAX)
         & (df_long["DEV"] <= DEV_MAX)
@@ -90,6 +94,9 @@ def simulate_mode(
         base = base[base["Ticker"].isin(whitelist)]
     else:
         raise ValueError(f"unknown mode: {mode}")
+
+    if apply_earnings_exclusion:
+        base = base[~base.apply(lambda r: _is_near_earnings(r["Ticker"], r["DateStr"]), axis=1)]
 
     candidates_by_sig: dict[str, list[str]] = {}
     for sig_date, grp in base.groupby("DateStr"):
