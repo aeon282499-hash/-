@@ -7,6 +7,7 @@ notifier.py — Discord Webhook 通知モジュール（Phase 2: tier対応）
 """
 
 import os
+import json
 import requests
 from datetime import date, datetime, timedelta
 import zoneinfo
@@ -54,10 +55,24 @@ def _is_main_tier(tier: dict) -> bool:
     return tier.get("key") == "main"
 
 
+# セッション内 dedup — 同じURLに同じpayloadを2回POSTするのを防ぐ
+# (webhook URL重複登録/同チャンネル多重登録などの設定ミス耐性)
+import hashlib as _hashlib
+_SENT_KEYS: set[tuple[str, str]] = set()
+
+
 def _post(url: str, payload: dict, log_tag: str) -> None:
     if not url:
         print(f"[notifier-{log_tag}] webhook未設定 → スキップ")
         return
+    payload_hash = _hashlib.md5(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    key = (url, payload_hash)
+    if key in _SENT_KEYS:
+        print(f"[notifier-{log_tag}] 同URL同payload 重複検知 → スキップ")
+        return
+    _SENT_KEYS.add(key)
     try:
         resp = requests.post(url, json=payload, timeout=10)
         if resp.status_code not in (200, 204):
