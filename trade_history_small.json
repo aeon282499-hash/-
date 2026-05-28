@@ -159,6 +159,26 @@
       "close": 1663.0,
       "pnl": -0.72,
       "win": false
+    },
+    {
+      "date": "2026-05-28",
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
+      "direction": "BUY",
+      "open": 1531.5,
+      "close": 1531.0,
+      "pnl": -0.03,
+      "win": false
+    },
+    {
+      "date": "2026-05-28",
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
+      "direction": "BUY",
+      "open": 2168.5,
+      "close": 2159.0,
+      "pnl": -0.44,
+      "win": false
     }
   ]
 }
