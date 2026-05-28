@@ -24,6 +24,7 @@ load_dotenv()
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 DAY_SIGNALS_FILE = "day_signals.json"
+LAST_RUN_FILE = "last_day_run.json"
 
 
 def is_trading_day(d) -> bool:
@@ -295,11 +296,22 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
 
 def main() -> None:
     today = datetime.now(JST).date()
+    today_str = today.strftime("%Y-%m-%d")
     print(f"[main_day] 実行日: {today}")
 
     if not is_trading_day(today):
         print("[main_day] 休場日 → スキップ")
         sys.exit(0)
+
+    if os.path.exists(LAST_RUN_FILE):
+        try:
+            with open(LAST_RUN_FILE, "r", encoding="utf-8") as f:
+                last = json.load(f)
+            if last.get("date") == today_str:
+                print(f"[main_day] 本日分({today_str})は配信済み({last.get('sent_at','?')}) → スキップ")
+                sys.exit(0)
+        except Exception as e:
+            print(f"[main_day] {LAST_RUN_FILE} 読込失敗: {e} → 続行")
 
     from screener_day import run_screener_day
     from screener_sell_day import run_screener_sell_day
@@ -343,6 +355,16 @@ def main() -> None:
 
         # ── ④ Discord にシグナル送信 ─────────────────────
         send_day_signals(signals, today, macro)
+
+        # 配信完了マーカー (重複防止用)
+        with open(LAST_RUN_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "date": today_str,
+                "sent_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S JST"),
+                "buy_count": len(buy_signals),
+                "sell_count": len(sell_signals),
+            }, f, ensure_ascii=False, indent=2)
+        print(f"[main_day] {LAST_RUN_FILE} 更新完了")
 
         # ── ⑤ Twitter に投稿 ────────────────────────────────
         # TWITTER_PAUSED: 2026-05-21 ユーザー指示で一時停止（PEADフィルタB案BT中）。再開時はコメント解除。
