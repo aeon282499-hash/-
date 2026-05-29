@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 load_dotenv()
 
 from screener import (
-    judge_signal_pre, fetch_tse_universe, batch_download_jquants,
+    judge_signal_pre, judge_sell_signal_pre, fetch_tse_universe, batch_download_jquants,
     _jquants_id_token, _load_earnings_calendar, _is_near_earnings,
     fetch_macro, LOOKBACK_DAYS, MAX_SIGNALS,
 )
@@ -36,9 +36,16 @@ from sector_filter import (
     fetch_sector33_map, build_sector_ranking, is_ticker_in_top_sector,
 )
 
-# Phase 1-3 BT で確定したパラメータ
+# Phase 1-3 BT で確定したパラメータ (BUY)
 SECTOR_WINDOW = 20
 SECTOR_TOP_FRAC = 0.50
+
+# SELL (空売り) BT で確定したパラメータ
+#   bt_sector_sell_refine.py: 最弱セクター下位33%・window20 で
+#   PF1.37 / +45.9% / MaxDD-13.8% / 全5年プラス / 最弱年PF1.03 (素のSELLはPF0.98で負け)
+SECTOR_SELL_WINDOW = 20
+SECTOR_SELL_TOP_FRAC = 0.33
+
 THEME_KEYWORDS_PATH = Path("theme_keywords.json")
 
 
@@ -81,13 +88,14 @@ def _winprob_score(c: dict) -> float:
     return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
 
 
-def run_sector_theme_screener() -> tuple[list[dict], list[dict], dict, dict]:
+def run_sector_theme_screener() -> tuple[list[dict], list[dict], list[dict], dict, dict]:
     """
     本スクリーニング。
 
     戻り値:
-      signals       — Sec_OR_Theme 通過後の top MAX_SIGNALS (positions除外後)
-      all_filtered  — Sec_OR_Theme 通過した全候補 (スコア順)
+      signals       — BUY: Sec_OR_Theme 通過後の top MAX_SIGNALS (positions除外後)
+      sell_signals  — SELL: 最弱セクター(下位33%)の急騰後反落 top MAX_SIGNALS (positions除外後)
+      all_filtered  — BUY の Sec_OR_Theme 通過した全候補 (スコア順)
       macro         — マクロ環境情報
       diag          — 診断情報 (フィルタヒット内訳)
     """
@@ -109,6 +117,12 @@ def run_sector_theme_screener() -> tuple[list[dict], list[dict], dict, dict]:
 
     sector_ranking, all_trading_days = _build_live_sector_ranking(data, sector_map)
 
+    # SELL用: 最弱セクター下位33%ランキング (空売り = 資金流出セクターの急騰を売る)
+    sell_sector_ranking, _ = build_sector_ranking(
+        data, sector_map, window=SECTOR_SELL_WINDOW,
+        top_frac=SECTOR_SELL_TOP_FRAC, end="bottom",
+    )
+
     # 日経 25MA 状態 (参考表示用)
     nk_above_ma25 = None
     try:
@@ -127,8 +141,10 @@ def run_sector_theme_screener() -> tuple[list[dict], list[dict], dict, dict]:
 
     # 判定 + Sec_OR_Theme フィルタ
     raw_buy: list[dict] = []
+    raw_sell: list[dict] = []
     diag = {"raw_buy": 0, "earnings_skip": 0, "sector_pass": 0, "theme_pass": 0,
-            "or_pass": 0, "both_pass": 0}
+            "or_pass": 0, "both_pass": 0,
+            "raw_sell": 0, "sell_earnings_skip": 0, "sell_sector_pass": 0}
 
     for ticker, df in data.items():
         if ticker not in name_map:
@@ -165,7 +181,33 @@ def run_sector_theme_screener() -> tuple[list[dict], list[dict], dict, dict]:
           f"sector通過={diag['sector_pass']} / theme通過={diag['theme_pass']} / "
           f"OR通過(最終)={diag['or_pass']} / 両方={diag['both_pass']}")
 
-    # positions_sector_theme.json で既存ポジ除外
+    # SELL: 急騰後反落を「最弱セクター(下位33%)」のみで空売り
+    for ticker, df in data.items():
+        if ticker not in name_map:
+            continue
+        sresult = judge_sell_signal_pre(ticker, name_map[ticker], df)
+        if not sresult:
+            continue
+        diag["raw_sell"] += 1
+        if _is_near_earnings(ticker, today_str):
+            diag["sell_earnings_skip"] += 1
+            continue
+        in_bottom = is_ticker_in_top_sector(
+            ticker, today_str, sector_map, sell_sector_ranking, all_trading_days
+        )
+        if not in_bottom:
+            continue
+        diag["sell_sector_pass"] += 1
+        sresult["sector"] = sector_map.get(ticker, "")
+        sresult["in_sector_bottom"] = True
+        raw_sell.append(sresult)
+
+    # 空売りは BT 同様、売買代金(流動性)上位から採用
+    raw_sell.sort(key=lambda c: c.get("turnover", 0), reverse=True)
+    print(f"[screener_st] SELL診断: 素のSELL={diag['raw_sell']} / 決算除外={diag['sell_earnings_skip']} / "
+          f"最弱セクター通過(最終)={diag['sell_sector_pass']}")
+
+    # positions_sector_theme.json で既存ポジ除外 (BUY/SELL 共通)
     open_tickers = set()
     try:
         with open("positions_sector_theme.json", "r", encoding="utf-8") as f:
@@ -178,17 +220,22 @@ def run_sector_theme_screener() -> tuple[list[dict], list[dict], dict, dict]:
 
     candidates = [c for c in raw_buy if c["ticker"] not in open_tickers]
     signals = candidates[:MAX_SIGNALS]
-    print(f"[screener_st] OR通過 {len(raw_buy)} → ポジション除外後 {len(candidates)} "
+    print(f"[screener_st] BUY: OR通過 {len(raw_buy)} → ポジション除外後 {len(candidates)} "
           f"→ top{len(signals)} シグナル")
 
-    return signals, raw_buy, macro, diag
+    sell_candidates = [c for c in raw_sell if c["ticker"] not in open_tickers]
+    sell_signals = sell_candidates[:MAX_SIGNALS]
+    print(f"[screener_st] SELL: 最弱通過 {len(raw_sell)} → ポジション除外後 {len(sell_candidates)} "
+          f"→ top{len(sell_signals)} シグナル")
+
+    return signals, sell_signals, raw_buy, macro, diag
 
 
 if __name__ == "__main__":
-    sigs, all_pass, macro, diag = run_sector_theme_screener()
+    sigs, sell_sigs, all_pass, macro, diag = run_sector_theme_screener()
     print()
     print("=" * 72)
-    print("  本日のシグナル (sector_theme)")
+    print("  本日のBUYシグナル (sector_theme)")
     print("=" * 72)
     for i, s in enumerate(sigs, 1):
         flags = []
@@ -197,4 +244,11 @@ if __name__ == "__main__":
         print(f"  {i}. [{s['ticker']}] {s['name']} "
               f"RSI={s['rsi']} dev={s['deviation']:+.1f}% "
               f"代金={s['turnover']/1e8:.0f}億 / {'+'.join(flags)}")
+    print("=" * 72)
+    print("  本日のSELLシグナル (最弱セクター急騰後反落)")
+    print("=" * 72)
+    for i, s in enumerate(sell_sigs, 1):
+        print(f"  {i}. [{s['ticker']}] {s['name']} "
+              f"RSI={s['rsi']} dev={s['deviation']:+.1f}% 前日比={s.get('day_change',0):+.1f}% "
+              f"代金={s['turnover']/1e8:.0f}億 / sec[{s.get('sector','?')}]")
     print("=" * 72)

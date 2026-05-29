@@ -14,6 +14,7 @@ load_dotenv()
 WEBHOOK = (os.getenv("DISCORD_WEBHOOK_URL_SECTOR_THEME", "") or "").strip()
 _VERIFY_SSL = os.getenv("DISCORD_VERIFY_SSL", "true").lower() not in ("0", "false", "no")
 COLOR_BUY = 0x8E24AA   # 紫 (既存BUYの赤と差別化)
+COLOR_SELL = 0xE53935  # 赤 (空売り)
 COLOR_NONE = 0x757575
 
 
@@ -54,25 +55,57 @@ def _fmt_signal_embed(s: dict, rank: int) -> dict:
     }
 
 
-def send_signals(signals: list[dict], macro: dict, diag: dict | None = None) -> None:
+def _fmt_sell_signal_embed(s: dict, rank: int) -> dict:
+    sec = s.get("sector", "?")
+    desc_lines = [
+        f"**RSI({14})**: `{s['rsi']}` (≧60・買われすぎ)",
+        f"**25MA乖離**: `{s['deviation']:+.1f}%` (≧+4%・上がりすぎ)",
+        f"**前日比**: `{s.get('day_change', 0):+.1f}%` (≧+3%・急騰)",
+        f"**売買代金**: `{s['turnover']/1e8:.0f}億円`",
+        f"**直近終値**: `{s.get('prev_close','-'):,.0f}円`",
+        "",
+        f"🔻 最弱セクター [{sec}] の急騰 → 反落狙いの空売り",
+        "⚠️ エントリー前にSBIで**貸借区分・在庫(空売り可否)**を確認",
+    ]
+    return {
+        "title": f"#{rank}  [{s['ticker']}] {s['name']}",
+        "description": "\n".join(desc_lines),
+        "color": COLOR_SELL,
+    }
+
+
+def send_signals(signals: list[dict], sell_signals: list[dict] | None,
+                 macro: dict, diag: dict | None = None) -> None:
     today = date.today().strftime("%Y-%m-%d (%a)")
-    title = f"🟣 本日のシグナル — {today}"
-    if not signals:
-        body = "本日は買いシグナル0件です。"
+    sell_signals = sell_signals or []
+
+    if not signals and not sell_signals:
         _post({"embeds": [{
-            "title": title, "description": body, "color": COLOR_NONE
+            "title": f"🟣 本日のシグナル — {today}",
+            "description": "本日は買い・空売りともシグナル0件です。",
+            "color": COLOR_NONE,
         }]}, tag="-empty")
         return
 
     embeds = []
-    head = {
-        "title": title,
-        "description": f"本日の買いシグナルは {len(signals)} 件です。",
-        "color": COLOR_BUY,
-    }
-    embeds.append(head)
-    for i, s in enumerate(signals, 1):
-        embeds.append(_fmt_signal_embed(s, i))
+    if signals:
+        embeds.append({
+            "title": f"🟣 本日の買いシグナル — {today}",
+            "description": f"本日の買いシグナルは {len(signals)} 件です。",
+            "color": COLOR_BUY,
+        })
+        for i, s in enumerate(signals, 1):
+            embeds.append(_fmt_signal_embed(s, i))
+
+    if sell_signals:
+        embeds.append({
+            "title": f"🔻 本日の空売りシグナル — {today}",
+            "description": (f"最弱セクターの急騰後反落 {len(sell_signals)} 件。"
+                            "翌寄り成りでショート・損切+3%/利確-5%/最大3日。"),
+            "color": COLOR_SELL,
+        })
+        for i, s in enumerate(sell_signals, 1):
+            embeds.append(_fmt_sell_signal_embed(s, i))
 
     # Discord は 1 メッセージに embed 10 個まで
     for chunk_start in range(0, len(embeds), 10):

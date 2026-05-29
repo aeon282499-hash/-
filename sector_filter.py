@@ -81,13 +81,17 @@ def build_sector_ranking(
     sector_map: dict[str, str],
     window: int = 5,
     top_frac: float = 1 / 3,
+    end: str = "top",
 ) -> tuple[dict[str, set[str]], pd.DataFrame]:
     """
-    各日の「上位 top_frac セクター集合」を構築する。
+    各日の「上位 (end='top') / 下位 (end='bottom') top_frac セクター集合」を構築する。
+
+    end='top'    … 直近 window 日平均リターン上位 (買い=資金流入セクター)
+    end='bottom' … 同 下位 (空売り=資金流出セクター)
 
     Returns:
       ranking: {date_str 'YYYY-MM-DD' -> set of S33Nm}
-      sector_window_df: 参考用 (rows=date, cols=S33Nm, values=5日平均日次リターン)
+      sector_window_df: 参考用 (rows=date, cols=S33Nm, values=window日平均日次リターン)
     """
     print(f"[sector_filter] 銘柄リターン集計中 ({len(all_data)} 銘柄, 窓={window}日)...")
 
@@ -117,16 +121,19 @@ def build_sector_ranking(
 
     n_sectors = sw.shape[1]
     top_n = max(1, int(round(n_sectors * top_frac)))
-    print(f"[sector_filter] セクター数={n_sectors} / 上位{top_n}を採用 (top_frac={top_frac:.3f})")
+    ascending = (end == "bottom")  # bottom=リターン下位から採用
+    label = "下位" if ascending else "上位"
+    print(f"[sector_filter] セクター数={n_sectors} / {label}{top_n}を採用 "
+          f"(top_frac={top_frac:.3f}, end={end})")
 
     ranking: dict[str, set[str]] = {}
     for d, row in sw.iterrows():
         valid = row.dropna()
         if valid.empty:
             continue
-        top = set(valid.sort_values(ascending=False).head(top_n).index)
-        ranking[pd.Timestamp(d).strftime("%Y-%m-%d")] = top
-    print(f"[sector_filter] ranking 構築完了 ({len(ranking)} 日分)")
+        sel = set(valid.sort_values(ascending=ascending).head(top_n).index)
+        ranking[pd.Timestamp(d).strftime("%Y-%m-%d")] = sel
+    print(f"[sector_filter] ranking 構築完了 ({len(ranking)} 日分, end={end})")
     return ranking, sw
 
 

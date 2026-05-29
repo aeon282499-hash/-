@@ -49,7 +49,7 @@ def main():
             pass
 
     try:
-        signals, all_pass, macro, diag = run_sector_theme_screener()
+        signals, sell_signals, all_pass, macro, diag = run_sector_theme_screener()
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
@@ -58,19 +58,24 @@ def main():
             send_error(f"スクリーナー失敗: {e}\n\n{tb[-1000:]}")
         return
 
-    print(f"\n[main_st] 配信対象 {len(signals)} 件")
+    print(f"\n[main_st] BUY配信対象 {len(signals)} 件")
     for s in signals:
         flags = []
         if s.get("in_sector_top"): flags.append(f"sec[{s.get('sector','?')}]")
         if s.get("in_theme"): flags.append("theme")
         print(f"  - [{s['ticker']}] {s['name']} RSI={s['rsi']} dev={s['deviation']:+.1f}% "
               f"代金={s['turnover']/1e8:.0f}億 [{'+'.join(flags)}]")
+    print(f"[main_st] SELL配信対象 {len(sell_signals)} 件")
+    for s in sell_signals:
+        print(f"  - [{s['ticker']}] {s['name']} RSI={s['rsi']} dev={s['deviation']:+.1f}% "
+              f"前日比={s.get('day_change',0):+.1f}% 代金={s['turnover']/1e8:.0f}億 "
+              f"[最弱sec={s.get('sector','?')}]")
 
     if dry_run:
         print("\n[main_st] --dry-run のため Discord 送信せず終了")
         return
 
-    send_signals(signals, macro, diag)
+    send_signals(signals, sell_signals, macro, diag)
 
     # 配信履歴を保存 (重複防止用)
     payload = {
@@ -85,6 +90,15 @@ def main():
                 "in_theme": s.get("in_theme", False),
                 "sector": s.get("sector", ""),
             } for s in signals
+        ],
+        "sell_signals": [
+            {
+                "ticker": s["ticker"], "name": s["name"],
+                "rsi": s["rsi"], "deviation": s["deviation"],
+                "day_change": s.get("day_change", 0),
+                "turnover_oku": s["turnover"] / 1e8,
+                "sector": s.get("sector", ""),
+            } for s in sell_signals
         ],
         "diag": diag,
     }
