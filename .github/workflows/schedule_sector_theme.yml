@@ -2,8 +2,10 @@ name: スイングセクターローテ配信
 
 on:
   workflow_dispatch:           # 手動実行 (確認用)
-  schedule:
-    - cron: '25 23 * * 0-4'   # 8:25 JST (毎営業日朝・本番より5分後)
+  # 本番配信は schedule.yml（スイングシグナル配信）に相乗りで実行する。
+  # 理由: GitHub cron は遅延/スキップが多く 8:25 JST に流れないため、
+  #       Cloudflare Worker で確実発火する schedule.yml に統合した。
+  # この単体ワークフローは手動確認用として残す（自動 schedule は無効）。
 
 concurrency:
   group: ${{ github.workflow }}
