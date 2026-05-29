@@ -375,7 +375,7 @@ def main() -> None:
         print("[main_day] 正常終了")
 
     except Exception as e:
-        import traceback, os, requests as req
+        import traceback, requests as req
         err_msg = traceback.format_exc()
         print(f"[main_day] エラー:\n{err_msg}", file=sys.stderr)
         url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
