@@ -129,6 +129,42 @@ def _theme_context(theme_row: dict, us_tailwind: float | None) -> tuple[float, d
     return heat_pts + policy_pts + us_pts, detail
 
 
+def _breakout_potential(m: dict, ctx_detail: dict, init_stars: int, overext: bool) -> float:
+    """一撃度(出遅れ初動スコア): これから一撃で伸びる "余地" を測る。
+
+    強さスコア(score)は "もう強い" 銘柄を上げる。こちらは逆向きで
+    「テーマが点火中(heat)＋資金が今ドカ流入(出来高)＋まだ走っていない(初動)」=
+    バネが一番縮んでいる出遅れ初動ほど高得点。
+    すでに走った分(🔥伸びきり/20日上昇大)は伸びしろが消えているので減点する。
+    """
+    vr = m.get("vr") or 0.0
+    r20 = (m.get("r20") or 0.0) * 100
+
+    # 波の強さ = 乗っているテーマの追い風(熱 + 政策 + 米前夜のプラス分のみ)
+    wave = (ctx_detail.get("heat_pts", 0.0)
+            + ctx_detail.get("policy_pts", 0.0)
+            + max(0.0, ctx_detail.get("us_pts", 0.0)))
+
+    # 出来高流入(資金がいま入っている本体)
+    if vr >= 2.5:   vol = 30.0
+    elif vr >= 2.0: vol = 24.0
+    elif vr >= 1.5: vol = 16.0
+    elif vr >= 1.2: vol = 8.0
+    else:           vol = 0.0
+
+    # 初動の鮮度(まだ走っていないほど伸びしろ大)
+    fresh = {3: 25.0, 2: 12.0, 1: 0.0}.get(init_stars, 8.0)
+
+    potential = wave + vol + fresh
+
+    # すでに走った分を減点(伸びしろが消えている)
+    if overext:    potential *= 0.35
+    elif r20 > 30: potential *= 0.60
+    elif r20 > 15: potential *= 0.85
+
+    return round(max(0.0, potential), 1)
+
+
 def _tier(score: float) -> str:
     if score >= TIER_S: return "S"
     if score >= TIER_A: return "A"
@@ -163,6 +199,7 @@ def rank_stocks(
                 continue
 
             init_stars, overext = _init_timing(m)
+            potential = _breakout_potential(m, ctx_detail, init_stars, overext)
 
             row = {
                 "ticker": m["ticker"],
@@ -177,6 +214,7 @@ def rank_stocks(
                 "tier": _tier(score),
                 "init_stars": init_stars,     # 3=★★★走り始め 2=★★ 1=★☆☆伸びきり
                 "overextended": overext,      # 🔥伸びきり(過熱)バッジ
+                "potential": potential,       # 一撃度(出遅れ初動スコア): 伸びしろ
                 "mom_pts": round(mom_pts, 1),
                 "ctx_pts": round(ctx_pts, 1),
                 # 生メトリクス(ダッシュボード表示用)
@@ -227,8 +265,8 @@ if __name__ == "__main__":
         r5 = (r["r5"] or 0) * 100
         stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}.get(r["init_stars"], "★★☆")
         oe = " 🔥伸びきり" if r["overextended"] else ""
-        print(f"  [{r['tier']}] 強{r['score']:5.1f} 初動{stars}{oe}  [{r['ticker']}] {r['name']:<16} "
-              f"score(mom{r['mom_pts']:.0f}+ctx{r['ctx_pts']:.0f}) "
+        print(f"  [{r['tier']}] 強{r['score']:5.1f} 一撃{r['potential']:5.1f} 初動{stars}{oe}  "
+              f"[{r['ticker']}] {r['name']:<16} "
               f"vol{vr:.1f}x 乖離{dev:+.1f}% 5d{r5:+.1f}%  "
               f"〔{r['theme']} heat{r['theme_heat']:.0f}{pol} {drv}〕")
     print("=" * 90)
