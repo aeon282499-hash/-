@@ -128,8 +128,19 @@ with tab1:
         view = view[["ティア", "初動", "伸", "スコア", "銘柄", "テーマ"]]
 
     def _row_style(row):
-        bg = TIER_BG.get(row["ティア"], "#ffffff")
-        return [f"background-color:{bg}"] * len(row)
+        tier = row["ティア"]
+        bg = TIER_BG.get(tier, "#ffffff")
+        strong = TIER_COLOR.get(tier, "#333333")
+        styles = []
+        for col in row.index:
+            if col == "ティア":  # 色付きバッジ(濃色背景+白文字)
+                styles.append(f"background-color:{strong};color:#ffffff;"
+                              "font-weight:800;text-align:center")
+            elif col == "スコア":  # キー指標: 太字の濃色文字で強調
+                styles.append(f"background-color:{bg};color:#111111;font-weight:800")
+            else:  # 文字色を濃色固定(ダークテーマでの白文字潰れ防止)
+                styles.append(f"background-color:{bg};color:#1a1a1a")
+        return styles
 
     fmt = {"スコア": "{:.1f}", "テーマ熱": "{:.0f}", "出来高比": "{:.1f}x",
            "25MA乖離%": "{:+.1f}", "RSI": "{:.0f}", "5d%": "{:+.1f}",
