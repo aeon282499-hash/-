@@ -28,6 +28,7 @@ jobs:
       DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
       DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       DISCORD_WEBHOOK_URL_SECTOR_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME }}
+      DISCORD_WEBHOOK_URL_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_THEME }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
@@ -72,6 +73,16 @@ jobs:
         continue-on-error: true
         run: python main_sector_theme.py
 
+      - name: テーマトラッカー配信実行（相乗り・Cloudflareトリガーで確実発火）
+        # 失敗が後段のポジション保存を止めないよう continue-on-error
+        continue-on-error: true
+        run: python main_theme.py
+
+      - name: ダッシュボード用スナップショット生成（S/A/B/C + テーマ熱 + 米前夜）
+        # 失敗が後段のポジション保存を止めないよう continue-on-error
+        continue-on-error: true
+        run: python build_dashboard.py
+
       - name: ポジション保存（スイング3階層分 + デイトレ + セクターローテ）
         run: |
           git config user.name  "github-actions[bot]"
@@ -85,7 +96,9 @@ jobs:
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json \
-            today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl || true
-          git diff --cached --quiet || git commit -m "chore: update positions today_signals + day_signals + sector_theme [skip ci]"
+            today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
+            today_signals_theme.json logs/theme_diag.jsonl \
+            dashboard_data.json || true
+          git diff --cached --quiet || git commit -m "chore: update positions today_signals + day_signals + sector_theme + theme + dashboard [skip ci]"
           git pull --rebase origin main
           git push origin main
