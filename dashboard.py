@@ -20,6 +20,7 @@ DATA_PATH = Path("dashboard_data.json")
 
 TIER_COLOR = {"S": "#d32f2f", "A": "#f57c00", "B": "#1976d2", "C": "#757575"}
 TIER_BG = {"S": "#fdecea", "A": "#fff3e0", "B": "#e3f2fd", "C": "#f5f5f5"}
+TIER_ORDER = {"S": 0, "A": 1, "B": 2, "C": 3}  # ランク順ソート用(S→A→B→C)
 
 st.set_page_config(page_title="資金流入ダッシュボード", page_icon="🔥", layout="wide",
                    initial_sidebar_state="collapsed")  # スマホ: フィルタ(サイドバー)を畳んで本体を先に出す
@@ -81,10 +82,16 @@ tab1, tab2, tab3 = st.tabs(["📊 銘柄ランキング", "🔥 テーマ熱", "
 
 # ================= 銘柄ランキング =================
 with tab1:
+    # ---- ランク絞り込み(画面トップに常時表示・スマホでサイドバーを開かず押せる) ----
+    tier_opts = ["S", "A", "B", "C"]
+    sel_tiers = st.pills("ランク絞り込み", tier_opts, selection_mode="multi",
+                         default=["S", "A", "B"],
+                         help="表示するランクを選ぶ。何も選ばなければ全ランク表示。")
+    if not sel_tiers:
+        sel_tiers = tier_opts  # 未選択=全ランク表示
+
     with st.sidebar:
         st.header("フィルタ")
-        sel_tiers = st.multiselect("ティア", ["S", "A", "B", "C"],
-                                   default=["S", "A", "B"])
         all_themes = sorted(stocks["theme"].unique().tolist())
         sel_themes = st.multiselect("テーマ", all_themes, default=[])
         policy_only = st.checkbox("国策テーマのみ", value=False)
@@ -96,8 +103,11 @@ with tab1:
                                    help="25MA乖離 or 20日リターンが過熱閾値超を非表示")
         kw = st.text_input("銘柄名/コード 検索", "")
         st.divider()
-        sort_mode = st.radio("並び替え", ["強さスコア順", "🚀 ロケット度順", "🐢 出遅れ度順"], index=1,
-                             help="強さ=もう強い銘柄。ロケット=継続で1週間の大化けが出やすい(BT裏付け・主軸・要損切り)。"
+        sort_mode = st.radio("並び替え",
+                             ["🚀 ロケット度順", "🏆 ランク順(S→C)", "強さスコア順", "🐢 出遅れ度順"],
+                             index=0,
+                             help="ロケット=継続で1週間の大化けが出やすい(BT裏付け・主軸・要損切り)。"
+                                  "ランク順=S→A→B→C(同ランク内は強さ降順)。強さ=もう強い銘柄。"
                                   "出遅れ=まだ走ってないバネ(参考軸・5日αの裏付けは無い)")
         compact = st.checkbox("📱 コンパクト表示", value=False,
                               help="スマホ向け。主要列(ティア/初動/ロケット/出遅れ/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
@@ -175,6 +185,10 @@ with tab1:
     if sort_mode.startswith("🚀"):
         df = df.sort_values("potential", ascending=False)
         order_label = "ロケット度降順"
+    elif sort_mode.startswith("🏆"):
+        df = df.assign(_tr=df["tier"].map(TIER_ORDER).fillna(9))
+        df = df.sort_values(["_tr", "score"], ascending=[True, False]).drop(columns="_tr")
+        order_label = "ランク順(S→A→B→C)"
     elif sort_mode.startswith("🐢"):
         df = df.sort_values("laggard", ascending=False)
         order_label = "出遅れ度降順"
