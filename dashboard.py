@@ -82,21 +82,24 @@ with tab1:
                                    help="25MA乖離 or 20日リターンが過熱閾値超を非表示")
         kw = st.text_input("銘柄名/コード 検索", "")
         st.divider()
-        sort_mode = st.radio("並び替え", ["強さスコア順", "🚀 一撃度順(出遅れ初動)"], index=0,
-                             help="一撃度=テーマ点火中×資金が今流入×まだ走ってない=伸びしろ最大。"
-                                  "爆益を狙う出遅れ候補を上に並べる")
+        sort_mode = st.radio("並び替え", ["強さスコア順", "🚀 ロケット度順", "🐢 出遅れ度順"], index=1,
+                             help="強さ=もう強い銘柄。ロケット=継続で1週間の大化けが出やすい(BT裏付け・主軸・要損切り)。"
+                                  "出遅れ=まだ走ってないバネ(参考軸・5日αの裏付けは無い)")
         compact = st.checkbox("📱 コンパクト表示", value=False,
-                              help="スマホ向け。主要列(ティア/初動/一撃度/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
+                              help="スマホ向け。主要列(ティア/初動/ロケット/出遅れ/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
 
-    # ---- 🚀 今週の主役候補(一撃度トップ: まだ入れる出遅れ初動) ----
-    cand = stocks[(stocks["init_stars"] >= 2)
-                  & (~stocks["overextended"].astype(bool))
+    # ---- 🚀 今週の主役候補(ロケット度トップ: 継続で大化けしやすい銘柄) ----
+    # ロケット度>=70(歴史的 top-decile)かつ大商い(vr>=1.5)を上位3件。
+    # 注: 乖離大/伸びきり(🔥)は"燃料"なので除外しない(BTで大化けの源泉と確認)。
+    cand = stocks[(stocks["potential"] >= 70)
                   & (stocks["vr"].fillna(0) >= 1.5)].copy()
     cand = cand.sort_values("potential", ascending=False).head(3)
 
     st.subheader("🚀 今週の主役候補")
-    st.caption("テーマ点火中 × 資金が今ドカ流入 × まだ走ってない＝伸びしろ最大の出遅れ初動。"
-               "『買って1週間』の一撃を狙う候補。※モデル上の期待値であり値上がりを保証するものではありません。")
+    st.caption("超ホットなテーマ × もう上向きに走っている(乖離・20日高) × 大商い＝"
+               "モメンタム継続で『1週間の大化け』が出やすい銘柄(ロケット度トップ)。"
+               "バックテスト(2025-04〜2026-05)ではロケット度70+(歴史的top10%)の +20%/5日 確率は約5%＝全体1.4%の約3.5倍。"
+               "※ただし大コケも増えるバーベル。損切り前提で、値上がり保証ではありません。")
 
     def _card(container, medal, r):
         tier = r["tier"]
@@ -112,7 +115,7 @@ with tab1:
         container.markdown(
             f"<div style='border:2px solid {strong};border-radius:12px;padding:12px;"
             f"background:{bg};color:#111111'>"
-            f"<div style='font-size:13px;color:#444'>{medal} 一撃度</div>"
+            f"<div style='font-size:13px;color:#444'>{medal} ロケット度</div>"
             f"<div style='font-size:34px;font-weight:800;color:{strong};line-height:1.1'>{r['potential']:.0f}</div>"
             f"<div style='font-size:17px;font-weight:800;margin-top:6px'>{r['name']}</div>"
             f"<div style='font-size:12px;color:#555'>[{r['ticker']}]　{tier}　初動{stars}</div>"
@@ -123,8 +126,8 @@ with tab1:
         )
 
     if cand.empty:
-        st.info("条件を満たす出遅れ初動が今日はありません(過熱相場 or 出来高未点火)。"
-                "こういう日は無理に追わないのが吉。")
+        st.info("ロケット度70+の継続銘柄が今日はありません(テーマが静か or 大商い未点火)。"
+                "無理に追わず、テーマ熱が上がる日を待つのが吉。")
     else:
         medals = ["🥇", "🥈", "🥉"]
         rows = list(cand.iterrows())
@@ -157,7 +160,10 @@ with tab1:
 
     if sort_mode.startswith("🚀"):
         df = df.sort_values("potential", ascending=False)
-        order_label = "一撃度(出遅れ初動)降順"
+        order_label = "ロケット度降順"
+    elif sort_mode.startswith("🐢"):
+        df = df.sort_values("laggard", ascending=False)
+        order_label = "出遅れ度降順"
     else:
         df = df.sort_values("score", ascending=False)
         order_label = "強さスコア降順"
@@ -166,7 +172,8 @@ with tab1:
     _stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}
     view = pd.DataFrame({
         "ティア": df["tier"],
-        "一撃度": df["potential"],
+        "ロケット": df["potential"],
+        "出遅れ": df["laggard"],
         "スコア": df["score"],
         "初動": df["init_stars"].map(_stars).fillna("★★☆"),
         "伸": df["overextended"].apply(lambda x: "🔥" if x else ""),
@@ -185,7 +192,7 @@ with tab1:
     })
 
     if compact:
-        view = view[["ティア", "一撃度", "初動", "伸", "スコア", "銘柄", "テーマ"]]
+        view = view[["ティア", "ロケット", "出遅れ", "初動", "伸", "スコア", "銘柄", "テーマ"]]
 
     def _row_style(row):
         tier = row["ティア"]
@@ -196,24 +203,31 @@ with tab1:
             if col == "ティア":  # 色付きバッジ(濃色背景+白文字)
                 styles.append(f"background-color:{strong};color:#ffffff;"
                               "font-weight:800;text-align:center")
-            elif col == "一撃度":  # 出遅れ初動の伸びしろ: 紫で強調
+            elif col == "ロケット":  # ロケット度(継続・大化け確率・主軸): 紫で強調
                 styles.append(f"background-color:{bg};color:#6a1b9a;font-weight:800")
+            elif col == "出遅れ":  # 出遅れ度(参考軸): 緑系で区別
+                styles.append(f"background-color:{bg};color:#1b6a3a;font-weight:700")
             elif col == "スコア":  # キー指標: 太字の濃色文字で強調
                 styles.append(f"background-color:{bg};color:#111111;font-weight:800")
             else:  # 文字色を濃色固定(ダークテーマでの白文字潰れ防止)
                 styles.append(f"background-color:{bg};color:#1a1a1a")
         return styles
 
-    fmt = {"一撃度": "{:.0f}", "スコア": "{:.1f}", "テーマ熱": "{:.0f}", "出来高比": "{:.1f}x",
+    fmt = {"ロケット": "{:.0f}", "出遅れ": "{:.0f}", "スコア": "{:.1f}", "テーマ熱": "{:.0f}", "出来高比": "{:.1f}x",
            "25MA乖離%": "{:+.1f}", "RSI": "{:.0f}", "5d%": "{:+.1f}",
            "20d%": "{:+.1f}", "米前夜%": "{:+.1f}"}
     fmt = {k: v for k, v in fmt.items() if k in view.columns}  # コンパクト時に欠ける列を除外
     styler = view.style.apply(_row_style, axis=1).format(fmt, na_rep="-")
     st.dataframe(styler, use_container_width=True, hide_index=True, height=620)
 
-    st.caption("【3指標】スコア=資金流入の『強さ(もう強いか)』／一撃度=『伸びしろ(まだ走ってない出遅れ初動か)』／"
-               "初動★=『いま入れるか』。一撃度はテーマ熱×資金流入×鮮度で算出し、走った分(🔥/20日上昇大)は減点。"
-               "★★★=MA近辺で点火直後・★☆☆=乖離大or走りすぎ・🔥=伸びきり過熱。"
+    st.caption("【3つの軸】"
+               "①スコア(強さ)=資金流入が『もう強いか』。大相場銘柄は走った後もここが高い。／"
+               "②ロケット度=『1週間で大化けしやすいか』(主軸)。超ホット熱×もう上向きに走っている(25MA乖離大×20日上昇大)×大商い＝"
+               "BT(2025-04〜2026-05)で爆益の源泉と確定。70+=歴史的top10%で +20%/5日 が約5%(全体1.4%の約3.5倍)。ただしバーベル(大コケも増える)=要損切り。／"
+               "③出遅れ度=『まだ走ってないバネの縮み』(参考軸)。テーマ点火中×資金流入中×まだ走ってない銘柄が高い。"
+               "ただしBTでは5日先の爆益は出遅れからは出ず(=この軸に5日αの裏付けは無い)、『安く拾って待つ』発想の参考として残してある。／"
+               "初動★=エントリーの入りやすさ。★★★=MA近辺(走り始め)/★☆☆=乖離大(もう走った)・🔥=伸びきり。"
+               "🔥や乖離大はロケット度では『燃料』、出遅れ度では『減点要因』と逆に効く。"
                "出来高比=当日/直近20日平均。米前夜=テーマの米震源(us_drivers)の前夜平均騰落。国策🏛=構造的追い風。")
 
 # ================= テーマ熱 =================

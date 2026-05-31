@@ -129,13 +129,52 @@ def _theme_context(theme_row: dict, us_tailwind: float | None) -> tuple[float, d
     return heat_pts + policy_pts + us_pts, detail
 
 
-def _breakout_potential(m: dict, ctx_detail: dict, init_stars: int, overext: bool) -> float:
-    """一撃度(出遅れ初動スコア): これから一撃で伸びる "余地" を測る。
+# --- ロケット度(継続型) ---
+# BT(2026-06-01, bt_potential.py/bt_rocket_tune.py)で確定: 爆益(+15〜20%/5日)は
+# "出遅れ" ではなく "もう走っている" 継続=25MA乖離大・20日上昇大・超ホット熱・大商い
+# から出る。旧「出遅れ初動」加点は爆益を取り逃すため思想を反転(案R3を採用)。
+# raw を ROCKET_SCALE 倍し「70+ = 歴史的 top-decile (P(+20%/5d)≈4.7%, 基準1.4%の約3.3倍)」
+# に正規化。上位ほど大化け率↑だが大コケも増えるバーベル=損切り前提(BTは損切り未モデル)。
+ROCKET_SCALE = 0.85
 
-    強さスコア(score)は "もう強い" 銘柄を上げる。こちらは逆向きで
-    「テーマが点火中(heat)＋資金が今ドカ流入(出来高)＋まだ走っていない(初動)」=
-    バネが一番縮んでいる出遅れ初動ほど高得点。
-    すでに走った分(🔥伸びきり/20日上昇大)は伸びしろが消えているので減点する。
+
+def _ramp(x: float, steps: list[tuple[float, float]]) -> float:
+    """x が各しきい値(昇順)を超えるごとに加点を上書き。最上位の該当点を返す。"""
+    out = 0.0
+    for thr, pt in steps:
+        if x >= thr:
+            out = pt
+    return out
+
+
+def _breakout_potential(m: dict, theme_heat: float) -> float:
+    """ロケット度(継続スコア): これから一撃で伸びる確率が高い "勢い継続" 銘柄ほど高得点。
+
+    「テーマが超ホット(heat)× もう上向きに走っている(25MA乖離・20日リターン)× 大商い(vr)」
+    = モメンタム継続の右の裾(大化け)を狙う。旧版の "出遅れ(乖離小・走ってない)" 加点とは逆向き。
+    """
+    dev = m.get("dev")
+    vr = m.get("vr") or 0.0
+    r20 = (m.get("r20") or 0.0) * 100
+    heat = theme_heat or 0.0
+    d = dev if dev is not None else 0.0
+
+    dev_pts = _ramp(d, [(2, 8), (5, 14), (9, 22), (15, 30)])      # 乖離大=継続の主役(BT最強単一特徴)
+    r20_pts = _ramp(r20, [(5, 8), (10, 16), (20, 25), (35, 32)])  # 20日で強い=裾が厚い
+    heat_pts = _ramp(heat, [(20, 8), (27, 16), (35, 25), (45, 32)])  # 超ホットテーマほど大化け源
+    vol_pts = _ramp(vr, [(1.5, 8), (2.0, 12), (2.5, 16)])         # 大商い=資金流入
+
+    raw = dev_pts * 1.4 + r20_pts * 1.2 + heat_pts + vol_pts
+    return round(raw * ROCKET_SCALE, 1)
+
+
+def _laggard_potential(m: dict, ctx_detail: dict, init_stars: int, overext: bool) -> float:
+    """出遅れ度(出遅れ初動スコア): まだ走っていない "バネの縮み" を測る参考軸。
+
+    ロケット度(継続)とは逆向き。「テーマが点火中(heat)× 資金が今ドカ流入(出来高)×
+    まだ走っていない(初動鮮度)」ほど高得点。すでに走った分は減点する。
+    注意: BT(2026-06-01)では5日先の爆益は継続側(=ロケット度)から出ると判明。
+    出遅れ度は「安く拾って待つ」発想の参考指標で、5日αの裏付けは無い(ロケット度を主軸に)。
     """
     vr = m.get("vr") or 0.0
     r20 = (m.get("r20") or 0.0) * 100
@@ -199,7 +238,8 @@ def rank_stocks(
                 continue
 
             init_stars, overext = _init_timing(m)
-            potential = _breakout_potential(m, ctx_detail, init_stars, overext)
+            potential = _breakout_potential(m, tr.get("heat", 0.0))
+            laggard = _laggard_potential(m, ctx_detail, init_stars, overext)
 
             row = {
                 "ticker": m["ticker"],
@@ -214,7 +254,8 @@ def rank_stocks(
                 "tier": _tier(score),
                 "init_stars": init_stars,     # 3=★★★走り始め 2=★★ 1=★☆☆伸びきり
                 "overextended": overext,      # 🔥伸びきり(過熱)バッジ
-                "potential": potential,       # 一撃度(出遅れ初動スコア): 伸びしろ
+                "potential": potential,       # ロケット度(継続スコア): 1週間で大化けしやすさ(BT裏付けあり・主軸)
+                "laggard": laggard,           # 出遅れ度(出遅れ初動スコア): まだ走ってないバネの縮み(参考軸・5日α無し)
                 "mom_pts": round(mom_pts, 1),
                 "ctx_pts": round(ctx_pts, 1),
                 # 生メトリクス(ダッシュボード表示用)
@@ -265,7 +306,7 @@ if __name__ == "__main__":
         r5 = (r["r5"] or 0) * 100
         stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}.get(r["init_stars"], "★★☆")
         oe = " 🔥伸びきり" if r["overextended"] else ""
-        print(f"  [{r['tier']}] 強{r['score']:5.1f} 一撃{r['potential']:5.1f} 初動{stars}{oe}  "
+        print(f"  [{r['tier']}] 強{r['score']:5.1f} ロケ{r['potential']:5.1f} 出遅{r['laggard']:5.1f} 初動{stars}{oe}  "
               f"[{r['ticker']}] {r['name']:<16} "
               f"vol{vr:.1f}x 乖離{dev:+.1f}% 5d{r5:+.1f}%  "
               f"〔{r['theme']} heat{r['theme_heat']:.0f}{pol} {drv}〕")

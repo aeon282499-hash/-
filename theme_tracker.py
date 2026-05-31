@@ -153,6 +153,7 @@ def compute_theme_heat(themes: dict, data: dict[str, pd.DataFrame]) -> list[dict
             "pct_above_ma25": round(pct_above, 2),
             "breakout": breakout,
             "us_drivers": tinfo.get("us_drivers", []),
+            "policy": tinfo.get("policy", ""),  # scorer(ranker)が政策ボーナス/一撃度に使う。ここで落とすとlive死。
             "members": mets,
         })
 
