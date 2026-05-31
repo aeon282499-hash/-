@@ -168,6 +168,39 @@ def _breakout_potential(m: dict, theme_heat: float) -> float:
     return round(raw * ROCKET_SCALE, 1)
 
 
+# --- 短期爆益度(2-3日) ---
+# BT(2026-06-01, bt_horizon.py/bt_blast_tune.py)で確定: 2-3日(特に3日)保有の
+# 「+10〜15%の大ポップ」は "もう走っている×超ホット熱×大商い" から出る。
+# ロケット度を短期ホライズン向けに尖らせ、決定的な違いとして🔥伸びきり(overext)を
+# 除外せず加点する(overext×heat>=35 が最も大化け率の高い大標本だった)。
+# blast>=70 で 3日 P(+10%)≈9.9%(基準3.5%の約2.8倍)/P(+15%)≈5.1%(約4.4倍)。
+# 平均/勝率には効かない(バーベル=大コケも増える)=損切り規律が前提。
+BLAST_SCALE = 0.72
+
+
+def _shortterm_blast(m: dict, theme_heat: float, overext: bool) -> float:
+    """短期爆益度(2-3日): 3日保有で大ポップが出やすい銘柄ほど高得点。
+
+    乖離(dev)を主役に頭打ちさせず加点し、🔥伸びきりは"燃料"として加点(継続側と同方向で
+    更に尖らせる)。出遅れ度とは真逆。3日寄りで入り→3営業日後Closeで利確、損切り必須。
+    """
+    dev = m.get("dev")
+    d = dev if dev is not None else -99.0
+    r20 = (m.get("r20") or 0.0) * 100
+    heat = theme_heat or 0.0
+    vr = m.get("vr") or 0.0
+
+    dev_pts = _ramp(d, [(2, 6), (5, 12), (9, 22), (15, 30), (25, 36)])
+    heat_pts = _ramp(heat, [(20, 6), (27, 12), (35, 24), (45, 32)])
+    r20_pts = _ramp(r20, [(5, 6), (10, 12), (15, 20), (25, 26), (35, 30)])
+    vol_pts = _ramp(vr, [(1.2, 4), (1.5, 8), (2.0, 12), (2.5, 15)])
+
+    raw = dev_pts * 1.4 + heat_pts * 1.2 + r20_pts * 1.0 + vol_pts * 0.8
+    if overext and heat >= 35:
+        raw += 8.0
+    return round(raw * BLAST_SCALE, 1)
+
+
 def _laggard_potential(m: dict, ctx_detail: dict, init_stars: int, overext: bool) -> float:
     """出遅れ度(出遅れ初動スコア): まだ走っていない "バネの縮み" を測る参考軸。
 
@@ -240,6 +273,7 @@ def rank_stocks(
             init_stars, overext = _init_timing(m)
             potential = _breakout_potential(m, tr.get("heat", 0.0))
             laggard = _laggard_potential(m, ctx_detail, init_stars, overext)
+            blast = _shortterm_blast(m, tr.get("heat", 0.0), overext)
 
             row = {
                 "ticker": m["ticker"],
@@ -255,6 +289,7 @@ def rank_stocks(
                 "init_stars": init_stars,     # 3=★★★走り始め 2=★★ 1=★☆☆伸びきり
                 "overextended": overext,      # 🔥伸びきり(過熱)バッジ
                 "potential": potential,       # ロケット度(継続スコア): 1週間で大化けしやすさ(BT裏付けあり・主軸)
+                "blast": blast,               # 短期爆益度(2-3日): 3日保有で大ポップが出やすさ(BT裏付け・🔥除外しない)
                 "laggard": laggard,           # 出遅れ度(出遅れ初動スコア): まだ走ってないバネの縮み(参考軸・5日α無し)
                 "mom_pts": round(mom_pts, 1),
                 "ctx_pts": round(ctx_pts, 1),
@@ -306,7 +341,7 @@ if __name__ == "__main__":
         r5 = (r["r5"] or 0) * 100
         stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}.get(r["init_stars"], "★★☆")
         oe = " 🔥伸びきり" if r["overextended"] else ""
-        print(f"  [{r['tier']}] 強{r['score']:5.1f} ロケ{r['potential']:5.1f} 出遅{r['laggard']:5.1f} 初動{stars}{oe}  "
+        print(f"  [{r['tier']}] 強{r['score']:5.1f} ロケ{r['potential']:5.1f} 爆{r['blast']:5.1f} 出遅{r['laggard']:5.1f} 初動{stars}{oe}  "
               f"[{r['ticker']}] {r['name']:<16} "
               f"vol{vr:.1f}x 乖離{dev:+.1f}% 5d{r5:+.1f}%  "
               f"〔{r['theme']} heat{r['theme_heat']:.0f}{pol} {drv}〕")

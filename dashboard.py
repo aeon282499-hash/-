@@ -104,13 +104,64 @@ with tab1:
         kw = st.text_input("銘柄名/コード 検索", "")
         st.divider()
         sort_mode = st.radio("並び替え",
-                             ["🚀 ロケット度順", "🏆 ランク順(S→C)", "強さスコア順", "🐢 出遅れ度順"],
+                             ["🔥 短期爆益度順(2-3日)", "🚀 ロケット度順", "🏆 ランク順(S→C)",
+                              "強さスコア順", "🐢 出遅れ度順"],
                              index=0,
-                             help="ロケット=継続で1週間の大化けが出やすい(BT裏付け・主軸・要損切り)。"
-                                  "ランク順=S→A→B→C(同ランク内は強さ降順)。強さ=もう強い銘柄。"
-                                  "出遅れ=まだ走ってないバネ(参考軸・5日αの裏付けは無い)")
+                             help="短期爆益=2-3日(特に3日)で+10〜15%の大ポップが出やすい"
+                                  "(BT裏付け・🔥伸びきりも歓迎・要損切り)。"
+                                  "ロケット=1週間の大化け(継続・主軸)。ランク順=S→A→B→C(同ランク内は強さ降順)。"
+                                  "強さ=もう強い銘柄。出遅れ=まだ走ってないバネ(参考軸・5日αの裏付けは無い)")
         compact = st.checkbox("📱 コンパクト表示", value=False,
-                              help="スマホ向け。主要列(ティア/初動/ロケット/出遅れ/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
+                              help="スマホ向け。主要列(ティア/初動/短期爆益/ロケット/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
+
+    # ---- 🔥 短期(2-3日)主役候補(短期爆益度トップ: 3日保有で大ポップが出やすい) ----
+    # blast>=70 を上位3件。🔥伸びきりは"燃料"なので除外しない(BTで短期大ポップの源泉)。
+    bcand = stocks[stocks["blast"] >= 70].sort_values("blast", ascending=False).head(3)
+
+    st.subheader("🔥 短期(2-3日)主役候補")
+    st.caption("もう上向きに走っている(乖離大・🔥伸びきりも歓迎) × 超ホット熱 × 大商い＝"
+               "『3日保有で +10〜15% の大ポップ』が出やすい銘柄(短期爆益度トップ)。"
+               "バックテスト(2025-04〜2026-05)では短期爆益度70+の +10%/3日 確率は約9.9%＝全体3.5%の約2.8倍、+15%は約4.4倍。"
+               "翌寄りで入り→3営業日後の大引けで利確が目安。"
+               "※平均・勝率は上がらないバーベル(大コケも増える)。損切り必須・値上がり保証ではありません。")
+
+    def _blast_card(container, medal, r):
+        tier = r["tier"]
+        strong = TIER_COLOR.get(tier, "#333333")
+        stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}.get(int(r["init_stars"]), "★★☆")
+        dev = r["dev"] if pd.notna(r["dev"]) else 0.0
+        vr = r["vr"] if pd.notna(r["vr"]) else 0.0
+        heat = r["theme_heat"] if pd.notna(r["theme_heat"]) else 0.0
+        r20 = (r["r20"] * 100) if pd.notna(r["r20"]) else 0.0
+        oe = " 🔥伸びきり" if r["overextended"] else ""
+        accent = "#c2185b"  # 短期爆益=ピンクで強調(ロケットの紫と区別)
+        container.markdown(
+            f"<div style='border:2px solid {accent};border-radius:12px;padding:12px;"
+            f"background:#fff0f5;color:#111111'>"
+            f"<div style='font-size:13px;color:#444'>{medal} 短期爆益度(3日)</div>"
+            f"<div style='font-size:34px;font-weight:800;color:{accent};line-height:1.1'>{r['blast']:.0f}</div>"
+            f"<div style='font-size:17px;font-weight:800;margin-top:6px'>{r['name']}</div>"
+            f"<div style='font-size:12px;color:#555'>[{r['ticker']}]　{tier}　初動{stars}{oe}</div>"
+            f"<div style='font-size:13px;margin-top:8px;font-weight:600'>🔥 {r['theme']}　heat{heat:.0f}</div>"
+            f"<div style='font-size:13px;margin-top:4px'>📈 出来高{vr:.1f}x ・ 乖離{dev:+.1f}% ・ 20日{r20:+.0f}%</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    if bcand.empty:
+        st.info("短期爆益度70+の銘柄が今日はありません(走ってる×超ホットが不在)。無理に追わないのが吉。")
+    else:
+        bmedals = ["🥇", "🥈", "🥉"]
+        brows = list(bcand.iterrows())
+        if compact:  # スマホ: 縦積み
+            for medal, (_, r) in zip(bmedals, brows):
+                _blast_card(st, medal, r)
+                st.write("")
+        else:        # PC: 横並び
+            for col, medal, (_, r) in zip(st.columns(len(brows)), bmedals, brows):
+                _blast_card(col, medal, r)
+
+    st.divider()
 
     # ---- 🚀 今週の主役候補(ロケット度トップ: 継続で大化けしやすい銘柄) ----
     # ロケット度>=70(歴史的 top-decile)かつ大商い(vr>=1.5)を上位3件。
@@ -182,7 +233,10 @@ with tab1:
         m = df["name"].str.contains(kw, case=False, na=False) | df["ticker"].str.contains(kw, case=False, na=False)
         df = df[m]
 
-    if sort_mode.startswith("🚀"):
+    if sort_mode.startswith("🔥"):
+        df = df.sort_values("blast", ascending=False)
+        order_label = "短期爆益度降順(2-3日)"
+    elif sort_mode.startswith("🚀"):
         df = df.sort_values("potential", ascending=False)
         order_label = "ロケット度降順"
     elif sort_mode.startswith("🏆"):
@@ -200,6 +254,7 @@ with tab1:
     _stars = {3: "★★★", 2: "★★☆", 1: "★☆☆"}
     view = pd.DataFrame({
         "ティア": df["tier"],
+        "短期爆益": df["blast"],
         "ロケット": df["potential"],
         "出遅れ": df["laggard"],
         "スコア": df["score"],
@@ -220,7 +275,7 @@ with tab1:
     })
 
     if compact:
-        view = view[["ティア", "ロケット", "出遅れ", "初動", "伸", "スコア", "銘柄", "テーマ"]]
+        view = view[["ティア", "短期爆益", "ロケット", "初動", "伸", "スコア", "銘柄", "テーマ"]]
 
     def _row_style(row):
         tier = row["ティア"]
@@ -231,6 +286,8 @@ with tab1:
             if col == "ティア":  # 色付きバッジ(濃色背景+白文字)
                 styles.append(f"background-color:{strong};color:#ffffff;"
                               "font-weight:800;text-align:center")
+            elif col == "短期爆益":  # 短期爆益度(2-3日・大ポップ確率): ピンクで強調
+                styles.append(f"background-color:{bg};color:#c2185b;font-weight:800")
             elif col == "ロケット":  # ロケット度(継続・大化け確率・主軸): 紫で強調
                 styles.append(f"background-color:{bg};color:#6a1b9a;font-weight:800")
             elif col == "出遅れ":  # 出遅れ度(参考軸): 緑系で区別
@@ -241,21 +298,22 @@ with tab1:
                 styles.append(f"background-color:{bg};color:#1a1a1a")
         return styles
 
-    fmt = {"ロケット": "{:.0f}", "出遅れ": "{:.0f}", "スコア": "{:.1f}", "テーマ熱": "{:.0f}", "出来高比": "{:.1f}x",
+    fmt = {"短期爆益": "{:.0f}", "ロケット": "{:.0f}", "出遅れ": "{:.0f}", "スコア": "{:.1f}", "テーマ熱": "{:.0f}", "出来高比": "{:.1f}x",
            "25MA乖離%": "{:+.1f}", "RSI": "{:.0f}", "5d%": "{:+.1f}",
            "20d%": "{:+.1f}", "米前夜%": "{:+.1f}"}
     fmt = {k: v for k, v in fmt.items() if k in view.columns}  # コンパクト時に欠ける列を除外
     styler = view.style.apply(_row_style, axis=1).format(fmt, na_rep="-")
     st.dataframe(styler, use_container_width=True, hide_index=True, height=620)
 
-    st.caption("【3つの軸】"
-               "①スコア(強さ)=資金流入が『もう強いか』。大相場銘柄は走った後もここが高い。／"
-               "②ロケット度=『1週間で大化けしやすいか』(主軸)。超ホット熱×もう上向きに走っている(25MA乖離大×20日上昇大)×大商い＝"
-               "BT(2025-04〜2026-05)で爆益の源泉と確定。70+=歴史的top10%で +20%/5日 が約5%(全体1.4%の約3.5倍)。ただしバーベル(大コケも増える)=要損切り。／"
-               "③出遅れ度=『まだ走ってないバネの縮み』(参考軸)。テーマ点火中×資金流入中×まだ走ってない銘柄が高い。"
-               "ただしBTでは5日先の爆益は出遅れからは出ず(=この軸に5日αの裏付けは無い)、『安く拾って待つ』発想の参考として残してある。／"
+    st.caption("【4つの軸】"
+               "①短期爆益度=『2-3日(特に3日)で +10〜15% の大ポップが出やすいか』。乖離大×超ホット熱×大商いで、🔥伸びきりも"
+               "『燃料』として加点(除外しない)。BT(2025-04〜2026-05)で 70+ の +10%/3日 確率は約9.9%＝全体3.5%の約2.8倍、+15%は約4.4倍。"
+               "翌寄り買い→3営業日後Closeで利確が目安。バーベル(大コケも増える)=損切り必須。／"
+               "②ロケット度=『1週間(5日)で大化けしやすいか』。同じく継続(乖離大×20日上昇×超ホット×大商い)。70+で +20%/5日 が約5%(全体1.4%の約3.5倍)。／"
+               "③スコア(強さ)=資金流入が『もう強いか』。大相場銘柄は走った後もここが高い。／"
+               "④出遅れ度=『まだ走ってないバネの縮み』(参考軸)。BTでは短期の爆益は出遅れからは出ず(=5日αの裏付けは無い)、『安く拾って待つ』発想の参考。／"
                "初動★=エントリーの入りやすさ。★★★=MA近辺(走り始め)/★☆☆=乖離大(もう走った)・🔥=伸びきり。"
-               "🔥や乖離大はロケット度では『燃料』、出遅れ度では『減点要因』と逆に効く。"
+               "🔥や乖離大は短期爆益度/ロケット度では『燃料』、出遅れ度では『減点要因』と逆に効く。"
                "出来高比=当日/直近20日平均。米前夜=テーマの米震源(us_drivers)の前夜平均騰落。国策🏛=構造的追い風。")
 
 # ================= テーマ熱 =================
