@@ -21,7 +21,21 @@ DATA_PATH = Path("dashboard_data.json")
 TIER_COLOR = {"S": "#d32f2f", "A": "#f57c00", "B": "#1976d2", "C": "#757575"}
 TIER_BG = {"S": "#fdecea", "A": "#fff3e0", "B": "#e3f2fd", "C": "#f5f5f5"}
 
-st.set_page_config(page_title="資金流入ダッシュボード", page_icon="🔥", layout="wide")
+st.set_page_config(page_title="資金流入ダッシュボード", page_icon="🔥", layout="wide",
+                   initial_sidebar_state="collapsed")  # スマホ: フィルタ(サイドバー)を畳んで本体を先に出す
+
+# --- スマホ最適化CSS: 余白圧縮・表を見やすく・指で押しやすいタブ ---
+st.markdown("""
+<style>
+  .block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
+  @media (max-width: 640px) {
+    .block-container { padding-left: 0.6rem; padding-right: 0.6rem; }
+    h1 { font-size: 1.4rem !important; }
+    .stTabs [data-baseweb="tab"] { padding: 8px 10px; font-size: 0.9rem; }
+    [data-testid="stMetricValue"] { font-size: 1.1rem; }
+  }
+</style>
+""", unsafe_allow_html=True)
 
 
 @st.cache_data(ttl=300)
