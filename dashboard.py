@@ -104,12 +104,13 @@ with tab1:
         kw = st.text_input("銘柄名/コード 検索", "")
         st.divider()
         sort_mode = st.radio("並び替え",
-                             ["🔥 短期爆益度順(2-3日)", "🚀 ロケット度順", "🏆 ランク順(S→C)",
+                             ["🏆 ランク順(S→A→B→C)", "🔥 短期爆益度順(2-3日)", "🚀 ロケット度順",
                               "強さスコア順", "🐢 出遅れ度順"],
                              index=0,
-                             help="短期爆益=2-3日(特に3日)で+10〜15%の大ポップが出やすい"
+                             help="ランク順=S→A→B→C(同ランク内は短期爆益度降順)。"
+                                  "短期爆益=2-3日(特に3日)で+10〜15%の大ポップが出やすい"
                                   "(BT裏付け・🔥伸びきりも歓迎・要損切り)。"
-                                  "ロケット=1週間の大化け(継続・主軸)。ランク順=S→A→B→C(同ランク内は強さ降順)。"
+                                  "ロケット=1週間の大化け(継続・主軸)。"
                                   "強さ=もう強い銘柄。出遅れ=まだ走ってないバネ(参考軸・5日αの裏付けは無い)")
         compact = st.checkbox("📱 コンパクト表示", value=False,
                               help="スマホ向け。主要列(ティア/初動/短期爆益/ロケット/スコア/銘柄/テーマ)だけ表示し横スクロールを減らす")
@@ -233,16 +234,16 @@ with tab1:
         m = df["name"].str.contains(kw, case=False, na=False) | df["ticker"].str.contains(kw, case=False, na=False)
         df = df[m]
 
-    if sort_mode.startswith("🔥"):
+    if sort_mode.startswith("🏆"):
+        df = df.assign(_tr=df["tier"].map(TIER_ORDER).fillna(9))
+        df = df.sort_values(["_tr", "blast"], ascending=[True, False]).drop(columns="_tr")
+        order_label = "ランク順 S→A→B→C(同ランク内は短期爆益度降順)"
+    elif sort_mode.startswith("🔥"):
         df = df.sort_values("blast", ascending=False)
         order_label = "短期爆益度降順(2-3日)"
     elif sort_mode.startswith("🚀"):
         df = df.sort_values("potential", ascending=False)
         order_label = "ロケット度降順"
-    elif sort_mode.startswith("🏆"):
-        df = df.assign(_tr=df["tier"].map(TIER_ORDER).fillna(9))
-        df = df.sort_values(["_tr", "score"], ascending=[True, False]).drop(columns="_tr")
-        order_label = "ランク順(S→A→B→C)"
     elif sort_mode.startswith("🐢"):
         df = df.sort_values("laggard", ascending=False)
         order_label = "出遅れ度降順"
@@ -273,6 +274,10 @@ with tab1:
         "国策": df["policy"].apply(lambda p: "🏛" if p else ""),
         "役割": df["role"],
     })
+
+    # ティアは順序付きカテゴリにして列ヘッダクリックでも S→A→B→C で並ぶようにする
+    # (文字列のままだとアルファベット順 A→B→C→S になり S が最後に来てしまう)
+    view["ティア"] = pd.Categorical(view["ティア"], categories=["S", "A", "B", "C"], ordered=True)
 
     if compact:
         view = view[["ティア", "短期爆益", "ロケット", "初動", "伸", "スコア", "銘柄", "テーマ"]]
