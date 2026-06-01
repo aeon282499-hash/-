@@ -11,12 +11,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import bt_sector_filter as bsf
+import bt_sector_phase2 as bsp2
 from sector_filter import fetch_sector33_map, build_sector_ranking
 from bt_sector_phase2 import simulate_mode
 from bt_sector_phase3_theme import build_theme_universe
 
-# END を 2026-05-11 まで延長 (キャッシュ最終日)
-bsf.END = "2026-05-11"
+# END を 2026-05-26 まで延長 (キャッシュ最終日)
+# 両モジュールに独立のEND定数があるので両方上書き
+bsf.END = "2026-05-26"
+bsp2.END = "2026-05-26"
 
 
 def main():
@@ -38,7 +41,7 @@ def main():
     df_long = bsf.build_long_df(all_data)
     all_trading_days = sorted({d for df in all_data.values() for d in df.index.strftime("%Y-%m-%d")})
 
-    print("[may] Sec_OR_Theme シミュレーション (END=2026-05-11)...")
+    print("[may] Sec_OR_Theme シミュレーション (END=2026-05-26)...")
     trades = simulate_mode(
         df_long, all_data, all_trading_days,
         mode="Sec_OR_White",
@@ -52,7 +55,7 @@ def main():
 
     # 2026年5月分抽出 (entry_date)
     may = df[df["entry_date"].str.startswith("2026-05")].copy()
-    print(f"\n[may] 2026-05 (5/1〜5/11): {len(may)} 件")
+    print(f"\n[may] 2026-05 (5/1〜5/26): {len(may)} 件")
 
     if not may.empty:
         wins = (may["pnl_pct"] > 0).sum()
@@ -81,7 +84,7 @@ def main():
     )
     df_off = pd.DataFrame(trades_off)
     off_may = df_off[df_off["entry_date"].str.startswith("2026-05")]
-    print(f"\n  素のスイング 5月 (5/1〜5/11): {len(off_may)} 件")
+    print(f"\n  素のスイング 5月 (5/1〜5/26): {len(off_may)} 件")
     if not off_may.empty:
         owins = (off_may["pnl_pct"] > 0).sum()
         ogw = off_may[off_may["pnl_pct"] > 0]["pnl_pct"].sum()
@@ -90,7 +93,7 @@ def main():
         ocum = off_may["pnl_pct"].sum()
         print(f"  素: 勝率{owins/len(off_may)*100:.1f}% / PF{opf:.2f} / 累積{ocum:+.2f}%")
 
-    print(f"\n[may] 注意: BTキャッシュは 2026-05-11 まで。5/12以降のデータは未取得。")
+    print(f"\n[may] BTキャッシュ最終日: 2026-05-26 (フル5月相当)")
     print(f"[may] 経過: {time.time()-t0:.0f}s")
 
 
