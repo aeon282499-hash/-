@@ -1312,12 +1312,12 @@
     "direction": "BUY",
     "prev_close": 1501.0,
     "entry_open": 1531.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -0.522,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-06-01"
   },
   {
     "signal_date": "2026-05-28",
@@ -1327,11 +1327,11 @@
     "direction": "BUY",
     "prev_close": 2110.0,
     "entry_open": 2168.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 1.868,
     "unrealized_pnl": -0.023,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-06-01"
   }
 ]
