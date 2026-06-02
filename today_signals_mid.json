@@ -1,4 +1,30 @@
 {
-  "date": "2026-06-02",
-  "signals": []
+  "date": "2026-06-03",
+  "signals": [
+    {
+      "ticker": "3382.T",
+      "name": "セブン＆アイ・ホールディングス",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "4204.T",
+      "name": "積水化学工業",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "9503.T",
+      "name": "関西電力",
+      "direction": "BUY"
+    },
+    {
+      "ticker": "8001.T",
+      "name": "伊藤忠商事",
+      "direction": "BUY"
+    }
+  ]
 }
