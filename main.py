@@ -116,7 +116,10 @@ def main() -> None:
     today = now.date()
     print(f"[main] 実行日時: {now.strftime('%Y-%m-%d %H:%M JST')}")
 
-    if not (7 <= now.hour < 9 or (now.hour == 9 and now.minute <= 30)):
+    # 配信許可窓 7:00〜10:45 JST。Cloudflare本トリガ(8:05)が落ちた日に、
+    # GitHubスケジュール保険(cron 8:20)が最大2h遅延(実測10:37着)しても拾えるよう
+    # 9:30→10:45 に拡張。本トリガ成功時は today_signals.json の送信済みガードで二重送信を防ぐ。
+    if not (7 <= now.hour < 10 or (now.hour == 10 and now.minute <= 45)):
         print(f"[main] 配信時間外（{now.strftime('%H:%M')} JST）→ スキップします")
         sys.exit(0)
 
