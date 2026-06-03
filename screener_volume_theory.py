@@ -41,7 +41,9 @@ VOL_RATIO_MAX = 3.0
 MIN_VALUE    = 50_000_000
 MIN_PRICE    = 300
 MAX_GAP      = 0.03
-MAX_SIGNALS  = 3   # 同日通知最大数
+MAX_SIGNALS  = 3   # 後方互換/フォールバック用(テーマ熱算出失敗時の純モメンタム上限)
+MAX_THEME_SIGNALS = 3   # 🔥テーマ追い風バケツ上限
+MAX_PURE_SIGNALS  = 3   # ⚡純モメンタム(テーマ無関係)バケツ上限
 
 
 def jget(path: str, params: dict | None = None) -> dict:
@@ -200,9 +202,11 @@ def detect_signals_on_date(all_data: dict, smap: dict, target_date: str) -> list
     return sigs
 
 
-def run_screener() -> tuple[str, list[dict], list[dict], list[dict]]:
-    """最新営業日のシグナル＋テーマ熱を返す。
-    Returns (target_date, signals[], ranked_themes[], hot_themes[])
+def run_screener() -> tuple[str, list[dict], list[dict], list[dict], list[dict]]:
+    """最新営業日のシグナルを2バケツ＋テーマ熱で返す。
+    Returns (target_date, theme_signals[], pure_signals[], ranked_themes[], hot_themes[])
+      theme_signals: 点火中テーマ追い風(🔥)
+      pure_signals : テーマ無関係の純モメンタム(⚡)
     """
     target = get_last_trading_day()
     print(f"[run] 対象営業日: {target}")
@@ -224,25 +228,27 @@ def run_screener() -> tuple[str, list[dict], list[dict], list[dict]]:
     # --- テーマ熱連動(同じ all_data で算出・再DLなし)。失敗してもv6コアは壊さない ---
     ranked: list[dict] = []
     hot: list[dict] = []
+    theme_sigs: list[dict] = []
+    pure_sigs: list[dict] = []
     try:
         from theme_tailwind import (compute_theme_heat, build_reverse_map,
-                                    attach_tailwind, rerank)
+                                    attach_tailwind, split_buckets)
         heat_map, ranked, hot = compute_theme_heat(all_data)
         rev_map = build_reverse_map()
         sigs = attach_tailwind(sigs, heat_map, rev_map)   # 全候補にタグ付け(切り詰め前)
-        sigs = rerank(sigs, MAX_SIGNALS)                  # ホットテーマ優先→vol_ratio
+        theme_sigs, pure_sigs = split_buckets(sigs, MAX_THEME_SIGNALS, MAX_PURE_SIGNALS)
         print(f"[run] テーマ熱連動OK: ホットテーマ {len(hot)}件 / ランク {len(ranked)}件")
     except Exception as e:
-        print(f"[run] テーマ熱連動スキップ({e}) → vol_ratio順にフォールバック")
+        print(f"[run] テーマ熱連動スキップ({e}) → 全件を純モメンタム扱いで vol_ratio順")
         sigs.sort(key=lambda x: x["vol_ratio"], reverse=True)
-        sigs = sigs[:MAX_SIGNALS]
+        theme_sigs, pure_sigs = [], sigs[:MAX_PURE_SIGNALS]
 
-    print(f"[run] シグナル: {len(sigs)} 件")
-    return target, sigs, ranked, hot
+    print(f"[run] シグナル: 🔥追い風 {len(theme_sigs)}件 / ⚡純モメンタム {len(pure_sigs)}件")
+    return target, theme_sigs, pure_sigs, ranked, hot
 
 
 if __name__ == "__main__":
-    target, sigs, ranked, hot = run_screener()
+    target, theme_sigs, pure_sigs, ranked, hot = run_screener()
     print()
     if ranked:
         print(f"=== 🔥今ホットなテーマ TOP8 ===")
@@ -250,8 +256,8 @@ if __name__ == "__main__":
             print(f"  {i:2d}. {r['theme']} heat{r['heat']:.0f} "
                   f"5d{r['avg_r5']:+.1f}% 25MA上{r['pct_above_ma25']*100:.0f}%")
         print()
-    print(f"=== {target} のシグナル ({len(sigs)}件) ===")
-    for s in sigs:
+
+    def _print_sig(s):
         tw = ""
         if s.get("theme"):
             tw = f" [{'🔥' if s.get('theme_hot') else ''}{s['theme']} heat{s.get('theme_heat')}]"
@@ -259,3 +265,10 @@ if __name__ == "__main__":
         print(f"    終値:{s['close']:,.0f} ATR{s['atr_pct']:.2f}% 20D{s['ret20']*100:+.1f}% "
               f"vol_r{s['vol_ratio']:.2f}x 売買代金{s['value_oku']:.1f}億 "
               f"20日高値{s['high20_prev']:,.0f}円突破")
+
+    print(f"=== {target} 🔥テーマ追い風モメンタム ({len(theme_sigs)}件) ===")
+    for s in theme_sigs:
+        _print_sig(s)
+    print(f"\n=== {target} ⚡純モメンタム/テーマ無関係 ({len(pure_sigs)}件) ===")
+    for s in pure_sigs:
+        _print_sig(s)
