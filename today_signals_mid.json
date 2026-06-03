@@ -1,29 +1,29 @@
 {
-  "date": "2026-06-03",
+  "date": "2026-06-04",
   "signals": [
     {
-      "ticker": "3382.T",
-      "name": "セブン＆アイ・ホールディングス",
+      "ticker": "5021.T",
+      "name": "コスモエネルギーホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "4204.T",
-      "name": "積水化学工業",
+      "ticker": "3116.T",
+      "name": "トヨタ紡織",
       "direction": "BUY"
     },
     {
-      "ticker": "2502.T",
-      "name": "アサヒグループホールディングス",
+      "ticker": "5401.T",
+      "name": "日本製鉄",
       "direction": "BUY"
     },
     {
-      "ticker": "9503.T",
-      "name": "関西電力",
+      "ticker": "5411.T",
+      "name": "ＪＦＥホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "8001.T",
-      "name": "伊藤忠商事",
+      "ticker": "9001.T",
+      "name": "東武鉄道",
       "direction": "BUY"
     }
   ]
