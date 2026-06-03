@@ -76,10 +76,13 @@ jobs:
       #   continue-on-error: true
       #   run: python main_sector_theme.py
 
-      - name: テーマトラッカー配信実行（相乗り・Cloudflareトリガーで確実発火）
-        # 失敗が後段のポジション保存を止めないよう continue-on-error
-        continue-on-error: true
-        run: python main_theme.py
+      # ── テーマトラッカーDiscord配信は 2026-06-03 ユーザー指示で停止 ──
+      # 再開する場合は下4行のコメントを外すだけ。
+      # build_dashboard.py(下の公開ダッシュボード更新)とStreamlitは継続。コード/手動専用ワークフロー(schedule_theme.yml)も残置。
+      # - name: テーマトラッカー配信実行（相乗り・Cloudflareトリガーで確実発火）
+      #   # 失敗が後段のポジション保存を止めないよう continue-on-error
+      #   continue-on-error: true
+      #   run: python main_theme.py
 
       - name: ダッシュボード用スナップショット生成（S/A/B/C + テーマ熱 + 米前夜）
         # 失敗が後段のポジション保存を止めないよう continue-on-error
