@@ -1,0 +1,11 @@
+[theme]
+# クリーン/プロ: 明色ベース固定。これで端末のダークモードでも白文字潰れが起きない。
+base = "light"
+primaryColor = "#4f46e5"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f7fb"
+textColor = "#1f2430"
+font = "sans serif"
+
+[client]
+toolbarMode = "minimal"
