@@ -68,10 +68,13 @@ jobs:
             echo "JST $day日: 月初ではないのでスキップ"
           fi
 
-      - name: スイングセクターローテ配信実行（相乗り・Cloudflareトリガーで確実発火）
-        # セクター失敗が後段のポジション保存を止めないよう continue-on-error
-        continue-on-error: true
-        run: python main_sector_theme.py
+      # ── セクターローテ(🟣)配信は 2026-06-03 ユーザー指示で停止 ──
+      # 再開する場合は下4行のコメントを外すだけ。
+      # コード(main_sector_theme.py)と単体ワークフロー(schedule_sector_theme.yml・手動専用)はそのまま残してある。
+      # - name: スイングセクターローテ配信実行（相乗り・Cloudflareトリガーで確実発火）
+      #   # セクター失敗が後段のポジション保存を止めないよう continue-on-error
+      #   continue-on-error: true
+      #   run: python main_sector_theme.py
 
       - name: テーマトラッカー配信実行（相乗り・Cloudflareトリガーで確実発火）
         # 失敗が後段のポジション保存を止めないよう continue-on-error
