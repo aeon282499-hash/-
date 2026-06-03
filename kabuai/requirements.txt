@@ -1,0 +1,6 @@
+# KabuAIクローン CI 専用の最小依存（親 requirements.txt の yfinance/streamlit 等は不要）
+pandas>=2.0.0
+numpy>=1.26.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+jpholiday>=0.1.8

@@ -1,0 +1,7 @@
+# 環境変数（APIキー）
+.env
+# Python キャッシュ
+__pycache__/
+*.pyc
+# 生成データ（build_data.py / CI が毎回生成。CIは Pages アーティファクトとして直接デプロイ）
+data/

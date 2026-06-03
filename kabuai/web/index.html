@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>KabuAI クローン — モメンタム分析</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1116; --card:#171b22; --card2:#1e242d; --line:#2a313c;
+    --tx:#e8edf3; --mut:#8a94a3; --acc:#4d96ff;
+    --S:#ff5d8f; --A:#ff9f43; --B:#ffd93d; --C:#6bcb77; --D:#4d96ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+    padding-bottom:64px;font-size:14px;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+  header{position:sticky;top:0;z-index:10;background:rgba(14,17,22,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+  header .app{font-weight:700;font-size:16px;letter-spacing:.02em}
+  header .app small{color:var(--acc);font-weight:700}
+  .datepill{font-size:11px;color:var(--mut);background:var(--card2);
+    border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  main{max-width:560px;margin:0 auto;padding:16px}
+  h2{font-size:15px;margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
+  h2 .more{margin-left:auto;font-size:12px;color:var(--acc);font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .muted{color:var(--mut)}
+  .soon{display:inline-block;font-size:11px;color:var(--mut);
+    border:1px dashed var(--line);border-radius:8px;padding:8px 10px}
+  /* grade badge */
+  .badge{display:inline-flex;align-items:center;justify-content:center;
+    min-width:26px;height:24px;border-radius:7px;font-weight:800;font-size:13px;color:#0e1116}
+  .g-S{background:var(--S)} .g-A{background:var(--A)} .g-B{background:var(--B)}
+  .g-C{background:var(--C)} .g-D{background:var(--D)}
+  /* rank rows */
+  .row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .rk{width:30px;text-align:center;color:var(--mut);font-weight:700;font-size:13px}
+  .nm{flex:1;min-width:0}
+  .nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nm small{color:var(--mut)}
+  .mom{text-align:right;min-width:64px}
+  .mom b{font-size:20px;font-variant-numeric:tabular-nums}
+  .pos{color:#6bcb77}.neg{color:#ff6b6b}
+  /* ranking detailed card */
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:10px;display:block}
+  .rcard .top{display:flex;align-items:flex-start;gap:10px}
+  .rcard .mval{margin-left:auto;text-align:right}
+  .rcard .mval b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
+  .metrics{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;font-size:12px}
+  .metrics span{color:var(--mut)} .metrics b{color:var(--tx)}
+  .spark{margin-top:8px;font-size:12px;color:var(--mut)}
+  .spark b{color:var(--tx);font-variant-numeric:tabular-nums}
+  /* detail */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .kpi{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+  .kpi .l{font-size:12px;color:var(--mut)}
+  .kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .kpi .h{font-size:11px;color:var(--mut)}
+  .ret3{display:flex;gap:10px;margin-top:6px}
+  .ret3 .b{flex:1;background:var(--card2);border:1px solid var(--line);
+    border-radius:12px;padding:10px;text-align:center}
+  .ret3 .b .l{font-size:11px;color:var(--mut)} .ret3 .b .v{font-size:17px;font-weight:700}
+  /* nav */
+  nav{position:fixed;bottom:0;left:0;right:0;background:#11151c;
+    border-top:1px solid var(--line);display:flex;height:56px;z-index:20}
+  nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;color:var(--mut);font-size:11px}
+  nav a.on{color:var(--acc)}
+  nav a .i{font-size:18px}
+  .disc{margin:18px 2px 4px;font-size:11px;color:var(--mut);line-height:1.6}
+  .back{font-size:13px;color:var(--acc);font-weight:600;margin-bottom:8px;display:inline-block}
+  .pchip{font-size:12px;color:var(--mut)}
+  .tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:2px 7px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{font-size:11px;background:var(--card2);border:1px solid var(--line);
+    border-radius:999px;padding:3px 9px;color:var(--tx)}
+  .bar{height:6px;background:var(--card2);border-radius:999px;margin-top:8px;overflow:hidden}
+  .barfill{height:100%;border-radius:999px}
+  .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
+  .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;color:var(--tx)}
+  .sigpill b{color:var(--acc);margin-left:4px}
+  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .tab{flex:0 0 auto;font-size:12px;background:var(--card2);border:1px solid var(--line);
+    border-radius:999px;padding:7px 12px;color:var(--mut);white-space:nowrap;display:flex;gap:5px;align-items:center;cursor:pointer}
+  .tab.on{color:#0e1116;background:var(--acc);border-color:var(--acc);font-weight:700}
+  .tab span{background:rgba(0,0,0,.18);border-radius:999px;padding:0 6px;font-size:11px}
+  .tab.on span{background:rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+<header>
+  <div class="app">Kabu<small>AI</small> <span style="font-weight:500;color:var(--mut);font-size:12px">クローン</span></div>
+  <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
+</header>
+<main id="view"><div class="muted">読み込み中…</div></main>
+<nav>
+  <a href="#/" id="nav-home" class="on"><span class="i">🏠</span>ホーム</a>
+  <a href="#/ranking" id="nav-rank"><span class="i">📊</span>ランキング</a>
+  <a href="#/signals" id="nav-sig"><span class="i">🔔</span>シグナル</a>
+  <a href="#/about" id="nav-about"><span class="i">❓</span>指数とは</a>
+</nav>
+
+<script>
+const GRADE_LABEL={S:"S",A:"A",B:"B",C:"C",D:"D"};
+const fmtPct=v=>(v>=0?"+":"")+v.toFixed(2)+"%";
+const cls=v=>v>=0?"pos":"neg";
+const $=s=>document.querySelector(s);
+let DATA=null;
+
+async function load(){
+  const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){DATA=await r.json();DATA._url=u;return;}}
+    catch(e){}
+  }
+  throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
+}
+function badge(g){return `<span class="badge g-${g}">${GRADE_LABEL[g]||g}</span>`;}
+function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code);}
+function sigMeta(key){return (DATA.signals&&DATA.signals.groups&&DATA.signals.groups[key])||null;}
+function sigChips(row){
+  const ks=(row.signals||[]);if(!ks.length)return "";
+  return `<div class="chips">`+ks.map(k=>{const m=sigMeta(k);return m?`<span class="chip">${m.emoji} ${m.label}</span>`:"";}).join("")+`</div>`;
+}
+function marketCard(){
+  const m=DATA.market;
+  if(!m||!m.available) return `<span class="soon">地合いデータなし</span>`;
+  const pct=Math.max(0,Math.min(100,m.score));
+  return `
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="text-align:center">
+        <div style="font-size:32px;font-weight:800;line-height:1">${m.score.toFixed(0)}</div>
+        <div>${badge(m.grade)}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:700">${m.label}</div>
+        <div class="muted" style="font-size:12px">地合い <b style="color:var(--tx)">${m.regime}</b> ・ 上昇率(20日) ${m.trail20_pct>=0?"+":""}${m.trail20_pct}% ・ 騰落 ${m.breadth_pct}%が上昇</div>
+        <div class="bar"><div class="barfill" style="width:${pct}%;background:var(--${m.grade})"></div></div>
+      </div>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:8px">${m.note}</div>`;
+}
+function signalSummary(){
+  const s=DATA.signals;if(!s)return `<span class="soon">シグナルなし</span>`;
+  const lit=s.order.filter(k=>s.groups[k].count>0);
+  const total=lit.reduce((a,k)=>a+s.groups[k].count,0);
+  const chips=lit.map(k=>{const g=s.groups[k];
+    return `<a class="sigpill" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b></a>`;}).join("");
+  return `<div class="muted" style="margin-bottom:8px">本日 <b style="color:var(--tx)">${total}</b> 件のシグナルが点灯中（${DATA.universe_scored.toLocaleString()}銘柄を監視）</div>
+    <div class="sigwrap">${chips}</div>`;
+}
+
+function viewHome(){
+  const top=DATA.ranking.slice(0,5);
+  const gc=DATA.grade_counts||{};
+  const rows=top.map(r=>`
+    <a class="row" href="#/detail/${r.code}">
+      <div class="rk">${r.rank}</div>
+      <div class="nm"><b>${r.name}</b><small>${r.code} ・ ¥${r.price.toLocaleString()}</small></div>
+      <div class="mom"><b>${r.momentum.toFixed(0)}</b></div>
+      ${badge(r.grade)}
+    </a>`).join("");
+  return `
+    <h2>地合い</h2>
+    <div class="card">${marketCard()}</div>
+
+    <h2>モメンタム指数ランキング <a class="more" href="#/ranking">TOP50を見る →</a></h2>
+    <div class="card" style="padding:4px 12px">${rows}</div>
+
+    <h2>サマリー</h2>
+    <div class="card">
+      <div>対象 <b>${DATA.universe_scored.toLocaleString()}</b> 銘柄（全${DATA.universe_total.toLocaleString()}銘柄中・流動性フィルタ後）</div>
+      <div class="metrics" style="margin-top:10px">
+        ${["S","A","B","C","D"].map(g=>`<span>${badge(g)} <b>${gc[g]||0}</b></span>`).join("")}
+      </div>
+    </div>
+
+    <h2>KabuAIシグナル <a class="more" href="#/signals">すべて見る →</a></h2>
+    <div class="card">${signalSummary()}</div>
+
+    <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
+}
+
+let RANK_GRADE="ALL", RANK_SORT="momentum";
+const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
+function setRankGrade(g){RANK_GRADE=g; $("#view").innerHTML=viewRanking();}
+function setRankSort(s){RANK_SORT=s; $("#view").innerHTML=viewRanking();}
+function viewRanking(){
+  let list=DATA.ranking.slice();
+  if(RANK_GRADE!=="ALL") list=list.filter(r=>r.grade===RANK_GRADE);
+  const sk=RANK_SORT;
+  list.sort((a,b)=>((b[sk]??-1e9)-(a[sk]??-1e9)));
+  const gchips=["ALL","S","A","B","C","D"].map(g=>{
+    const n=g==="ALL"?DATA.ranking.length:DATA.ranking.filter(r=>r.grade===g).length;
+    return `<a class="tab ${g===RANK_GRADE?"on":""}" onclick="setRankGrade('${g}')">${g==="ALL"?"全":g}<span>${n}</span></a>`;
+  }).join("");
+  const schips=SORT_DEFS.map(([k,l])=>`<a class="tab ${k===RANK_SORT?"on":""}" onclick="setRankSort('${k}')">${l}</a>`).join("");
+  const cards=list.map(r=>{
+    const hist=(r.mom_hist||[]).filter(x=>x!=null).map(x=>x.toFixed(0)).join("→");
+    return `
+    <a class="rcard" href="#/detail/${r.code}">
+      <div class="top">
+        <div>
+          <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
+          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div>
+        </div>
+        <div class="mval">
+          <b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}
+        </div>
+      </div>
+      <div class="metrics">
+        <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
+        <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
+        <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
+        <span>RR <b>準備中</b></span>
+      </div>
+      ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
+      ${sigChips(r)}
+    </a>`;}).join("");
+  return `
+    <h2>モメンタム指数ランキング TOP${DATA.ranking.length} <a class="more" href="#/about">指数とは →</a></h2>
+    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み（TOP${DATA.ranking.length}内）</div>
+    <div class="tabs">${gchips}</div>
+    <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え <span class="tag" style="border:0;color:var(--acc)">本家の有料機能を無料開放</span></div>
+    <div class="tabs">${schips}</div>
+    <div style="margin-top:12px">${cards||`<div class="card muted">該当グレードはTOP${DATA.ranking.length}内にありません</div>`}</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
+function viewDetail(code){
+  setTimeout(()=>loadStockDetail(code),0);
+  return `<a class="back" href="#/ranking">← ランキング</a><div id="dbody"><div class="card muted">読み込み中…</div></div>`;
+}
+async function loadStockDetail(code){
+  const cands=[`../data/stocks/${code}.json`,`data/stocks/${code}.json`,`./data/stocks/${code}.json`];
+  let s=null;
+  for(const u of cands){try{const r=await fetch(u,{cache:"no-store"});if(r.ok){s=await r.json();break;}}catch(e){}}
+  const el=document.getElementById("dbody");if(!el)return;
+  if(!s){
+    const r=findStock(code);
+    el.innerHTML=r?renderDetail({code:r.code,name:r.name,rank:r.rank,indicators:r,signals:r.signals||[],
+      chart:null,disclaimer:DATA.disclaimer}):`<div class="card">銘柄 ${code} の詳細データがありません（ランキング・シグナル外）。</div>`;
+    if(r)drawRadar(r);
+    return;
+  }
+  el.innerHTML=renderDetail(s);
+  drawCandle(s.chart);
+  drawRadar(s.indicators);
+}
+function aiCard(ai){
+  if(!ai||!ai.note)return "";
+  const col={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[ai.stance]||"#8a94a3";
+  const src=ai.source==="rule"?"指標ベースの自動メモ":`AI要約（無料LLM: ${ai.source}）`;
+  return `<div class="card" style="border-left:3px solid ${col}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <b>⚠ 警戒メモ</b>
+        <span class="tag" style="border-color:${col};color:${col}">${ai.stance}</span>
+        <span class="muted" style="font-size:11px;margin-left:auto">${src}</span>
+      </div>
+      <div style="font-size:14px;line-height:1.5">${ai.note}</div>
+    </div>`;
+}
+function renderDetail(s){
+  const i=s.indicators, total=DATA.universe_scored;
+  const chip={...i,signals:s.signals};
+  return `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1"><div style="font-size:18px;font-weight:700">${s.name}</div>
+          <div class="pchip">${s.code} ・ ¥${i.price.toLocaleString()}</div></div>
+        <div style="text-align:right"><div style="font-size:30px;font-weight:800;line-height:1">${i.momentum.toFixed(1)}</div>
+          <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${total}銘柄中 #${s.rank}</span></div></div>
+      </div>
+      <div class="ret3">
+        <div class="b"><div class="l">前日</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
+        <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
+        <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div>
+      </div>
+      ${sigChips(chip)}
+    </div>
+    ${aiCard(s.ai)}
+
+    ${s.chart?`<h2>日足3ヶ月 × モメンタム指数</h2>
+    <div class="card"><canvas id="candle" style="width:100%;display:block"></canvas>
+      <div class="muted" style="font-size:11px;margin-top:6px">左軸=指数(0〜100・線色は指数値で変化) / 右軸=価格(¥)。${s.chart_note||""}</div></div>`:
+    `<div class="card"><span class="soon">3ヶ月チャートはこの銘柄では未生成（ランキング上位・シグナル点灯銘柄のみ書き出し）</span></div>`}
+
+    <h2>レーダー</h2>
+    <div class="card"><canvas id="radar" height="220"></canvas></div>
+
+    <h2>主要指標</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="l">SR（シャープレシオ）</div><div class="v">${i.sr.toFixed(2)}</div><div class="h">リターン ÷ ブレ</div></div>
+      <div class="kpi"><div class="l">POWER（押し上げ力）</div><div class="v">${i.power.toFixed(2)}</div><div class="h">出来高×値幅 [-3,+8]</div></div>
+      <div class="kpi"><div class="l">STAB（安定度）</div><div class="v">${i.stab.toFixed(0)}</div><div class="h">値動きの安定</div></div>
+      <div class="kpi"><div class="l">RSI(14)</div><div class="v">${i.rsi.toFixed(1)}</div><div class="h">${i.rsi>=70?"過熱圏":i.rsi<=30?"売られすぎ":"中立"}</div></div>
+    </div>
+    <p class="disc">${s.disclaimer||DATA.disclaimer}</p>`;
+}
+
+const MOMCOL=m=>m>=80?"#ff5d8f":m>=60?"#ff9f43":m>=40?"#ffd93d":m>=20?"#6bcb77":"#4d96ff";
+function drawCandle(ch){
+  const cv=document.getElementById("candle");if(!cv||!ch||!ch.c||!ch.c.length)return;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.parentElement.clientWidth-28, H=260;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px";
+  const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,W,H);
+  const padL=38,padR=50,padT=10,padB=22, cw=W-padL-padR, chh=H-padT-padB;
+  const o=ch.o,h=ch.h,l=ch.l,c=ch.c,mom=ch.momentum,n=c.length;
+  let pmin=Math.min(...l),pmax=Math.max(...h); if(pmin===pmax){pmin*=0.99;pmax*=1.01;}
+  const pad=(pmax-pmin)*0.08; pmin-=pad; pmax+=pad;
+  const xOf=i=> padL+(n<=1?cw/2:i*cw/(n-1)), band=cw/n;
+  const yP=v=> padT+(pmax-v)/(pmax-pmin)*chh, yM=v=> padT+(100-v)/100*chh;
+  g.font="10px sans-serif";
+  g.strokeStyle="#2a313c"; g.lineWidth=1; g.fillStyle="#8a94a3";
+  [0,50,100].forEach(v=>{const y=yM(v); g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke();
+    g.textAlign="right"; g.fillText(v,padL-4,y+3);});
+  [pmin,(pmin+pmax)/2,pmax].forEach(v=>{g.textAlign="left"; g.fillText("¥"+Math.round(v),W-padR+4,yP(v)+3);});
+  const bw=Math.max(2,Math.min(9,band*0.6));
+  for(let i=0;i<n;i++){const x=xOf(i),up=c[i]>=o[i];
+    g.strokeStyle=up?"#2ec27e":"#ff5b5b"; g.fillStyle=up?"#2ec27e":"#ff5b5b";
+    g.beginPath();g.moveTo(x,yP(h[i]));g.lineTo(x,yP(l[i]));g.stroke();
+    const yo=yP(o[i]),yc=yP(c[i]); g.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));}
+  g.lineWidth=2;
+  for(let i=1;i<n;i++){if(mom[i]==null||mom[i-1]==null)continue;
+    g.strokeStyle=MOMCOL(mom[i]); g.beginPath();g.moveTo(xOf(i-1),yM(mom[i-1]));g.lineTo(xOf(i),yM(mom[i]));g.stroke();}
+  g.fillStyle="#8a94a3"; g.textAlign="center";
+  [0,Math.floor(n/2),n-1].forEach(i=>{g.fillText((ch.dates[i]||"").slice(5),xOf(i),H-6);});
+}
+let radarChart;
+function drawRadar(r){
+  const el=document.getElementById("radar");if(!el)return;
+  if(typeof Chart==="undefined"){el.outerHTML=`<div class="muted">STAB ${r.stab} / POWER ${r.power} / RSI ${r.rsi} / SR ${r.sr} / 指数 ${r.momentum}</div>`;return;}
+  if(radarChart)radarChart.destroy();
+  radarChart=new Chart(el,{type:"radar",data:{
+    labels:["STAB","POWER","RSI","SR","指数"],
+    datasets:[{data:[
+      r.stab, (r.power+3)/11*100, r.rsi, Math.max(0,Math.min(100,(r.sr+2)/7*100)), r.momentum
+    ],fill:true,backgroundColor:"rgba(77,150,255,.25)",borderColor:"#4d96ff",pointBackgroundColor:"#4d96ff"}]},
+    options:{plugins:{legend:{display:false}},scales:{r:{min:0,max:100,
+      grid:{color:"#2a313c"},angleLines:{color:"#2a313c"},
+      pointLabels:{color:"#e8edf3"},ticks:{display:false}}}}});
+}
+
+function viewSignals(active){
+  const s=DATA.signals;
+  if(!s) return `<div class="card"><span class="soon">シグナルデータがありません</span></div>`;
+  const lit=s.order.filter(k=>s.groups[k].count>0);
+  if(!active || !s.groups[active] || s.groups[active].count===0) active=lit[0];
+  const tabs=lit.map(k=>{const g=s.groups[k];
+    return `<a class="tab ${k===active?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("");
+  const g=s.groups[active];
+  const cards=(g.members||[]).map(r=>`
+    <a class="rcard" href="#/detail/${r.code}">
+      <div class="top">
+        <div><b>${r.name}</b><div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div></div>
+        <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
+      </div>
+      <div class="metrics">
+        <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
+        <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
+        <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
+      </div>
+    </a>`).join("");
+  const stanceColor={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[g.stance]||"#8a94a3";
+  return `
+    <h2>KabuAIシグナル</h2>
+    <div class="tabs">${tabs}</div>
+    <div class="card" style="margin:10px 0">
+      <div style="font-weight:700">${g.emoji} ${g.label}
+        <span class="tag" style="border-color:${stanceColor};color:${stanceColor}">${g.stance}</span>
+        <span class="muted" style="font-weight:400">・${g.count}銘柄点灯</span></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">${g.desc}</div>
+    </div>
+    ${cards||`<div class="card muted">該当なし</div>`}
+    <p class="disc">${DATA.disclaimer}<br>発動日からの実績(5日/10日/1ヶ月)は、日付管理を入れるフェーズで追加します（現状は当日点灯のみ）。</p>`;
+}
+
+function viewAbout(){
+  return `
+  <h2>モメンタム指数とは</h2>
+  <div class="card">
+    <p>0〜100 で「いま勢いがあるか」を表す指数。式は公開ロジックに準拠：</p>
+    <pre style="background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12px">base      = SR × 18
+power_adj = clamp(出来高込みの押し上げ力, -3, +8)
+指数      = clamp(base + power_adj, 0, 100)</pre>
+    <div class="metrics" style="margin-top:12px;gap:8px">
+      ${[["S","80超 強い上昇"],["A","60〜 上昇"],["B","40〜59 中立〜やや強"],["C","20〜39 弱い"],["D","失速・停滞（リバ余地）"]]
+        .map(([g,t])=>`<div style="width:100%;display:flex;align-items:center;gap:10px;padding:4px 0">${badge(g)}<span class="muted">${t}</span></div>`).join("")}
+    </div>
+    <p class="muted" style="margin-top:10px;font-size:12px">※ 計算窓・係数・閾値は仮（未最適化）。本家も「最適化で決める前提」と明記。</p>
+  </div>
+
+  <h2>データについて</h2>
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <span class="tag">データ日付 ${DATA.data_date||"—"}</span>
+      <span class="tag">${freshnessText()}</span>
+      <span class="tag">対象 ${DATA.universe_scored?.toLocaleString?.()||"—"}銘柄</span>
+    </div>
+    <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">
+      表示はすべて<b style="color:var(--tx)">最新営業日の終値（EOD）ベース</b>です。リアルタイム配信・PTS（夜間取引）には対応していません。
+      数値は1日1回バッチで生成し、その時点のデータ日付を常に明示しています。
+      原データは <b style="color:var(--tx)">J-Quants（JPX）</b> の日足を加工・計算したものです。
+    </p>
+  </div>
+
+  <h2>免責・ライセンス</h2>
+  <div class="card">
+    <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.8;color:var(--mut)">
+      <li>本アプリは<b style="color:var(--tx)">参考情報</b>であり、特定銘柄の売買を推奨するものではありません。<b style="color:var(--tx)">投資判断は利用者ご自身の責任</b>で行ってください。</li>
+      <li>モメンタム指数・シグナル・警戒メモは AI／ルールによる<b style="color:var(--tx)">推定値で、将来の値動きや精度を保証しません</b>。</li>
+      <li>生の株価（OHLCV）は<b style="color:var(--tx)">再配布していません</b>。出力は計算済みの指標と、表示用に窓を限定した加工チャートのみです。</li>
+      <li>商用での一般公開にあたっては、<b style="color:var(--tx)">J-Quants の利用条件を JPX に確認</b>のうえ運用してください（公開前の必須事項）。</li>
+    </ul>
+  </div>
+  <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"} / source: ${DATA.source||"—"}</p>`;
+}
+
+function setNav(h){
+  $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
+  $("#nav-rank").classList.toggle("on",h.startsWith("#/ranking"));
+  $("#nav-sig").classList.toggle("on",h.startsWith("#/signals"));
+  $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
+}
+function render(){
+  const h=location.hash||"#/";
+  setNav(h);
+  window.scrollTo(0,0);
+  if(h.startsWith("#/ranking")) $("#view").innerHTML=viewRanking();
+  else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
+  else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
+  else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
+  else $("#view").innerHTML=viewHome();
+}
+window.addEventListener("hashchange",render);
+function freshnessText(){
+  const lag=DATA.data_lag_days;
+  if(lag==null) return "終値ベース";
+  if(lag<=0) return "前営業日・終値";
+  return `${lag}日前・終値`;
+}
+load().then(()=>{
+  $("#datepill").textContent="データ日付 "+(DATA.data_date||"—")+"（"+freshnessText()+"）";
+  render();
+}).catch(e=>{$("#view").innerHTML=`<div class="card">${e.message}</div>`;});
+</script>
+</body>
+</html>

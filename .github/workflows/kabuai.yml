@@ -1,0 +1,72 @@
+name: KabuAIクローン 日次ビルド＋Pages公開
+
+# 仕組み: J-Quants V2 から日足を直接取得 → build_data.py で指標/シグナル/地合い/
+#         詳細チャートJSONを生成 → kabuai/ ディレクトリ丸ごとを GitHub Pages へ公開。
+# 生成物はコミットせず Pages アーティファクトとして直接デプロイ（毎日283ファイルを
+# コミットするとリポジトリが肥大化するため）。
+#
+# ※ 公開を有効化するには、リポジトリ Settings → Pages → Build and deployment の
+#    Source を「GitHub Actions」に設定する必要がある（手動・1回だけ）。
+
+on:
+  workflow_dispatch:            # 手動実行（当面はこれのみ）
+  # 公開準備が整うまで自動実行は無効化しておく。
+  # （JPX商用条件の確認 + Settings→Pages→Source=GitHub Actions を済ませてから
+  #   下記コメントを外すと、平日夕方に自動更新が走る）
+  # schedule:
+  #   - cron: '30 9 * * 1-5'    # UTC 9:30 = JST 18:30 平日（GitHub cron は遅延前提・保険）
+
+# 同時実行を1本に制限（Pages デプロイの競合回避）
+concurrency:
+  group: kabuai-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      KABUAI_DATA_SOURCE: jquants_api
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r kabuai/requirements.txt
+
+      - name: データ生成（J-Quants V2 直取得）
+        working-directory: kabuai
+        run: python build_data.py
+
+      - name: Pages 構成チェック
+        run: |
+          test -f kabuai/index.html
+          test -f kabuai/web/index.html
+          test -f kabuai/data/latest.json
+          echo "stock JSON: $(ls kabuai/data/stocks | wc -l) 件"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: kabuai
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
