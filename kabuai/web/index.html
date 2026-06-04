@@ -101,6 +101,10 @@
   .bstpill.warn{background:rgba(255,159,67,.12);color:#ff9f43;border-color:#ff9f43}
   .trktab tr.bestrow td{background:rgba(107,203,119,.08)}
   .bsttag{font-size:9px;font-weight:800;color:var(--C);border:1px solid var(--C);border-radius:5px;padding:0 4px;margin-left:5px;vertical-align:middle}
+  .exitline{margin-top:9px;padding:8px 10px;border-radius:8px;background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.28);font-size:12px;line-height:1.55}
+  .exitline b{font-weight:800;color:var(--C)}
+  .exitline .exsub{display:block;margin-top:3px;font-size:11px}
+  .exitline .exsub small{font-size:10px;opacity:.85;margin-left:3px}
   .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
@@ -424,11 +428,16 @@ function trackPanel(key){
     : `<span class="bstpill warn">明確な得意保有なし<small>どの期間も勝率5割級</small></span>`;
   const p=t.period||{};
   const span=t.window?`${t.window}`:`検証期間 ${p.from||"—"}〜${p.to||"—"}`;
+  // 出口の目安: エッジのある買い系(ok)のみ表示。固定ポリシーの実現リターン(bt_signal_exit.py由来)。
+  const ex=g.exit;
+  const exline=(ok&&ex&&ex.n)?`<div class="exitline">🚪 出口の目安 <b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）
+    <span class="muted exsub">この出口で過去：勝率${ex.win}%／平均${ex.avg>=0?"+":""}${ex.avg}%${ex.rr?`／RR ${ex.rr}`:""}<small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回）</small></span></div>`:"";
   return `<div class="card trk">
     <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span>${tag}</div>
     <table class="trktab">
       <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
       <tbody>${rows}</tbody></table>
+    ${exline}
     <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。${span}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
   </div>`;
 }

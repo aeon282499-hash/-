@@ -24,6 +24,13 @@ from momentum import (
 
 TRACK_LOOKBACK = 250  # 評価する直近営業日数の上限（検証窓を一定に保つ）
 
+# 出口の目安（bt_signal_exit.py で確定: 買い系3シグナル60万発動・2021-2026）。
+# 発動日終値でエントリー → 保有EXIT_T営業日の時間決済 ×（翌日以降の安値が
+# entry×(1-EXIT_SL%) に触れたら損切り）・利確なし＝利を引っ張る。勝率がほぼ最高の
+# 帯で、テーマトラッカーBTの先験(約8日/SL-12%)とも一致・全買い系で陽性年5/6。
+EXIT_T = 8
+EXIT_SL = 12
+
 
 def _rolling(df: pd.DataFrame) -> pd.DataFrame:
     """momentum.indicators() を各営業日に対してベクトル化したローリング指標系列。
@@ -90,6 +97,7 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
     since_ts = pd.Timestamp(since) if since else None
 
     agg = {k: {h: [] for h in hs} for (k, *_rest) in defs}
+    exit_agg = {k: [] for (k, *_rest) in defs}   # 出口ポリシー(EXIT_T×EXIT_SL)の実現リターン
     counts = {k: 0 for (k, *_rest) in defs}
     dmin = None
     dmax = None
@@ -102,6 +110,7 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
         R = _rolling(df)
         idx = R.index
         close = R["close"].to_numpy(dtype=float)
+        low = df.sort_index()["Low"].astype(float).to_numpy()   # R と同じ昇順インデックス
         mom = R["momentum"].to_numpy(dtype=float)
         vr = R["vr"].to_numpy(dtype=float)
         power = R["power"].to_numpy(dtype=float)
@@ -141,6 +150,14 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
                             xp = close[p + h]
                             if not np.isnan(xp):
                                 agg[k][h].append(xp / ep - 1.0)
+                        if p + EXIT_T < n:   # 出口ポリシーの実現リターン
+                            stop = ep * (1.0 - EXIT_SL / 100.0)
+                            if (low[p + 1: p + 1 + EXIT_T] <= stop).any():
+                                exit_agg[k].append(-EXIT_SL / 100.0)
+                            else:
+                                xc = close[p + EXIT_T]
+                                if not np.isnan(xc):
+                                    exit_agg[k].append(xc / ep - 1.0)
                 except Exception:
                     pass
             if fired:
@@ -164,7 +181,24 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
                     "med": round(float(np.median(arr) * 100), 2),
                     "n": int(arr.size),
                 }
-        groups[k] = {"label": lb, "emoji": em, "stance": st, "n": counts[k], "h": hh}
+        ea = np.asarray(exit_agg[k], dtype=float)
+        if ea.size == 0:
+            ex = None
+        else:
+            gw = ea[ea > 0]
+            gl = ea[ea < 0]
+            avgwin = float(gw.mean() * 100) if gw.size else 0.0
+            avgloss = float(gl.mean() * 100) if gl.size else 0.0
+            ex = {
+                "t": EXIT_T, "sl": EXIT_SL,
+                "win": round(float((ea > 0).mean() * 100), 1),
+                "avg": round(float(ea.mean() * 100), 2),
+                "avgwin": round(avgwin, 2),
+                "avgloss": round(avgloss, 2),
+                "rr": (round(avgwin / abs(avgloss), 2) if avgloss < 0 else None),
+                "n": int(ea.size),
+            }
+        groups[k] = {"label": lb, "emoji": em, "stance": st, "n": counts[k], "h": hh, "exit": ex}
 
     return {
         "available": any(counts[k] > 0 for k in counts),
