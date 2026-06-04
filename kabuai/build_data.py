@@ -384,6 +384,20 @@ def build() -> dict:
         print(f"[build] トラックレコード生成スキップ: {e}")
         track = {"available": False}
 
+    # 長期版（手元pklで事前計算しコミットした track_longterm.json）があれば優先採用。
+    # CIは直近140営業日しか取得できず実績窓が薄いので、存在すれば数年窓に差し替える。
+    lt_path = HERE / "track_longterm.json"
+    if lt_path.exists():
+        try:
+            with open(lt_path, encoding="utf-8") as f:
+                lt = json.load(f)
+            if lt.get("available"):
+                track = lt
+                print(f"[build] 長期トラックレコードを採用: "
+                      f"{lt['period']['from']}〜{lt['period']['to']} ({lt.get('window','')})")
+        except Exception as e:
+            print(f"[build] 長期トラックレコード読込スキップ（短期版を使用）: {e}")
+
     # ── フェーズ6: AI要約（警戒メモ）。export対象（上位＋シグナル点灯）のみ付与 ──
     ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
     ai_meta = ai_summary.annotate(ai_targets)

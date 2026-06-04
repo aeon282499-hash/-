@@ -82,10 +82,12 @@ def _rolling(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
-                lookback: int = TRACK_LOOKBACK, min_history: int = MIN_HISTORY) -> dict:
+                lookback: int = TRACK_LOOKBACK, min_history: int = MIN_HISTORY,
+                since: str | None = None) -> dict:
     defs = sig.SIGNAL_DEFS
     hs = sorted(int(h) for h in horizons)
     hmax = hs[-1]
+    since_ts = pd.Timestamp(since) if since else None
 
     agg = {k: {h: [] for h in hs} for (k, *_rest) in defs}
     counts = {k: 0 for (k, *_rest) in defs}
@@ -111,6 +113,8 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
 
         p_end = n - 1 - hmax          # ここまでなら全 horizon の順方向リターンが取れる
         p_start = max(min_history - 1, 4, p_end - lookback + 1)
+        if since_ts is not None:      # 暦日カットオフ（長期窓を一定の開始日に揃える）
+            p_start = max(p_start, int(idx.searchsorted(since_ts)))
         if p_end < p_start:
             continue
         n_names += 1

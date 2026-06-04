@@ -111,12 +111,22 @@
   .tab.on{color:#0e1116;background:var(--acc);border-color:var(--acc);font-weight:700}
   .tab span{background:rgba(0,0,0,.18);border-radius:999px;padding:0 6px;font-size:11px}
   .tab.on span{background:rgba(0,0,0,.25)}
+  .vtoggle{cursor:pointer;user-select:none;white-space:nowrap}
+  .vtoggle:hover{border-color:var(--acc);color:var(--acc)}
+  /* PC（ワイド）表示：自動でも幅900px以上、または手動PC指定で適用。ナビは両モードで維持 */
+  body.pc main{max-width:1080px}
+  body.pc .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+  body.pc .cardgrid .rcard{margin-bottom:0;height:100%}
+  body.pc .kpis{grid-template-columns:repeat(4,1fr)}
 </style>
 </head>
 <body>
 <header>
   <div class="app">Kabu<small>AI</small> <span style="font-weight:500;color:var(--mut);font-size:12px">クローン</span></div>
-  <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
+  <div style="display:flex;align-items:center;gap:8px">
+    <a id="viewtoggle" class="datepill vtoggle" onclick="cycleView()" title="表示モード切替（自動／PC／スマホ）">🔄 自動</a>
+    <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
+  </div>
 </header>
 <main id="view"><div class="muted">読み込み中…</div></main>
 <nav>
@@ -265,7 +275,7 @@ function viewRanking(){
     <div class="tabs">${gchips}</div>
     <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え <span class="tag" style="border:0;color:var(--acc)">本家の有料機能を無料開放</span></div>
     <div class="tabs">${schips}</div>
-    <div style="margin-top:12px">${cards||`<div class="card muted">該当グレードはTOP${DATA.ranking.length}内にありません</div>`}</div>
+    <div class="cardgrid" style="margin-top:12px">${cards||`<div class="card muted">該当グレードはTOP${DATA.ranking.length}内にありません</div>`}</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
@@ -413,12 +423,13 @@ function trackPanel(key){
     ? `<span class="bstpill">得意保有 ${lbl[best.h]||(best.h+"日")}<small>勝率${best.x.win}%・平均+${best.x.avg}%</small></span>`
     : `<span class="bstpill warn">明確な得意保有なし<small>どの期間も勝率5割級</small></span>`;
   const p=t.period||{};
+  const span=t.window?`${t.window}`:`検証期間 ${p.from||"—"}〜${p.to||"—"}`;
   return `<div class="card trk">
     <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span>${tag}</div>
     <table class="trktab">
       <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
       <tbody>${rows}</tbody></table>
-    <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。検証期間 ${p.from||"—"}〜${p.to||"—"}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
+    <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。${span}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
   </div>`;
 }
 function viewSignals(active){
@@ -453,7 +464,7 @@ function viewSignals(active){
       <div class="muted" style="font-size:12px;margin-top:6px">${g.desc}</div>
     </div>
     ${trackPanel(active)}
-    ${cards||`<div class="card muted">該当なし</div>`}
+    <div class="cardgrid">${cards||`<div class="card muted">該当なし</div>`}</div>
     <p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
 }
 
@@ -525,8 +536,33 @@ function freshnessText(){
   if(lag<=0) return "前営業日・終値";
   return `${lag}日前・終値`;
 }
+/* 表示モード：auto（幅で自動）／pc（ワイド固定）／mobile（スマホ固定）。localStorageに保存 */
+const VIEW_MODES=["auto","pc","mobile"];
+const VIEW_LABEL={auto:"🔄 自動",pc:"🖥 PC",mobile:"📱 スマホ"};
+function readView(){try{return localStorage.getItem("kabuai_view")||"auto";}catch(e){return "auto";}}
+function saveView(m){try{localStorage.setItem("kabuai_view",m);}catch(e){}}
+function applyView(){
+  const m=readView();
+  const wide=(window.innerWidth||1024)>=900;
+  const pc=(m==="pc")||(m==="auto"&&wide);
+  if(document.body){
+    document.body.classList.toggle("pc",pc);
+    document.body.classList.toggle("mobile",!pc);
+  }
+  const el=document.getElementById("viewtoggle");
+  if(el)el.textContent=VIEW_LABEL[m]||VIEW_LABEL.auto;
+}
+function cycleView(){
+  const cur=readView();
+  saveView(VIEW_MODES[(VIEW_MODES.indexOf(cur)+1)%VIEW_MODES.length]);
+  applyView();
+}
+window.addEventListener("resize",()=>{if(readView()==="auto")applyView();});
+applyView();
+
 load().then(()=>{
   $("#datepill").textContent="データ日付 "+(DATA.data_date||"—")+"（"+freshnessText()+"）";
+  applyView();
   render();
 }).catch(e=>{$("#view").innerHTML=`<div class="card">${e.message}</div>`;});
 </script>
