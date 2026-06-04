@@ -9,12 +9,11 @@ name: KabuAIクローン 日次ビルド＋Pages公開
 #    Source を「GitHub Actions」に設定する必要がある（手動・1回だけ）。
 
 on:
-  workflow_dispatch:            # 手動実行（当面はこれのみ）
-  # 公開準備が整うまで自動実行は無効化しておく。
-  # （JPX商用条件の確認 + Settings→Pages→Source=GitHub Actions を済ませてから
-  #   下記コメントを外すと、平日夕方に自動更新が走る）
-  # schedule:
-  #   - cron: '30 9 * * 1-5'    # UTC 9:30 = JST 18:30 平日（GitHub cron は遅延前提・保険）
+  workflow_dispatch:            # 手動実行も常時可
+  # JPX商用条件の確認済み（2026-06-04）。平日夕方に自動更新。
+  # ※ GitHub cron は遅延前提（保険）。確実な発火が必要なら cron-job.org→Worker→dispatch を併用。
+  schedule:
+    - cron: '30 9 * * 1-5'      # UTC 9:30 = JST 18:30 平日
 
 # 同時実行を1本に制限（Pages デプロイの競合回避）
 concurrency:
