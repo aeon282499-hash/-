@@ -96,6 +96,11 @@
   .trktab td:first-child{text-align:left;color:var(--tx);font-weight:600}
   .trktab td b{font-weight:800}
   .trkn{font-size:10px;margin-top:8px;line-height:1.6}
+  .bstpill{display:inline-block;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;margin-left:6px;background:rgba(107,203,119,.15);color:var(--C);border:1px solid var(--C)}
+  .bstpill small{font-weight:500;opacity:.85;margin-left:5px;font-size:10px}
+  .bstpill.warn{background:rgba(255,159,67,.12);color:#ff9f43;border-color:#ff9f43}
+  .trktab tr.bestrow td{background:rgba(107,203,119,.08)}
+  .bsttag{font-size:9px;font-weight:800;color:var(--C);border:1px solid var(--C);border-radius:5px;padding:0 4px;margin-left:5px;vertical-align:middle}
   .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
@@ -379,26 +384,41 @@ function drawRadar(r){
       pointLabels:{color:"#e8edf3"},ticks:{display:false}}}}});
 }
 
+// 得意保有＝過去に最も勝率が高かった保有日数。勝率は保有期間に対して単調でないため
+// 平均リターン(長いほど大→常に最長になる)よりシグナル固有の構造を素直に映す。
+const TRK_WIN_MIN=52;  // この勝率＆平均プラスを満たす保有期間が無ければ「得意なし」と正直表示
+function bestHorizon(g,hs){
+  let best=null;
+  hs.forEach(h=>{const x=g.h&&g.h[String(h)]; if(!x||!x.n) return;
+    if(best===null||x.win>best.x.win||(x.win===best.x.win&&x.avg>best.x.avg)) best={h,x};});
+  return best;
+}
 function trackPanel(key){
   const t=DATA.signal_track; if(!t||!t.available) return "";
   const g=t.groups&&t.groups[key]; if(!g||!g.n) return "";
   const hs=t.horizons||[5,10,20];
   const lbl={5:"5日",10:"10日",20:"20日"};
+  const best=bestHorizon(g,hs);
+  const ok=!!(best&&best.x.win>=TRK_WIN_MIN&&best.x.avg>0);
   const rows=hs.map(h=>{const x=g.h&&g.h[String(h)]; if(!x) return "";
     const wc=x.win>=50?"pos":"neg", ac=x.avg>=0?"pos":"neg", mc=x.med>=0?"pos":"neg";
-    return `<tr><td>${lbl[h]||(h+"日")}後</td>
+    const isBest=ok&&best.h===h;
+    return `<tr class="${isBest?"bestrow":""}"><td>${lbl[h]||(h+"日")}後${isBest?'<span class="bsttag">得意</span>':''}</td>
       <td><b class="${wc}">${x.win}%</b></td>
       <td class="${ac}">${x.avg>=0?"+":""}${x.avg}%</td>
       <td class="${mc}">${x.med>=0?"+":""}${x.med}%</td>
       <td class="muted">${(x.n||0).toLocaleString()}</td></tr>`;}).join("");
   if(!rows) return "";
+  const tag=ok
+    ? `<span class="bstpill">得意保有 ${lbl[best.h]||(best.h+"日")}<small>勝率${best.x.win}%・平均+${best.x.avg}%</small></span>`
+    : `<span class="bstpill warn">明確な得意保有なし<small>どの期間も勝率5割級</small></span>`;
   const p=t.period||{};
   return `<div class="card trk">
-    <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span></div>
+    <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span>${tag}</div>
     <table class="trktab">
       <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
       <tbody>${rows}</tbody></table>
-    <div class="muted trkn">検証期間 ${p.from||"—"}〜${p.to||"—"}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
+    <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。検証期間 ${p.from||"—"}〜${p.to||"—"}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
   </div>`;
 }
 function viewSignals(active){
