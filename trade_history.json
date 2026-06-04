@@ -669,6 +669,56 @@
       "close": 1858.5,
       "pnl": -0.03,
       "win": false
+    },
+    {
+      "date": "2026-06-04",
+      "ticker": "5021.T",
+      "name": "コスモエネルギーホールディングス",
+      "direction": "BUY",
+      "open": 3778.0,
+      "close": 3663.0,
+      "pnl": -3.04,
+      "win": false
+    },
+    {
+      "date": "2026-06-04",
+      "ticker": "3116.T",
+      "name": "トヨタ紡織",
+      "direction": "BUY",
+      "open": 2222.0,
+      "close": 2237.0,
+      "pnl": 0.68,
+      "win": true
+    },
+    {
+      "date": "2026-06-04",
+      "ticker": "5401.T",
+      "name": "日本製鉄",
+      "direction": "BUY",
+      "open": 544.7,
+      "close": 540.5,
+      "pnl": -0.77,
+      "win": false
+    },
+    {
+      "date": "2026-06-04",
+      "ticker": "9104.T",
+      "name": "商船三井",
+      "direction": "BUY",
+      "open": 5433.0,
+      "close": 5534.0,
+      "pnl": 1.86,
+      "win": true
+    },
+    {
+      "date": "2026-06-04",
+      "ticker": "5411.T",
+      "name": "ＪＦＥホールディングス",
+      "direction": "BUY",
+      "open": 1594.5,
+      "close": 1601.0,
+      "pnl": 0.41,
+      "win": true
     }
   ]
 }
