@@ -151,15 +151,24 @@ def load_jquants_api() -> tuple[dict, dict, str]:
     df_all["Date"] = pd.to_datetime(df_all["Date"])
     df_all = df_all.rename(columns={"AdjO": "Open", "AdjH": "High", "AdjL": "Low",
                                     "AdjC": "Close", "AdjVo": "Volume"})
+    # 株式ユニバース（プライム/スタンダード/グロース）に限定。bars/daily は ETF・REIT 等も
+    # 返すため、master に無い銘柄を除外しないと指数や派生ファンドが上位に紛れ込む。
+    allowed = set(name_map.keys())
     data: dict = {}
+    n_drop_nonequity = 0
     for code, grp in df_all.groupby("Code"):
-        ticker = str(code)[:4] + ".T"
+        c4 = str(code)[:4]
+        if allowed and c4 not in allowed:   # master 取得失敗時(allowed空)はフィルタしない
+            n_drop_nonequity += 1
+            continue
+        ticker = c4 + ".T"
         sub = grp[["Date", "Open", "High", "Low", "Close", "Volume"]].set_index("Date").sort_index()
         sub = sub.apply(pd.to_numeric, errors="coerce").dropna(subset=["Close"])
         if not sub.empty:
             data[ticker] = sub
     data_date = max(df.index.max() for df in data.values()).strftime("%Y-%m-%d")
-    print(f"[jquants_api] {len(data)} 銘柄・最新日 {data_date}")
+    print(f"[jquants_api] {len(data)} 銘柄・最新日 {data_date}"
+          f"（非株式 {n_drop_nonequity} 件を除外）")
     return data, name_map, data_date
 
 
