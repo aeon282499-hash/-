@@ -36,6 +36,7 @@ load_dotenv(PARENT / ".env")  # 親のキーも拾う
 
 from momentum import indicators, chart_series, SR_COEF, SR_WINDOW, GRADE_BANDS  # noqa: E402
 import signals as sig  # noqa: E402
+import signal_track  # noqa: E402
 import ai_summary  # noqa: E402
 
 # ── 仮パラメータ ────────────────────────────────────────────
@@ -375,6 +376,14 @@ def build() -> dict:
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
+    # ── フェーズ10: シグナル別トラックレコード（過去シミュレーション） ──
+    t_trk = time.time()
+    try:
+        track = signal_track.build_track(data, scored_tickers, horizons=(5, 10, 20))
+    except Exception as e:
+        print(f"[build] トラックレコード生成スキップ: {e}")
+        track = {"available": False}
+
     # ── フェーズ6: AI要約（警戒メモ）。export対象（上位＋シグナル点灯）のみ付与 ──
     ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
     ai_meta = ai_summary.annotate(ai_targets)
@@ -390,7 +399,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase9",
+        "schema": "kabuai-phase10",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -404,6 +413,7 @@ def build() -> dict:
         "ai": ai_meta,
         "market": market,
         "signals": signals,
+        "signal_track": track,
         "ranking": top,
     }
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
@@ -416,6 +426,17 @@ def build() -> dict:
                              for g in market["segments"].values())
         print(f"[build] 区分別地合い: {segline}")
     print(f"[build] シグナル点灯数: {sig_counts}")
+    if track.get("available"):
+        pl = track["period"]
+        parts = []
+        for k in track["order"]:
+            g = track["groups"][k]
+            if g["n"] <= 0:
+                continue
+            h5 = g["h"].get("5") or {}
+            parts.append(f"{g['label']} n{g['n']}(5d勝{h5.get('win','-')}%/平均{h5.get('avg','-')}%)")
+        print(f"[build] トラックレコード {pl['from']}〜{pl['to']} {pl['names']}銘柄 "
+              f"/ {time.time()-t_trk:.1f}s: " + " / ".join(parts))
     print(f"[build] AI要約: provider={ai_meta['provider']} "
           f"LLM={ai_meta['llm_notes']} / rule={ai_meta['rule_notes']} / 計{ai_meta['total']}")
     print(f"[build] 詳細チャートJSON: {n_charts} 銘柄 → data/stocks/")

@@ -87,6 +87,15 @@
   .segh{display:flex;align-items:center;justify-content:space-between;gap:6px}
   .segn{font-size:12px;font-weight:700}
   .segs{font-size:18px;font-weight:800;margin-top:2px}
+  .trk{margin:10px 0}
+  .trkh{font-weight:700;font-size:13px}
+  .trktab{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+  .trktab th{color:var(--mut);font-weight:600;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+  .trktab th:first-child{text-align:left}
+  .trktab td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--card2);font-variant-numeric:tabular-nums}
+  .trktab td:first-child{text-align:left;color:var(--tx);font-weight:600}
+  .trktab td b{font-weight:800}
+  .trkn{font-size:10px;margin-top:8px;line-height:1.6}
   .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
@@ -370,6 +379,28 @@ function drawRadar(r){
       pointLabels:{color:"#e8edf3"},ticks:{display:false}}}}});
 }
 
+function trackPanel(key){
+  const t=DATA.signal_track; if(!t||!t.available) return "";
+  const g=t.groups&&t.groups[key]; if(!g||!g.n) return "";
+  const hs=t.horizons||[5,10,20];
+  const lbl={5:"5日",10:"10日",20:"20日"};
+  const rows=hs.map(h=>{const x=g.h&&g.h[String(h)]; if(!x) return "";
+    const wc=x.win>=50?"pos":"neg", ac=x.avg>=0?"pos":"neg", mc=x.med>=0?"pos":"neg";
+    return `<tr><td>${lbl[h]||(h+"日")}後</td>
+      <td><b class="${wc}">${x.win}%</b></td>
+      <td class="${ac}">${x.avg>=0?"+":""}${x.avg}%</td>
+      <td class="${mc}">${x.med>=0?"+":""}${x.med}%</td>
+      <td class="muted">${(x.n||0).toLocaleString()}</td></tr>`;}).join("");
+  if(!rows) return "";
+  const p=t.period||{};
+  return `<div class="card trk">
+    <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span></div>
+    <table class="trktab">
+      <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    <div class="muted trkn">検証期間 ${p.from||"—"}〜${p.to||"—"}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
+  </div>`;
+}
 function viewSignals(active){
   const s=DATA.signals;
   if(!s) return `<div class="card"><span class="soon">シグナルデータがありません</span></div>`;
@@ -401,8 +432,9 @@ function viewSignals(active){
         <span class="muted" style="font-weight:400">・${g.count}銘柄点灯</span></div>
       <div class="muted" style="font-size:12px;margin-top:6px">${g.desc}</div>
     </div>
+    ${trackPanel(active)}
     ${cards||`<div class="card muted">該当なし</div>`}
-    <p class="disc">${DATA.disclaimer}<br>発動日からの実績(5日/10日/1ヶ月)は、日付管理を入れるフェーズで追加します（現状は当日点灯のみ）。</p>`;
+    <p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
 }
 
 function viewAbout(){
