@@ -123,8 +123,8 @@
 
 <script>
 const GRADE_LABEL={S:"S",A:"A",B:"B",C:"C",D:"D"};
-const fmtPct=v=>(v>=0?"+":"")+v.toFixed(2)+"%";
-const cls=v=>v>=0?"pos":"neg";
+const fmtPct=v=>(v==null||isNaN(v))?"—":(v>=0?"+":"")+v.toFixed(2)+"%";
+const cls=v=>(v==null||isNaN(v))?"muted":(v>=0?"pos":"neg");
 const $=s=>document.querySelector(s);
 let DATA=null;
 
@@ -488,11 +488,15 @@ function render(){
   const h=location.hash||"#/";
   setNav(h);
   window.scrollTo(0,0);
-  if(h.startsWith("#/ranking")) $("#view").innerHTML=viewRanking();
-  else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
-  else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
-  else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
-  else $("#view").innerHTML=viewHome();
+  try{
+    if(h.startsWith("#/ranking")) $("#view").innerHTML=viewRanking();
+    else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
+    else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
+    else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
+    else $("#view").innerHTML=viewHome();
+  }catch(e){
+    $("#view").innerHTML=`<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${e.message}</div></div>`;
+  }
 }
 window.addEventListener("hashchange",render);
 function freshnessText(){
