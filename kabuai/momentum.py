@@ -103,6 +103,7 @@ def indicators(df: pd.DataFrame) -> dict | None:
     rsi = _rsi(close)
     stab = _clamp(100.0 - daily_std * 100.0 * STAB_VOL_COEF, 0.0, 100.0)
     r1 = float(close.iloc[-1] / close.iloc[-2] - 1.0)
+    r10 = float(close.iloc[-1] / close.iloc[-11] - 1.0) if len(close) > 10 else r5
     r20 = float(close.iloc[-1] / close.iloc[-(R20_WINDOW + 1)] - 1.0) if len(close) > R20_WINDOW else r5
     # 直近5営業日のモメンタム推移（簡易: 各日終点で base+power を粗く再計算せず、指数の近似履歴）
     mom_hist = _momentum_history(close, ret, vol, high, low, days=5)
@@ -118,6 +119,7 @@ def indicators(df: pd.DataFrame) -> dict | None:
         "stab": round(stab, 1),
         "r1": round(r1 * 100, 2),
         "r5": round(r5 * 100, 2),
+        "r10": round(r10 * 100, 2),
         "r20": round(r20 * 100, 2),
         "vr": round(vr, 2),
         "turnover": turnover,

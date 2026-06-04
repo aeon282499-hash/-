@@ -188,7 +188,7 @@ function viewHome(){
 }
 
 let RANK_GRADE="ALL", RANK_SORT="momentum";
-const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
+const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
 function setRankGrade(g){RANK_GRADE=g; $("#view").innerHTML=viewRanking();}
 function setRankSort(s){RANK_SORT=s; $("#view").innerHTML=viewRanking();}
 function viewRanking(){
@@ -217,8 +217,8 @@ function viewRanking(){
       <div class="metrics">
         <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
         <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
+        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
-        <span>RR <b>準備中</b></span>
       </div>
       ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
       ${sigChips(r)}
@@ -280,6 +280,7 @@ function renderDetail(s){
       <div class="ret3">
         <div class="b"><div class="l">前日</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
+        <div class="b"><div class="l">10日</div><div class="v ${cls(i.r10)}">${fmtPct(i.r10)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div>
       </div>
       ${sigChips(chip)}
@@ -364,6 +365,7 @@ function viewSignals(active){
       <div class="metrics">
         <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
         <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
+        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
       </div>
     </a>`).join("");

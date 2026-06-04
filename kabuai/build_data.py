@@ -192,7 +192,8 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     sdir = DATA_DIR / "stocks"
     sdir.mkdir(exist_ok=True)
     targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
-    keep = {"price", "momentum", "grade", "sr", "power", "rsi", "stab", "r1", "r5", "r20", "vr"}
+    keep = {"price", "momentum", "grade", "sr", "power", "rsi", "stab",
+            "r1", "r5", "r10", "r20", "vr"}
     written = 0
     for r in targets:
         df = data.get(r["code"] + ".T")
@@ -294,6 +295,7 @@ def build() -> dict:
             "stab": ind["stab"],
             "r1": ind["r1"],
             "r5": ind["r5"],
+            "r10": ind["r10"],
             "r20": ind["r20"],
             "vr": ind["vr"],
             "mom_hist": ind["mom_hist"],
