@@ -25,6 +25,13 @@ permissions:
   pages: write
   id-token: write
 
+# Node20 ランタイム非推奨対応（2026-06-16 以降は Node24 が強制デフォルト）。
+# Pages 系アクション(configure-pages/upload-pages-artifact/deploy-pages)はまだ
+# Node24 版が出ていないため、バージョン据え置きのまま実行ランタイムだけ前倒しで
+# Node24 に固定し、強制切替前に動作を確認できるようにしておく。
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
