@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>KabuAI クローン — モメンタム分析</title>
+<title>モメンタムチンパン — 株モメンタム分析</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
@@ -122,7 +122,7 @@
 </head>
 <body>
 <header>
-  <div class="app">Kabu<small>AI</small> <span style="font-weight:500;color:var(--mut);font-size:12px">クローン</span></div>
+  <div class="app">🐵 モメンタム<small>チンパン</small></div>
   <div style="display:flex;align-items:center;gap:8px">
     <a id="viewtoggle" class="datepill vtoggle" onclick="cycleView()" title="表示モード切替（自動／PC／スマホ）">🔄 自動</a>
     <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
@@ -227,7 +227,7 @@ function viewHome(){
       </div>
     </div>
 
-    <h2>KabuAIシグナル <a class="more" href="#/signals">すべて見る →</a></h2>
+    <h2>チンパンシグナル <a class="more" href="#/signals">すべて見る →</a></h2>
     <div class="card">${signalSummary()}</div>
 
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
@@ -455,7 +455,7 @@ function viewSignals(active){
     </a>`).join("");
   const stanceColor={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[g.stance]||"#8a94a3";
   return `
-    <h2>KabuAIシグナル</h2>
+    <h2>チンパンシグナル</h2>
     <div class="tabs">${tabs}</div>
     <div class="card" style="margin:10px 0">
       <div style="font-weight:700">${g.emoji} ${g.label}

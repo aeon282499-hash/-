@@ -1,4 +1,4 @@
-name: KabuAIクローン 日次ビルド＋Pages公開
+name: モメンタムチンパン 日次ビルド＋Pages公開
 
 # 仕組み: J-Quants V2 から日足を直接取得 → build_data.py で指標/シグナル/地合い/
 #         詳細チャートJSONを生成 → kabuai/ ディレクトリ丸ごとを GitHub Pages へ公開。
@@ -25,13 +25,6 @@ permissions:
   pages: write
   id-token: write
 
-# Node20 ランタイム非推奨対応（2026-06-16 以降は Node24 が強制デフォルト）。
-# Pages 系アクション(configure-pages/upload-pages-artifact/deploy-pages)はまだ
-# Node24 版が出ていないため、バージョン据え置きのまま実行ランタイムだけ前倒しで
-# Node24 に固定し、強制切替前に動作を確認できるようにしておく。
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,9 +34,9 @@ jobs:
       KABUAI_DATA_SOURCE: jquants_api
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -61,9 +54,9 @@ jobs:
           test -f kabuai/data/latest.json
           echo "stock JSON: $(ls kabuai/data/stocks | wc -l) 件"
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: kabuai
 
@@ -75,4 +68,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
