@@ -43,6 +43,7 @@ MIN_TURNOVER = 1e8     # 平均売買代金（円/日）下限＝流動性フィ
 TOP_N = 50             # ランキング掲載件数
 EXPORT_TOP = 120       # 詳細チャートJSONを書き出す上位件数（＋シグナル点灯銘柄）
 CHART_DAYS = 60        # 詳細チャートの営業日数（≒3ヶ月）
+SEG_MIN_NAMES = 8      # 区分別地合いプロキシを出す最低銘柄数（これ未満の区分は省略）
 SOURCE = os.getenv("KABUAI_DATA_SOURCE", "jquants_cache")
 
 # ── J-Quants V2 直接取得（CI 用。親 jquants_cache.pkl は 217MB/gitignore のため CI からは読めない） ──
@@ -65,7 +66,13 @@ def load_jquants_cache() -> tuple[dict, dict, str]:
     if not data_date:
         mx = max(df.index.max() for df in data.values() if df is not None and len(df))
         data_date = mx.strftime("%Y-%m-%d")
-    return data, name_map, data_date
+    # キャッシュには市場区分が無いので best-effort で master から補完（キー無し/オフライン時は空）
+    seg_map: dict = {}
+    try:
+        seg_map = _segment_map_from_master(_jquants_get("/equities/master", _jquants_key()))
+    except Exception as e:
+        print(f"[jquants_cache] 区分マップ取得スキップ（地合いは全体プロキシのみ）: {e}")
+    return data, name_map, data_date, seg_map
 
 
 def _jquants_key() -> str:
@@ -82,6 +89,21 @@ def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
                         params=params or {}, timeout=60, verify=verify)
     resp.raise_for_status()
     return resp.json()
+
+
+def _segment_map_from_master(master: dict) -> dict:
+    """master(/equities/master) から code(4桁) → 市場区分(プライム/スタンダード/グロース)。"""
+    seg: dict = {}
+    for item in master.get("data", []):
+        mkt = item.get("MktNm", "")
+        code = str(item.get("Code", ""))[:4]
+        if "プライム" in mkt:
+            seg[code] = "プライム"
+        elif "スタンダード" in mkt:
+            seg[code] = "スタンダード"
+        elif "グロース" in mkt:
+            seg[code] = "グロース"
+    return seg
 
 
 def _recent_trading_days(n: int) -> list[str]:
@@ -103,14 +125,19 @@ def load_jquants_api() -> tuple[dict, dict, str]:
     token = _jquants_key()
 
     name_map: dict = {}
+    seg_map: dict = {}
     try:
         master = _jquants_get("/equities/master", token)
+        seg_map = _segment_map_from_master(master)
         for item in master.get("data", []):
             mkt = item.get("MktNm", "")
             if any(k in mkt for k in ("プライム", "スタンダード", "グロース")):
                 code = str(item.get("Code", ""))[:4]
                 name_map[code] = item.get("CoName", code)
-        print(f"[jquants_api] master: {len(name_map)} 銘柄名ロード")
+        print(f"[jquants_api] master: {len(name_map)} 銘柄名ロード"
+              f"（区分 P{sum(v=='プライム' for v in seg_map.values())}"
+              f"/S{sum(v=='スタンダード' for v in seg_map.values())}"
+              f"/G{sum(v=='グロース' for v in seg_map.values())}）")
     except Exception as e:
         print(f"[jquants_api] master 取得失敗: {e}（銘柄名なしで継続）")
 
@@ -169,7 +196,7 @@ def load_jquants_api() -> tuple[dict, dict, str]:
     data_date = max(df.index.max() for df in data.values()).strftime("%Y-%m-%d")
     print(f"[jquants_api] {len(data)} 銘柄・最新日 {data_date}"
           f"（非株式 {n_drop_nonequity} 件を除外）")
-    return data, name_map, data_date
+    return data, name_map, data_date, seg_map
 
 
 def _name(name_map: dict, ticker: str) -> str:
@@ -214,16 +241,8 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     return written
 
 
-def build_market(data: dict, scored_tickers: list[str], rows: list[dict]) -> dict:
-    """流動性銘柄の等加重プロキシで市場の地合いを 0〜100 + ランクで出す。
-    SPEC は日経/TOPIX/グロースの3指数を想定するが、当キャッシュに指数データが
-    無いため『市場全体（等加重プロキシ）』1本で算出（画面でその旨を明示）。"""
-    closes = []
-    for t in scored_tickers:
-        df = data.get(t)
-        if df is None or len(df) < SR_WINDOW + 2:
-            continue
-        closes.append(df["Close"].astype(float).tail(70).rename(t))
+def _gauge_from_closes(closes: list, rows_for_breadth: list[dict], label: str, note: str) -> dict:
+    """等加重プロキシ系列から地合いゲージ（0〜100＋ランク＋レジーム）を計算する純関数。"""
     if not closes:
         return {"available": False}
     mat = pd.concat(closes, axis=1, sort=True)
@@ -236,7 +255,7 @@ def build_market(data: dict, scored_tickers: list[str], rows: list[dict]) -> dic
     ma25 = float(proxy.tail(25).mean())
     ma_dev = float(proxy.iloc[-1] / ma25 - 1.0)                                   # 25日線乖離
     trail20 = float(proxy.iloc[-1] / proxy.iloc[-21] - 1.0) if len(proxy) > 21 else 0.0
-    breadth = float(np.mean([1.0 if r["r5"] > 0 else 0.0 for r in rows])) if rows else 0.5
+    breadth = float(np.mean([1.0 if r["r5"] > 0 else 0.0 for r in rows_for_breadth])) if rows_for_breadth else 0.5
 
     # 地合いは 50 を中立とする回帰ゲージ（個別株の SR×18 とは別スケール）
     score = 50.0 + ma_dev * 100 * 1.5 + trail20 * 100 * 1.0 + (breadth - 0.5) * 100 * 0.6
@@ -251,7 +270,7 @@ def build_market(data: dict, scored_tickers: list[str], rows: list[dict]) -> dic
                      / (sd * np.sqrt(min(SR_WINDOW, len(win)))))
     return {
         "available": True,
-        "label": "市場全体（東証・等加重プロキシ）",
+        "label": label,
         "score": round(score, 1),
         "grade": _grade_of(score),
         "regime": regime,
@@ -259,15 +278,55 @@ def build_market(data: dict, scored_tickers: list[str], rows: list[dict]) -> dic
         "ma_dev_pct": round(ma_dev * 100, 2),
         "trail20_pct": round(trail20 * 100, 2),
         "sr": round(sr_proxy, 2),
-        "note": "日経225 / TOPIX / グロースの個別指数は指数データ取得後に追加予定",
+        "count": len(closes),
+        "note": note,
     }
+
+
+def _seg_closes(data: dict, rows_subset: list[dict]) -> list:
+    out = []
+    for r in rows_subset:
+        df = data.get(r["code"] + ".T")
+        if df is None or len(df) < SR_WINDOW + 2:
+            continue
+        out.append(df["Close"].astype(float).tail(70).rename(r["code"]))
+    return out
+
+
+def build_market(data: dict, scored_tickers: list[str], rows: list[dict],
+                 seg_map: dict | None = None) -> dict:
+    """流動性銘柄の等加重プロキシで地合いを 0〜100 + ランクで出す。
+    公式指数（日経225/TOPIX等）は API プラン対象外のため使えない。代わりに保有株価から
+    『市場全体』＋『プライム/スタンダード/グロース 区分別』の等加重プロキシを自前算出する
+    （画面で“等加重プロキシ”である旨を明示）。日経225は J-Quants に存在しないため不可。"""
+    overall = _gauge_from_closes(
+        _seg_closes(data, rows), rows, "市場全体（東証・等加重プロキシ）",
+        "公式指数（日経225/TOPIX等）はAPIプラン対象外。全銘柄の等加重プロキシで代替")
+    if not overall.get("available"):
+        return overall
+
+    # 区分別（master の市場区分が取れているときのみ）
+    if seg_map:
+        segments = {}
+        for key, jp in (("prime", "プライム"), ("standard", "スタンダード"), ("growth", "グロース")):
+            sub = [r for r in rows if seg_map.get(r["code"]) == jp]
+            cl = _seg_closes(data, sub)
+            if len(cl) < SEG_MIN_NAMES:
+                continue
+            g = _gauge_from_closes(cl, sub, f"{jp}市場（等加重プロキシ）", "")
+            if g.get("available"):
+                segments[key] = g
+        if segments:
+            overall["segments"] = segments
+            overall["segments_note"] = "東証3市場の区分別・等加重プロキシ（公式の市場指数ではありません）"
+    return overall
 
 
 def build() -> dict:
     if SOURCE == "jquants_cache":
-        data, name_map, data_date = load_jquants_cache()
+        data, name_map, data_date, seg_map = load_jquants_cache()
     elif SOURCE == "jquants_api":
-        data, name_map, data_date = load_jquants_api()
+        data, name_map, data_date, seg_map = load_jquants_api()
     else:
         raise NotImplementedError(f"KABUAI_DATA_SOURCE={SOURCE} は未実装（jquants_cache / jquants_api）")
 
@@ -313,8 +372,8 @@ def build() -> dict:
     signals = sig.detect(rows)
     sig_counts = {k: signals["groups"][k]["count"] for k in signals["order"]}
 
-    # ── フェーズ3: 地合い ──
-    market = build_market(data, scored_tickers, rows)
+    # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
+    market = build_market(data, scored_tickers, rows, seg_map)
 
     # ── フェーズ6: AI要約（警戒メモ）。export対象（上位＋シグナル点灯）のみ付与 ──
     ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
@@ -331,7 +390,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase8",
+        "schema": "kabuai-phase9",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -352,6 +411,10 @@ def build() -> dict:
     print(f"[build] grade分布: {grade_counts}")
     print(f"[build] 地合い: {market.get('label','-')} score={market.get('score')} "
           f"[{market.get('grade')}] {market.get('regime')} breadth={market.get('breadth_pct')}%")
+    if market.get("segments"):
+        segline = " / ".join(f"{g['label'].split('市場')[0]} {g['score']}[{g['grade']}]{g['regime']}({g['count']})"
+                             for g in market["segments"].values())
+        print(f"[build] 区分別地合い: {segline}")
     print(f"[build] シグナル点灯数: {sig_counts}")
     print(f"[build] AI要約: provider={ai_meta['provider']} "
           f"LLM={ai_meta['llm_notes']} / rule={ai_meta['rule_notes']} / 計{ai_meta['total']}")

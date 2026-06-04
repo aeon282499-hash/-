@@ -80,7 +80,13 @@
   .chip{font-size:11px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:3px 9px;color:var(--tx)}
   .bar{height:6px;background:var(--card2);border-radius:999px;margin-top:8px;overflow:hidden}
+  .bar.slim{height:4px;margin-top:5px}
   .barfill{height:100%;border-radius:999px}
+  .segwrap{display:flex;gap:8px;margin-top:12px}
+  .seg{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .segh{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .segn{font-size:12px;font-weight:700}
+  .segs{font-size:18px;font-weight:800;margin-top:2px}
   .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
@@ -144,7 +150,23 @@ function marketCard(){
         <div class="bar"><div class="barfill" style="width:${pct}%;background:var(--${m.grade})"></div></div>
       </div>
     </div>
+    ${marketSegments(m)}
     <div class="muted" style="font-size:11px;margin-top:8px">${m.note}</div>`;
+}
+function segGauge(g){
+  if(!g) return "";
+  const pct=Math.max(0,Math.min(100,g.score));
+  const short=g.label.split("市場")[0];
+  return `<div class="seg"><div class="segh"><span class="segn">${short}</span> ${badge(g.grade)}</div>
+    <div class="segs">${g.score.toFixed(0)} <small class="muted">${g.regime}</small></div>
+    <div class="bar slim"><div class="barfill" style="width:${pct}%;background:var(--${g.grade})"></div></div>
+    <div class="muted" style="font-size:10px">${g.count}銘柄 ・ 騰落${g.breadth_pct}%</div></div>`;
+}
+function marketSegments(m){
+  const s=m.segments; if(!s) return "";
+  const cells=["prime","standard","growth"].filter(k=>s[k]).map(k=>segGauge(s[k])).join("");
+  if(!cells) return "";
+  return `<div class="segwrap">${cells}</div><div class="muted" style="font-size:10px;margin-top:2px">${m.segments_note||""}</div>`;
 }
 function signalSummary(){
   const s=DATA.signals;if(!s)return `<span class="soon">シグナルなし</span>`;
