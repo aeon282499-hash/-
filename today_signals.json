@@ -1,29 +1,14 @@
 {
-  "date": "2026-06-04",
+  "date": "2026-06-05",
   "signals": [
     {
-      "ticker": "5021.T",
-      "name": "コスモエネルギーホールディングス",
+      "ticker": "8473.T",
+      "name": "ＳＢＩホールディングス",
       "direction": "BUY"
     },
     {
-      "ticker": "3116.T",
-      "name": "トヨタ紡織",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "5401.T",
-      "name": "日本製鉄",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "9104.T",
-      "name": "商船三井",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "5411.T",
-      "name": "ＪＦＥホールディングス",
+      "ticker": "2212.T",
+      "name": "山崎製パン",
       "direction": "BUY"
     }
   ]
