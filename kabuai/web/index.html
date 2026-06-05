@@ -331,10 +331,11 @@ function viewHome(){
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
 }
 
-let RANK_GRADE="ALL", RANK_SORT="momentum";
+let RANK_GRADE="ALL", RANK_SORT="momentum", RANK_LIMIT=60;
 const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
-function setRankGrade(g){RANK_GRADE=g; $("#view").innerHTML=viewRanking();}
-function setRankSort(s){RANK_SORT=s; $("#view").innerHTML=viewRanking();}
+function setRankGrade(g){RANK_GRADE=g; RANK_LIMIT=60; $("#view").innerHTML=viewRanking();}
+function setRankSort(s){RANK_SORT=s; RANK_LIMIT=60; $("#view").innerHTML=viewRanking();}
+function rankMore(){RANK_LIMIT+=120; $("#view").innerHTML=viewRanking();}
 function idxNote(){
   return `<div class="idxnote">📊 この指数は「いま強い／過熱しているか」を測る目安です。`
     +`<b>高いほど今後上がるという予測ではありません</b>`
@@ -342,45 +343,35 @@ function idxNote(){
     +`買いの優位性は<a href="#/signals">チンパンシグナル</a>の検証済みシグナル＋出口の目安を参照。</div>`;
 }
 function viewRanking(){
-  let list=DATA.ranking.slice();
-  if(RANK_GRADE!=="ALL") list=list.filter(r=>r.grade===RANK_GRADE);
+  const full=!!(SEARCH&&SEARCH.length);
+  if(!full&&!SEARCH_LOADING) loadSearch().then(()=>{
+    if(location.hash.replace(/^#/,"").split("?")[0].startsWith("/ranking")) $("#view").innerHTML=viewRanking();
+  });
+  const base=full?SEARCH.slice():DATA.ranking.slice();
+  let list=RANK_GRADE==="ALL"?base:base.filter(r=>r.grade===RANK_GRADE);
   const sk=RANK_SORT;
-  list.sort((a,b)=>((b[sk]??-1e9)-(a[sk]??-1e9)));
+  list=list.slice().sort((a,b)=>((b[sk]??-1e9)-(a[sk]??-1e9)));
+  const total=list.length, shown=list.slice(0,RANK_LIMIT);
   const gchips=["ALL","S","A","B","C","D"].map(g=>{
-    const n=g==="ALL"?DATA.ranking.length:DATA.ranking.filter(r=>r.grade===g).length;
+    const n=g==="ALL"?base.length:base.filter(r=>r.grade===g).length;
     return `<a class="tab ${g===RANK_GRADE?"on":""}" onclick="setRankGrade('${g}')">${g==="ALL"?"全":g}<span>${n}</span></a>`;
   }).join("");
   const schips=SORT_DEFS.map(([k,l])=>`<a class="tab ${k===RANK_SORT?"on":""}" onclick="setRankSort('${k}')">${l}</a>`).join("");
-  const cards=list.map(r=>{
-    const hist=(r.mom_hist||[]).filter(x=>x!=null).map(x=>x.toFixed(0)).join("→");
-    return `
-    <a class="rcard" href="#/detail/${r.code}">
-      <div class="top">
-        ${star(r.code)}
-        <div>
-          <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
-          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div>
-        </div>
-        <div class="mval">
-          <b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}
-        </div>
-      </div>
-      <div class="metrics">
-        <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
-        <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
-        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
-        <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
-      </div>
-      ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
-      ${sigChips(r)}
-    </a>`;}).join("");
+  const cards=shown.map(r=>searchCard(r,false)).join("");
+  const more=total>shown.length
+    ? `<div class="tabs" style="margin-top:12px;justify-content:center"><a class="tab" onclick="rankMore()">もっと見る（残り${(total-shown.length).toLocaleString()}件）</a></div>`
+    : "";
+  const scope=full?`全${base.length.toLocaleString()}銘柄`:`TOP${shown.length}（全銘柄読込中…）`;
+  const cnt=`${(RANK_GRADE==="ALL"?"全グレード":RANK_GRADE+"グレード")} ${total.toLocaleString()}件中 ${shown.length.toLocaleString()}件表示`;
   return `
-    <h2>モメンタム指数ランキング TOP${DATA.ranking.length} <a class="more" href="#/about">指数とは →</a></h2>
+    <h2>モメンタム指数ランキング <span class="muted" style="font-size:12px;font-weight:400">${scope}</span> <a class="more" href="#/about">指数とは →</a></h2>
     ${idxNote()}
-    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み（TOP${DATA.ranking.length}内）</div>
+    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み</div>
     <div class="tabs">${gchips}</div>
     <div class="tabs" style="margin-top:12px">${schips}</div>
-    <div class="cardgrid" style="margin-top:12px">${cards||`<div class="card muted">該当グレードはTOP${DATA.ranking.length}内にありません</div>`}</div>
+    <div class="muted" style="font-size:11px;margin:8px 2px 0">${cnt}</div>
+    <div class="cardgrid" style="margin-top:8px">${cards||`<div class="card muted">該当グレードの銘柄がありません</div>`}</div>
+    ${more}
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
@@ -637,8 +628,9 @@ async function loadSearch(){
   SEARCH_LOADING=false;
   return SEARCH;
 }
-function searchCard(r){
+function searchCard(r,showNoSig=true){
   const sig=(r.signals||[]);
+  const hist=(r.mom_hist||[]).filter(x=>x!=null).map(x=>x.toFixed(0)).join("→");
   return `<a class="rcard" href="#/detail/${r.code}">
       <div class="top">
         ${star(r.code)}
@@ -654,7 +646,8 @@ function searchCard(r){
         <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
       </div>
-      ${sig.length?sigChips(r):`<div class="nosig">本日の点灯シグナルなし</div>`}
+      ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
+      ${sig.length?sigChips(r):(showNoSig?`<div class="nosig">本日の点灯シグナルなし</div>`:"")}
     </a>`;
 }
 function searchResults(q){
@@ -673,7 +666,7 @@ function searchResults(q){
     const miss=missing.length?`<div class="muted" style="font-size:11px;margin:8px 2px">`
       +`${missing.map(esc).join("・")} は本日は対象外（流動性フィルタ）</div>`:"";
     return `<div class="sigsub buyhead">⭐ ウォッチ中（${found.length+missing.length}件）</div>`
-      +`<div class="cardgrid">${found.map(searchCard).join("")}</div>${miss}${prompt}`;
+      +`<div class="cardgrid">${found.map(r=>searchCard(r)).join("")}</div>${miss}${prompt}`;
   }
   const ql=q.toLowerCase();
   let hits=SEARCH.filter(r=>r.code.startsWith(q)||r.name.toLowerCase().includes(ql));
@@ -684,7 +677,7 @@ function searchResults(q){
     +`<br><span style="font-size:11px">※流動性フィルタ（売買代金の少ない銘柄）対象外は検索できません。</span></div>`;
   const more=hits.length>shown.length?`<div class="muted" style="font-size:11px;margin:2px 2px 8px">上位${shown.length}件を表示（${hits.length}件一致・絞り込んでください）</div>`:
     `<div class="muted" style="font-size:11px;margin:2px 2px 8px">${shown.length}件一致</div>`;
-  return more+`<div class="cardgrid">${shown.map(searchCard).join("")}</div>`;
+  return more+`<div class="cardgrid">${shown.map(r=>searchCard(r)).join("")}</div>`;
 }
 function onSearchInput(v){SEARCH_Q=v;const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(v);}
 function viewSearch(){
