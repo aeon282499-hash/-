@@ -319,6 +319,26 @@
       "close": 2835.0,
       "pnl": 2.24,
       "win": true
+    },
+    {
+      "date": "2026-06-05",
+      "ticker": "8473.T",
+      "name": "ＳＢＩホールディングス",
+      "direction": "BUY",
+      "open": 2905.0,
+      "close": 2886.5,
+      "pnl": -0.64,
+      "win": false
+    },
+    {
+      "date": "2026-06-05",
+      "ticker": "2212.T",
+      "name": "山崎製パン",
+      "direction": "BUY",
+      "open": 3049.0,
+      "close": 3058.0,
+      "pnl": 0.3,
+      "win": true
     }
   ]
 }
