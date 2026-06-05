@@ -279,7 +279,20 @@ function signalSummary(){
   return `<div class="muted" style="margin-bottom:9px">本日 <b style="color:var(--tx)">${total}</b> 件点灯（${DATA.universe_scored.toLocaleString()}銘柄を監視）</div>${buyBlk}${refBlk}`;
 }
 
+function watchSummaryInner(){
+  const found=WATCH.map(c=>SEARCH&&SEARCH.find(s=>s.code===c)).filter(Boolean);
+  if(!found.length) return `<span class="muted">⭐ ウォッチ ${WATCH.length}件（本日のデータ対象外）</span>`;
+  const firing=found.filter(r=>(r.signals||[]).length).sort((a,b)=>sigScore(b)-sigScore(a));
+  const buy=firing.filter(r=>(r.signals||[]).some(sigHasEdge));
+  const head=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b>`
+    +`<a class="more" href="#/search" style="margin-left:auto">一覧 →</a></div>`;
+  if(!firing.length) return head+`<div class="muted" style="font-size:12px">本日の点灯シグナルはありません。</div>`;
+  const chips=firing.map(r=>`<a class="chip${(r.signals||[]).some(sigHasEdge)?" buy":""}" href="#/detail/${r.code}">${r.name} ${(r.signals||[]).some(sigHasEdge)?"✅":"🔔"}</a>`).join("");
+  const msg=buy.length?`<b style="color:var(--C)">${buy.length}件が検証済みの買い候補</b>`:`${firing.length}件にシグナル点灯`;
+  return head+`<div class="muted" style="font-size:12px;margin-bottom:6px">${msg}</div><div class="chips">${chips}</div>`;
+}
 function viewHome(){
+  if(WATCH.length) loadSearch().then(()=>{const el=document.getElementById("watchsum");if(el)el.innerHTML=watchSummaryInner();});
   const top=DATA.ranking.slice(0,5);
   const gc=DATA.grade_counts||{};
   const rows=top.map(r=>`
@@ -291,6 +304,7 @@ function viewHome(){
     </a>`).join("");
   return `
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
+    ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:""}
     <h2>地合い</h2>
     <div class="card">${marketCard()}</div>
 
