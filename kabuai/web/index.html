@@ -79,6 +79,9 @@
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .chip{font-size:11px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:3px 9px;color:var(--tx)}
+  .chip.buy{border-color:rgba(107,203,119,.5);background:rgba(107,203,119,.1);color:var(--C);font-weight:700}
+  .chip.buy small{display:block;font-size:9.5px;font-weight:600;color:var(--mut);margin-top:1px;letter-spacing:.1px}
+  .chip.ref{opacity:.6}
   .bar{height:6px;background:var(--card2);border-radius:999px;margin-top:8px;overflow:hidden}
   .bar.slim{height:4px;margin-top:5px}
   .barfill{height:100%;border-radius:999px}
@@ -169,9 +172,18 @@ async function load(){
 function badge(g){return `<span class="badge g-${g}">${GRADE_LABEL[g]||g}</span>`;}
 function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code);}
 function sigMeta(key){return (DATA.signals&&DATA.signals.groups&&DATA.signals.groups[key])||null;}
+// 検証済みの買いエッジ(sigHasEdge)があるシグナルは✅＋得意保有/勝率つきで前に出し、
+// それ以外（過熱・中立／エッジ未確認）は控えめに後ろへ。stanceではなくBT実績で判定。
 function sigChips(row){
   const ks=(row.signals||[]);if(!ks.length)return "";
-  return `<div class="chips">`+ks.map(k=>{const m=sigMeta(k);return m?`<span class="chip">${m.emoji} ${m.label}</span>`:"";}).join("")+`</div>`;
+  const lbl={5:"5日",10:"10日",20:"20日"};
+  const edge=ks.filter(sigHasEdge), ref=ks.filter(k=>!sigHasEdge(k));
+  const dim=edge.length>0;  // 買い候補がある行だけ参考シグナルを控えめにして対比を出す
+  const buyChip=k=>{const m=sigMeta(k);if(!m)return "";const b=sigBest(k);
+    return `<span class="chip buy">✅ ${m.emoji} ${m.label}`
+      +`${b?`<small>得意${lbl[b.h]||b.h+"日"}・勝率${b.x.win}%</small>`:""}</span>`;};
+  const refChip=k=>{const m=sigMeta(k);return m?`<span class="chip${dim?" ref":""}">${m.emoji} ${m.label}</span>`:"";};
+  return `<div class="chips">`+edge.map(buyChip).join("")+ref.map(refChip).join("")+`</div>`;
 }
 function marketCard(){
   const m=DATA.market;
