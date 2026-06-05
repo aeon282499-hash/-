@@ -108,6 +108,8 @@
   .exitline b{font-weight:800;color:var(--C)}
   .exitline .exsub{display:block;margin-top:3px;font-size:11px}
   .exitline .exsub small{font-size:10px;opacity:.85;margin-left:3px}
+  .exitcard{border:1px solid rgba(107,203,119,.45);background:rgba(107,203,119,.08);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
+  .exitcard .exitline{border:0;background:none;padding:0}
   .idxnote{margin:2px 2px 10px;padding:8px 11px;border-radius:8px;background:rgba(255,159,67,.07);
     border:1px solid rgba(255,159,67,.26);font-size:11.5px;line-height:1.6;color:var(--tx)}
   .idxnote b{font-weight:800;color:#ff9f43}
@@ -416,6 +418,21 @@ function aiCard(ai){
       <div style="font-size:14px;line-height:1.5">${ai.note}</div>
     </div>`;
 }
+// 詳細画面用: 検証済み買いシグナルがある時だけ「出口の目安」を目立つ callout で出す。
+// 複数の買いシグナルがある場合は勝率が最も高いものの出口(bt_signal_exit.py由来)を採用。
+function exitGuide(ks){
+  const edge=(ks||[]).filter(sigHasEdge); if(!edge.length) return "";
+  let bestK=null,bestW=-1;
+  edge.forEach(k=>{const b=sigBest(k); if(b&&b.x.win>bestW){bestW=b.x.win;bestK=k;}});
+  const g=DATA.signal_track&&DATA.signal_track.groups&&DATA.signal_track.groups[bestK], ex=g&&g.exit;
+  if(!ex||!ex.n) return "";
+  const m=sigMeta(bestK);
+  return `<div class="card exitcard">
+    <div class="exitline" style="margin-top:0">🚪 <b style="font-size:13px">出口の目安</b>${m?` <span class="muted">（${m.emoji} ${m.label}）</span>`:""}
+      <div style="margin-top:5px;font-size:13px"><b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）</div>
+      <span class="muted exsub">この出口で過去：勝率${ex.win}%／平均${ex.avg>=0?"+":""}${ex.avg}%${ex.rr?`／RR ${ex.rr}`:""}<small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回）</small></span>
+      <span class="muted exsub" style="opacity:.8">※翌朝の寄りでエントリー想定。固定ルールの過去シミュレーション（手数料/スリッページ未考慮）で将来を保証しません。</span></div></div>`;
+}
 function renderDetail(s){
   const i=s.indicators, total=DATA.universe_scored;
   const chip={...i,signals:s.signals};
@@ -436,6 +453,7 @@ function renderDetail(s){
       </div>
       ${sigChips(chip)}
     </div>
+    ${exitGuide(s.signals)}
     ${aiCard(s.ai)}
 
     ${s.chart?`<h2>日足3ヶ月 × モメンタム指数</h2>
