@@ -190,6 +190,9 @@ function sigScore(r){let s=0;if((r.signals||[]).some(sigHasEdge))s+=200;else if(
 function bigMoveTag(r1){if(r1==null||isNaN(r1))return "";
   if(r1>=7)return `<span class="bigtag up">大幅高 +${r1.toFixed(1)}%</span>`;
   if(r1<=-7)return `<span class="bigtag dn">大幅安 ${r1.toFixed(1)}%</span>`;return "";}
+function pctTag(r1){if(r1==null||isNaN(r1))return "";
+  const c=r1>0?"#2ec27e":r1<0?"#ff6b6b":"var(--mut)",s=r1>0?"+":"";
+  return `<span style="color:${c};font-weight:700">${s}${r1.toFixed(1)}%</span>`;}
 
 async function load(){
   const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
@@ -287,7 +290,7 @@ function watchSummaryInner(){
   const head=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b>`
     +`<a class="more" href="#/search" style="margin-left:auto">一覧 →</a></div>`;
   if(!firing.length) return head+`<div class="muted" style="font-size:12px">本日の点灯シグナルはありません。</div>`;
-  const chips=firing.map(r=>`<a class="chip${(r.signals||[]).some(sigHasEdge)?" buy":""}" href="#/detail/${r.code}">${r.name} ${(r.signals||[]).some(sigHasEdge)?"✅":"🔔"}</a>`).join("");
+  const chips=firing.map(r=>`<a class="chip${(r.signals||[]).some(sigHasEdge)?" buy":""}" href="#/detail/${r.code}">${r.name} ${(r.signals||[]).some(sigHasEdge)?"✅":"🔔"}${pctTag(r.r1)?" "+pctTag(r.r1):""}</a>`).join("");
   const msg=buy.length?`<b style="color:var(--C)">${buy.length}件が検証済みの買い候補</b>`:`${firing.length}件にシグナル点灯`;
   return head+`<div class="muted" style="font-size:12px;margin-bottom:6px">${msg}</div><div class="chips">${chips}</div>`;
 }
