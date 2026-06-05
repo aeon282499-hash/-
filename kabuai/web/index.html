@@ -309,11 +309,15 @@ function viewHome(){
     </a>`).join("");
   return `
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
-    ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:""}
+    ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
+      `<a href="#/about" class="card" style="display:flex;align-items:center;gap:8px;border-left:3px solid var(--C);margin-bottom:4px">
+        <span style="font-size:18px">🔰</span>
+        <span style="flex:1;font-size:13px">はじめての方へ — 使い方と用語をやさしく解説（30秒）</span>
+        <span class="muted">→</span></a>`}
     <h2>地合い</h2>
     <div class="card">${marketCard()}</div>
 
-    <h2>モメンタム指数ランキング <a class="more" href="#/ranking">TOP50を見る →</a></h2>
+    <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
     ${idxNote()}
     <div class="card" style="padding:4px 12px">${rows}</div>
 
