@@ -542,15 +542,8 @@ function trackPanel(key){
     <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。${span}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
   </div>`;
 }
-function viewSignals(active){
-  const s=DATA.signals;
-  if(!s) return `<div class="card"><span class="soon">シグナルデータがありません</span></div>`;
-  const lit=s.order.filter(k=>s.groups[k].count>0);
-  if(!active || !s.groups[active] || s.groups[active].count===0) active=lit[0];
-  const tabs=lit.map(k=>{const g=s.groups[k];
-    return `<a class="tab ${k===active?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("");
-  const g=s.groups[active];
-  const cards=(g.members||[]).map(r=>`
+function sigMemberCard(r,withChips){
+  return `
     <a class="rcard" href="#/detail/${r.code}">
       <div class="top">
         ${star(r.code)}
@@ -563,7 +556,43 @@ function viewSignals(active){
         <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
       </div>
-    </a>`).join("");
+      ${withChips?sigChips(r):""}
+    </a>`;
+}
+function viewSignals(active){
+  const s=DATA.signals;
+  if(!s) return `<div class="card"><span class="soon">シグナルデータがありません</span></div>`;
+  const lit=s.order.filter(k=>s.groups[k].count>0);
+  if(!lit.length) return `<div class="card muted" style="margin-top:10px">本日の点灯シグナルはありません。</div>`;
+  // 検証済み買い候補を全シグナル横断で集約（複数点灯は1枚に統合）
+  const buyKeys=lit.filter(k=>sigHasEdge(k));
+  const seen={},buyMembers=[];
+  buyKeys.forEach(k=>{(s.groups[k].members||[]).forEach(r=>{
+    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};buyMembers.push(o);}
+    if(o.signals.indexOf(k)<0)o.signals.push(k);
+  });});
+  buyMembers.sort((a,b)=>(b.signals.length-a.signals.length)||(b.momentum-a.momentum));
+  let isBuy=(active==="buycand"||!active)&&buyMembers.length>0;
+  if(!isBuy && (!active||active==="buycand"||!s.groups[active]||s.groups[active].count===0)) active=lit[0];
+  const buyTab=buyMembers.length?`<a class="tab ${isBuy?"on":""}" href="#/signals/buycand">✅買い候補<span>${buyMembers.length}</span></a>`:"";
+  const tabs=buyTab+lit.map(k=>{const g=s.groups[k];
+    return `<a class="tab ${(!isBuy&&k===active)?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("");
+  const disc=`<p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
+  if(isBuy){
+    const cards=buyMembers.map(r=>sigMemberCard(r,true)).join("");
+    return `
+    <h2>チンパンシグナル</h2>
+    <div class="tabs">${tabs}</div>
+    <div class="card" style="margin:10px 0">
+      <div style="font-weight:700">✅ 検証済みの買い候補
+        <span class="muted" style="font-weight:400">・${buyMembers.length}銘柄</span></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">過去実績で勝率${TRK_WIN_MIN}%以上＆平均プラスの得意保有がある買いシグナル（${buyKeys.map(k=>s.groups[k].label).join("・")}）が点灯した銘柄だけを横断で集約。複数点灯は1枚にまとめ、強いものから並べています。各カードの✅チップに得意保有・勝率、出口の目安は各シグナルの実績どおり。</div>
+    </div>
+    <div class="cardgrid">${cards||`<div class="card muted">本日の検証済み買い候補はありません。</div>`}</div>
+    ${disc}`;
+  }
+  const g=s.groups[active];
+  const cards=(g.members||[]).map(r=>sigMemberCard(r,false)).join("");
   const stanceColor={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[g.stance]||"#8a94a3";
   return `
     <h2>チンパンシグナル</h2>
@@ -576,7 +605,7 @@ function viewSignals(active){
     </div>
     ${trackPanel(active)}
     <div class="cardgrid">${cards||`<div class="card muted">該当なし</div>`}</div>
-    <p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
+    ${disc}`;
 }
 
 // ── 銘柄検索（全scoredをlazy fetch。気になる銘柄にシグナルが出ているか確認用） ──
