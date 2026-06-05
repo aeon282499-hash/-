@@ -22,14 +22,11 @@ import os
 import re
 import time
 
-# シグナルキー → スタンス（signals.SIGNAL_DEFS と一致させる）
-_SIGNAL_STANCE = {
-    "strong_accum": "期待", "accum": "中立", "accel": "期待", "promote": "期待",
-    "strong_dip": "期待", "dip": "中立", "reversal": "警戒", "buzz": "警戒",
-}
+# シグナルキー → 表示ラベル（LLM プロンプト用。signals.SIGNAL_DEFS と一致）
 _SIGNAL_LABEL = {
     "strong_accum": "強買い集め", "accum": "買い集め", "accel": "加速", "promote": "昇格",
-    "strong_dip": "強押し目", "dip": "押し目", "reversal": "反転", "buzz": "話題集中",
+    "strong_dip": "強押し目", "dip": "押し目", "strong_reversal": "強反転",
+    "reversal": "反転", "buzz": "話題集中",
 }
 
 VALID_STANCE = ("警戒", "中立", "期待")
@@ -45,12 +42,17 @@ def rule_note(r: dict) -> dict:
     r20 = r.get("r20", 0.0)
     sigs = r.get("signals") or []
 
-    # 優先度順（上から最初に当たったものを採用）
+    # 優先度順（上から最初に当たったものを採用）。スタンスは signals.SIGNAL_DEFS（BT実績で
+    # 正直化済み）と一致させる: 買いエッジ実証=strong_accum/strong_reversal(期待)・accum/reversal、
+    # 過熱/反落傾向=accel/buzz(警戒)・promote/strong_dip/dip/高指数(中立)。
     if rsi >= 82 and mom >= 70:
         note = "天井圏に近く過熱が顕著。新規は見送り、利確・過熱解消を優先したい。"
         stance = "警戒"
+    elif "strong_reversal" in sigs:
+        note = "深い下落からの力強い切り返し。過去実績は買い系で最も勝率が高い（出口8日/−12%で約59%）。"
+        stance = "期待"
     elif "buzz" in sigs:
-        note = "出来高・値幅が急膨張し値動きが荒い。短期の振れに注意、深追いは禁物。"
+        note = "出来高・値幅が急膨張し値動きが荒い。過去は天井圏での膨張が多く、高値掴みに注意。"
         stance = "警戒"
     elif "reversal" in sigs:
         note = "下落からの反転初動。だまし戻りの可能性があり、確度を見ながら小さく。"
@@ -61,18 +63,24 @@ def rule_note(r: dict) -> dict:
     elif "strong_accum" in sigs:
         note = "大商いを伴う強い資金流入。トレンド継続を見たいが、過熱には目配りを。"
         stance = "期待"
+    elif "accel" in sigs:
+        note = "モメンタムが直近で急騰。短期は過熱しやすく、過去は数日内に反落する傾向（追随は慎重に）。"
+        stance = "警戒"
+    elif "accum" in sigs:
+        note = "出来高を伴う緩やかな上昇。仕込みの兆しを確認したい。"
+        stance = "中立"
+    elif "promote" in sigs:
+        note = "指数が上位バンドへ昇格。バンド入りだけでは継続性は限定的で、過去実績は中立〜やや弱め。"
+        stance = "中立"
     elif "strong_dip" in sigs:
-        note = "強い上昇トレンド中の深い押し目。反発の初動を確認したい局面。"
-        stance = "期待"
-    elif "accel" in sigs or "promote" in sigs:
-        note = "モメンタムが上位バンドへ加速中。勢い持続を見極めたい。"
-        stance = "期待"
-    elif "accum" in sigs or "dip" in sigs:
-        note = "出来高を伴う緩やかな上昇／押し目。仕込みの兆しを確認したい。"
+        note = "強い上昇中の深い押し目。ただし発動が稀で勝率4割弱・近年は逆風、追随は慎重に。"
+        stance = "中立"
+    elif "dip" in sigs:
+        note = "上昇トレンド中の小休止。反発は安定せず、深い押しは様子見が無難。"
         stance = "中立"
     elif mom >= 80:
-        note = "高水準のモメンタムを維持。トレンドは強いが利益確定の動きに注意。"
-        stance = "期待"
+        note = "高水準のモメンタムを維持。ただし最上位ほど反落しやすく、追随より利確に注意。"
+        stance = "中立"
     elif mom < 20:
         note = "失速・停滞局面。リバウンド余地はあるが、明確な手掛かり待ち。"
         stance = "中立"
