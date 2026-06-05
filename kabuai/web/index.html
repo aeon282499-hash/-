@@ -113,6 +113,13 @@
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
   .sigpill b{color:var(--acc);margin-left:4px}
+  .sigsub{font-size:12px;font-weight:700;margin:0 2px 7px}
+  .sigsub.buyhead{color:var(--C)}
+  .sigsub .muted{font-weight:400;font-size:11px;margin-left:2px}
+  .sigpill.buy{border-color:rgba(107,203,119,.45);background:rgba(107,203,119,.09)}
+  .sigpill.buy b{color:var(--C)}
+  .sigpill.ref{opacity:.72}
+  .sigpill small{display:block;font-size:10px;color:var(--mut);margin-top:2px;font-weight:600}
   .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
   .tab{flex:0 0 auto;font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:7px 12px;color:var(--mut);white-space:nowrap;display:flex;gap:5px;align-items:center;cursor:pointer}
@@ -200,14 +207,33 @@ function marketSegments(m){
   if(!cells) return "";
   return `<div class="segwrap">${cells}</div><div class="muted" style="font-size:10px;margin-top:2px">${m.segments_note||""}</div>`;
 }
+// 検証済みの買いエッジ＝過去に勝率TRK_WIN_MIN%以上＆平均プラスの得意保有がある
+// （得意保有/出口の目安と同じゲート。stanceではなくBT実績で判定するので accum/reversal の
+// ように stance が中立/警戒でも実績エッジがあるものは買い候補に入る）。
+function sigBest(k){
+  const t=DATA.signal_track; const g=t&&t.available&&t.groups&&t.groups[k];
+  return g&&g.n?bestHorizon(g,t.horizons||[5,10,20]):null;
+}
+function sigHasEdge(k){const b=sigBest(k);return !!(b&&b.x.win>=TRK_WIN_MIN&&b.x.avg>0);}
 function signalSummary(){
   const s=DATA.signals;if(!s)return `<span class="soon">シグナルなし</span>`;
   const lit=s.order.filter(k=>s.groups[k].count>0);
+  if(!lit.length)return `<span class="soon">本日の点灯シグナルなし</span>`;
   const total=lit.reduce((a,k)=>a+s.groups[k].count,0);
-  const chips=lit.map(k=>{const g=s.groups[k];
-    return `<a class="sigpill" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b></a>`;}).join("");
-  return `<div class="muted" style="margin-bottom:8px">本日 <b style="color:var(--tx)">${total}</b> 件のシグナルが点灯中（${DATA.universe_scored.toLocaleString()}銘柄を監視）</div>
-    <div class="sigwrap">${chips}</div>`;
+  const lbl={5:"5日",10:"10日",20:"20日"};
+  const buy=lit.filter(sigHasEdge), ref=lit.filter(k=>!sigHasEdge(k));
+  const buyPill=k=>{const g=s.groups[k],b=sigBest(k);
+    return `<a class="sigpill buy" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b>`
+      +`${b?`<small>得意${lbl[b.h]||b.h+"日"}・勝率${b.x.win}%</small>`:""}</a>`;};
+  const refPill=k=>{const g=s.groups[k];
+    return `<a class="sigpill ref" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b></a>`;};
+  const buyBlk=buy.length
+    ? `<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（出口の目安つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
+    : `<div class="sigsub muted">本日は検証済みの買いシグナルの点灯なし</div>`;
+  const refBlk=ref.length
+    ? `<div class="sigsub muted" style="margin-top:11px">参考（過熱・中立／買いエッジ未確認）</div><div class="sigwrap">${ref.map(refPill).join("")}</div>`
+    : "";
+  return `<div class="muted" style="margin-bottom:9px">本日 <b style="color:var(--tx)">${total}</b> 件点灯（${DATA.universe_scored.toLocaleString()}銘柄を監視）</div>${buyBlk}${refBlk}`;
 }
 
 function viewHome(){
