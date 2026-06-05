@@ -379,8 +379,7 @@ function viewRanking(){
     ${idxNote()}
     <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み（TOP${DATA.ranking.length}内）</div>
     <div class="tabs">${gchips}</div>
-    <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え <span class="tag" style="border:0;color:var(--acc)">本家の有料機能を無料開放</span></div>
-    <div class="tabs">${schips}</div>
+    <div class="tabs" style="margin-top:12px">${schips}</div>
     <div class="cardgrid" style="margin-top:12px">${cards||`<div class="card muted">該当グレードはTOP${DATA.ranking.length}内にありません</div>`}</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
