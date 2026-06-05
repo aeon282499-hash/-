@@ -694,9 +694,26 @@ function viewSearch(){
 
 function viewAbout(){
   return `
-  <h2>モメンタム指数とは</h2>
+  <h2>はじめての方へ</h2>
   <div class="card">
-    <p>0〜100 で「いま勢いがあるか」を表す指数。式は公開ロジックに準拠：</p>
+    <p style="line-height:1.85">東証の銘柄を<b>「いまどれだけ勢いがあるか」＝勢いスコア（モメンタム指数 0〜100）</b>で並べて見られる無料ツールです。
+      さらに、過去データで“買って勝てたか”を検証したシグナルだけを<b style="color:var(--C)">✅買い候補</b>として表示し、
+      <b>出口の目安（保有日数・損切りライン）</b>まで添えています。</p>
+    <div style="margin-top:10px;line-height:1.95">
+      <div>① 下メニューの<b>🔔シグナル</b>で <b style="color:var(--C)">✅買い候補</b> をチェック</div>
+      <div>② 気になる銘柄は<b> ☆ </b>を押して<b>ウォッチ</b>に追加（ホームで点灯をまとめて確認）</div>
+      <div>③ 銘柄ページの <b>「🚪出口の目安」</b>で、いつ・どこで手仕舞うかの目安を確認</div>
+    </div>
+    <p class="muted" style="margin-top:12px;font-size:12px;line-height:1.75">⚠ <b style="color:#ff9f43">勢いスコアが高い＝今後上がる、ではありません。</b>
+      「いま強い／過熱している」度合いの目安です。買いの優位性は高スコアではなく、
+      <a href="#/signals" style="color:var(--acc);font-weight:700">✅検証済みシグナル＋出口の目安</a>にあります（理由は下記）。</p>
+  </div>
+
+  <h2>モメンタム指数（勢いスコア）とは</h2>
+  <div class="card">
+    <p>0〜100 で<b>「いま勢いがあるか」を一つの数字にした目安</b>です（高いほど足元の上昇の勢いが強い／過熱している）。
+      数字が大きいほど将来上がる、という意味ではありません。</p>
+    <p class="muted" style="font-size:12px;margin:8px 0 4px">参考：計算式（公開ロジック準拠）</p>
     <pre style="background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12px">base      = SR × 18
 power_adj = clamp(出来高込みの押し上げ力, -3, +8)
 指数      = clamp(base + power_adj, 0, 100)</pre>
@@ -709,6 +726,20 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
       過去実績（2021〜2026・432万サンプル）を検証すると、指数の高低で翌日〜数週間の騰落率は<b style="color:var(--tx)">単調にならず</b>、
       むしろ<b style="color:var(--tx)">最上位グレードほど過熱して反落しやすい</b>傾向でした（高指数＝今後上がる、ではありません）。
       買いの優位性は指数ランキングではなく、<a href="#/signals" style="color:var(--acc);font-weight:700">チンパンシグナル</a>の検証済みシグナル＋出口の目安にあります。</p>
+  </div>
+
+  <h2>用語ミニ辞典</h2>
+  <div class="card">
+    <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.9;color:var(--mut)">
+      <li><b style="color:var(--tx)">勢いスコア（モメンタム指数）</b>… 0〜100。いまの上昇の勢い・過熱度。高い＝強い／過熱（予測ではない）。</li>
+      <li><b style="color:var(--tx)">グレード S〜D</b>… 勢いスコアの大きさを S(最強)〜D(失速) で区分けしたもの。</li>
+      <li><b style="color:var(--C)">✅買い候補</b>… 過去データで“買って勝てた”実績があるシグナルだけに付く印。</li>
+      <li><b style="color:var(--tx)">出口の目安</b>… 検証で決めた手仕舞いの目安（例：保有8日めど・損切り−12%）。利益を保証するものではありません。</li>
+      <li><b style="color:var(--tx)">RSI（買われすぎ度）</b>… 0〜100。高いほど短期で買われすぎ＝過熱気味。</li>
+      <li><b style="color:var(--tx)">SR（上昇効率）</b>… 値動きのブレに対して、どれだけ効率よく上げているか。高いほど素直な上昇。</li>
+      <li><b style="color:var(--tx)">押し目</b>… 上昇途中の一時的な下げ。　<b style="color:var(--tx)">反転</b>… 下げ止まって上向きに変わる初動。</li>
+      <li><b style="color:var(--tx)">前日比</b>… 前日終値からの変化率(％)。　<b style="color:var(--tx)">大幅高／安</b>… 当日 ±7% 以上の大きな変動。</li>
+    </ul>
   </div>
 
   <h2>データについて</h2>
