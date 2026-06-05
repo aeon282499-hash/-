@@ -136,6 +136,13 @@
   .searchbox:focus{border-color:var(--acc)}
   .searchbox::placeholder{color:var(--mut)}
   .nosig{font-size:11px;color:var(--mut);margin-top:8px}
+  .star{flex:0 0 auto;cursor:pointer;font-size:18px;line-height:1;color:var(--mut);user-select:none;padding:0 2px}
+  .star.on{color:#ffd93d}
+  .bigtag{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+  .bigtag.up{background:rgba(46,194,126,.16);color:#2ec27e;border:1px solid rgba(46,194,126,.5)}
+  .bigtag.dn{background:rgba(255,91,91,.14);color:#ff6b6b;border:1px solid rgba(255,91,91,.5)}
+  .hsearch{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:14px;margin-bottom:4px}
+  .hsearch:hover{border-color:var(--acc)}
   /* PC（ワイド）表示：自動でも幅900px以上、または手動PC指定で適用。ナビは両モードで維持 */
   body.pc main{max-width:1080px}
   body.pc .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
@@ -167,6 +174,22 @@ const cls=v=>(v==null||isNaN(v))?"muted":(v>=0?"pos":"neg");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 const $=s=>document.querySelector(s);
 let DATA=null;
+
+// ── ウォッチリスト＋当日大幅変動バッジ（気になる銘柄を☆保存してシグナル点灯を見張る） ──
+let WATCH=readWatch();
+function readWatch(){try{return JSON.parse(localStorage.getItem("kabuai_watch")||"[]")||[];}catch(e){return [];}}
+function saveWatch(){try{localStorage.setItem("kabuai_watch",JSON.stringify(WATCH));}catch(e){}}
+function isWatched(code){return WATCH.indexOf(code)>=0;}
+function toggleWatch(code){const i=WATCH.indexOf(code);if(i>=0)WATCH.splice(i,1);else WATCH.unshift(code);saveWatch();return isWatched(code);}
+function star(code){const on=isWatched(code);
+  return `<span class="star${on?" on":""}" data-star="${code}" title="ウォッチに追加/解除" onclick="onStar(event,'${code}')">${on?"★":"☆"}</span>`;}
+function onStar(ev,code){ev.preventDefault();ev.stopPropagation();const on=toggleWatch(code);
+  if(document.querySelectorAll)document.querySelectorAll('[data-star="'+code+'"]').forEach(b=>{b.className="star"+(on?" on":"");b.textContent=on?"★":"☆";});
+  if(location.hash.startsWith("#/search")&&!(SEARCH_Q||"").trim()){const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults("");}}
+function sigScore(r){let s=0;if((r.signals||[]).some(sigHasEdge))s+=200;else if((r.signals||[]).length)s+=100;return s-(r.rank||9999)/1e6;}
+function bigMoveTag(r1){if(r1==null||isNaN(r1))return "";
+  if(r1>=7)return `<span class="bigtag up">大幅高 +${r1.toFixed(1)}%</span>`;
+  if(r1<=-7)return `<span class="bigtag dn">大幅安 ${r1.toFixed(1)}%</span>`;return "";}
 
 async function load(){
   const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
@@ -267,6 +290,7 @@ function viewHome(){
       ${badge(r.grade)}
     </a>`).join("");
   return `
+    <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     <h2>地合い</h2>
     <div class="card">${marketCard()}</div>
 
@@ -313,9 +337,10 @@ function viewRanking(){
     return `
     <a class="rcard" href="#/detail/${r.code}">
       <div class="top">
+        ${star(r.code)}
         <div>
           <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
-          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div>
+          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div>
         </div>
         <div class="mval">
           <b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}
@@ -380,8 +405,9 @@ function renderDetail(s){
   return `
     <div class="card">
       <div style="display:flex;align-items:center;gap:10px">
+        ${star(s.code)}
         <div style="flex:1"><div style="font-size:18px;font-weight:700">${s.name}</div>
-          <div class="pchip">${s.code} ・ ¥${i.price.toLocaleString()}</div></div>
+          <div class="pchip">${s.code} ・ ¥${i.price.toLocaleString()} ${bigMoveTag(i.r1)}</div></div>
         <div style="text-align:right"><div style="font-size:30px;font-weight:800;line-height:1">${i.momentum.toFixed(1)}</div>
           <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${total}銘柄中 #${s.rank}</span></div></div>
       </div>
@@ -510,7 +536,8 @@ function viewSignals(active){
   const cards=(g.members||[]).map(r=>`
     <a class="rcard" href="#/detail/${r.code}">
       <div class="top">
-        <div><b>${r.name}</b><div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div></div>
+        ${star(r.code)}
+        <div><b>${r.name}</b><div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div></div>
         <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
       </div>
       <div class="metrics">
@@ -551,9 +578,10 @@ function searchCard(r){
   const sig=(r.signals||[]);
   return `<a class="rcard" href="#/detail/${r.code}">
       <div class="top">
+        ${star(r.code)}
         <div>
           <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
-          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div>
+          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div>
         </div>
         <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
       </div>
@@ -569,15 +597,24 @@ function searchCard(r){
 function searchResults(q){
   if(!SEARCH)return `<div class="card muted">索引を読み込み中…</div>`;
   q=(q||"").trim();
-  if(!q)return `<div class="card muted">コード（例 7203）か銘柄名の一部を入力。<br>`
-    +`監視中の <b style="color:var(--tx)">${SEARCH.length.toLocaleString()}</b> 銘柄から、`
-    +`その銘柄に<b style="color:var(--tx)">シグナルが点灯しているか</b>を確認できます。</div>`;
+  if(!q){
+    const prompt=`<div class="card muted" style="margin-top:10px">コード（例 7203）か銘柄名の一部を入力すると、`
+      +`監視中の <b style="color:var(--tx)">${SEARCH.length.toLocaleString()}</b> 銘柄から、`
+      +`その銘柄に<b style="color:var(--tx)">シグナルが点灯しているか</b>を確認できます。</div>`;
+    const found=[],missing=[];
+    WATCH.forEach(c=>{const r=SEARCH.find(s=>s.code===c);r?found.push(r):missing.push(c);});
+    if(!found.length&&!missing.length)
+      return `<div class="card muted">⭐ カードの☆を押すと気になる銘柄をここに保存でき、`
+        +`点灯シグナルを毎回まとめて確認できます。</div>`+prompt;
+    found.sort((a,b)=>sigScore(b)-sigScore(a));
+    const miss=missing.length?`<div class="muted" style="font-size:11px;margin:8px 2px">`
+      +`${missing.map(esc).join("・")} は本日は対象外（流動性フィルタ）</div>`:"";
+    return `<div class="sigsub buyhead">⭐ ウォッチ中（${found.length+missing.length}件）</div>`
+      +`<div class="cardgrid">${found.map(searchCard).join("")}</div>${miss}${prompt}`;
+  }
   const ql=q.toLowerCase();
   let hits=SEARCH.filter(r=>r.code.startsWith(q)||r.name.toLowerCase().includes(ql));
-  const score=r=>{let s=0;
-    if(r.code===q)s+=1000; else if(r.code.startsWith(q))s+=500;
-    if((r.signals||[]).some(sigHasEdge))s+=200; else if((r.signals||[]).length)s+=100;
-    return s-(r.rank||9999)/1e6;};
+  const score=r=>(r.code===q?1000:r.code.startsWith(q)?500:0)+sigScore(r);
   hits.sort((a,b)=>score(b)-score(a));
   const shown=hits.slice(0,60);
   if(!shown.length)return `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。`
@@ -594,7 +631,7 @@ function viewSearch(){
     <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">気になる銘柄のシグナルを確認</span></h2>
     <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off"
       placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
-    <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去実績で勝率の高い<b style="color:var(--C)">検証済みの買い候補</b>。それ以外の点灯は参考（過熱・中立）。</div>
+    <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去実績で勝率の高い<b style="color:var(--C)">検証済みの買い候補</b>（それ以外の点灯は参考）。<b style="color:#ffd93d">☆</b>を押すとウォッチに保存（検索欄を空にするとウォッチ一覧）。</div>
     <div id="searchres">${searchResults(SEARCH_Q)}</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
