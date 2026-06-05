@@ -42,9 +42,13 @@ def rule_note(r: dict) -> dict:
     r20 = r.get("r20", 0.0)
     sigs = r.get("signals") or []
 
-    # 優先度順（上から最初に当たったものを採用）。スタンスは signals.SIGNAL_DEFS（BT実績で
-    # 正直化済み）と一致させる: 買いエッジ実証=strong_accum/strong_reversal(期待)・accum/reversal、
-    # 過熱/反落傾向=accel/buzz(警戒)・promote/strong_dip/dip/高指数(中立)。
+    # 優先度順（上から最初に当たったものを採用）。
+    # 【買い候補(✅検証済み)はスタンスとは別軸】＝BTゲート(勝率52%以上&平均プラスの得意保有)を満たす
+    #   strong_accum / accum / strong_reversal / reversal の4つ（フロント sigHasEdge と同じ判定）。
+    #   ※reversal は「警戒」だが買い候補＝だまし戻り注意で小さく。スタンス色と買い候補は一致しない。
+    # スタンス(警戒/中立/期待)は今の過熱・リスク状態の注意書きで、それ単体は買い推奨ではない。
+    # signals.SIGNAL_DEFS（BT実績で正直化済み）と一致: 期待=strong_accum/strong_reversal、
+    # 警戒=accel/buzz/reversal、中立=accum/promote/strong_dip/dip/高指数。
     if rsi >= 82 and mom >= 70:
         note = "天井圏に近く過熱が顕著。新規は見送り、利確・過熱解消を優先したい。"
         stance = "警戒"
