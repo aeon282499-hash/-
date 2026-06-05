@@ -598,7 +598,12 @@ function viewSignals(active){
     <div class="card" style="margin:10px 0">
       <div style="font-weight:700">✅ 検証済みの買い候補
         <span class="muted" style="font-weight:400">・${buyMembers.length}銘柄</span></div>
-      <div class="muted" style="font-size:12px;margin-top:6px">過去実績で勝率${TRK_WIN_MIN}%以上＆平均プラスの得意保有がある買いシグナル（${buyKeys.map(k=>s.groups[k].label).join("・")}）が点灯した銘柄だけを横断で集約。複数点灯は1枚にまとめ、強いものから並べています。各カードの✅チップに得意保有・勝率、出口の目安は各シグナルの実績どおり。</div>
+      <div style="font-size:13px;line-height:1.7;margin-top:6px">今日点灯したシグナルのうち、<b>過去の検証で「買い」の成績がよかったタイプ</b>だけを集めた一覧です。</div>
+      <div class="muted" style="font-size:11.5px;line-height:1.75;margin-top:7px">
+        ・対象＝${buyKeys.map(k=>s.groups[k].label).join("・")}（過去に勝率${TRK_WIN_MIN}%以上かつ平均プラスの「得意な保有期間」があったシグナル）<br>
+        ・同じ銘柄に複数点灯しても1枚にまとめ、勢いの強い順に並べています<br>
+        ・各カードの<b style="color:var(--C)">✅</b>に「得意な保有日数・勝率」、銘柄ページに<b>🚪出口の目安</b>を表示<br>
+        ・あくまで過去の傾向で、上がることを保証するものではありません</div>
     </div>
     <div class="cardgrid">${cards||`<div class="card muted">本日の検証済み買い候補はありません。</div>`}</div>
     ${disc}`;
