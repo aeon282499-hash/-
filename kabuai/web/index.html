@@ -456,10 +456,10 @@ function renderDetail(s){
 
     <h2>主要指標</h2>
     <div class="kpis">
-      <div class="kpi"><div class="l">SR（シャープレシオ）</div><div class="v">${i.sr.toFixed(2)}</div><div class="h">リターン ÷ ブレ</div></div>
+      <div class="kpi"><div class="l">SR（上昇効率）</div><div class="v">${i.sr.toFixed(2)}</div><div class="h">リターン÷値動きのブレ</div></div>
       <div class="kpi"><div class="l">POWER（押し上げ力）</div><div class="v">${i.power.toFixed(2)}</div><div class="h">出来高×値幅 [-3,+8]</div></div>
       <div class="kpi"><div class="l">STAB（安定度）</div><div class="v">${i.stab.toFixed(0)}</div><div class="h">値動きの安定</div></div>
-      <div class="kpi"><div class="l">RSI(14)</div><div class="v">${i.rsi.toFixed(1)}</div><div class="h">${i.rsi>=70?"過熱圏":i.rsi<=30?"売られすぎ":"中立"}</div></div>
+      <div class="kpi"><div class="l">RSI（買われすぎ度）</div><div class="v">${i.rsi.toFixed(1)}</div><div class="h">${i.rsi>=70?"過熱圏（買われすぎ）":i.rsi<=30?"売られすぎ":"中立"}</div></div>
     </div>
     <p class="disc">${s.disclaimer||DATA.disclaimer}</p>`;
 }
