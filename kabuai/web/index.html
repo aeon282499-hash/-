@@ -105,6 +105,10 @@
   .exitline b{font-weight:800;color:var(--C)}
   .exitline .exsub{display:block;margin-top:3px;font-size:11px}
   .exitline .exsub small{font-size:10px;opacity:.85;margin-left:3px}
+  .idxnote{margin:2px 2px 10px;padding:8px 11px;border-radius:8px;background:rgba(255,159,67,.07);
+    border:1px solid rgba(255,159,67,.26);font-size:11.5px;line-height:1.6;color:var(--tx)}
+  .idxnote b{font-weight:800;color:#ff9f43}
+  .idxnote a{color:var(--acc);font-weight:700}
   .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
   .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
     border-radius:999px;padding:6px 12px;color:var(--tx)}
@@ -221,6 +225,7 @@ function viewHome(){
     <div class="card">${marketCard()}</div>
 
     <h2>モメンタム指数ランキング <a class="more" href="#/ranking">TOP50を見る →</a></h2>
+    ${idxNote()}
     <div class="card" style="padding:4px 12px">${rows}</div>
 
     <h2>サマリー</h2>
@@ -241,6 +246,12 @@ let RANK_GRADE="ALL", RANK_SORT="momentum";
 const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
 function setRankGrade(g){RANK_GRADE=g; $("#view").innerHTML=viewRanking();}
 function setRankSort(s){RANK_SORT=s; $("#view").innerHTML=viewRanking();}
+function idxNote(){
+  return `<div class="idxnote">📊 この指数は「いま強い／過熱しているか」を測る目安です。`
+    +`<b>高いほど今後上がるという予測ではありません</b>`
+    +`（過去実績ではむしろ最上位グレードほど過熱して反落しやすい傾向）。`
+    +`買いの優位性は<a href="#/signals">チンパンシグナル</a>の検証済みシグナル＋出口の目安を参照。</div>`;
+}
 function viewRanking(){
   let list=DATA.ranking.slice();
   if(RANK_GRADE!=="ALL") list=list.filter(r=>r.grade===RANK_GRADE);
@@ -275,6 +286,7 @@ function viewRanking(){
     </a>`;}).join("");
   return `
     <h2>モメンタム指数ランキング TOP${DATA.ranking.length} <a class="more" href="#/about">指数とは →</a></h2>
+    ${idxNote()}
     <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み（TOP${DATA.ranking.length}内）</div>
     <div class="tabs">${gchips}</div>
     <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え <span class="tag" style="border:0;color:var(--acc)">本家の有料機能を無料開放</span></div>
@@ -489,7 +501,11 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
       ${[["S","80超 強い上昇"],["A","60〜 上昇"],["B","40〜59 中立〜やや強"],["C","20〜39 弱い"],["D","失速・停滞（リバ余地）"]]
         .map(([g,t])=>`<div style="width:100%;display:flex;align-items:center;gap:10px;padding:4px 0">${badge(g)}<span class="muted">${t}</span></div>`).join("")}
     </div>
-    <p class="muted" style="margin-top:10px;font-size:12px">※ 計算窓・係数・閾値は仮（未最適化）。本家も「最適化で決める前提」と明記。</p>
+    <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">※ 計算窓・係数・閾値は仮（未最適化）。本家も「最適化で決める前提」と明記。<br>
+      ※ <b style="color:#ff9f43">この指数は「現在の強さ・過熱度」の目安であり、将来の予測ではありません。</b>
+      過去実績（2021〜2026・432万サンプル）を検証すると、指数の高低で翌日〜数週間の騰落率は<b style="color:var(--tx)">単調にならず</b>、
+      むしろ<b style="color:var(--tx)">最上位グレードほど過熱して反落しやすい</b>傾向でした（高指数＝今後上がる、ではありません）。
+      買いの優位性は指数ランキングではなく、<a href="#/signals" style="color:var(--acc);font-weight:700">チンパンシグナル</a>の検証済みシグナル＋出口の目安にあります。</p>
   </div>
 
   <h2>データについて</h2>
