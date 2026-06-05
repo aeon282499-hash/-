@@ -242,6 +242,25 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     return written
 
 
+def export_search_index(rows: list[dict], data_date: str) -> int:
+    """検索用の軽量インデックスを全 scored 銘柄ぶん書き出す（latest.json はTOP50のみのため）。
+    気になる銘柄をコード/名前で引いて、シグナルが点灯しているかを確認できるようにする。
+    生OHLCVは載せず計算済み指標だけ（SPEC §1）。フロントが遅延fetchする独立ファイル。"""
+    keep = ("code", "name", "price", "momentum", "grade", "sr", "power", "rsi",
+            "stab", "r1", "r5", "r10", "r20", "rank")
+    stocks = []
+    for r in rows:
+        o = {k: r[k] for k in keep}
+        if r.get("signals"):          # 非点灯は省略（[]）してサイズ削減。フロントは signals||[] で受ける
+            o["signals"] = r["signals"]
+        stocks.append(o)
+    payload = {"schema": "kabuai-search-1", "data_date": data_date,
+               "count": len(stocks), "stocks": stocks}
+    with open(DATA_DIR / "search_index.json", "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+    return len(stocks)
+
+
 def _gauge_from_closes(closes: list, rows_for_breadth: list[dict], label: str, note: str) -> dict:
     """等加重プロキシ系列から地合いゲージ（0〜100＋ランク＋レジーム）を計算する純関数。"""
     if not closes:
@@ -405,6 +424,8 @@ def build() -> dict:
     disclaimer = "価格・指標はAI等で整理・加工した参考表示です。リアルタイム配信ではありません。投資判断は自己責任。"
     # ── フェーズ5: 詳細チャートJSON書き出し ──
     n_charts = export_stocks(data, rows, data_date, disclaimer)
+    # ── 銘柄検索インデックス（全scored・遅延fetch用） ──
+    n_search = export_search_index(rows, data_date)
 
     try:
         data_lag_days = (datetime.now().date() - datetime.strptime(data_date, "%Y-%m-%d").date()).days
@@ -424,6 +445,7 @@ def build() -> dict:
         "min_turnover_yen": MIN_TURNOVER,
         "grade_counts": grade_counts,
         "stock_charts": n_charts,
+        "search_index": n_search,
         "ai": ai_meta,
         "market": market,
         "signals": signals,
@@ -454,6 +476,7 @@ def build() -> dict:
     print(f"[build] AI要約: provider={ai_meta['provider']} "
           f"LLM={ai_meta['llm_notes']} / rule={ai_meta['rule_notes']} / 計{ai_meta['total']}")
     print(f"[build] 詳細チャートJSON: {n_charts} 銘柄 → data/stocks/")
+    print(f"[build] 検索インデックス: {n_search} 銘柄 → data/search_index.json")
     return out
 
 

@@ -131,6 +131,11 @@
   .tab.on span{background:rgba(0,0,0,.25)}
   .vtoggle{cursor:pointer;user-select:none;white-space:nowrap}
   .vtoggle:hover{border-color:var(--acc);color:var(--acc)}
+  .searchbox{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;color:var(--tx);font-size:16px;outline:none;-webkit-appearance:none}
+  .searchbox:focus{border-color:var(--acc)}
+  .searchbox::placeholder{color:var(--mut)}
+  .nosig{font-size:11px;color:var(--mut);margin-top:8px}
   /* PC（ワイド）表示：自動でも幅900px以上、または手動PC指定で適用。ナビは両モードで維持 */
   body.pc main{max-width:1080px}
   body.pc .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
@@ -150,6 +155,7 @@
 <nav>
   <a href="#/" id="nav-home" class="on"><span class="i">🏠</span>ホーム</a>
   <a href="#/ranking" id="nav-rank"><span class="i">📊</span>ランキング</a>
+  <a href="#/search" id="nav-search"><span class="i">🔍</span>検索</a>
   <a href="#/signals" id="nav-sig"><span class="i">🔔</span>シグナル</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>指数とは</a>
 </nav>
@@ -158,6 +164,7 @@
 const GRADE_LABEL={S:"S",A:"A",B:"B",C:"C",D:"D"};
 const fmtPct=v=>(v==null||isNaN(v))?"—":(v>=0?"+":"")+v.toFixed(2)+"%";
 const cls=v=>(v==null||isNaN(v))?"muted":(v>=0?"pos":"neg");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 const $=s=>document.querySelector(s);
 let DATA=null;
 
@@ -170,7 +177,8 @@ async function load(){
   throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
 }
 function badge(g){return `<span class="badge g-${g}">${GRADE_LABEL[g]||g}</span>`;}
-function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code);}
+function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code)
+  ||(SEARCH&&SEARCH.find(r=>r.code===code))||undefined;}
 function sigMeta(key){return (DATA.signals&&DATA.signals.groups&&DATA.signals.groups[key])||null;}
 // 検証済みの買いエッジ(sigHasEdge)があるシグナルは✅＋得意保有/勝率つきで前に出し、
 // それ以外（過熱・中立／エッジ未確認）は控えめに後ろへ。stanceではなくBT実績で判定。
@@ -527,6 +535,70 @@ function viewSignals(active){
     <p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
 }
 
+// ── 銘柄検索（全scoredをlazy fetch。気になる銘柄にシグナルが出ているか確認用） ──
+let SEARCH=null, SEARCH_LOADING=false, SEARCH_Q="";
+async function loadSearch(){
+  if(SEARCH||SEARCH_LOADING)return SEARCH;
+  SEARCH_LOADING=true;
+  const cands=["../data/search_index.json","data/search_index.json","./data/search_index.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){const j=await r.json();SEARCH=j.stocks||[];break;}}catch(e){}
+  }
+  SEARCH_LOADING=false;
+  return SEARCH;
+}
+function searchCard(r){
+  const sig=(r.signals||[]);
+  return `<a class="rcard" href="#/detail/${r.code}">
+      <div class="top">
+        <div>
+          <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
+          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()}</div>
+        </div>
+        <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
+      </div>
+      <div class="metrics">
+        <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
+        <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
+        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
+        <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
+      </div>
+      ${sig.length?sigChips(r):`<div class="nosig">本日の点灯シグナルなし</div>`}
+    </a>`;
+}
+function searchResults(q){
+  if(!SEARCH)return `<div class="card muted">索引を読み込み中…</div>`;
+  q=(q||"").trim();
+  if(!q)return `<div class="card muted">コード（例 7203）か銘柄名の一部を入力。<br>`
+    +`監視中の <b style="color:var(--tx)">${SEARCH.length.toLocaleString()}</b> 銘柄から、`
+    +`その銘柄に<b style="color:var(--tx)">シグナルが点灯しているか</b>を確認できます。</div>`;
+  const ql=q.toLowerCase();
+  let hits=SEARCH.filter(r=>r.code.startsWith(q)||r.name.toLowerCase().includes(ql));
+  const score=r=>{let s=0;
+    if(r.code===q)s+=1000; else if(r.code.startsWith(q))s+=500;
+    if((r.signals||[]).some(sigHasEdge))s+=200; else if((r.signals||[]).length)s+=100;
+    return s-(r.rank||9999)/1e6;};
+  hits.sort((a,b)=>score(b)-score(a));
+  const shown=hits.slice(0,60);
+  if(!shown.length)return `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。`
+    +`<br><span style="font-size:11px">※流動性フィルタ（売買代金の少ない銘柄）対象外は検索できません。</span></div>`;
+  const more=hits.length>shown.length?`<div class="muted" style="font-size:11px;margin:2px 2px 8px">上位${shown.length}件を表示（${hits.length}件一致・絞り込んでください）</div>`:
+    `<div class="muted" style="font-size:11px;margin:2px 2px 8px">${shown.length}件一致</div>`;
+  return more+`<div class="cardgrid">${shown.map(searchCard).join("")}</div>`;
+}
+function onSearchInput(v){SEARCH_Q=v;const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(v);}
+function viewSearch(){
+  if(!SEARCH)loadSearch().then(()=>{const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(SEARCH_Q);});
+  setTimeout(()=>{const i=document.getElementById("searchinput");if(i&&!SEARCH_Q)i.focus();},0);
+  return `
+    <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">気になる銘柄のシグナルを確認</span></h2>
+    <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off"
+      placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
+    <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去実績で勝率の高い<b style="color:var(--C)">検証済みの買い候補</b>。それ以外の点灯は参考（過熱・中立）。</div>
+    <div id="searchres">${searchResults(SEARCH_Q)}</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 function viewAbout(){
   return `
   <h2>モメンタム指数とは</h2>
@@ -575,6 +647,7 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
 function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
   $("#nav-rank").classList.toggle("on",h.startsWith("#/ranking"));
+  $("#nav-search").classList.toggle("on",h.startsWith("#/search"));
   $("#nav-sig").classList.toggle("on",h.startsWith("#/signals"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -584,6 +657,7 @@ function render(){
   window.scrollTo(0,0);
   try{
     if(h.startsWith("#/ranking")) $("#view").innerHTML=viewRanking();
+    else if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
