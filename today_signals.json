@@ -1,15 +1,4 @@
 {
-  "date": "2026-06-05",
-  "signals": [
-    {
-      "ticker": "8473.T",
-      "name": "ＳＢＩホールディングス",
-      "direction": "BUY"
-    },
-    {
-      "ticker": "2212.T",
-      "name": "山崎製パン",
-      "direction": "BUY"
-    }
-  ]
+  "date": "2026-06-08",
+  "signals": []
 }
