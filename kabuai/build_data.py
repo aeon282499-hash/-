@@ -15,7 +15,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -26,6 +26,8 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
     pass
+
+JST = timezone(timedelta(hours=9))  # runner は UTC のため、取得対象日は JST 基準で決める
 
 HERE = Path(__file__).resolve().parent
 PARENT = HERE.parent
@@ -109,9 +111,11 @@ def _segment_map_from_master(master: dict) -> dict:
 
 def _recent_trading_days(n: int) -> list[str]:
     import jpholiday
-    from datetime import date, timedelta
     days: list[str] = []
-    cur = date.today() - timedelta(days=1)
+    # JST 基準の当日を起点に含める。当日 EOD が未公開なら J-Quants が 0 件を返すだけで、
+    # data_date は実際にレコードが返った最新日（= 前営業日）に自動で下がる（無害）。
+    # 公開され次第その日を拾えるので、朝/夕どちらのビルドでも最新を取りこぼさない。
+    cur = datetime.now(JST).date()
     while len(days) < n:
         if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
             days.append(cur.strftime("%Y-%m-%d"))
@@ -428,7 +432,7 @@ def build() -> dict:
     n_search = export_search_index(rows, data_date)
 
     try:
-        data_lag_days = (datetime.now().date() - datetime.strptime(data_date, "%Y-%m-%d").date()).days
+        data_lag_days = (datetime.now(JST).date() - datetime.strptime(data_date, "%Y-%m-%d").date()).days
     except Exception:
         data_lag_days = None
 
