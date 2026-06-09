@@ -445,7 +445,7 @@ function renderDetail(s){
         <div class="b"><div class="l">10日</div><div class="v ${cls(i.r10)}">${fmtPct(i.r10)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div>
       </div>
-      <div class="muted" style="font-size:11px;margin-top:5px">騰落率はすべて <b style="color:var(--tx)">${DATA.data_date||"最新"} の終値</b>が基準（その前営業日終値との比較）。今日のザラ場・リアルタイム値ではありません。</div>
+      <div class="muted" style="font-size:11px;margin-top:5px">指数・グレード・騰落率はすべて <b style="color:var(--tx)">${DATA.data_date||"最新"} の終値</b>時点（騰落率は前営業日終値比）。<b style="color:var(--tx)">場中（9〜15時）は変わりません</b>。更新は平日 朝7時・夕18時半ごろ（終値ベース・ザラ場のリアルタイム値ではありません）。</div>
       ${sigChips(chip)}
     </div>
     ${exitGuide(s.signals)}
@@ -757,11 +757,13 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <span class="tag">データ日付 ${DATA.data_date||"—"}</span>
       <span class="tag">${freshnessText()}</span>
+      <span class="tag">更新 平日 朝7時・夕18時半ごろ</span>
       <span class="tag">対象 ${DATA.universe_scored?.toLocaleString?.()||"—"}銘柄</span>
     </div>
     <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">
       表示はすべて<b style="color:var(--tx)">最新営業日の終値（EOD）ベース</b>です。リアルタイム配信・PTS（夜間取引）には対応していません。
-      数値は1日1回バッチで生成し、その時点のデータ日付を常に明示しています。
+      数値は<b style="color:var(--tx)">平日 朝（7時ごろ）と夕（18時半ごろ）の2回</b>、終値ベースで再計算します（自動更新の都合で前後することがあります）。
+      <b style="color:var(--tx)">場中（9〜15時）はグレード・指数・前日比は変わりません</b>。その時点のデータ日付を常に明示しています。
       原データは <b style="color:var(--tx)">J-Quants（JPX）</b> の日足を加工・計算したものです。
     </p>
   </div>
