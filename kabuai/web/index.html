@@ -336,7 +336,7 @@ function viewHome(){
 }
 
 let RANK_GRADE="ALL", RANK_SORT="momentum", RANK_LIMIT=60;
-const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日"],["power","POWER"],["sr","SR"]];
+const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日比"],["power","POWER"],["sr","SR"]];
 function setRankGrade(g){RANK_GRADE=g; RANK_LIMIT=60; $("#view").innerHTML=viewRanking();}
 function setRankSort(s){RANK_SORT=s; RANK_LIMIT=60; $("#view").innerHTML=viewRanking();}
 function rankMore(){RANK_LIMIT+=120; $("#view").innerHTML=viewRanking();}
@@ -440,11 +440,12 @@ function renderDetail(s){
           <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${total}銘柄中 #${s.rank}</span></div></div>
       </div>
       <div class="ret3">
-        <div class="b"><div class="l">前日</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
+        <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
         <div class="b"><div class="l">10日</div><div class="v ${cls(i.r10)}">${fmtPct(i.r10)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div>
       </div>
+      <div class="muted" style="font-size:11px;margin-top:5px">騰落率はすべて <b style="color:var(--tx)">${DATA.data_date||"最新"} の終値</b>が基準（その前営業日終値との比較）。今日のザラ場・リアルタイム値ではありません。</div>
       ${sigChips(chip)}
     </div>
     ${exitGuide(s.signals)}
@@ -747,7 +748,7 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
       <li><b style="color:var(--tx)">RSI（買われすぎ度）</b>… 0〜100。高いほど短期で買われすぎ＝過熱気味。</li>
       <li><b style="color:var(--tx)">SR（上昇効率）</b>… 値動きのブレに対して、どれだけ効率よく上げているか。高いほど素直な上昇。</li>
       <li><b style="color:var(--tx)">押し目</b>… 上昇途中の一時的な下げ。　<b style="color:var(--tx)">反転</b>… 下げ止まって上向きに変わる初動。</li>
-      <li><b style="color:var(--tx)">前日比</b>… 前日終値からの変化率(％)。　<b style="color:var(--tx)">大幅高／安</b>… 当日 ±7% 以上の大きな変動。</li>
+      <li><b style="color:var(--tx)">前日比</b>… <b style="color:var(--tx)">データ日付（最新の終値日）</b>の終値が、その前営業日の終値からどれだけ動いたか(％)。証券会社のザラ場・リアルタイムの前日比とは基準日がズレるため、数字が違って見えることがあります（このアプリは終値ベース・1日遅れ）。　<b style="color:var(--tx)">大幅高／安</b>… その終値日に ±7% 以上の大きな変動。</li>
     </ul>
   </div>
 
