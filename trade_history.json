@@ -739,6 +739,16 @@
       "close": 3058.0,
       "pnl": 0.3,
       "win": true
+    },
+    {
+      "date": "2026-06-09",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
+      "direction": "BUY",
+      "open": 3264.0,
+      "close": 3225.0,
+      "pnl": -1.19,
+      "win": false
     }
   ]
 }
