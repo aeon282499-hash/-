@@ -352,29 +352,42 @@ function viewRanking(){
     if(location.hash.replace(/^#/,"").split("?")[0].startsWith("/ranking")) $("#view").innerHTML=viewRanking();
   });
   const base=full?SEARCH.slice():DATA.ranking.slice();
-  let list=RANK_GRADE==="ALL"?base:base.filter(r=>r.grade===RANK_GRADE);
+  const isBuy=r=>(r.signals||[]).some(sigHasEdge);
+  let list=RANK_GRADE==="ALL"?base
+          :RANK_GRADE==="BUY"?base.filter(isBuy)
+          :base.filter(r=>r.grade===RANK_GRADE);
   const sk=RANK_SORT;
   list=list.slice().sort((a,b)=>((b[sk]??-1e9)-(a[sk]??-1e9)));
   const total=list.length, shown=list.slice(0,RANK_LIMIT);
-  const gchips=["ALL","S","A","B","C","D"].map(g=>{
-    const n=g==="ALL"?base.length:base.filter(r=>r.grade===g).length;
-    return `<a class="tab ${g===RANK_GRADE?"on":""}" onclick="setRankGrade('${g}')">${g==="ALL"?"全":g}<span>${n}</span></a>`;
+  const gdefs=[["ALL","全"],["BUY","✅買い候補"],["S","S"],["A","A"],["B","B"],["C","C"],["D","D"]];
+  const gchips=gdefs.map(([g,l])=>{
+    const n=g==="ALL"?base.length:g==="BUY"?base.filter(isBuy).length:base.filter(r=>r.grade===g).length;
+    return `<a class="tab ${g===RANK_GRADE?"on":""}" onclick="setRankGrade('${g}')">${l}<span>${n}</span></a>`;
   }).join("");
   const schips=SORT_DEFS.map(([k,l])=>`<a class="tab ${k===RANK_SORT?"on":""}" onclick="setRankSort('${k}')">${l}</a>`).join("");
-  const cards=shown.map(r=>searchCard(r,false)).join("");
+  const cards=shown.map(r=>searchCard(r,RANK_GRADE==="BUY")).join("");
   const more=total>shown.length
     ? `<div class="tabs" style="margin-top:12px;justify-content:center"><a class="tab" onclick="rankMore()">もっと見る（残り${(total-shown.length).toLocaleString()}件）</a></div>`
     : "";
   const scope=full?`全${base.length.toLocaleString()}銘柄`:`TOP${shown.length}（全銘柄読込中…）`;
-  const cnt=`${(RANK_GRADE==="ALL"?"全グレード":RANK_GRADE+"グレード")} ${total.toLocaleString()}件中 ${shown.length.toLocaleString()}件表示`;
+  const gradeLbl=RANK_GRADE==="ALL"?"全グレード":RANK_GRADE==="BUY"?"✅検証済みの買い候補":RANK_GRADE+"グレード";
+  const cnt=`${gradeLbl} ${total.toLocaleString()}件中 ${shown.length.toLocaleString()}件表示`;
+  const emptyMsg=RANK_GRADE==="BUY"?"本日は検証済みの買い候補が点灯していません":"該当グレードの銘柄がありません";
+  const buyNote=RANK_GRADE==="BUY"
+    ? `<div class="idxnote">✅買い候補＝過去検証で<b>勝率${TRK_WIN_MIN}%以上＆平均プラス</b>の出口がある`
+      +`<a href="#/signals">検証済みシグナル</a>が点灯中の銘柄です（指数・グレードの高さとは別物）。`
+      +`並び替えタブで指数・5日・前日比などの順に並べ替えできます。</div>`
+    : "";
   return `
     <h2>モメンタム指数ランキング <span class="muted" style="font-size:12px;font-weight:400">${scope}</span> <a class="more" href="#/about">指数とは →</a></h2>
     ${idxNote()}
-    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレードで絞り込み</div>
+    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレード・買い候補で絞り込み</div>
     <div class="tabs">${gchips}</div>
-    <div class="tabs" style="margin-top:12px">${schips}</div>
+    ${buyNote}
+    <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え</div>
+    <div class="tabs">${schips}</div>
     <div class="muted" style="font-size:11px;margin:8px 2px 0">${cnt}</div>
-    <div class="cardgrid" style="margin-top:8px">${cards||`<div class="card muted">該当グレードの銘柄がありません</div>`}</div>
+    <div class="cardgrid" style="margin-top:8px">${cards||`<div class="card muted">${emptyMsg}</div>`}</div>
     ${more}
     <p class="disc">${DATA.disclaimer}</p>`;
 }
