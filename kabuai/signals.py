@@ -93,7 +93,7 @@ def detect(rows: list[dict]) -> dict:
         for k in hit:
             groups[k]["count"] += 1
 
-    member_fields = ("code", "name", "price", "momentum", "grade", "r1", "r5", "r10", "r20", "signals")
+    member_fields = ("code", "name", "price", "momentum", "grade", "r1", "r5", "r10", "r20", "rsi", "signals")
     for k, g in groups.items():
         members = [r for r in rows if k in r["signals"]]
         members.sort(key=lambda x: x["momentum"], reverse=True)

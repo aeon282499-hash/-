@@ -396,6 +396,29 @@ def build() -> dict:
     signals = sig.detect(rows)
     sig_counts = {k: signals["groups"][k]["count"] for k in signals["order"]}
 
+    # ── フェーズ11: 全面リバウンド判定（強反転の「広がり」ゲート） ──
+    # bt_best_pick.py (2026-06-10・2021-2026・4636銘柄54万発動・翌朝寄りentry・出口8日/-12%・
+    # 流動性1億円) で確定: 強反転のエッジは「その日の強反転点灯数」に強く依存する。
+    #   点灯10件以上の日(全面リバウンド・年45-55日): 勝率62.5% 平均+2.16%/件 中央+2.00% 陽性年5/5
+    #   点灯1-9件の日(散発・銘柄固有の下落):          勝率42.2% 平均-0.61%/件 2022-2025全year負け
+    # 閾値感度は単調(5件+1.64%→10件+2.16%→20件+2.65%→30件+3.00%)でナイフエッジなし。
+    # 広がり日は他の買い候補も持ち上げる(反転+0.90% vs 通常日+0.06% / accum系+0.71% vs +0.09%)。
+    # 広がり日内ではK絞り(本命1点)より全件分散が有利(K=3で+1.33% vs 全件+2.16%)。
+    REBOUND_B = 10
+    sr_count = sig_counts.get("strong_reversal", 0)
+    rebound = {
+        "sr_count": sr_count,
+        "threshold": REBOUND_B,
+        "mode": "broad" if sr_count >= REBOUND_B else ("sparse" if sr_count >= 1 else "none"),
+        "stats": {  # 上記BTの実測値(理論値・手数料/スリッページ未考慮)
+            "broad": {"win": 62.5, "avg": 2.16, "med": 2.00, "n": 7737, "pos_years": "5/5"},
+            "sparse": {"win": 42.2, "avg": -0.61, "n": 2707},
+            "lift": {"reversal": [0.90, 0.06], "accum": [0.71, 0.09]},  # [広がり日, 通常日] 平均%
+        },
+        "note": ("強反転は『市場全体が深い下落から反発する日』にだけ強いエッジを持つ。"
+                 "点灯が散発の日は銘柄固有の下落で、過去実績では強反転でも平均マイナス。"),
+    }
+
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
@@ -438,7 +461,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase10",
+        "schema": "kabuai-phase11",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -452,6 +475,7 @@ def build() -> dict:
         "search_index": n_search,
         "ai": ai_meta,
         "market": market,
+        "rebound": rebound,
         "signals": signals,
         "signal_track": track,
         "ranking": top,
@@ -459,6 +483,7 @@ def build() -> dict:
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
           f"(skip {n_skip} 履歴不足ほか) / {time.time()-t0:.1f}s")
     print(f"[build] grade分布: {grade_counts}")
+    print(f"[build] リバウンド広がり: 強反転{sr_count}件 → {rebound['mode']} (しきい値{REBOUND_B})")
     print(f"[build] 地合い: {market.get('label','-')} score={market.get('score')} "
           f"[{market.get('grade')}] {market.get('regime')} breadth={market.get('breadth_pct')}%")
     if market.get("segments"):
