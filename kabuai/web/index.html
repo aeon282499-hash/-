@@ -306,14 +306,15 @@ function signalSummary(){
   if(!lit.length)return `<span class="soon">本日の点灯シグナルなし</span>`;
   const total=lit.reduce((a,k)=>a+s.groups[k].count,0);
   const lbl={5:"5日",10:"10日",20:"20日"};
-  const buy=lit.filter(sigHasEdge), ref=lit.filter(k=>!sigHasEdge(k));
-  const buyPill=k=>{const g=s.groups[k],b=sigBest(k);
+  const buy=lit.filter(sigHasEdge).sort((a,b)=>((sigEV(b)||{ev:-1e9}).ev-(sigEV(a)||{ev:-1e9}).ev)), ref=lit.filter(k=>!sigHasEdge(k));
+  const buyPill=k=>{const g=s.groups[k],e=sigEV(k);
+    const win=e?(e.exit?e.exit.win:e.hwin):0, hold=e?(e.exit?e.exit.t:e.h):0;
     return `<a class="sigpill buy" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b>`
-      +`${b?`<small>得意${lbl[b.h]||b.h+"日"}・勝率${b.x.win}%</small>`:""}</a>`;};
+      +`${e?`<small>期待+${e.ev}%・勝率${win}%・保有${hold}日</small>`:""}</a>`;};
   const refPill=k=>{const g=s.groups[k];
     return `<a class="sigpill ref" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b></a>`;};
   const buyBlk=buy.length
-    ? `<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（出口の目安つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
+    ? `<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（期待値の高い順・出口つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
     : `<div class="sigsub muted">本日は検証済みの買いシグナルの点灯なし</div>`;
   const refBlk=ref.length
     ? `<div class="sigsub muted" style="margin-top:11px">参考（過熱・中立／買いエッジ未確認）</div><div class="sigwrap">${ref.map(refPill).join("")}</div>`
@@ -469,18 +470,17 @@ function aiCard(ai){
     </div>`;
 }
 // 詳細画面用: 検証済み買いシグナルがある時だけ「出口の目安」を目立つ callout で出す。
-// 複数の買いシグナルがある場合は勝率が最も高いものの出口(bt_signal_exit.py由来)を採用。
+// 主シグナルは買い候補リストと同じ「期待値が最大のもの」(buyStat)を採用し、画面間で一致させる。
 function exitGuide(ks){
-  const edge=(ks||[]).filter(sigHasEdge); if(!edge.length) return "";
-  let bestK=null,bestW=-1;
-  edge.forEach(k=>{const b=sigBest(k); if(b&&b.x.win>bestW){bestW=b.x.win;bestK=k;}});
-  const g=DATA.signal_track&&DATA.signal_track.groups&&DATA.signal_track.groups[bestK], ex=g&&g.exit;
-  if(!ex||!ex.n) return "";
-  const m=sigMeta(bestK);
+  const bs=buyStat({signals:ks}); if(!bs) return "";
+  const st=bs.best, ex=st.exit; if(!ex||!ex.n) return "";
+  const m=sigMeta(st.k), ev=ex.avg, evc=ev>=0?"pos":"neg";
+  const conf=bs.n>1?`<span class="bp-conf" style="margin-left:6px">+${bs.n-1}本確認</span>`:"";
   return `<div class="card exitcard">
-    <div class="exitline" style="margin-top:0">🚪 <b style="font-size:13px">出口の目安</b>${m?` <span class="muted">（${m.emoji} ${m.label}）</span>`:""}
-      <div style="margin-top:5px;font-size:13px"><b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）</div>
-      <span class="muted exsub">この出口で過去：勝率${ex.win}%／平均${ex.avg>=0?"+":""}${ex.avg}%${ex.rr?`／RR ${ex.rr}`:""}<small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回）</small></span>
+    <div class="exitline" style="margin-top:0">🚪 <b style="font-size:13px">買いの目安（期待値・出口）</b>${m?` <span class="muted">（${m.emoji} ${m.label}）</span>`:""}${conf}
+      <div style="margin-top:6px"><span class="${evc}" style="font-size:18px;font-weight:800">期待値 ${ev>=0?"+":""}${ev}%</span><span class="muted" style="font-size:11px;font-weight:600">/件（出口ルール込み）</span></div>
+      <div style="margin-top:4px;font-size:13px"><b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）・勝率${ex.win}%${ex.rr?`・RR ${ex.rr}`:""}</div>
+      <span class="muted exsub"><small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回検証）</small></span>
       <span class="muted exsub" style="opacity:.8">※翌朝の寄りでエントリー想定。固定ルールの過去シミュレーション（手数料/スリッページ未考慮）で将来を保証しません。</span></div></div>`;
 }
 function renderDetail(s){
