@@ -45,6 +45,9 @@ from screener import (
 STOP_LOSS       = 3.0   # % 固定損切り
 TAKE_PROFIT     = 5.0   # % 固定利確 ※2026-04-29: 3.0→5.0に修正（tracker.pyと整合）
 MAX_HOLD        = 3     # 最大保有営業日数
+GAP_MAX_PCT     = 1.0   # BUY: 寄りが前日終値比+この%超なら見送り（2026-06-11 bt_exit_grid2で
+                        # 確定: 高寄り追いかけは平均回帰の旨味薄。+0.175→+0.194%/件・両半期改善・
+                        # 実運用は「寄り指値=前日終値×1.01」で同じ挙動になる）
 ATR_VOL_CAP     = 2.5   # ATR/終値(%)がこれを超える高ボラ銘柄は除外（売り用）
 ATR_VOL_CAP_BUY = 3.0   # 買いは2026-05-07 BT検証で3.0が最適
 BUY_ONLY        = True  # TrueにするとBUYシグナルのみ対象
@@ -270,6 +273,11 @@ def run_range_backtest(start: str, end: str) -> None:
                     cap = ATR_VOL_CAP_BUY if direction == "BUY" else ATR_VOL_CAP
                     if (atr / last_close * 100) > cap:
                         continue  # 高ボラ銘柄をスキップ
+
+                # ── ギャップアップ見送り（BUYのみ・寄り指値=前日終値×(1+GAP_MAX_PCT%)相当）──
+                if direction == "BUY" and _prev_close and _prev_close > 0:
+                    if entry_open > _prev_close * (1 + GAP_MAX_PCT / 100):
+                        continue  # 高寄り=反発が既に始まった銘柄を追いかけない
 
 
                 # ── 固定ストップ・利確計算 ─────────────────────────
