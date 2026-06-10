@@ -418,6 +418,18 @@ def build() -> dict:
         "note": ("強反転は『市場全体が深い下落から反発する日』にだけ強いエッジを持つ。"
                  "点灯が散発の日は銘柄固有の下落で、過去実績では強反転でも平均マイナス。"),
     }
+    # 広がり日の実績ヒストリー（make_rebound_history.py で手元pklから月1事前計算・コミット）。
+    # 無ければ単に出ない（CI単独でも壊れない・track_longterm と同じ運用）。
+    rh_path = HERE / "rebound_history.json"
+    if rh_path.exists():
+        try:
+            with open(rh_path, encoding="utf-8") as f:
+                rh = json.load(f)
+            if rh.get("threshold") == REBOUND_B and rh.get("recent"):
+                rebound["history"] = rh
+                print(f"[build] リバウンド履歴を注入: 広がり日{rh['summary']['days']}日 ({rh['generated']}時点)")
+        except Exception as e:
+            print(f"[build] リバウンド履歴読込スキップ: {e}")
 
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
