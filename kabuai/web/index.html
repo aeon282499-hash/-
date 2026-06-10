@@ -117,6 +117,23 @@
   .buyplan .bp-meta{color:var(--tx)}
   .buyplan .bp-sig{font-size:10.5px;font-weight:700;color:var(--C);border:1px solid rgba(107,203,119,.5);border-radius:999px;padding:1px 8px}
   .buyplan .bp-conf{font-size:10px;font-weight:800;color:#0e1116;background:var(--C);border-radius:999px;padding:1px 7px}
+  .buylede{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 11px;padding:10px 13px;
+    border-radius:11px;background:linear-gradient(180deg,rgba(107,203,119,.16),rgba(107,203,119,.07));
+    border:1px solid rgba(107,203,119,.5);color:var(--tx)}
+  .buylede .bl-ev{font-weight:900;font-size:18px;letter-spacing:.2px}
+  .buylede .bl-ev small{font-weight:700;font-size:10px;color:var(--mut);margin-left:1px}
+  .buylede .bl-cnt{font-size:12px;font-weight:700}.buylede .bl-cnt b{color:var(--C)}
+  .buylede .bl-top{font-size:12px;font-weight:700;margin-left:auto}
+  .buylede .bl-top b{color:var(--tx)}.buylede .bl-top small{color:var(--C);font-weight:800;margin-left:3px}
+  .hero{display:block;margin-top:11px;padding:12px 14px;border-radius:12px;color:var(--tx);
+    background:linear-gradient(180deg,rgba(107,203,119,.18),rgba(107,203,119,.06));
+    border:1px solid rgba(107,203,119,.55);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
+  .hero .h-tag{font-size:11px;font-weight:800;color:var(--C);letter-spacing:.3px}
+  .hero .h-nm{display:flex;align-items:baseline;gap:8px;margin-top:3px}
+  .hero .h-nm b{font-size:16px;font-weight:800}.hero .h-nm span{font-size:11px;color:var(--mut)}
+  .hero .h-ev{font-size:20px;font-weight:900;margin-top:4px}
+  .hero .h-ev small{font-size:10px;font-weight:700;color:var(--mut);margin-left:2px}
+  .hero .buyplan{margin-top:9px}
   .idxnote{margin:2px 2px 10px;padding:8px 11px;border-radius:8px;background:rgba(255,159,67,.07);
     border:1px solid rgba(255,159,67,.26);font-size:11.5px;line-height:1.6;color:var(--tx)}
   .idxnote b{font-weight:800;color:#ff9f43}
@@ -300,6 +317,21 @@ function buyPlanLine(r){
     +`<span class="bp-meta">勝率${win}% ・ ${hold}${sl}</span>`
     +`<span class="bp-sig">${st.emoji}${st.label}</span>${conf}</div>`;
 }
+// 本日の検証済み買い候補バスケット（全買いシグナル横断で銘柄をdedup・期待値順）。
+function buyBasket(){
+  const s=DATA.signals; if(!s) return null;
+  const lit=s.order.filter(k=>s.groups[k].count>0&&sigHasEdge(k));
+  if(!lit.length) return null;
+  const seen={},members=[];
+  lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
+    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};members.push(o);}
+    if(o.signals.indexOf(k)<0)o.signals.push(k);}));
+  members.sort((a,b)=>{const ea=buyStat(a),eb=buyStat(b);
+    return ((eb?eb.ev:-1e9)-(ea?ea.ev:-1e9))||((eb?eb.n:0)-(ea?ea.n:0))||(b.momentum-a.momentum);});
+  const evs=members.map(r=>(buyStat(r)||{ev:0}).ev);
+  const avg=evs.length?Math.round(evs.reduce((a,b)=>a+b,0)/evs.length*100)/100:0;
+  return {members,count:members.length,avgEV:avg,top:members[0]};
+}
 function signalSummary(){
   const s=DATA.signals;if(!s)return `<span class="soon">シグナルなし</span>`;
   const lit=s.order.filter(k=>s.groups[k].count>0);
@@ -313,8 +345,10 @@ function signalSummary(){
       +`${e?`<small>期待+${e.ev}%・勝率${win}%・保有${hold}日</small>`:""}</a>`;};
   const refPill=k=>{const g=s.groups[k];
     return `<a class="sigpill ref" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b></a>`;};
+  const bb=buyBasket();
+  const headline=bb?`<a class="buylede" href="#/signals/buycand"><span class="bl-ev ${bb.avgEV>=0?"pos":"neg"}">平均期待値 ${bb.avgEV>=0?"+":""}${bb.avgEV}%<small>/件</small></span><span class="bl-cnt">✅買い候補 <b>${bb.count}</b>銘柄</span><span class="bl-top">🏆本命 <b>${bb.top.name}</b> <small>期待+${(buyStat(bb.top)||{ev:0}).ev}%</small></span></a>`:"";
   const buyBlk=buy.length
-    ? `<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（期待値の高い順・出口つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
+    ? `${headline}<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（期待値の高い順・出口つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
     : `<div class="sigsub muted">本日は検証済みの買いシグナルの点灯なし</div>`;
   const refBlk=ref.length
     ? `<div class="sigsub muted" style="margin-top:11px">参考（過熱・中立／買いエッジ未確認）</div><div class="sigwrap">${ref.map(refPill).join("")}</div>`
@@ -355,6 +389,9 @@ function viewHome(){
     <h2>地合い</h2>
     <div class="card">${marketCard()}</div>
 
+    <h2>🎯 今日の買い候補 <a class="more" href="#/signals">すべて見る →</a></h2>
+    <div class="card">${signalSummary()}</div>
+
     <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
     ${idxNote()}
     <div class="card" style="padding:4px 12px">${rows}</div>
@@ -366,9 +403,6 @@ function viewHome(){
         ${["S","A","B","C","D"].map(g=>`<span>${badge(g)} <b>${gc[g]||0}</b></span>`).join("")}
       </div>
     </div>
-
-    <h2>チンパンシグナル <a class="more" href="#/signals">すべて見る →</a></h2>
-    <div class="card">${signalSummary()}</div>
 
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
 }
@@ -651,12 +685,21 @@ function viewSignals(active){
   const disc=`<p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
   if(isBuy){
     const cards=buyMembers.map(r=>sigMemberCard(r,true,true)).join("");
+    const evs=buyMembers.map(r=>(buyStat(r)||{ev:0}).ev);
+    const avgEV=Math.round(evs.reduce((a,b)=>a+b,0)/evs.length*100)/100;
+    const top=buyMembers[0], ts=buyStat(top)||{ev:0,n:1};
+    const hero=`<a class="hero" href="#/detail/${top.code}">
+        <div class="h-tag">🏆 本命（期待値トップ）</div>
+        <div class="h-nm"><b>${top.name}</b><span>${top.code}・¥${(top.price||0).toLocaleString()}</span></div>
+        <div class="h-ev ${ts.ev>=0?"pos":"neg"}">期待値 ${ts.ev>=0?"+":""}${ts.ev}%<small>/件</small></div>
+        ${buyPlanLine(top)}</a>`;
     return `
     <h2>チンパンシグナル</h2>
     <div class="tabs">${tabs}</div>
     <div class="card" style="margin:10px 0">
       <div style="font-weight:700">✅ 検証済みの買い候補
-        <span class="muted" style="font-weight:400">・${buyMembers.length}銘柄・期待値順</span></div>
+        <span class="muted" style="font-weight:400">・${buyMembers.length}銘柄・期待値順・平均期待値 ${avgEV>=0?"+":""}${avgEV}%/件</span></div>
+      ${hero}
       <div style="font-size:13px;line-height:1.7;margin-top:6px">今日点灯したシグナルのうち、<b>過去の検証で「買い」の成績がよかったタイプ</b>だけを、<b>期待値（出口込みの平均リターン）が高い順</b>に並べた一覧です。</div>
       <div class="muted" style="font-size:11.5px;line-height:1.75;margin-top:7px">
         ・対象＝${buyKeys.map(k=>s.groups[k].label).join("・")}（過去に勝率${TRK_WIN_MIN}%以上かつ平均プラスの「得意な保有期間」があったシグナル）<br>
