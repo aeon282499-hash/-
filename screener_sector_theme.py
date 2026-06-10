@@ -137,7 +137,8 @@ def run_sector_theme_screener() -> tuple[list[dict], list[dict], list[dict], dic
         print(f"[screener_st] 日経判定失敗: {e}")
 
     _load_earnings_calendar()
-    today_str = _date.today().strftime("%Y-%m-%d")
+    from screener import _today_jst   # JST基準（UTCランナーの朝は date.today() が1日古い）
+    today_str = _today_jst().strftime("%Y-%m-%d")
 
     # 判定 + Sec_OR_Theme フィルタ
     raw_buy: list[dict] = []

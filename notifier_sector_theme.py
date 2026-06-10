@@ -76,7 +76,8 @@ def _fmt_sell_signal_embed(s: dict, rank: int) -> dict:
 
 def send_signals(signals: list[dict], sell_signals: list[dict] | None,
                  macro: dict, diag: dict | None = None) -> None:
-    today = date.today().strftime("%Y-%m-%d (%a)")
+    from screener import _today_jst   # JST基準（UTCランナーの朝は1日古い日付表示になる）
+    today = _today_jst().strftime("%Y-%m-%d (%a)")
     sell_signals = sell_signals or []
 
     if not signals and not sell_signals:

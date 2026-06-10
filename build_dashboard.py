@@ -66,9 +66,10 @@ def build() -> dict:
     stocks = rank_stocks(ranked, tw)
     summ = tier_summary(stocks)
 
+    from screener import _today_jst, _JST   # JST基準（UTCランナーの朝は1日古い表示になる）
     snapshot = {
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "date": date.today().strftime("%Y-%m-%d"),
+        "generated_at": datetime.now(_JST).strftime("%Y-%m-%d %H:%M:%S"),
+        "date": _today_jst().strftime("%Y-%m-%d"),
         "tier_summary": summ,
         "driver_returns": driver_returns,
         "themes": [_theme_public(tr, tw.get(tr["theme"])) for tr in ranked],

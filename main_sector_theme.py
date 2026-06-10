@@ -23,8 +23,15 @@ TODAY_SIGNALS = Path("today_signals_sector_theme.json")
 DIAG_LOG = Path("logs/sector_theme_diag.jsonl")
 
 
+def _today_jst() -> date:
+    # GitHubランナーはUTC。朝8時台のJSTはUTC前日なので date.today() は1日古い
+    # 日付を返す（2026-06-10 スイングで修正したのと同じ罠）。再開時の事故防止。
+    from datetime import datetime, timedelta, timezone
+    return datetime.now(timezone(timedelta(hours=9))).date()
+
+
 def is_today_trading_day() -> bool:
-    today = date.today()
+    today = _today_jst()
     return today.weekday() < 5 and not jpholiday.is_holiday(today)
 
 
@@ -35,7 +42,7 @@ def main():
         print("[main_st] 本日は休場日 → スキップ")
         return
 
-    today_str = date.today().strftime("%Y-%m-%d")
+    today_str = _today_jst().strftime("%Y-%m-%d")
 
     # 重複防止: 既に当日実行済みならスキップ
     if TODAY_SIGNALS.exists():

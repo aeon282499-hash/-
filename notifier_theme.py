@@ -79,7 +79,8 @@ def _hot_theme_embed(r: dict) -> dict:
 
 
 def send_theme_signals(ranked: list[dict], hot: list[dict]) -> None:
-    today = date.today().strftime("%Y-%m-%d (%a)")
+    from screener import _today_jst   # JST基準（UTCランナーの朝は1日古い日付表示になる）
+    today = _today_jst().strftime("%Y-%m-%d (%a)")
 
     if not ranked:
         _post({"embeds": [{
