@@ -31,6 +31,7 @@ screener.py — 銘柄選定・売買シグナルロジック
 import os
 import ssl
 import time
+from datetime import datetime as _dt, timedelta as _td, timezone as _tz
 
 import requests
 import yfinance as yf
@@ -38,6 +39,15 @@ import pandas as pd
 import numpy as np
 
 ssl._create_default_https_context = ssl._create_unverified_context
+
+# GitHubランナーはUTC。朝8時台のJSTはUTC前日なので date.today() は1日古い日付を返し、
+# 取得窓が前営業日に届かない（=毎朝1営業日古い終値で判定する）バグになる。
+# 日付の「今日」は必ずJST基準で取る（2026-06-10修正・kabuai 8b97fdf と同じ罠）。
+_JST = _tz(_td(hours=9))
+
+
+def _today_jst():
+    return _dt.now(_JST).date()
 
 # ================================================================
 # === 閾値設定 ===
@@ -190,7 +200,7 @@ def batch_download_jquants(
                 trading_days.append(cur.strftime("%Y-%m-%d"))
             cur += timedelta(days=1)
     else:
-        cur = _date.today() - timedelta(days=1)
+        cur = _today_jst() - timedelta(days=1)   # JST基準（UTCランナーで1日ズレるのを防ぐ）
         while len(trading_days) < lookback_trading_days:
             if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
                 trading_days.append(cur.strftime("%Y-%m-%d"))
@@ -323,7 +333,7 @@ def batch_download_stooq(
     """
     from datetime import date as _date, timedelta
     if end is None:
-        end_date = _date.today()
+        end_date = _today_jst()   # JST基準（UTCランナーで1日ズレるのを防ぐ）
     else:
         end_date = _date.fromisoformat(end)
     if start is None:
@@ -982,8 +992,7 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
 
     # ── 決算カレンダー読み込み（BT効果確認済み・PF1.25→1.30）─────────────────
     _load_earnings_calendar()
-    from datetime import date as _date
-    today_str = _date.today().strftime("%Y-%m-%d")
+    today_str = _today_jst().strftime("%Y-%m-%d")   # JST基準（決算±3日窓の判定日）
 
     # ── 日経225データ取得（市場フィルター用）─────────
     nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可

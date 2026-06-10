@@ -157,9 +157,12 @@ def run_screener_day() -> tuple[list[dict], dict]:
         tickers.append("1321.T")
     print(f"[screener_day] ユニバース: {len(tickers)} 銘柄")
 
-    from datetime import date as _date, timedelta as _td
-    today_str  = _date.today().strftime("%Y-%m-%d")
-    start_str  = (_date.today() - _td(days=90)).strftime("%Y-%m-%d")
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    # JST基準（GitHubランナーはUTC。朝8時台は date.today() がUTC前日を返し、
+    # 「今日」が昨日になって前日確定足の窓が1日ズレる。2026-06-10修正）
+    _today = _dt.now(_tz(_td(hours=9))).date()
+    today_str  = _today.strftime("%Y-%m-%d")
+    start_str  = (_today - _td(days=90)).strftime("%Y-%m-%d")
     token = _jquants_id_token()
     data  = batch_download_jquants(token, start=start_str, end=today_str, tickers=tickers)
     if not data:
