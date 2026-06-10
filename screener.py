@@ -141,7 +141,9 @@ def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
         f"{_JQUANTS_BASE}{path}",
         headers={"x-api-key": token},
         params=params or {},
-        timeout=60,
+        # (接続, 読み取り)。接続10秒=API全面障害時に各リクエスト60秒待ちで
+        # 配信が寄り(9:00)を過ぎるのを防ぐ（2026-06-10障害でスイングstep91分の教訓）
+        timeout=(10, 50),
         verify=_JQUANTS_VERIFY_SSL,
     )
     resp.raise_for_status()
@@ -211,19 +213,25 @@ def batch_download_jquants(
           f"（{len(trading_days)} 営業日）を取得中...")
 
     all_records: list[dict] = []
-    for i, date_str in enumerate(trading_days):
+    got_days: set[str] = set()
+
+    def _fetch_day(date_str: str) -> bool:
+        """1営業日分を取得して all_records に追加。レコードが取れたら True。"""
         pagination_key = None
+        ok = False
         while True:
             params: dict = {"date": date_str}
             if pagination_key:
                 params["pagination_key"] = pagination_key
             try:
-                data       = _jquants_get("/equities/bars/daily", token, params)
-                records    = data.get("data", [])
-                all_records.extend(records)
+                data    = _jquants_get("/equities/bars/daily", token, params)
+                records = data.get("data", [])
+                if records:
+                    all_records.extend(records)
+                    ok = True
                 pagination_key = data.get("pagination_key")
                 if not pagination_key:
-                    break
+                    return ok
                 time.sleep(1.2)  # ページネーション間も待機
             except Exception as e:
                 if "429" in str(e):
@@ -231,10 +239,32 @@ def batch_download_jquants(
                     time.sleep(60)
                     continue
                 print(f"  [jquants] {date_str} 取得失敗: {e}")
-                break
+                return ok
+
+    for i, date_str in enumerate(trading_days):
+        if _fetch_day(date_str):
+            got_days.add(date_str)
         if (i + 1) % 10 == 0:
             print(f"  [jquants] {i+1}/{len(trading_days)} 日完了...")
         time.sleep(1.2)  # 1分60リクエスト制限対応（1.2秒 = 最大50req/分）
+
+    # ── 最新営業日ガード（lookbackモード=本番朝のみ）──────────────────
+    # シグナルの鮮度は前営業日の終値が命（1日古いデータで配信するとエッジの大半を失う
+    # ことを bt_timing_breadth.py で実証済み）。最新日が取れていなければ公開遅延の
+    # 可能性があるので最大3回リトライし、それでも欠けるなら配信しない（誤配信より無配信）。
+    if not (start and end) and trading_days:
+        last_day = trading_days[-1]
+        for attempt in range(3):
+            if last_day in got_days:
+                break
+            print(f"  [jquants] 最新営業日 {last_day} 未取得 → 60秒待機して再試行 ({attempt+1}/3)...")
+            time.sleep(60)
+            if _fetch_day(last_day):
+                got_days.add(last_day)
+        if last_day not in got_days:
+            print(f"[jquants] 最新営業日 {last_day} のデータが取得できません → "
+                  f"古いデータでの誤判定を避けるため中止（シグナルなし扱い）")
+            return {}
 
     if not all_records:
         print("[jquants] データ取得件数: 0")
