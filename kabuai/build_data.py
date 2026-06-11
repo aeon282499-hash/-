@@ -431,6 +431,55 @@ def build() -> dict:
         except Exception as e:
             print(f"[build] リバウンド履歴読込スキップ: {e}")
 
+    # ── フェーズ12: テーマ爆益（blast）セクション ──
+    # 親リポのテーマトラッカーが毎朝コミットする dashboard_data.json から blast スコアを
+    # 取り込む。検証(bt_exit/bt_exit_regime 2026-06-01): blast>=70 ×「翌寄り買い→8営業日
+    # 保有・利確なし・SL-12%」= +2.36%/件・PF1.62(損切りなし理論値 +3.03%/PF1.84・n1481)。
+    # バーベル型(勝率53.7%)・検証期間2025-04〜2026-05(1.1年)・下げ相場ではシグナル自然沈黙。
+    # 朝ビルド(7時)はダッシュボード生成(8時台)より早いため、テーマ日付は1営業日古いことが
+    # ある=セクションに日付を明示して正直に出す。無ければ非表示(非致命)。
+    theme_blast = None
+    tb_path = HERE.parent / "dashboard_data.json"
+    if tb_path.exists():
+        try:
+            with open(tb_path, encoding="utf-8") as f:
+                tb = json.load(f)
+            members = []
+            for s in tb.get("stocks", []):
+                bl = s.get("blast")
+                if bl is None or bl < 50:        # 50未満は載せない(本命70+/参考50-69)
+                    continue
+                members.append({
+                    "code": str(s.get("ticker", "")).replace(".T", ""),
+                    "name": s.get("name", ""),
+                    "theme": s.get("theme", ""),
+                    "blast": round(float(bl), 1),
+                    "heat": s.get("theme_heat"),
+                    "dev": s.get("dev"),
+                    "r20": round(float(s.get("r20", 0)) * 100, 1) if s.get("r20") is not None else None,
+                    "vr": s.get("vr"),
+                    "price": s.get("close"),
+                    "overext": bool(s.get("overextended")),
+                })
+            members.sort(key=lambda x: x["blast"], reverse=True)
+            theme_blast = {
+                "date": tb.get("date"),
+                "threshold": 70,
+                "plan": {"hold": 8, "sl": 12, "tp": None,
+                         "text": "翌寄り買い → 約8営業日保有・利確なし(勝ち馬は走らせる)・損切り-12%(保険)"},
+                "stats": {"win": 53.7, "avg": 2.36, "pf": 1.62, "stop_rate": 22,
+                          "avg_nostop": 3.03, "pf_nostop": 1.84, "n": 1481,
+                          "period": "2025-04〜2026-05"},
+                "members": members[:24],
+                "n_hot": sum(1 for m in members if m["blast"] >= 70),
+                "note": ("テーマ銘柄(約140)のうち「もう走っている×超ホットなテーマ×大商い」の継続型スコア。"
+                         "勝率53%で裾の大化けを取りに行くバーベル型＝損切り-12%の厳守が前提。"
+                         "下げ相場では条件が同時成立しにくくシグナルが自然に減る(内蔵プロテクション)。"),
+            }
+            print(f"[build] テーマ爆益: {tb.get('date')} 時点 blast50+={len(members)} / 70+={theme_blast['n_hot']}")
+        except Exception as e:
+            print(f"[build] テーマ爆益読込スキップ: {e}")
+
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
@@ -473,7 +522,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase11",
+        "schema": "kabuai-phase12",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -488,6 +537,7 @@ def build() -> dict:
         "ai": ai_meta,
         "market": market,
         "rebound": rebound,
+        "theme_blast": theme_blast,
         "signals": signals,
         "signal_track": track,
         "ranking": top,
