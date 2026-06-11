@@ -13,6 +13,7 @@ jobs:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       DISCORD_WEBHOOK_BUY_MID_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_MID_URL }}
       DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +27,19 @@ jobs:
           python - << 'PYEOF'
           import json, os, requests
           from notifier import _build_buy_embed
+          from screener import batch_download_jquants, _jquants_id_token
 
           sigs = json.load(open("today_signals.json", encoding="utf-8")).get("signals", [])
           if not sigs:
               print("シグナルなし → テスト中止"); raise SystemExit(0)
+
+          # today_signals.json は ticker/name/direction のみ保存のため、前日終値を補完
+          # （本物の朝配信はスクリーナーの完全データを使うのでこの補完は不要＝テスト専用）
+          token = _jquants_id_token()
+          data = batch_download_jquants(token, lookback_trading_days=2)
+          for s in sigs:
+              df = data.get(s["ticker"])
+              s["prev_close"] = float(df["Close"].iloc[-1]) if df is not None and len(df) else 0
           tiers = [
               {"key": "main",  "label": "大資金", "emoji": "",   "size": 1_000_000, "hook": os.getenv("DISCORD_WEBHOOK_URL", "").strip()},
               {"key": "mid",   "label": "中資金", "emoji": "🔵", "size": 500_000,   "hook": os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip()},
