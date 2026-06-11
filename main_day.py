@@ -354,7 +354,13 @@ def main() -> None:
         save_day_signals(kept + new_records)
 
         # ── ④ Discord にシグナル送信 ─────────────────────
-        send_day_signals(signals, today, macro)
+        # 2026-06-11 ユーザー決定: Discord=スイング寄指+15時処分だけに絞る。
+        # デイトレv2は判定・JSON保存(day_signals.json)を継続し、発火時のみ通知。
+        # 毎朝の「シグナルなし」通知は廃止(ノイズ削減・アプリ集約方針)。
+        if signals:
+            send_day_signals(signals, today, macro)
+        else:
+            print("[main_day] シグナル0件 → Discord通知なし（アプリ集約方針・判定とJSON保存は継続）")
 
         # 配信完了マーカー (重複防止用)
         with open(LAST_RUN_FILE, "w", encoding="utf-8") as f:

@@ -440,6 +440,9 @@ function viewHome(){
     ${(()=>{const tb=DATA.theme_blast;if(!tb||!tb.members||!tb.members.length)return "";
       const top=tb.members[0];
       return `<a href="#/blast" class="blast-tease">🔥 <span style="flex:1"><b>テーマ爆益</b>（8日プラン・PF${(tb.stats||{}).pf||"—"}）— 本命 <b>${tb.n_hot||0}件</b>${tb.n_hot?`・筆頭 ${top.name}`:""}</span><span class="muted">→</span></a>`;})()}
+    ${(()=>{const sc=DATA.sector_today;if(!sc)return "";
+      const n=(sc.buy||[]).length+(sc.sell||[]).length;
+      return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">今日のセクターローテ</b> — ${sc.is_today?`本日 <b>${n}件</b>`:`${sc.date}分 ${n}件（8:40過ぎ更新）`}</span><span class="muted">→</span></a>`;})()}
 
     <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
     ${idxNote()}
@@ -981,6 +984,43 @@ function viewBlast(){
   <p class="disc">${tb.note||""}<br>${DATA.disclaimer}</p>`;
 }
 
+// ── フェーズ13: 📡今日のセクターローテ（当日寄り執行シグナル・Discordから移設） ──
+function viewSector(){
+  const sc=DATA.sector_today;
+  const head=`<h2>📡 今日のセクターローテ <span class="muted" style="font-size:12px;font-weight:400">（当日の寄り付きで執行するシグナル）</span></h2>`;
+  if(!sc) return head+`<div class="card muted" style="margin-top:10px">セクターローテのデータがまだありません。平日の朝8:40過ぎの更新で当日分が載ります。</div>`;
+  const fresh=sc.is_today
+    ?`<span class="tag" style="margin:8px 0;display:inline-block">✅ 本日 ${sc.date} 分</span>`
+    :`<div class="idxnote" style="margin-top:8px">⚠️ これは <b>${sc.date}</b> のシグナルです（参考表示）。当日分は<b>平日 朝8:40過ぎ</b>の更新で反映されます。寄りが終わった後に古いシグナルを追いかけないでください。</div>`;
+  const st=sc.stats||{};
+  const row=(s,sell)=>`<div class="card">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <b style="font-size:15px">${s.name}</b><span class="muted" style="font-size:11px">${s.code}${s.price?`・前日 ¥${(s.price||0).toLocaleString()}`:""}</span>
+        <span style="margin-left:auto;font-weight:800;color:${sell?"#ff6b6b":"#6bcb77"}">${sell?"🔻空売り":"🟢買い"}</span></div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">${s.sector||""}${s.in_theme?"・テーマ該当":""}${sell&&s.day_change!=null?`・前日比+${(+s.day_change).toFixed(1)}%`:""}</div>
+      <div class="ret3" style="margin-top:6px">
+        <div class="b"><div class="l">RSI</div><div class="v">${s.rsi!=null?s.rsi:"—"}</div></div>
+        <div class="b"><div class="l">25MA乖離</div><div class="v ${cls(s.dev)}">${fmtPct(s.dev)}</div></div>
+        <div class="b"><div class="l">売買代金</div><div class="v">${s.turnover_oku!=null?s.turnover_oku+"億":"—"}</div></div>
+      </div>
+      <div class="muted" style="font-size:11.5px;margin-top:6px">🚪 ${sell?sc.plan_sell:sc.plan_buy}</div></div>`;
+  const buys=(sc.buy||[]).map(s=>row(s,false)).join("");
+  const sells=(sc.sell||[]).map(s=>row(s,true)).join("");
+  return `${head}${fresh}
+  <div class="card" style="margin:10px 0">
+    <div style="font-weight:700">📋 これは何？</div>
+    <div class="muted" style="font-size:12px;line-height:1.75;margin-top:5px">
+      ・<b style="color:var(--tx)">買い</b>＝売られすぎ反発狙い×「強いセクター or ホットテーマ」だけに絞った逆張り（過去検証 PF${(st.buy||{}).pf}・累積+${(st.buy||{}).cum}%）<br>
+      ・<b style="color:var(--tx)">空売り</b>＝最弱セクターの不自然な急騰を売る（PF${(st.sell||{}).pf}・全5年プラス・1日1件まで）<br>
+      ・🔰 <b>初心者の方は、まずホームの✅買い候補（4.4年検証・寄指で安全に入る）だけでOK</b>。これは当日朝に成行で動ける中級者向けです<br>
+      ・あくまで過去の傾向で、利益を保証するものではありません</div>
+  </div>
+  ${(sc.buy||[]).length?`<div class="sigsub buyhead">🟢 買い（${sc.buy.length}件）</div><div class="cardgrid">${buys}</div>`:""}
+  ${(sc.sell||[]).length?`<div class="sigsub" style="margin-top:10px;font-weight:700">🔻 空売り（${sc.sell.length}件）</div><div class="cardgrid">${sells}</div>`:""}
+  ${!(sc.buy||[]).length&&!(sc.sell||[]).length?`<div class="card muted">この日のセクターローテシグナルは0件です（条件成立なし＝見送りが正解の日）。</div>`:""}
+  <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
   $("#nav-rank").classList.toggle("on",h.startsWith("#/ranking"));
@@ -998,6 +1038,7 @@ function render(){
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
     else if(h.startsWith("#/blast")) $("#view").innerHTML=viewBlast();
+    else if(h.startsWith("#/sector")) $("#view").innerHTML=viewSector();
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
     else $("#view").innerHTML=viewHome();
   }catch(e){

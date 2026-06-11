@@ -55,12 +55,13 @@ def main():
         except Exception:
             pass
 
-    # ── 2026-06-11 ユーザー決定: SELL専用(1日1件)で再開 → 同日夜、BUYも再開 ──
-    # BUY=スイング条件×(セクター上位50% OR テーマ語)・PF1.31/+459%・BT準拠の寄り成行のまま
-    # (寄指はスイング本体でのみ検証/帳簿対応済みのため、セクター側への適用は別途検証してから)。
-    # SELL=最弱セクター急騰売り(PF1.37/+45.9%/全5年プラス)・1日1件上限は維持。
+    # ── 2026-06-11 ユーザー決定(最終形): Discord=スイング寄指+15時処分だけに絞る ──
+    # セクターローテはBUY/SELLとも判定・JSONコミットは毎朝継続するが、Discordには送らず
+    # モメンタムチンパンの「今日のシグナル」(朝8:40ビルド)が today_signals_sector_theme.json
+    # を取り込んで表示する=アプリ集約。SELLの1日1件上限は維持。
     SELL_ONLY = False
     MAX_SELL_PER_DAY = 1
+    DISCORD_NOTIFY = False   # True に戻せばDiscord配信が復活
 
     try:
         signals, sell_signals, all_pass, macro, diag = run_sector_theme_screener()
@@ -95,7 +96,10 @@ def main():
         print("\n[main_st] --dry-run のため Discord 送信せず終了")
         return
 
-    send_signals(signals, sell_signals, macro, diag)
+    if DISCORD_NOTIFY:
+        send_signals(signals, sell_signals, macro, diag)
+    else:
+        print("[main_st] DISCORD_NOTIFY=False → Discord送信せずJSON保存のみ（アプリ集約モード）")
 
     # 配信履歴を保存 (重複防止用)
     payload = {
@@ -106,6 +110,7 @@ def main():
                 "ticker": s["ticker"], "name": s["name"],
                 "rsi": s["rsi"], "deviation": s["deviation"],
                 "turnover_oku": s["turnover"] / 1e8,
+                "prev_close": s.get("prev_close", 0),   # アプリ表示用(2026-06-11追加)
                 "in_sector_top": s.get("in_sector_top", False),
                 "in_theme": s.get("in_theme", False),
                 "sector": s.get("sector", ""),
@@ -117,6 +122,7 @@ def main():
                 "rsi": s["rsi"], "deviation": s["deviation"],
                 "day_change": s.get("day_change", 0),
                 "turnover_oku": s["turnover"] / 1e8,
+                "prev_close": s.get("prev_close", 0),   # アプリ表示用(2026-06-11追加)
                 "sector": s.get("sector", ""),
             } for s in sell_signals
         ],

@@ -480,6 +480,44 @@ def build() -> dict:
         except Exception as e:
             print(f"[build] テーマ爆益読込スキップ: {e}")
 
+    # ── フェーズ13: 今日のセクターローテ（当日寄りで執行するシグナルの取り込み） ──
+    # 親リポの main_sector_theme.py が毎朝8:25頃にコミットする today_signals_sector_theme.json
+    # を表示する（Discord配信は停止済み=アプリ集約）。朝8:40の追加ビルドで当日分を寄り前に公開。
+    # 7時ビルド時点では前営業日の断面になるため is_today フラグで正直に区別する。
+    # BT実績: BUY=スイング条件×(セクター上位50% OR テーマ語) PF1.31/+459%、
+    #         SELL=最弱セクター急騰売り PF1.37/+45.9%/全5年プラス(1日1件上限)。
+    sector_today = None
+    st_path = HERE.parent / "today_signals_sector_theme.json"
+    if st_path.exists():
+        try:
+            with open(st_path, encoding="utf-8") as f:
+                stj = json.load(f)
+            today_jst_str = datetime.now(JST).strftime("%Y-%m-%d")
+            def _st_row(s, sell=False):
+                r = {"code": str(s.get("ticker", "")).replace(".T", ""),
+                     "name": s.get("name", ""), "rsi": s.get("rsi"),
+                     "dev": s.get("deviation"), "price": s.get("prev_close"),
+                     "turnover_oku": round(float(s.get("turnover_oku", 0)), 0),
+                     "sector": s.get("sector", "")}
+                if sell:
+                    r["day_change"] = s.get("day_change")
+                else:
+                    r["in_theme"] = bool(s.get("in_theme"))
+                return r
+            sector_today = {
+                "date": stj.get("date"),
+                "is_today": stj.get("date") == today_jst_str,
+                "buy": [_st_row(s) for s in stj.get("signals", [])],
+                "sell": [_st_row(s, sell=True) for s in stj.get("sell_signals", [])],
+                "plan_buy": "当日9:00 寄り成行で買い → 損切り-3%/利確+5%のOCO・RSI50回復か3日目の大引けで手仕舞い",
+                "plan_sell": "当日9:00 寄り成行で空売り → 損切り+3%/利確-5%・RSI50か3日目大引けで買い戻し",
+                "stats": {"buy": {"pf": 1.31, "cum": 459}, "sell": {"pf": 1.37, "cum": 45.9, "pos_years": "5/5"}},
+            }
+            print(f"[build] セクターローテ: {stj.get('date')} 分 BUY{len(sector_today['buy'])}/SELL{len(sector_today['sell'])} "
+                  f"(is_today={sector_today['is_today']})")
+        except Exception as e:
+            print(f"[build] セクターローテ読込スキップ: {e}")
+
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
@@ -522,7 +560,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase12",
+        "schema": "kabuai-phase13",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -538,6 +576,7 @@ def build() -> dict:
         "market": market,
         "rebound": rebound,
         "theme_blast": theme_blast,
+        "sector_today": sector_today,
         "signals": signals,
         "signal_track": track,
         "ranking": top,
