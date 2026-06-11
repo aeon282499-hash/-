@@ -49,6 +49,22 @@ _JST = _tz(_td(hours=9))
 def _today_jst():
     return _dt.now(_JST).date()
 
+
+GAP_MAX_PCT = 1.0  # BUY寄指: 前日終値比+1%超の高寄りは約定させない（2026-06-11 BT確定:
+                   # bt_exit_grid2ローカル+0.175→+0.194%/件、公式RunA PF1.13→1.14、
+                   # RunB(2024-2026) PF1.25→1.35/累積+367→+390%。実装は寄付限定指値）
+
+
+def yose_limit_price(prev_close: float, gap_max_pct: float = GAP_MAX_PCT) -> int | None:
+    """寄指（寄付限定指値）の指値価格 = 前日終値×(1+gap_max_pct%) を呼値単位で切り下げ。
+    呼値は普通銘柄の刻み（〜3,000円:1円/〜5,000円:5円/〜30,000円:10円）を使う。
+    粗い刻みで丸めた価格はTOPIX500銘柄の細かい刻みでも常に有効。"""
+    if not prev_close or prev_close <= 0:
+        return None
+    raw = prev_close * (1 + gap_max_pct / 100)
+    tick = 1 if raw <= 3000 else (5 if raw <= 5000 else 10)
+    return int(raw // tick) * tick
+
 # ================================================================
 # === 閾値設定 ===
 # ================================================================

@@ -169,12 +169,14 @@ def _build_buy_embed(buy_signals: list[dict], tier: dict, *, date_str: str,
         lines.append(header)
         lines.append("")
     lines += [
-        f"🎯 **9:00 寄り付き成行**・1件{size_man}万円",
+        f"🎯 **寄指（寄付限定指値）**で発注・1件{size_man}万円",
+        f"　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
         f"🛑 損切 寄値×0.97 (-3%)  ✅ 利確 寄値×1.05 (+5%)",
         f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_date_str}**",
         sep,
     ]
 
+    from screener import yose_limit_price
     for i, sig in enumerate(buy_signals, 1):
         ticker     = sig["ticker"].replace(".T", "")
         name       = sig["name"]
@@ -184,11 +186,13 @@ def _build_buy_embed(buy_signals: list[dict], tier: dict, *, date_str: str,
         range_r    = sig.get("range_ratio")
         vol_r      = sig.get("vol_ratio")
         turnover   = sig.get("turnover", 0) or 0
+        limit_p    = yose_limit_price(prev_close)
 
         if prev_close > 0:
             shares     = max(100, int(size_yen / prev_close / 100) * 100)
             invest_amt = shares * prev_close
-            line1      = f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 {shares:,}株/約{invest_amt/1e4:.0f}万"
+            line1      = (f"**#{i} {name}** ({ticker}) 前日{prev_close:,.0f}円 "
+                          f"→ **寄指 {limit_p:,}円** {shares:,}株/約{invest_amt/1e4:.0f}万")
         else:
             line1      = f"**#{i} {name}** ({ticker}) {size_man}万円目安"
 

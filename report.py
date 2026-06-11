@@ -293,6 +293,7 @@ def _load_signals_file(filepath: str, today_str: str) -> list[dict] | None:
 def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
                      history_path: str) -> tuple[list[dict], list[dict]]:
     """シグナルリストから損益を計算して履歴に保存。"""
+    from screener import yose_limit_price
     results = []
     for s in signals:
         t = s["ticker"]
@@ -301,6 +302,12 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
             continue
         o   = ohlc[t]["open"]
         c   = ohlc[t]["close"]
+        # 寄指運用(2026-06-11〜): BUYで寄りが指値超え=約定していないのでスナップショット対象外
+        if s["direction"] == "BUY":
+            lp = yose_limit_price(s.get("prev_close", 0) or 0)
+            if lp and o > lp:
+                print(f"  [skip] {t}: 寄指不成立(寄り{o:,.0f}円 > 指値{lp:,}円) → 約定なし")
+                continue
         pnl = calc_pnl(s["direction"], o, c)
         results.append({
             "ticker":    t,

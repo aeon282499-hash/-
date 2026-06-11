@@ -69,11 +69,15 @@ def add_signals_to_positions(
     entry_date: date,
 ) -> list[dict]:
     """新しいシグナルをポジションリストに追加する。"""
+    from screener import yose_limit_price
     existing = {(p["ticker"], p["signal_date"]) for p in positions}
     for sig in signals:
         key = (sig["ticker"], signal_date.strftime("%Y-%m-%d"))
         if key in existing:
             continue
+        # BUYは寄指(寄付限定指値)運用(2026-06-11〜)。limit_priceを持つポジションだけが
+        # 失効判定の対象になる(過去の成行ポジションには影響しない)。
+        limit_price = yose_limit_price(sig.get("prev_close", 0)) if sig["direction"] == "BUY" else None
         positions.append({
             "signal_date":    signal_date.strftime("%Y-%m-%d"),
             "entry_date":     entry_date.strftime("%Y-%m-%d"),
@@ -81,6 +85,7 @@ def add_signals_to_positions(
             "name":           sig["name"],
             "direction":      sig["direction"],
             "prev_close":     sig.get("prev_close", 0),
+            "limit_price":    limit_price,
             "entry_open":     None,
             "status":         "pending",
             "hold_days":      0,
@@ -137,7 +142,20 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
                 # まだエントリー日が来ていない
                 updated.append(pos)
                 continue
-            pos["entry_open"] = float(entry_rows["Open"].iloc[0])
+            entry_open_val = float(entry_rows["Open"].iloc[0])
+            # ── 寄指不成立の失効（BUY・limit_price持ちのみ＝2026-06-11以降の新規）──
+            # 寄りが指値を超えた=高寄り → 寄付限定指値は約定せず失効。トレード無しとして
+            # 記録し、以後の損益・処分通知の対象から外す（実際の発注と帳簿を一致させる）。
+            lp = pos.get("limit_price")
+            if pos["direction"] == "BUY" and lp and entry_open_val > lp:
+                pos["entry_open"] = entry_open_val
+                pos["status"]     = "expired"
+                pos["exit_type"]  = "NOFILL"
+                pos["exit_date"]  = entry_date_str
+                print(f"[tracker] {ticker} 寄指不成立 (寄り{entry_open_val:,.0f}円 > 指値{lp:,}円) → 失効")
+                updated.append(pos)
+                continue
+            pos["entry_open"] = entry_open_val
             pos["status"]     = "open"
             pos["hold_days"]  = 0
 
