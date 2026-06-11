@@ -26,9 +26,9 @@ jobs:
       PYTHONIOENCODING: utf-8
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: 取引明細CSVをartifactにupload
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: backtest-csv-${{ github.event.inputs.start }}-${{ github.event.inputs.end }}
           path: |

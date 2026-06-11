@@ -575,7 +575,7 @@ def build() -> dict:
         "schema": "kabuai-phase13",
         "data_date": data_date,
         "data_lag_days": data_lag_days,
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S"),   # JST表示（runnerはUTC）
         "source": SOURCE,
         "disclaimer": disclaimer,
         "universe_total": len(data),

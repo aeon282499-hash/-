@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0e1116">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>モメンタムチンパン — 株モメンタム分析</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -1031,6 +1037,14 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
     </ul>
   </div>
 
+  <h2>アプリとして使う</h2>
+  <div class="card">
+    <p class="muted" style="margin:0;font-size:12px;line-height:1.8">
+      📱 このページはスマホの<b style="color:var(--tx)">「ホーム画面に追加」</b>でアプリのように使えます
+      （iPhone: 共有ボタン→ホーム画面に追加 ／ Android: メニュー→アプリをインストール）。
+      通知が必要な売買シグナルはDiscord配信、このアプリは「開いた時にいつでも最新の作戦・候補・出口」を見る場所です。</p>
+  </div>
+
   <h2>データについて</h2>
   <div class="card">
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -1159,6 +1173,8 @@ function render(){
   }
 }
 window.addEventListener("hashchange",render);
+// PWA: ホーム画面に追加できるようにする（SWはキャッシュなし＝常に最新データ）
+try{if(typeof navigator!=="undefined"&&navigator.serviceWorker)navigator.serviceWorker.register("sw.js");}catch(e){}
 function freshnessText(){
   const lag=DATA.data_lag_days;
   if(lag==null) return "終値ベース";

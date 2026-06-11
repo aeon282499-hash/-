@@ -1,0 +1,14 @@
+{
+  "name": "モメンタムチンパン — 日本株モメンタム分析",
+  "short_name": "チンパン",
+  "description": "検証済みの買い候補・出口の目安・テーマ爆益・セクターローテを毎日更新（終値ベース）",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e1116",
+  "theme_color": "#0e1116",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
