@@ -1,11 +1,6 @@
 {
-  "date": "2026-06-11",
+  "date": "2026-06-12",
   "signals": [
-    {
-      "ticker": "9301.T",
-      "name": "三菱倉庫",
-      "direction": "BUY"
-    },
     {
       "ticker": "9023.T",
       "name": "東京地下鉄",
