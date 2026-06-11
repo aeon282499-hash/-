@@ -477,7 +477,7 @@ function viewRanking(){
   if(!full&&!SEARCH_LOADING) loadSearch().then(()=>{
     if(location.hash.replace(/^#/,"").split("?")[0].startsWith("/ranking")) $("#view").innerHTML=viewRanking();
   });
-  const base=full?SEARCH.slice():DATA.ranking.slice();
+  const base=full?SEARCH.filter(r=>!r.illiq):DATA.ranking.slice();   // 低流動はランキング対象外（検索/詳細のみ）
   const isBuy=r=>(r.signals||[]).some(sigHasEdge);
   let list=RANK_GRADE==="ALL"?base
           :RANK_GRADE==="BUY"?base.filter(isBuy)
@@ -585,8 +585,9 @@ function renderDetail(s){
         <div style="flex:1"><div style="font-size:18px;font-weight:700">${s.name}</div>
           <div class="pchip">${s.code} ・ ¥${i.price.toLocaleString()} ${bigMoveTag(i.r1)}</div></div>
         <div style="text-align:right"><div style="font-size:30px;font-weight:800;line-height:1">${i.momentum.toFixed(1)}</div>
-          <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${total}銘柄中 #${s.rank}</span></div></div>
+          <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${s.rank!=null?`${total}銘柄中 #${s.rank}`:"ランク対象外"}</span></div></div>
       </div>
+      ${i.illiq?`<div class="idxnote" style="margin-top:8px">⚠️ <b>低流動銘柄</b>（売買代金20日平均が1億円未満）。板が薄く成行で値が飛びやすいため、<b>シグナル・ランキングの対象外</b>です。指数・騰落率は参考表示。</div>`:""}
       <div class="ret3">
         <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
@@ -811,7 +812,7 @@ function searchCard(r,showNoSig=true){
       <div class="top">
         ${star(r.code)}
         <div>
-          <div><span class="rk" style="color:var(--mut)">#${r.rank}</span> <b>${r.name}</b></div>
+          <div><span class="rk" style="color:var(--mut)">${r.rank!=null?"#"+r.rank:""}</span> <b>${r.name}</b>${r.illiq?` <span class="tag" style="border-color:#ff9f43;color:#ff9f43;font-size:10px">⚠️低流動</span>`:""}</div>
           <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div>
         </div>
         <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
@@ -824,7 +825,8 @@ function searchCard(r,showNoSig=true){
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
       </div>
       ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
-      ${sig.length?sigChips(r):(showNoSig?`<div class="nosig">本日の点灯シグナルなし</div>`:"")}
+      ${r.illiq?`<div class="nosig">売買代金が少なくシグナル・ランキング対象外（執行困難のため・指標は参考表示）</div>`
+        :sig.length?sigChips(r):(showNoSig?`<div class="nosig">本日の点灯シグナルなし</div>`:"")}
     </a>`;
 }
 function searchResults(q){
@@ -851,7 +853,7 @@ function searchResults(q){
   hits.sort((a,b)=>score(b)-score(a));
   const shown=hits.slice(0,60);
   if(!shown.length)return `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。`
-    +`<br><span style="font-size:11px">※流動性フィルタ（売買代金の少ない銘柄）対象外は検索できません。</span></div>`;
+    +`<br><span style="font-size:11px">※上場後まもない等で指標計算に必要な履歴が足りない銘柄は出ないことがあります。</span></div>`;
   const more=hits.length>shown.length?`<div class="muted" style="font-size:11px;margin:2px 2px 8px">上位${shown.length}件を表示（${hits.length}件一致・絞り込んでください）</div>`:
     `<div class="muted" style="font-size:11px;margin:2px 2px 8px">${shown.length}件一致</div>`;
   return more+`<div class="cardgrid">${shown.map(r=>searchCard(r)).join("")}</div>`;

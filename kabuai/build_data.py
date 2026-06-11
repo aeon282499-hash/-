@@ -246,10 +246,12 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     return written
 
 
-def export_search_index(rows: list[dict], data_date: str) -> int:
-    """検索用の軽量インデックスを全 scored 銘柄ぶん書き出す（latest.json はTOP50のみのため）。
+def export_search_index(rows: list[dict], data_date: str, rows_illiq: list[dict] | None = None) -> int:
+    """検索用の軽量インデックスを書き出す（latest.json はTOP50のみのため）。
     気になる銘柄をコード/名前で引いて、シグナルが点灯しているかを確認できるようにする。
-    生OHLCVは載せず計算済み指標だけ（SPEC §1）。フロントが遅延fetchする独立ファイル。"""
+    生OHLCVは載せず計算済み指標だけ（SPEC §1）。フロントが遅延fetchする独立ファイル。
+    2026-06-12: 低流動銘柄(売買代金1億円未満)も illiq=1 フラグつきで収録（検索/詳細は全銘柄
+    対応・ランキング/シグナルは従来どおり流動性フィルタ後のみ＝フロント側でilliqを除外）。"""
     keep = ("code", "name", "price", "momentum", "grade", "sr", "power", "rsi",
             "stab", "r1", "r5", "r10", "r20", "rank")
     stocks = []
@@ -257,6 +259,10 @@ def export_search_index(rows: list[dict], data_date: str) -> int:
         o = {k: r[k] for k in keep}
         if r.get("signals"):          # 非点灯は省略（[]）してサイズ削減。フロントは signals||[] で受ける
             o["signals"] = r["signals"]
+        stocks.append(o)
+    for r in (rows_illiq or []):
+        o = {k: r.get(k) for k in keep}
+        o["illiq"] = 1                # 低流動＝採点・シグナル対象外（執行困難の正直表示）
         stocks.append(o)
     payload = {"schema": "kabuai-search-1", "data_date": data_date,
                "count": len(stocks), "stocks": stocks}
@@ -356,6 +362,7 @@ def build() -> dict:
 
     t0 = time.time()
     rows: list[dict] = []
+    rows_illiq: list[dict] = []       # 低流動（検索/詳細にのみ載せる・採点/シグナル対象外）
     scored_tickers: list[str] = []
     n_skip = 0
     for ticker, df in data.items():
@@ -363,10 +370,12 @@ def build() -> dict:
         if ind is None:
             n_skip += 1
             continue
+        target = rows
         if ind["turnover"] < MIN_TURNOVER:
-            continue
-        scored_tickers.append(ticker)
-        rows.append({
+            target = rows_illiq
+        else:
+            scored_tickers.append(ticker)
+        target.append({
             "code": ticker.replace(".T", ""),
             "name": _name(name_map, ticker),
             "price": ind["price"],
@@ -387,6 +396,8 @@ def build() -> dict:
     rows.sort(key=lambda x: x["momentum"], reverse=True)
     for i, r in enumerate(rows, 1):
         r["rank"] = i
+    for r in rows_illiq:
+        r["rank"] = None              # 低流動はランキング対象外（順位なし）
 
     grade_counts: dict[str, int] = {}
     for r in rows:
@@ -551,7 +562,8 @@ def build() -> dict:
     # ── フェーズ5: 詳細チャートJSON書き出し ──
     n_charts = export_stocks(data, rows, data_date, disclaimer)
     # ── 銘柄検索インデックス（全scored・遅延fetch用） ──
-    n_search = export_search_index(rows, data_date)
+    n_search = export_search_index(rows, data_date, rows_illiq)
+    print(f"[build] 検索インデックス: 採点{len(rows)} + 低流動{len(rows_illiq)} 銘柄（低流動は検索/詳細のみ）")
 
     try:
         data_lag_days = (datetime.now(JST).date() - datetime.strptime(data_date, "%Y-%m-%d").date()).days
