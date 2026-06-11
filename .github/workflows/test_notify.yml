@@ -1,0 +1,48 @@
+name: 配信フォーマットテスト（寄指）
+
+# 手動専用: 新しい配信フォーマットの見本を各階層BUYチャンネルへ「テスト」明記で送る。
+# 本物のシグナル配信には一切影響しない（today_signals.jsonを読み見本embedを作るだけ）。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-notify:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_BUY_MID_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_MID_URL }}
+      DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+      - name: 見本embedを各階層へ送信
+        run: |
+          python - << 'PYEOF'
+          import json, os, requests
+          from notifier import _build_buy_embed
+
+          sigs = json.load(open("today_signals.json", encoding="utf-8")).get("signals", [])
+          if not sigs:
+              print("シグナルなし → テスト中止"); raise SystemExit(0)
+          tiers = [
+              {"key": "main",  "label": "大資金", "emoji": "",   "size": 1_000_000, "hook": os.getenv("DISCORD_WEBHOOK_URL", "").strip()},
+              {"key": "mid",   "label": "中資金", "emoji": "🔵", "size": 500_000,   "hook": os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip()},
+              {"key": "small", "label": "小資金", "emoji": "🟢", "size": 300_000,   "hook": os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip()},
+          ]
+          for t in tiers:
+              if not t["hook"]:
+                  print(t["label"], ": webhook未設定 → skip"); continue
+              e = _build_buy_embed(sigs, t, date_str="（見本）", time_str="テスト", exit_date_str="—")
+              e["title"] = "🧪【テスト配信】明日からこの形式（寄指価格つき）"
+              e["description"] = ("**※これはテストです。発注しないでください。**\n"
+                                  "銘柄は本日配信済みのもの・寄指価格は前日終値基準の見本です。\n"
+                                  "明朝の本物からこの形式で届きます。\n\n") + e["description"]
+              r = requests.post(t["hook"], json={"embeds": [e]}, timeout=15)
+              print(t["label"], "HTTP", r.status_code)
+          PYEOF
