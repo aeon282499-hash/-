@@ -55,6 +55,12 @@ def main():
         except Exception:
             pass
 
+    # ── 2026-06-11 ユーザー決定: SELL専用・1日1件上限で限定再開 ──
+    # BUY側はスイング本体(寄指)と資金を取り合うため停止のまま。SELL=最弱セクター急騰売り
+    # (PF1.37/+45.9%/全5年プラス・bt_sector_sell_refine)。1日1件はBT時より保守的な配信絞り。
+    SELL_ONLY = True
+    MAX_SELL_PER_DAY = 1
+
     try:
         signals, sell_signals, all_pass, macro, diag = run_sector_theme_screener()
     except Exception as e:
@@ -64,6 +70,12 @@ def main():
         if not dry_run:
             send_error(f"スクリーナー失敗: {e}\n\n{tb[-1000:]}")
         return
+
+    if SELL_ONLY:
+        if signals:
+            print(f"[main_st] SELL専用モード: BUY {len(signals)}件は配信しない")
+        signals = []
+    sell_signals = sell_signals[:MAX_SELL_PER_DAY]
 
     print(f"\n[main_st] BUY配信対象 {len(signals)} 件")
     for s in signals:

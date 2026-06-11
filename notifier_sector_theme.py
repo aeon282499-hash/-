@@ -82,8 +82,9 @@ def send_signals(signals: list[dict], sell_signals: list[dict] | None,
 
     if not signals and not sell_signals:
         _post({"embeds": [{
-            "title": f"🟣 本日のシグナル — {today}",
-            "description": "本日は買い・空売りともシグナル0件です。",
+            "title": f"🔻 セクターSELL — {today}",
+            "description": ("本日の空売りシグナルは0件です。\n"
+                            "（セクターSELL専用運用・最弱セクターの急騰時のみ点灯／買いはスイング本体で配信）"),
             "color": COLOR_NONE,
         }]}, tag="-empty")
         return

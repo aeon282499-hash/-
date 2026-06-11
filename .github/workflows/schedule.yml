@@ -68,13 +68,12 @@ jobs:
             echo "JST $day日: 月初ではないのでスキップ"
           fi
 
-      # ── セクターローテ(🟣)配信は 2026-06-03 ユーザー指示で停止 ──
-      # 再開する場合は下4行のコメントを外すだけ。
-      # コード(main_sector_theme.py)と単体ワークフロー(schedule_sector_theme.yml・手動専用)はそのまま残してある。
-      # - name: スイングセクターローテ配信実行（相乗り・Cloudflareトリガーで確実発火）
-      #   # セクター失敗が後段のポジション保存を止めないよう continue-on-error
-      #   continue-on-error: true
-      #   run: python main_sector_theme.py
+      # ── セクターローテ: 2026-06-11 ユーザー決定で「SELL専用・1日1件上限」に限定再開 ──
+      # (BUY側配信は main_sector_theme.py の SELL_ONLY=True で停止のまま。
+      #  2026-06-03の全停止 → 06-11にSELLのみ復活。完全停止に戻すには下3行をコメントアウト)
+      - name: スイングセクターローテ配信実行（SELL専用・相乗りで確実発火）
+        continue-on-error: true
+        run: python main_sector_theme.py
 
       # ── テーマトラッカーDiscord配信は 2026-06-03 ユーザー指示で停止 ──
       # 再開する場合は下4行のコメントを外すだけ。
