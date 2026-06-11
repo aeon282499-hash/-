@@ -738,8 +738,11 @@ function viewSignals(active){
   let isBuy=(active==="buycand"||!active)&&buyMembers.length>0;
   if(!isBuy && (!active||active==="buycand"||!s.groups[active]||s.groups[active].count===0)) active=lit[0];
   const buyTab=buyMembers.length?`<a class="tab ${isBuy?"on":""}" href="#/signals/buycand">✅買い候補<span>${buyMembers.length}</span></a>`:"";
+  // 別戦略への入口タブ（テーマ爆益=8日プラン / セクターローテ=当日成行）
+  const xTabs=(DATA.theme_blast&&DATA.theme_blast.members&&DATA.theme_blast.members.length?`<a class="tab" href="#/blast">🔥爆益<span>${DATA.theme_blast.n_hot||0}</span></a>`:"")
+    +(DATA.sector_today?`<a class="tab" href="#/sector">📡セクター<span>${(DATA.sector_today.buy||[]).length+(DATA.sector_today.sell||[]).length}</span></a>`:"");
   const tabs=buyTab+lit.map(k=>{const g=s.groups[k];
-    return `<a class="tab ${(!isBuy&&k===active)?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("");
+    return `<a class="tab ${(!isBuy&&k===active)?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("")+xTabs;
   const disc=`<p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
   if(isBuy){
     const cards=buyMembers.map(r=>sigMemberCard(r,true,true)).join("");
