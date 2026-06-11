@@ -148,6 +148,15 @@
   .blast-tease{display:flex;align-items:center;gap:10px;margin-top:11px;padding:10px 13px;border-radius:11px;
     border:1px solid rgba(194,24,91,.45);background:rgba(194,24,91,.08);color:var(--tx);font-size:13px}
   .blast-tease b{color:#ff6b9d}
+  .poschip{padding:9px 0;border-bottom:1px solid var(--line)}
+  .poschip:last-of-type{border-bottom:none}
+  .posdel{font-size:10px;background:none;border:1px solid var(--line);color:var(--mut);
+    border-radius:999px;padding:2px 8px;cursor:pointer}
+  .posin{background:var(--card2);border:1px solid var(--line);color:var(--tx);
+    border-radius:8px;padding:7px 9px;font-size:13px;width:120px}
+  select.posin{width:auto;max-width:100%}
+  .posadd{background:var(--C);color:#0e1116;font-weight:800;border:none;border-radius:8px;
+    padding:7px 16px;font-size:13px;cursor:pointer}
   .idxnote{margin:2px 2px 10px;padding:8px 11px;border-radius:8px;background:rgba(255,159,67,.07);
     border:1px solid rgba(255,159,67,.26);font-size:11.5px;line-height:1.6;color:var(--tx)}
   .idxnote b{font-weight:800;color:#ff9f43}
@@ -414,8 +423,104 @@ function watchSummaryInner(){
   const msg=buy.length?`<b style="color:var(--C)">${buy.length}件が検証済みの買い候補</b>`:`${firing.length}件にシグナル点灯`;
   return head+`<div class="muted" style="font-size:12px;margin-bottom:6px">${msg}</div><div class="chips">${chips}</div>`;
 }
+// ── 📒 かんたん持ち株コーチ（端末内保存・「買った後」の出口規律を毎日指示） ──
+// BT群の結論=勝ち負けを分けるのは銘柄選びより出口規律。初心者が一番事故る
+// 「買った後どうする」を、保有日数・損切りライン・手仕舞い日の自動表示で支える。
+const PLANS={
+  swing:{label:"✅買い候補プラン", hold:3, sl:3, tp:5},
+  blast:{label:"🔥テーマ爆益プラン", hold:8, sl:12, tp:null}};
+function loadPos(){try{return JSON.parse(localStorage.getItem("kabuai_pos")||"[]");}catch(e){return [];}}
+function savePos(a){try{localStorage.setItem("kabuai_pos",JSON.stringify(a));}catch(e){}}
+function addPosFromForm(code,name){
+  const pr=parseFloat((document.getElementById("pos-price")||{}).value);
+  const dt=(document.getElementById("pos-date")||{}).value;
+  const pl=(document.getElementById("pos-plan")||{}).value||"swing";
+  if(!(pr>0)||!dt)return;
+  const a=loadPos(); a.push({code,name,entry:pr,date:dt,plan:pl}); savePos(a); render();
+}
+function delPos(i){const a=loadPos(); a.splice(i,1); savePos(a); render();}
+function bizDays(from,to){ // 営業日カウント(土日除外・祝日未考慮)・買った日=1日目
+  let d=new Date(from+"T00:00:00"),e=new Date(to+"T00:00:00"),n=0;
+  if(isNaN(d)||isNaN(e)||d>e)return 0;
+  while(d<=e&&n<=60){const w=d.getDay(); if(w!==0&&w!==6)n++; d.setDate(d.getDate()+1);}
+  return n;
+}
+function bizAdd(from,n){ // fromを1日目としてn営業日目の日付(M/D)
+  let d=new Date(from+"T00:00:00"),c=0;
+  if(isNaN(d))return "—";
+  for(let i=0;i<60;i++){const w=d.getDay(); if(w!==0&&w!==6){c++; if(c>=n)break;} d.setDate(d.getDate()+1);}
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+function posCoach(){
+  const a=loadPos(); if(!a.length)return "";
+  const ref=DATA.data_date||"";                      // 損益の基準（終値・1日遅れ）
+  const now=new Date();                              // 保有日数・行動指示は「実際の今日」基準
+  const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  const items=a.map((p,i)=>{
+    const pl=PLANS[p.plan]||PLANS.swing;
+    const row=(DATA.ranking||[]).find(r=>r.code===p.code)||(SEARCH&&SEARCH.find(r=>r.code===p.code))||null;
+    const cur=row?row.price:null;
+    const pnl=(cur!=null&&p.entry>0)?(cur/p.entry-1)*100:null;
+    const slP=Math.round(p.entry*(1-pl.sl/100)), tpP=pl.tp?Math.round(p.entry*(1+pl.tp/100)):null;
+    const day=bizDays(p.date,todayStr);
+    let act, actCls="";
+    if(cur!=null&&cur<=slP){act=`🔴 損切りライン（¥${slP.toLocaleString()}）割れ — <b>今日売って仕切り直し</b>。ここで迷わないのが勝ち組`; actCls="neg";}
+    else if(tpP&&cur!=null&&cur>=tpP){act=`✅ 利確ライン（+${pl.tp}%）到達 — OCOが約定しているはず。未約定なら売却`; actCls="pos";}
+    else if(day>=pl.hold){act=`⏰ ${pl.hold}営業日目 — <b>今日の大引けで手仕舞い</b>（利益を保有しすぎない）`;}
+    else{act=`🟢 ホールド（${day}日目／${pl.hold}日・手仕舞いめど ${bizAdd(p.date,pl.hold)}）・損切り ¥${slP.toLocaleString()}${tpP?`・利確 ¥${tpP.toLocaleString()}`:"・利確なし（引っ張る）"}`;}
+    return `<div class="poschip">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <a href="#/detail/${p.code}" style="font-weight:800;color:var(--tx)">${esc(p.name||p.code)}</a>
+        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}・${pl.label}</span>
+        <span style="margin-left:auto;font-weight:800" class="${pnl!=null?cls(pnl):""}">${pnl!=null?fmtPct(pnl):"—"}</span>
+        <button class="posdel" onclick="event.preventDefault();delPos(${i})">売った/削除</button></div>
+      <div class="${actCls}" style="font-size:12.5px;margin-top:4px">${act}</div></div>`;
+  }).join("");
+  return `<h2>📒 持ち株コーチ</h2><div class="card">${items}
+    <div class="muted" style="font-size:11px;margin-top:6px">損益・判定は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。営業日は土日のみ除外（祝日があれば1日読み替え）。記録はこの端末にだけ保存されます。</div></div>`;
+}
+// 銘柄詳細の「買った記録」フォーム
+function posForm(code,name,price){
+  const d=new Date();
+  const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const owned=loadPos().filter(p=>p.code===code).length;
+  return `<div class="card">
+    <div style="font-weight:700">📒 買った記録をつける ${owned?`<span class="tag">記録 ${owned}件</span>`:""}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">記録すると、ホームの「持ち株コーチ」が毎日 <b style="color:var(--tx)">保有日数・損切りライン・手仕舞い日</b> を教えてくれます（この端末にだけ保存）。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;align-items:center">
+      <input id="pos-price" class="posin" type="number" inputmode="decimal" value="${price||""}" placeholder="買値（円）">
+      <input id="pos-date" class="posin" type="date" value="${ds}">
+      <select id="pos-plan" class="posin">
+        <option value="swing">✅買い候補（3日・損切-3%・利確+5%）</option>
+        <option value="blast">🔥テーマ爆益（8日・損切-12%・利確なし）</option>
+      </select>
+      <button class="posadd" onclick="addPosFromForm('${code}','${esc(name).replace(/'/g,"")}')">保存</button>
+    </div></div>`;
+}
+// 🧭 今日の作戦（日種別×買い候補×爆益×セクターの統合・初心者向けの一言指示）
+function todayPlan(){
+  const rb=reboundInfo(), bb=buyBasket(), tb=DATA.theme_blast, sc=DATA.sector_today, pos=loadPos();
+  let main, tone="";
+  if(rb&&rb.mode==="broad"){tone="broad";
+    main=`🌊 <b>全面リバウンド日</b> — ✅買い候補 ${bb?bb.count:0}銘柄を<b>1点集中せず広めに</b>拾う日（過去勝率62.5%）。出口だけ厳守`;}
+  else if(rb&&rb.mode==="sparse"){tone="sparse";
+    main=`⚠️ <b>散発点灯日</b> — 無理に買わない。${bb&&bb.count?`入るなら✅買い候補 ${bb.count}件を小さく`:"今日は見送りが無難"}`;}
+  else if(bb&&bb.count){main=`✅ 買い候補 <b>${bb.count}銘柄</b>（平均期待値 ${bb.avgEV>=0?"+":""}${bb.avgEV}%）— 本命 ${bb.top.name}`;}
+  else{main=`本日は検証済みの買いシグナルなし — <b>買わない日も戦略のうち</b>`;}
+  const chips=[];
+  if(pos.length)chips.push(`📒 持ち株 ${pos.length}件 → 下のコーチの指示を確認`);
+  if(tb&&tb.n_hot)chips.push(`🔥 爆益本命 ${tb.n_hot}件`);
+  if(sc&&sc.is_today&&((sc.buy||[]).length+(sc.sell||[]).length))chips.push(`📡 セクター ${(sc.buy||[]).length+(sc.sell||[]).length}件`);
+  return `<div class="rbanner ${tone}" style="margin-top:11px${tone?"":";border:1px solid var(--line);background:var(--card2)"}">
+    <b>🧭 今日の作戦</b>
+    <div class="rb-sub" style="font-size:12.5px;color:var(--tx)">${main}${chips.length?`<div class="muted" style="margin-top:4px;font-size:11px">${chips.join(" ・ ")}</div>`:""}</div></div>`;
+}
+
 function viewHome(){
-  if(WATCH.length) loadSearch().then(()=>{const el=document.getElementById("watchsum");if(el)el.innerHTML=watchSummaryInner();});
+  if(WATCH.length||loadPos().length) loadSearch().then(()=>{
+    const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
+    const pc=document.getElementById("poscoach"); if(pc)pc.innerHTML=posCoach();
+  });
   const top=DATA.ranking.slice(0,5);
   const gc=DATA.grade_counts||{};
   const rows=top.map(r=>`
@@ -426,6 +531,8 @@ function viewHome(){
       ${badge(r.grade)}
     </a>`).join("");
   return `
+    ${todayPlan()}
+    <div id="poscoach">${posCoach()}</div>
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
       `<a href="#/about" class="card" style="display:flex;align-items:center;gap:8px;border-left:3px solid var(--C);margin-bottom:4px">
@@ -598,6 +705,7 @@ function renderDetail(s){
       ${sigChips(chip)}
     </div>
     ${exitGuide(s.signals)}
+    ${posForm(s.code,s.name,i.price)}
     ${aiCard(s.ai)}
 
     ${s.chart?`<h2>日足3ヶ月 × モメンタム指数</h2>
