@@ -118,16 +118,33 @@ def _entry_day_open(pos: dict, today: date, historical_data: dict) -> float | No
 
 
 def collect_targets(open_positions: list[dict], direction: str, today: date,
-                    historical_data: dict) -> list[dict]:
+                    historical_data: dict) -> tuple[list[dict], list[dict]]:
     """指定directionのオープンポジションから大引け処分対象を抽出する。
-    historical_data は事前にbatch取得した J-Quants 日足データ。"""
+    historical_data は事前にbatch取得した J-Quants 日足データ。
+
+    Returns
+    -------
+    (targets, checked)
+      targets: 処分対象（RSI回復/MAXHOLD）
+      checked: 処分対象にならなかった判定結果。「対象なし」確認通知用。
+               noteがNoneなら正常な保有継続、文字列ならデータ取得失敗等の異常
+               （無音だと故障と区別できないため通知に明示する・2026-06-13）。
+    """
     if not open_positions:
-        return []
+        return [], []
 
     import yfinance as yf
     from screener import calc_rsi
 
     targets = []
+    checked = []
+
+    def _checked(note=None, rsi=None, price=None, hold=None):
+        checked.append({
+            "ticker": ticker, "name": name, "today_hold": hold,
+            "rsi_now": rsi, "current_price": price, "note": note,
+        })
+
     for pos in open_positions:
         ticker = pos["ticker"]
         name = pos["name"]
@@ -144,9 +161,11 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
             day_open = _entry_day_open(pos, today, historical_data)
             if day_open is None:
                 print(f"  [寄指] {ticker} 寄り値が取れず約定不明 → スキップ")
+                _checked(note="寄指の約定確認不可（要手動確認）", hold=today_hold)
                 continue
             if day_open > lp:
                 print(f"  [寄指] {ticker} 不成立 (寄り{day_open:,.0f}円 > 指値{lp:,}円) → 対象外")
+                _checked(note=f"寄指不成立（寄り{day_open:,.0f}円 > 指値{lp:,}円・ノーポジ）")
                 continue
             entry_open = day_open  # 実際の約定値（含み損益表示の基準を寄り値に補正）
 
@@ -169,14 +188,17 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
             intraday = yf_obj.history(period="1d", interval="5m")
             if intraday.empty:
                 print(f"  [yfinance] {ticker} intraday 空 → スキップ")
+                _checked(note="現在値の取得失敗（要手動確認）", hold=today_hold)
                 continue
             current_price = float(intraday["Close"].iloc[-1])
         except Exception as e:
             print(f"  [yfinance] {ticker} 失敗: {e}")
+            _checked(note="現在値の取得失敗（要手動確認）", hold=today_hold)
             continue
 
         if ticker not in historical_data:
             print(f"  [J-Quants] {ticker} データなし")
+            _checked(note="履歴データなし・RSI判定不可（要手動確認）", hold=today_hold)
             continue
         df = historical_data[ticker]
         closes = df["Close"].dropna().tolist()
@@ -185,6 +207,7 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
 
         if rsi_now is None:
             print(f"  [RSI] {ticker} 計算失敗")
+            _checked(note="RSI計算失敗（要手動確認）", hold=today_hold)
             continue
 
         print(f"  RSI={rsi_now:.1f} / current_price={current_price:.0f}")
@@ -206,8 +229,10 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 "current_price": current_price,
                 "entry_open":    entry_open,
             })
+        else:
+            _checked(rsi=rsi_now, price=current_price, hold=today_hold)
 
-    return targets
+    return targets, checked
 
 
 def _load_active(path: str, direction: str) -> list[dict]:
@@ -279,15 +304,23 @@ def main():
         sell_open = tier_positions[key]["sell"]
         print(f"\n[close_check-{tier['label']}] BUY {len(buy_open)} / SELL {len(sell_open)} 件")
 
-        buy_targets  = collect_targets(buy_open,  "BUY",  today, historical_data)
-        sell_targets = collect_targets(sell_open, "SELL", today, historical_data)
+        buy_targets,  buy_checked  = collect_targets(buy_open,  "BUY",  today, historical_data)
+        sell_targets, sell_checked = collect_targets(sell_open, "SELL", today, historical_data)
 
+        # 対象ありは処分指示、対象なしでも保有銘柄があれば「保有継続」確認を送る
+        # （無音だと故障と区別できない・2026-06-12の問い合わせを受けて2026-06-13追加）
         if buy_targets:
             from notifier import send_close_signals
             send_close_signals(buy_targets, today, tier=tier)
+        elif buy_checked:
+            from notifier import send_close_no_targets
+            send_close_no_targets(buy_checked, today, tier=tier, sell=False)
         if sell_targets:
             from notifier import send_close_signals_sell
             send_close_signals_sell(sell_targets, today, tier=tier)
+        elif sell_checked:
+            from notifier import send_close_no_targets
+            send_close_no_targets(sell_checked, today, tier=tier, sell=True)
         if not buy_targets and not sell_targets:
             print(f"[close_check-{tier['label']}] 大引け処分対象なし")
 

@@ -706,6 +706,67 @@ def send_close_signals_sell(targets: list[dict], today: date,
     print(f"[notifier-{tier['label']}] SELL大引け処分 {len(targets)}件")
 
 
+# ── 15:00 大引けチェック「処分対象なし」確認通知（2026-06-13追加）──────────
+# 無音だと「対象なし」と「システム故障/通知欠落」の区別がつかないため、
+# 保有銘柄を判定したが処分対象ゼロだった日も保有継続の確認を送る。
+# データ取得失敗等で判定できなかった銘柄も note として明示する。
+def _build_close_no_targets_embed(checked: list[dict], today: date, tier: dict,
+                                  *, sell: bool) -> dict:
+    date_str = today.strftime("%m/%d")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+
+    action = "買戻し" if sell else "処分"
+    tier_header = _tier_header_line(tier)
+    lines = []
+    if tier_header:
+        lines.append(tier_header)
+    lines.append(f"15:00判定: {action}条件未達 → **保有継続**（OCO注文はそのまま）")
+    lines.append("─" * 22)
+
+    warn = False
+    for c in checked:
+        ticker = c["ticker"].replace(".T", "")
+        name   = c["name"]
+        hold   = c.get("today_hold")
+        note   = c.get("note")
+        if note:
+            warn = True
+            hold_str = f"{hold}日目 — " if hold else ""
+            lines.append(f"⚠️ **{name}** ({ticker}) {hold_str}{note}")
+            continue
+        rsi   = c.get("rsi_now")
+        price = c.get("current_price")
+        # BUYはRSI≥50で処分（未達=まだ下）、SELLはRSI≤50で買戻し（未達=まだ上）
+        rsi_str = (f"RSI {rsi:.1f}＞50（反転待ち）" if sell
+                   else f"RSI {rsi:.1f}＜50（回復待ち）")
+        rest  = MAX_HOLD - (hold or 0)
+        rest_str = "明日が処分期限" if rest == 1 else f"期限まであと{rest}日"
+        lines.append(
+            f"📊 **{name}** ({ticker}) {hold}日目 — "
+            f"{rsi_str}・現在 {price:,.0f}円・{rest_str}"
+        )
+
+    title_kind = "売り保有チェック" if sell else "大引けチェック"
+    title = f"{_tier_title_prefix(tier)}🔍【{title_kind}】{date_str} — {action}対象なし"
+    return {
+        "title":       title,
+        "description": "\n".join(lines),
+        "color":       COLOR_ERROR if warn else COLOR_NONE,
+        "footer":      {"text": f"配信時刻: {time_str}"},
+    }
+
+
+def send_close_no_targets(checked: list[dict], today: date,
+                          *, tier: dict | None = None, sell: bool = False) -> None:
+    if not checked:
+        return
+    tier = _tier(tier)
+    embed = _build_close_no_targets_embed(checked, today, tier, sell=sell)
+    side = "SELL" if sell else "BUY"
+    _dispatch({"embeds": [embed]}, tier=tier, side=side, public_url=PUBLIC_CLOSE)
+    print(f"[notifier-{tier['label']}] 大引けチェック対象なし確認 {len(checked)}銘柄")
+
+
 # ── エラー通知（tier非対応・常にメイン宛て）────────────────────
 def send_error(error_message: str, today: date) -> None:
     date_str = today.strftime("%Y年%m月%d日")
