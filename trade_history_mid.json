@@ -369,6 +369,16 @@
       "close": 1353.0,
       "pnl": -2.52,
       "win": false
+    },
+    {
+      "date": "2026-06-12",
+      "ticker": "9023.T",
+      "name": "東京地下鉄",
+      "direction": "BUY",
+      "open": 1348.0,
+      "close": 1348.0,
+      "pnl": 0.0,
+      "win": false
     }
   ]
 }
