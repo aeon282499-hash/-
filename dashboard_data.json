@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12 08:38:40",
+  "generated_at": "2026-06-12 10:45:26",
   "date": "2026-06-12",
   "tier_summary": {
     "S": 0,
@@ -33,7 +33,7 @@
     "S": -0.2,
     "SOX": 7.91,
     "TSLA": 4.6,
-    "TSM": 3.01,
+    "TSM": 3.26,
     "VRT": 6.01,
     "VST": 5.66,
     "ZS": 1.11
@@ -79,7 +79,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": 153.68
+      "us_tailwind": 153.71
     },
     {
       "theme": "インバウンド_観光",
@@ -235,7 +235,7 @@
         "AMD"
       ],
       "policy": "後工程拠点の国内回帰・補助",
-      "us_tailwind": 4.21
+      "us_tailwind": 4.27
     },
     {
       "theme": "サイバーセキュリティ",
@@ -315,7 +315,7 @@
         "AMD"
       ],
       "policy": "半導体材料の国産化・サプライチェーン強靭化補助",
-      "us_tailwind": 4.21
+      "us_tailwind": 4.27
     },
     {
       "theme": "DX_業務SaaS",
@@ -638,7 +638,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 153.68,
+      "us_tailwind": 153.71,
       "score": 67.9,
       "tier": "B",
       "init_stars": 1,
@@ -834,7 +834,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 60.1,
       "tier": "B",
       "init_stars": 3,
@@ -879,7 +879,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 153.68,
+      "us_tailwind": 153.71,
       "score": 59.9,
       "tier": "B",
       "init_stars": 3,
@@ -1041,7 +1041,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 153.68,
+      "us_tailwind": 153.71,
       "score": 56.9,
       "tier": "B",
       "init_stars": 2,
@@ -1278,7 +1278,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 52.0,
       "tier": "B",
       "init_stars": 3,
@@ -1320,7 +1320,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 52.0,
       "tier": "B",
       "init_stars": 3,
@@ -1362,7 +1362,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 52.0,
       "tier": "B",
       "init_stars": 2,
@@ -1711,7 +1711,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 45.1,
       "tier": "B",
       "init_stars": 1,
@@ -2066,7 +2066,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 39.1,
       "tier": "C",
       "init_stars": 2,
@@ -2721,7 +2721,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 153.68,
+      "us_tailwind": 153.71,
       "score": 32.9,
       "tier": "C",
       "init_stars": 1,
@@ -2952,7 +2952,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 31.1,
       "tier": "C",
       "init_stars": 1,
@@ -2994,7 +2994,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 30.1,
       "tier": "C",
       "init_stars": 2,
@@ -3229,7 +3229,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 26.1,
       "tier": "C",
       "init_stars": 2,
@@ -3271,7 +3271,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 26.1,
       "tier": "C",
       "init_stars": 2,
@@ -3519,7 +3519,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 23.1,
       "tier": "C",
       "init_stars": 2,
@@ -3883,7 +3883,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 4.21,
+      "us_tailwind": 4.27,
       "score": 22.0,
       "tier": "C",
       "init_stars": 1,
