@@ -45,7 +45,10 @@ TIERS = [
         "sell_pos_file":   "positions_sell.json",
         "buy_webhook":     os.getenv("DISCORD_WEBHOOK_URL", "").strip(),
         "sell_webhook":    os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip(),
-        "public_mirror":   True,   # note公開向け公開ミラー
+        # 2026-05-21: DISCORD_WEBHOOK_URL_PUBLIC が大資金チャンネルを指していて二重投稿に
+        # なっていたため停止（6b86ff0はnotifier側の既定tierのみでここが漏れていた）。
+        # note専用チャンネルのWebhook用意後に notifier/close_check と合わせて True に戻す。
+        "public_mirror":   False,
     },
     {
         "key":             "mid",
@@ -139,7 +142,7 @@ def main() -> None:
             print(f"[main] 本日分({today_str})は送信済みです → スキップ")
             sys.exit(0)
 
-    from screener import run_screener, MAX_SIGNALS
+    from screener import run_screener, yose_limit_price, MAX_SIGNALS
     from notifier import (send_signals, send_results, send_error, send_monthly_report,
                           send_sell_signals, send_sell_results, send_sell_monthly_report)
     from tracker import (load_positions, save_positions, update_positions, add_signals_to_positions,
@@ -179,15 +182,15 @@ def main() -> None:
             closed_today = []
             still_open   = []
             if active:
-                positions, closed_today, still_open = update_positions(positions, today)
-                send_results(closed_today, still_open, today, tier=tier)
+                positions, closed_today, expired_today, still_open = update_positions(positions, today)
+                send_results(closed_today, still_open, today, tier=tier, expired=expired_today)
                 send_monthly_report(positions, today, tier=tier)
 
             sell_closed_today = []
             sell_still_open   = []
             sell_active = [p for p in sell_positions if p["status"] in ("pending", "open")]
             if sell_active:
-                sell_positions, sell_closed_today, sell_still_open = update_positions(sell_positions, today)
+                sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(sell_positions, today)
                 send_sell_results(sell_closed_today, sell_still_open, today, tier=tier)
                 send_sell_monthly_report(sell_positions, today, tier=tier)
 
@@ -215,16 +218,20 @@ def main() -> None:
             else:
                 today_sig_file      = f"today_signals_{key}.json"
                 today_sell_sig_file = f"today_sell_signals_{key}.json"
+            # prev_close/limit_price は夕方report.pyの寄指不成立スキップ判定に必要
             with open(today_sig_file, "w", encoding="utf-8") as f:
                 json.dump({
                     "date":    today_str,
-                    "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "BUY"}
+                    "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "BUY",
+                                 "prev_close": s.get("prev_close", 0),
+                                 "limit_price": yose_limit_price(s.get("prev_close", 0) or 0)}
                                 for s in tier_signals],
                 }, f, ensure_ascii=False, indent=2)
             with open(today_sell_sig_file, "w", encoding="utf-8") as f:
                 json.dump({
                     "date":    today_str,
-                    "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "SELL"}
+                    "signals": [{"ticker": s["ticker"], "name": s["name"], "direction": "SELL",
+                                 "prev_close": s.get("prev_close", 0)}
                                 for s in tier_sell_signals],
                 }, f, ensure_ascii=False, indent=2)
 

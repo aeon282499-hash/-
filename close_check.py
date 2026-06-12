@@ -46,7 +46,8 @@ TIERS = [
         "sell_pos_file": "positions_sell.json",
         "buy_webhook":   os.getenv("DISCORD_WEBHOOK_URL", "").strip(),
         "sell_webhook":  os.getenv("DISCORD_WEBHOOK_SELL_URL", "").strip(),
-        "public_mirror": True,
+        # 2026-05-21の二重投稿対策（main.py/notifier.pyと同じ理由・note専用チャンネル用意後にTrue）
+        "public_mirror": False,
     },
     {
         "key":           "mid",
@@ -95,6 +96,27 @@ def calc_today_hold_day(pos: dict, today: date) -> int:
     return count
 
 
+def _entry_day_open(pos: dict, today: date, historical_data: dict) -> float | None:
+    """寄指の約定判定用にエントリー日の寄り値を返す（取れなければNone）。
+    エントリー日が当日なら yfinance 5分足の最初のバー、過去日なら J-Quants 日足を使う。"""
+    ticker = pos["ticker"]
+    if pos["entry_date"] == today.strftime("%Y-%m-%d"):
+        try:
+            import yfinance as yf
+            intraday = yf.Ticker(ticker).history(period="1d", interval="5m")
+            if not intraday.empty:
+                return float(intraday["Open"].iloc[0])
+        except Exception as e:
+            print(f"  [yfinance] {ticker} 寄り値取得失敗: {e}")
+        return None
+    df = historical_data.get(ticker)
+    if df is not None:
+        rows = df[df.index.strftime("%Y-%m-%d") == pos["entry_date"]]
+        if not rows.empty:
+            return float(rows["Open"].iloc[0])
+    return None
+
+
 def collect_targets(open_positions: list[dict], direction: str, today: date,
                     historical_data: dict) -> list[dict]:
     """指定directionのオープンポジションから大引け処分対象を抽出する。
@@ -113,6 +135,20 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
         entry_open = pos.get("entry_open") or pos.get("prev_close")
 
         print(f"[close_check] [{direction}] {ticker} {name} - day {today_hold}")
+
+        # ── 寄指の約定確認（BUY・pending・limit_price持ち＝2026-06-11以降の新規）──
+        # 寄りが指値を超えた銘柄は約定していない＝ユーザーは株を持っていないので
+        # 処分通知の対象外。寄り値が確認できない場合も誤通知よりスキップを優先する。
+        lp = pos.get("limit_price")
+        if direction == "BUY" and pos.get("status") == "pending" and lp:
+            day_open = _entry_day_open(pos, today, historical_data)
+            if day_open is None:
+                print(f"  [寄指] {ticker} 寄り値が取れず約定不明 → スキップ")
+                continue
+            if day_open > lp:
+                print(f"  [寄指] {ticker} 不成立 (寄り{day_open:,.0f}円 > 指値{lp:,}円) → 対象外")
+                continue
+            entry_open = day_open  # 実際の約定値（含み損益表示の基準を寄り値に補正）
 
         if today_hold >= MAX_HOLD:
             targets.append({

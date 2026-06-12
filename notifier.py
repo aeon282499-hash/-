@@ -269,7 +269,7 @@ def _send_no_signal(tier: dict, date_str: str, time_str: str, macro: dict) -> No
 
 # ── 朝の決済結果＋保有中 ────────────────────────────────
 def _build_results_embed(closed: list[dict], still_open: list[dict], today: date,
-                         tier: dict) -> dict:
+                         tier: dict, expired: list[dict] | None = None) -> dict:
     date_str = today.strftime("%Y年%m月%d日")
     time_str = datetime.now(JST).strftime("%H:%M JST")
 
@@ -277,6 +277,16 @@ def _build_results_embed(closed: list[dict], still_open: list[dict], today: date
     lines = []
     if header:
         lines.append(header)
+        lines.append("")
+
+    if expired:
+        lines.append("**── ⏭️ 寄指不成立（約定なし・取引ゼロ） ──**")
+        for p in expired:
+            eo = p.get("entry_open")
+            lp = p.get("limit_price")
+            detail = (f"寄り{eo:,.0f}円 > 指値{lp:,}円" if eo and lp
+                      else "高寄りのため見送り")
+            lines.append(f"⏭️ **{p['name']}**（{p['ticker']}）買い — {detail}")
         lines.append("")
 
     if closed:
@@ -348,13 +358,14 @@ def _build_results_embed(closed: list[dict], still_open: list[dict], today: date
 
 
 def send_results(closed: list[dict], still_open: list[dict], today: date,
-                 *, tier: dict | None = None) -> None:
-    if not closed and not still_open:
+                 *, tier: dict | None = None, expired: list[dict] | None = None) -> None:
+    if not closed and not still_open and not expired:
         return
     tier = _tier(tier)
-    embed = _build_results_embed(closed, still_open, today, tier)
+    embed = _build_results_embed(closed, still_open, today, tier, expired)
     _dispatch({"embeds": [embed]}, tier=tier, side="BUY", public_url=PUBLIC_BUY)
-    print(f"[notifier-{tier['label']}] 結果レポート 決済{len(closed)}/保有中{len(still_open)}")
+    print(f"[notifier-{tier['label']}] 結果レポート 決済{len(closed)}/保有中{len(still_open)}"
+          f"/寄指不成立{len(expired or [])}")
 
 
 # ── 朝のSELLシグナル ────────────────────────────────────────

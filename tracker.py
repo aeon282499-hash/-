@@ -97,17 +97,17 @@ def add_signals_to_positions(
     return positions
 
 
-def update_positions(positions: list[dict], today: date) -> tuple[list[dict], list[dict], list[dict]]:
+def update_positions(positions: list[dict], today: date) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """
     オープンポジションを前日データで更新する。
 
     Returns
     -------
-    (updated_positions, closed_today, still_open)
+    (updated_positions, closed_today, expired_today, still_open)
     """
     active = [p for p in positions if p["status"] in ("pending", "open")]
     if not active:
-        return positions, [], []
+        return positions, [], [], []
 
     tickers = list({p["ticker"] for p in active})
     start   = (today - timedelta(days=30)).strftime("%Y-%m-%d")
@@ -117,8 +117,9 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
     token    = _jquants_id_token()
     all_data = batch_download_jquants(token, start=start, end=end, tickers=tickers)
 
-    closed_today = []
-    still_open   = []
+    closed_today  = []
+    expired_today = []
+    still_open    = []
 
     updated = []
     for pos in positions:
@@ -153,6 +154,7 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
                 pos["exit_type"]  = "NOFILL"
                 pos["exit_date"]  = entry_date_str
                 print(f"[tracker] {ticker} 寄指不成立 (寄り{entry_open_val:,.0f}円 > 指値{lp:,}円) → 失効")
+                expired_today.append(pos)
                 updated.append(pos)
                 continue
             pos["entry_open"] = entry_open_val
@@ -235,4 +237,4 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
 
         updated.append(pos)
 
-    return updated, closed_today, still_open
+    return updated, closed_today, expired_today, still_open

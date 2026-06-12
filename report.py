@@ -303,8 +303,9 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
         o   = ohlc[t]["open"]
         c   = ohlc[t]["close"]
         # 寄指運用(2026-06-11〜): BUYで寄りが指値超え=約定していないのでスナップショット対象外
+        # limit_price は main.py が today_signals.json に保存（無い旧形式は prev_close から再計算）
         if s["direction"] == "BUY":
-            lp = yose_limit_price(s.get("prev_close", 0) or 0)
+            lp = s.get("limit_price") or yose_limit_price(s.get("prev_close", 0) or 0)
             if lp and o > lp:
                 print(f"  [skip] {t}: 寄指不成立(寄り{o:,.0f}円 > 指値{lp:,}円) → 約定なし")
                 continue
