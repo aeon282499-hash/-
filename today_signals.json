@@ -1,10 +1,19 @@
 {
-  "date": "2026-06-12",
+  "date": "2026-06-15",
   "signals": [
     {
-      "ticker": "9023.T",
-      "name": "東京地下鉄",
-      "direction": "BUY"
+      "ticker": "9022.T",
+      "name": "東海旅客鉄道",
+      "direction": "BUY",
+      "prev_close": 3365.0,
+      "limit_price": 3395
+    },
+    {
+      "ticker": "1951.T",
+      "name": "エクシオグループ",
+      "direction": "BUY",
+      "prev_close": 2700.0,
+      "limit_price": 2727
     }
   ]
 }
