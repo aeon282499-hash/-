@@ -1,12 +1,4 @@
 {
-  "date": "2026-06-15",
-  "signals": [
-    {
-      "ticker": "1951.T",
-      "name": "エクシオグループ",
-      "direction": "BUY",
-      "prev_close": 2700.0,
-      "limit_price": 2727
-    }
-  ]
+  "date": "2026-06-16",
+  "signals": []
 }
