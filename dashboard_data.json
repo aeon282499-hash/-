@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-06-15 08:40:30",
+  "generated_at": "2026-06-15 10:46:40",
   "date": "2026-06-15",
   "tier_summary": {
     "S": 1,
     "A": 8,
     "B": 35,
-    "C": 47
+    "C": 46
   },
   "driver_returns": {
     "AMAT": 2.64,
@@ -21,6 +21,7 @@
     "LRCX": 1.18,
     "META": -0.26,
     "MSFT": 0.1,
+    "MU": -1.43,
     "NRG": 1.43,
     "NVDA": 0.16,
     "ON": 0.72,
@@ -176,7 +177,7 @@
         "AVGO"
       ],
       "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_tailwind": 1.33
+      "us_tailwind": 0.64
     },
     {
       "theme": "小売_消費_EC",
@@ -1279,48 +1280,6 @@
       }
     },
     {
-      "ticker": "6723.T",
-      "name": "ルネサスエレクトロニクス",
-      "role": "車載/産業MCU",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": 19.6,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.33,
-      "score": 59.8,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 33.0,
-      "blast": 26.5,
-      "laggard": 41.5,
-      "mom_pts": 36.0,
-      "ctx_pts": 23.8,
-      "vr": 0.8,
-      "dev": 5.1,
-      "rsi": 56.62,
-      "r1": 0.02182074143594548,
-      "r5": -0.046628721541155826,
-      "r20": 0.19413216342199058,
-      "close": 4355.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 6,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 7.8,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
-      }
-    },
-    {
       "ticker": "8802.T",
       "name": "三菱地所",
       "role": "丸の内再開発",
@@ -1474,48 +1433,6 @@
       }
     },
     {
-      "ticker": "285A.T",
-      "name": "キオクシア",
-      "role": "NANDフラッシュ(2024-12上場・AI向け需要)",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": 19.6,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.33,
-      "score": 56.8,
-      "tier": "B",
-      "init_stars": 1,
-      "overextended": true,
-      "potential": 68.3,
-      "blast": 57.9,
-      "laggard": 8.3,
-      "mom_pts": 33.0,
-      "ctx_pts": 23.8,
-      "vr": 1.0,
-      "dev": 28.89,
-      "rsi": 69.82,
-      "r1": 0.07635206786850479,
-      "r5": 0.03916048118761206,
-      "r20": 0.8267716535433072,
-      "close": 81200.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 8,
-        "r1_pts": 10,
-        "trend_pts": 13,
-        "pos_pts": 2,
-        "heat_pts": 7.8,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
-      }
-    },
-    {
       "ticker": "3099.T",
       "name": "三越伊勢丹ホールディングス",
       "role": "百貨店(免税売上)",
@@ -1587,6 +1504,48 @@
         "heat_pts": 6.8,
         "policy_pts": 0.0,
         "us_pts": 0.0
+      }
+    },
+    {
+      "ticker": "6723.T",
+      "name": "ルネサスエレクトロニクス",
+      "role": "車載/産業MCU",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": 19.6,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 0.64,
+      "score": 54.8,
+      "tier": "B",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 33.0,
+      "blast": 26.5,
+      "laggard": 37.2,
+      "mom_pts": 36.0,
+      "ctx_pts": 18.8,
+      "vr": 0.8,
+      "dev": 5.1,
+      "rsi": 56.62,
+      "r1": 0.02182074143594548,
+      "r5": -0.046628721541155826,
+      "r20": 0.19413216342199058,
+      "close": 4355.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 6,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 7.8,
+        "policy_pts": 8.0,
+        "us_pts": 3.0
       }
     },
     {
@@ -1698,6 +1657,48 @@
         "heat_pts": 8.1,
         "policy_pts": 0.0,
         "us_pts": 0.0
+      }
+    },
+    {
+      "ticker": "285A.T",
+      "name": "キオクシア",
+      "role": "NANDフラッシュ(2024-12上場・AI向け需要)",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": 19.6,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 0.64,
+      "score": 51.8,
+      "tier": "B",
+      "init_stars": 1,
+      "overextended": true,
+      "potential": 68.3,
+      "blast": 57.9,
+      "laggard": 6.6,
+      "mom_pts": 33.0,
+      "ctx_pts": 18.8,
+      "vr": 1.0,
+      "dev": 28.89,
+      "rsi": 69.82,
+      "r1": 0.07635206786850479,
+      "r5": 0.03916048118761206,
+      "r20": 0.8267716535433072,
+      "close": 81200.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 8,
+        "r1_pts": 10,
+        "trend_pts": 13,
+        "pos_pts": 2,
+        "heat_pts": 7.8,
+        "policy_pts": 8.0,
+        "us_pts": 3.0
       }
     },
     {
@@ -2705,48 +2706,6 @@
       }
     },
     {
-      "ticker": "6875.T",
-      "name": "メガチップス",
-      "role": "ファブレス(カスタムLSI/ASIC)",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": 19.6,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.33,
-      "score": 37.8,
-      "tier": "C",
-      "init_stars": 2,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 35.8,
-      "mom_pts": 14.0,
-      "ctx_pts": 23.8,
-      "vr": 1.1,
-      "dev": -4.92,
-      "rsi": 48.52,
-      "r1": 0.057492931196984065,
-      "r5": -0.08183306055646478,
-      "r20": -0.09223300970873782,
-      "close": 11220.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 10,
-        "trend_pts": 0,
-        "pos_pts": 4,
-        "heat_pts": 7.8,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
-      }
-    },
-    {
       "ticker": "9101.T",
       "name": "日本郵船",
       "role": "海運大手(運賃感応・急騰実績)",
@@ -2945,6 +2904,48 @@
         "pos_pts": 12,
         "heat_pts": 0.0,
         "policy_pts": 0.0,
+        "us_pts": 3.0
+      }
+    },
+    {
+      "ticker": "6875.T",
+      "name": "メガチップス",
+      "role": "ファブレス(カスタムLSI/ASIC)",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": 19.6,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 0.64,
+      "score": 32.8,
+      "tier": "C",
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 30.8,
+      "mom_pts": 14.0,
+      "ctx_pts": 18.8,
+      "vr": 1.1,
+      "dev": -4.92,
+      "rsi": 48.52,
+      "r1": 0.057492931196984065,
+      "r5": -0.08183306055646478,
+      "r20": -0.09223300970873782,
+      "close": 11220.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 10,
+        "trend_pts": 0,
+        "pos_pts": 4,
+        "heat_pts": 7.8,
+        "policy_pts": 8.0,
         "us_pts": 3.0
       }
     },
@@ -3494,48 +3495,6 @@
         "heat_pts": 0.0,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "6526.T",
-      "name": "ソシオネクスト",
-      "role": "カスタムSoC設計(ASIC)",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": 19.6,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.33,
-      "score": 23.8,
-      "tier": "C",
-      "init_stars": 1,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 23.8,
-      "mom_pts": 0.0,
-      "ctx_pts": 23.8,
-      "vr": 0.67,
-      "dev": -11.29,
-      "rsi": 42.53,
-      "r1": -0.012641673931996555,
-      "r5": -0.17048159677714703,
-      "r20": -0.06636438582028026,
-      "close": 2265.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 0,
-        "trend_pts": 0,
-        "pos_pts": 0,
-        "heat_pts": 7.8,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
       }
     },
     {
