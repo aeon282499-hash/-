@@ -379,6 +379,26 @@
       "close": 1348.0,
       "pnl": 0.0,
       "win": false
+    },
+    {
+      "date": "2026-06-15",
+      "ticker": "9022.T",
+      "name": "東海旅客鉄道",
+      "direction": "BUY",
+      "open": 3383.0,
+      "close": 3350.0,
+      "pnl": -0.98,
+      "win": false
+    },
+    {
+      "date": "2026-06-15",
+      "ticker": "1951.T",
+      "name": "エクシオグループ",
+      "direction": "BUY",
+      "open": 2703.0,
+      "close": 2735.5,
+      "pnl": 1.2,
+      "win": true
     }
   ]
 }
