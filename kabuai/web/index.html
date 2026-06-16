@@ -158,7 +158,9 @@
   .todaypick{margin:0 0 12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
   .todaypick.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.05));border-color:rgba(77,171,247,.55)}
   .todaypick.sparse{background:rgba(255,159,67,.08);border-color:rgba(255,159,67,.4)}
+  .todaypick.attack{background:linear-gradient(180deg,rgba(255,107,157,.13),rgba(255,107,157,.04));border-color:rgba(255,107,157,.5)}
   .todaypick .tp-h{font-weight:900;font-size:16px;display:flex;align-items:center;gap:8px}
+  .todaypick .tp-tag{font-size:11px;color:var(--mut);margin-top:3px}
   .todaypick .tp-lead{font-size:13px;line-height:1.6;color:var(--tx);margin-top:6px}
   .picklist{margin-top:10px;border-top:1px solid var(--line)}
   .pickrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
@@ -596,7 +598,33 @@ function todayPick(){
   }
   return `<div class="todaypick ${tone}">
     <div class="tp-h">🏠 今日これ買え <span class="muted" style="font-weight:400;font-size:11px">${DATA.data_date||""} 終値時点</span></div>
+    <div class="tp-tag">🛟 堅実 ・ 売られすぎの反発取り（勝率高め・約8日）</div>
     <div class="tp-lead">${head}</div>${body}</div>`;
+}
+
+// 🔥 勢いに乗る（攻め）— テーマ爆益(継続型)をホーム上部に格上げ。
+// ユーザーの「上がってる勢いに乗りたい」を、当日完結(=負け確定)でなく
+// 8日保有+損切り-12%厳守の検証済みプランで応える（堅実=反発と2本立て）。
+function themePick(){
+  const tb=DATA.theme_blast; if(!tb||!tb.members||!tb.members.length) return "";
+  const st=tb.stats||{}, pl=tb.plan||{};
+  const hotAll=tb.members.filter(m=>m.blast>=tb.threshold);
+  const hot=hotAll.slice(0,3);
+  let body;
+  if(hot.length){
+    const rows=hot.map(m=>`<a class="pickrow" href="#/blast">
+      <div class="pk-nm"><b>${m.name}</b><small>${m.theme||m.code} ・ ¥${(m.price||0).toLocaleString()}</small></div>
+      <div class="pk-ev"><span style="color:#ff6b9d">🔥${m.blast}</span><small>1ヶ月 ${m.r20!=null?`${m.r20>=0?"+":""}${Math.round(m.r20)}%`:"—"}</small></div></a>`).join("");
+    body=`<div class="picklist">${rows}</div>
+      <div class="pickexit" style="background:rgba(255,107,157,.08);border-color:rgba(255,107,157,.32)">🚪 出口の規律: <b>翌寄りで買い → 保有約${pl.hold||8}日 → 損切り-${pl.sl||12}%を厳守（利確なし・勝ち馬は走らせる）</b>。勝率${st.win||53}%のバーベル型＝外れも多い、損切りが命。</div>
+      <div class="pickfoot"><a class="more" href="#/blast">🔥 勢い銘柄をぜんぶ見る →</a><span class="muted" style="margin-left:auto;font-size:11px">PF${st.pf||"—"}・平均+${st.avg||"—"}%/件</span></div>`;
+  } else {
+    body=`<div class="tp-lead">本日は本命（🔥${tb.threshold}以上）なし＝強い勢い相場じゃない。<b>無理に攻めない日</b>。 <a class="more" href="#/blast">監視リストを見る →</a></div>`;
+  }
+  return `<div class="todaypick attack">
+    <div class="tp-h">🔥 勢いに乗る <span class="muted" style="font-weight:400;font-size:11px">攻め・テーマ継続</span></div>
+    <div class="tp-tag">走ってる勢い株を8日引っ張る（当日決済ではない）。${hot.length?`本命 ${hotAll.length}件`:""}</div>
+    ${body}</div>`;
 }
 
 function viewHome(){
@@ -615,6 +643,7 @@ function viewHome(){
     </a>`).join("");
   return `
     ${todayPick()}
+    ${themePick()}
     <div id="poscoach">${posCoach()}</div>
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
@@ -623,16 +652,13 @@ function viewHome(){
         <span style="flex:1;font-size:13px">はじめての方へ — 使い方と用語をやさしく解説（30秒）</span>
         <span class="muted">→</span></a>`}
     <details class="advbox">
-      <summary>📂 もっと見る（地合い・買い候補ぜんぶ・ランキング・テーマ爆益・セクター）</summary>
+      <summary>📂 もっと見る（地合い・買い候補ぜんぶ・ランキング・セクター）</summary>
       <div class="advin">
         <h2>地合い</h2>
         <div class="card">${marketCard()}</div>
 
         <h2>🎯 今日の買い候補ぜんぶ <a class="more" href="#/signals">すべて見る →</a></h2>
         <div class="card">${signalSummary()}</div>
-        ${(()=>{const tb=DATA.theme_blast;if(!tb||!tb.members||!tb.members.length)return "";
-          const top=tb.members[0];
-          return `<a href="#/blast" class="blast-tease">🔥 <span style="flex:1"><b>テーマ爆益</b>（8日プラン・PF${(tb.stats||{}).pf||"—"}）— 本命 <b>${tb.n_hot||0}件</b>${tb.n_hot?`・筆頭 ${top.name}`:""}</span><span class="muted">→</span></a>`;})()}
         ${(()=>{const sc=DATA.sector_today;if(!sc)return "";
           const n=(sc.buy||[]).length+(sc.sell||[]).length;
           return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">今日のセクターローテ</b> — ${sc.is_today?`本日 <b>${n}件</b>`:`${sc.date}分 ${n}件（8:40過ぎ更新）`}</span><span class="muted">→</span></a>`;})()}
