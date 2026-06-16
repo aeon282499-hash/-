@@ -154,6 +154,31 @@
   .blast-tease{display:flex;align-items:center;gap:10px;margin-top:11px;padding:10px 13px;border-radius:11px;
     border:1px solid rgba(194,24,91,.45);background:rgba(194,24,91,.08);color:var(--tx);font-size:13px}
   .blast-tease b{color:#ff6b9d}
+  /* 🏠 今日これ買え（option A: 一画面で「どれ買う」に即答＋低位株カット） */
+  .todaypick{margin:0 0 12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+  .todaypick.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.05));border-color:rgba(77,171,247,.55)}
+  .todaypick.sparse{background:rgba(255,159,67,.08);border-color:rgba(255,159,67,.4)}
+  .todaypick .tp-h{font-weight:900;font-size:16px;display:flex;align-items:center;gap:8px}
+  .todaypick .tp-lead{font-size:13px;line-height:1.6;color:var(--tx);margin-top:6px}
+  .picklist{margin-top:10px;border-top:1px solid var(--line)}
+  .pickrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .pickrow .pk-nm{flex:1;min-width:0}
+  .pickrow .pk-nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;color:var(--tx)}
+  .pickrow .pk-nm small{color:var(--mut);font-size:11px}
+  .pickrow .pk-ev{font-weight:800;font-size:13px;text-align:right;white-space:nowrap}
+  .pickrow .pk-ev small{display:block;font-weight:600;font-size:10px;color:var(--mut)}
+  .pickexit{margin-top:9px;font-size:12.5px;color:var(--tx);background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.32);border-radius:9px;padding:8px 10px}
+  .pickexit b{color:var(--tx)}
+  .pickfoot{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:9px}
+  .pickfoot .more{color:var(--acc);font-weight:700;font-size:12px}
+  .pickfoot .lpt{margin-left:auto;font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 9px;cursor:pointer}
+  .advbox{margin:8px 0 0;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  .advbox>summary{cursor:pointer;list-style:none;padding:11px 13px;font-weight:700;font-size:13px;color:var(--tx)}
+  .advbox>summary::-webkit-details-marker{display:none}
+  .advbox>summary::after{content:"▾";float:right;color:var(--mut)}
+  .advbox[open]>summary::after{content:"▴"}
+  .advbox>.advin{padding:0 13px 10px}
+  .advbox h2{font-size:14px}
   .poschip{padding:9px 0;border-bottom:1px solid var(--line)}
   .poschip:last-of-type{border-bottom:none}
   .posdel{font-size:10px;background:none;border:1px solid var(--line);color:var(--mut);
@@ -218,7 +243,7 @@
   <a href="#/" id="nav-home" class="on"><span class="i">🏠</span>ホーム</a>
   <a href="#/ranking" id="nav-rank"><span class="i">📊</span>ランキング</a>
   <a href="#/search" id="nav-search"><span class="i">🔍</span>検索</a>
-  <a href="#/signals" id="nav-sig"><span class="i">🔔</span>シグナル</a>
+  <a href="#/signals" id="nav-sig"><span class="i">✅</span>買い候補</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>指数とは</a>
 </nav>
 
@@ -378,15 +403,33 @@ function buyPlanLine(r){
     +`<span class="bp-meta">勝率${win}% ・ ${hold}${sl}</span>`
     +`<span class="bp-sig">${st.emoji}${st.label}</span></div>`;
 }
-// 本日の検証済み買い候補バスケット（全買いシグナル横断で銘柄をdedup・期待値順）。
+// 低位株(¥1000未満)を既定で隠す。「おすすめが低位株ばかりで微妙」への対処。
+// client-sideフィルタ（再ビルド不要）。toggleで全部表示にも切替できる。
+const BUY_PRICE_MIN=1000;
+function hideLowPrice(){try{return localStorage.getItem("kabuai_lowprice")!=="0";}catch(e){return true;}}
+function toggleLowPrice(){try{localStorage.setItem("kabuai_lowprice",hideLowPrice()?"0":"1");}catch(e){} render();}
+function priceOK(r){return !hideLowPrice()||!(r&&r.price>0&&r.price<BUY_PRICE_MIN);}
+// 本日の検証済み買い候補のうち¥1000未満で隠れている件数（toggle表示用・dedup）。
+function lowPriceHiddenCount(){
+  const s=DATA.signals; if(!s) return 0;
+  const lit=s.order.filter(k=>s.groups[k].count>0&&sigHasEdge(k));
+  const seen={}; let n=0;
+  lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
+    if(seen[r.code])return; seen[r.code]=1;
+    if(r&&r.price>0&&r.price<BUY_PRICE_MIN)n++;}));
+  return n;
+}
+// 本日の検証済み買い候補バスケット（全買いシグナル横断で銘柄をdedup・低位株カット・期待値順）。
 function buyBasket(){
   const s=DATA.signals; if(!s) return null;
   const lit=s.order.filter(k=>s.groups[k].count>0&&sigHasEdge(k));
   if(!lit.length) return null;
-  const seen={},members=[];
+  const seen={},all=[];
   lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
-    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};members.push(o);}
+    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};all.push(o);}
     if(o.signals.indexOf(k)<0)o.signals.push(k);}));
+  const members=all.filter(priceOK);
+  if(!members.length) return null;
   members.sort((a,b)=>{const ea=buyStat(a),eb=buyStat(b);
     return ((eb?eb.ev:-1e9)-(ea?ea.ev:-1e9))||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50))||(a.momentum-b.momentum);});
   const evs=members.map(r=>(buyStat(r)||{ev:0}).ev);
@@ -522,6 +565,40 @@ function todayPlan(){
     <div class="rb-sub" style="font-size:12.5px;color:var(--tx)">${main}${chips.length?`<div class="muted" style="margin-top:4px;font-size:11px">${chips.join(" ・ ")}</div>`:""}</div></div>`;
 }
 
+// 🏠 今日これ買え — 「結局どれ買えばいい」に一画面で即答（option A）。
+// 日種別 → 今日の方針 → ¥1000以上の検証済み買い候補を分散リスト → 出口プラン。
+function todayPick(){
+  const rb=reboundInfo(), bb=buyBasket(), hiddenLow=lowPriceHiddenCount();
+  // 出口（保有日数/損切り）は強反転の実現出口を代表値に（無ければ8日/-12%）
+  const sg=DATA.signal_track&&DATA.signal_track.groups&&DATA.signal_track.groups.strong_reversal;
+  const ex=(sg&&sg.exit&&sg.exit.n)?sg.exit:{t:8,sl:12};
+  const lpToggle=`<a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株(¥${BUY_PRICE_MIN.toLocaleString()}未満)を${hideLowPrice()?"表示":"隠す"}</a>`;
+  let tone="", head, body="";
+  if(bb&&bb.count){
+    const picks=bb.members.slice(0,5);
+    if(rb&&rb.mode==="broad"){tone="broad";
+      head=`🌊 今日は<b>全面リバウンド日</b>（年45〜55日だけの最高エッジ）。下から<b>3〜5銘柄を分散</b>して今日の寄りで買う日`;}
+    else if(rb&&rb.mode==="sparse"){tone="sparse";
+      head=`⚠️ 散発点灯日。<b>無理に張らない</b>。入るなら下から小さく1〜2銘柄まで`;}
+    else{head=`✅ 検証済みの買い候補が <b>${bb.count}銘柄</b>。下から数銘柄を<b>分散</b>して仕込む`;}
+    const rows=picks.map(r=>{const st=(buyStat(r)||{}).best||{};const win=st.exit?st.exit.win:st.hwin;
+      return `<a class="pickrow" href="#/detail/${r.code}">
+        <div class="pk-nm"><b>${r.name}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()}</small></div>
+        <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待${st.ev>=0?"+":""}${st.ev}%<small>勝率${win}%</small></div></a>`;}).join("");
+    body=`<div class="picklist">${rows}</div>
+      <div class="pickexit">🚪 出口の規律: <b>今日の寄りで買い → 保有約${ex.t}日 → 損切り-${ex.sl}%（利確なし・利は伸ばす）</b>。1銘柄に全張りせず分散が過去実績で有利。</div>
+      <div class="pickfoot"><a class="more" href="#/signals/buycand">✅買い候補をぜんぶ見る →</a>${lpToggle}</div>`;
+  } else {
+    tone="sparse";
+    const onlyLow=hideLowPrice()&&hiddenLow>0;
+    head=`本日は${onlyLow?`¥${BUY_PRICE_MIN.toLocaleString()}以上の`:""}検証済み買い候補なし — <b>買わない日も立派な戦略</b>。エッジのある日だけ張る`;
+    body=`<div class="pickfoot">${onlyLow?`<a class="lpt" style="margin-left:0" onclick="event.preventDefault();toggleLowPrice()">低位株も含めて見る（${hiddenLow}件）</a>`:""}<a class="more" href="#/signals" style="margin-left:auto">シグナル一覧 →</a></div>`;
+  }
+  return `<div class="todaypick ${tone}">
+    <div class="tp-h">🏠 今日これ買え <span class="muted" style="font-weight:400;font-size:11px">${DATA.data_date||""} 終値時点</span></div>
+    <div class="tp-lead">${head}</div>${body}</div>`;
+}
+
 function viewHome(){
   if(WATCH.length||loadPos().length) loadSearch().then(()=>{
     const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
@@ -537,7 +614,7 @@ function viewHome(){
       ${badge(r.grade)}
     </a>`).join("");
   return `
-    ${todayPlan()}
+    ${todayPick()}
     <div id="poscoach">${posCoach()}</div>
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
@@ -545,29 +622,34 @@ function viewHome(){
         <span style="font-size:18px">🔰</span>
         <span style="flex:1;font-size:13px">はじめての方へ — 使い方と用語をやさしく解説（30秒）</span>
         <span class="muted">→</span></a>`}
-    <h2>地合い</h2>
-    <div class="card">${marketCard()}</div>
+    <details class="advbox">
+      <summary>📂 もっと見る（地合い・買い候補ぜんぶ・ランキング・テーマ爆益・セクター）</summary>
+      <div class="advin">
+        <h2>地合い</h2>
+        <div class="card">${marketCard()}</div>
 
-    <h2>🎯 今日の買い候補 <a class="more" href="#/signals">すべて見る →</a></h2>
-    <div class="card">${signalSummary()}</div>
-    ${(()=>{const tb=DATA.theme_blast;if(!tb||!tb.members||!tb.members.length)return "";
-      const top=tb.members[0];
-      return `<a href="#/blast" class="blast-tease">🔥 <span style="flex:1"><b>テーマ爆益</b>（8日プラン・PF${(tb.stats||{}).pf||"—"}）— 本命 <b>${tb.n_hot||0}件</b>${tb.n_hot?`・筆頭 ${top.name}`:""}</span><span class="muted">→</span></a>`;})()}
-    ${(()=>{const sc=DATA.sector_today;if(!sc)return "";
-      const n=(sc.buy||[]).length+(sc.sell||[]).length;
-      return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">今日のセクターローテ</b> — ${sc.is_today?`本日 <b>${n}件</b>`:`${sc.date}分 ${n}件（8:40過ぎ更新）`}</span><span class="muted">→</span></a>`;})()}
+        <h2>🎯 今日の買い候補ぜんぶ <a class="more" href="#/signals">すべて見る →</a></h2>
+        <div class="card">${signalSummary()}</div>
+        ${(()=>{const tb=DATA.theme_blast;if(!tb||!tb.members||!tb.members.length)return "";
+          const top=tb.members[0];
+          return `<a href="#/blast" class="blast-tease">🔥 <span style="flex:1"><b>テーマ爆益</b>（8日プラン・PF${(tb.stats||{}).pf||"—"}）— 本命 <b>${tb.n_hot||0}件</b>${tb.n_hot?`・筆頭 ${top.name}`:""}</span><span class="muted">→</span></a>`;})()}
+        ${(()=>{const sc=DATA.sector_today;if(!sc)return "";
+          const n=(sc.buy||[]).length+(sc.sell||[]).length;
+          return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">今日のセクターローテ</b> — ${sc.is_today?`本日 <b>${n}件</b>`:`${sc.date}分 ${n}件（8:40過ぎ更新）`}</span><span class="muted">→</span></a>`;})()}
 
-    <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
-    ${idxNote()}
-    <div class="card" style="padding:4px 12px">${rows}</div>
+        <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
+        ${idxNote()}
+        <div class="card" style="padding:4px 12px">${rows}</div>
 
-    <h2>サマリー</h2>
-    <div class="card">
-      <div>対象 <b>${DATA.universe_scored.toLocaleString()}</b> 銘柄（全${DATA.universe_total.toLocaleString()}銘柄中・流動性フィルタ後）</div>
-      <div class="metrics" style="margin-top:10px">
-        ${["S","A","B","C","D"].map(g=>`<span>${badge(g)} <b>${gc[g]||0}</b></span>`).join("")}
+        <h2>サマリー</h2>
+        <div class="card">
+          <div>対象 <b>${DATA.universe_scored.toLocaleString()}</b> 銘柄（全${DATA.universe_total.toLocaleString()}銘柄中・流動性フィルタ後）</div>
+          <div class="metrics" style="margin-top:10px">
+            ${["S","A","B","C","D"].map(g=>`<span>${badge(g)} <b>${gc[g]||0}</b></span>`).join("")}
+          </div>
+        </div>
       </div>
-    </div>
+    </details>
 
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
 }
@@ -593,7 +675,7 @@ function viewRanking(){
   const base=full?SEARCH.filter(r=>!r.illiq):DATA.ranking.slice();   // 低流動はランキング対象外（検索/詳細のみ）
   const isBuy=r=>(r.signals||[]).some(sigHasEdge);
   let list=RANK_GRADE==="ALL"?base
-          :RANK_GRADE==="BUY"?base.filter(isBuy)
+          :RANK_GRADE==="BUY"?base.filter(r=>isBuy(r)&&priceOK(r))
           :base.filter(r=>r.grade===RANK_GRADE);
   const sk=RANK_SORT;
   const evOf=r=>{const b=buyStat(r);return b?b.ev:-1e9;};
@@ -843,11 +925,13 @@ function viewSignals(active){
   if(!lit.length) return `<div class="card muted" style="margin-top:10px">本日の点灯シグナルはありません。</div>`;
   // 検証済み買い候補を全シグナル横断で集約（複数点灯は1枚に統合）
   const buyKeys=lit.filter(k=>sigHasEdge(k));
-  const seen={},buyMembers=[];
+  const seen={},buyAll=[];
   buyKeys.forEach(k=>{(s.groups[k].members||[]).forEach(r=>{
-    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};buyMembers.push(o);}
+    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};buyAll.push(o);}
     if(o.signals.indexOf(k)<0)o.signals.push(k);
   });});
+  const buyMembers=buyAll.filter(priceOK);          // 低位株(¥1000未満)カット
+  const buyHidden=buyAll.length-buyMembers.length;
   buyMembers.sort((a,b)=>{const ea=buyStat(a),eb=buyStat(b);
     return ((eb?eb.ev:-1e9)-(ea?ea.ev:-1e9))||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50))||(a.momentum-b.momentum);});
   let isBuy=(active==="buycand"||!active)&&buyMembers.length>0;
@@ -886,7 +970,8 @@ function viewSignals(active){
         ・各カードに<b style="color:var(--C)">期待値・勝率・出口プラン（保有日数/損切り）</b>を表示、銘柄ページに詳細<br>
         ・あくまで過去の傾向で、上がることを保証するものではありません</div>
     </div>
-    <div class="cardgrid">${cards||`<div class="card muted">本日の検証済み買い候補はありません。</div>`}</div>
+    <div class="pickfoot" style="margin:0 0 8px">${(buyHidden||!hideLowPrice())?`<a class="lpt" style="margin-left:0" onclick="event.preventDefault();toggleLowPrice()">低位株(¥1,000未満)を${hideLowPrice()?`表示する${buyHidden?`（+${buyHidden}件）`:""}`:"隠す"}</a>`:""}</div>
+    <div class="cardgrid">${cards||`<div class="card muted">本日は¥1,000以上の検証済み買い候補はありません。${buyHidden?` <a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株を表示（${buyHidden}件）</a>`:""}</div>`}</div>
     ${reboundHistory()}
     ${disc}`;
   }
