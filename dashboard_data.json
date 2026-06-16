@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-16 08:38:39",
+  "generated_at": "2026-06-16 10:53:17",
   "date": "2026-06-16",
   "tier_summary": {
     "S": 11,
@@ -19,7 +19,7 @@
     "IONQ": 5.76,
     "KLAC": 0.74,
     "LRCX": 6.03,
-    "META": 4.67,
+    "META": 4.77,
     "MSFT": 2.31,
     "MU": 10.84,
     "NRG": 3.93,
@@ -34,7 +34,7 @@
     "SOX": 5.45,
     "TSLA": 1.16,
     "TSM": 4.12,
-    "VRT": 2.99,
+    "VRT": 3.01,
     "VST": 3.72,
     "ZS": 0.69
   },
@@ -57,7 +57,7 @@
         "NVDA"
       ],
       "policy": "",
-      "us_tailwind": 3.27
+      "us_tailwind": 3.29
     },
     {
       "theme": "半導体_後工程_先端パッケージ",
@@ -371,7 +371,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": 3.68
+      "us_tailwind": 3.69
     },
     {
       "theme": "海運",
@@ -635,7 +635,7 @@
         "AMZN",
         "NVDA"
       ],
-      "us_tailwind": 3.27,
+      "us_tailwind": 3.29,
       "score": 109.0,
       "tier": "S",
       "init_stars": 1,
@@ -928,7 +928,7 @@
         "AMZN",
         "NVDA"
       ],
-      "us_tailwind": 3.27,
+      "us_tailwind": 3.29,
       "score": 97.0,
       "tier": "S",
       "init_stars": 1,
@@ -1012,7 +1012,7 @@
         "AMZN",
         "NVDA"
       ],
-      "us_tailwind": 3.27,
+      "us_tailwind": 3.29,
       "score": 95.0,
       "tier": "S",
       "init_stars": 2,
@@ -2808,7 +2808,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.68,
+      "us_tailwind": 3.69,
       "score": 61.0,
       "tier": "B",
       "init_stars": 3,
@@ -3963,7 +3963,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.68,
+      "us_tailwind": 3.69,
       "score": 48.0,
       "tier": "B",
       "init_stars": 3,
@@ -4732,7 +4732,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.68,
+      "us_tailwind": 3.69,
       "score": 31.0,
       "tier": "C",
       "init_stars": 2,
@@ -4888,7 +4888,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.68,
+      "us_tailwind": 3.69,
       "score": 29.0,
       "tier": "C",
       "init_stars": 3,
