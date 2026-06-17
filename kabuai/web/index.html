@@ -477,9 +477,11 @@ function watchSummaryInner(){
 // ── 📒 かんたん持ち株コーチ（端末内保存・「買った後」の出口規律を毎日指示） ──
 // BT群の結論=勝ち負けを分けるのは銘柄選びより出口規律。初心者が一番事故る
 // 「買った後どうする」を、保有日数・損切りライン・手仕舞い日の自動表示で支える。
+// 出口は検証済み(bt_signal_exit/テーマ爆益BT)に統一＝どちらも8日めど・損切り-12%・利確なし(利を伸ばす)。
+// 旧swing(3日/-3%/+5%)は買い候補の出口表示(8日/-12%)と矛盾していたため是正。ラベルは堅実/攻めで区別。
 const PLANS={
-  swing:{label:"✅買い候補プラン", hold:3, sl:3, tp:5},
-  blast:{label:"🔥テーマ爆益プラン", hold:8, sl:12, tp:null}};
+  swing:{label:"🛟 今日これ買え（反発）", hold:8, sl:12, tp:null},
+  blast:{label:"🔥 勢いに乗る（継続）", hold:8, sl:12, tp:null}};
 function loadPos(){try{return JSON.parse(localStorage.getItem("kabuai_pos")||"[]");}catch(e){return [];}}
 function savePos(a){try{localStorage.setItem("kabuai_pos",JSON.stringify(a));}catch(e){}}
 function addPosFromForm(code,name){
@@ -535,6 +537,9 @@ function posForm(code,name,price){
   const d=new Date();
   const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const owned=loadPos().filter(p=>p.code===code).length;
+  // テーマ爆益の本命銘柄なら「🔥継続」を初期選択（攻めで買った銘柄の取り違え防止）。出口は両プラン同一。
+  const tb=DATA.theme_blast, isBlast=!!(tb&&(tb.members||[]).some(m=>m.code===code&&m.blast>=tb.threshold));
+  const sel=p=>isBlast===(p==="blast")?" selected":"";
   return `<div class="card">
     <div style="font-weight:700">📒 買った記録をつける ${owned?`<span class="tag">記録 ${owned}件</span>`:""}</div>
     <div class="muted" style="font-size:11.5px;margin-top:4px">記録すると、ホームの「持ち株コーチ」が毎日 <b style="color:var(--tx)">保有日数・損切りライン・手仕舞い日</b> を教えてくれます（この端末にだけ保存）。</div>
@@ -542,8 +547,8 @@ function posForm(code,name,price){
       <input id="pos-price" class="posin" type="number" inputmode="decimal" value="${price||""}" placeholder="買値（円）">
       <input id="pos-date" class="posin" type="date" value="${ds}">
       <select id="pos-plan" class="posin">
-        <option value="swing">✅買い候補（3日・損切-3%・利確+5%）</option>
-        <option value="blast">🔥テーマ爆益（8日・損切-12%・利確なし）</option>
+        <option value="swing"${sel("swing")}>🛟 今日これ買え／反発（8日・損切-12%・利確なし）</option>
+        <option value="blast"${sel("blast")}>🔥 勢いに乗る／継続（8日・損切-12%・利確なし）</option>
       </select>
       <button class="posadd" onclick="addPosFromForm('${code}','${esc(name).replace(/'/g,"")}')">保存</button>
     </div></div>`;
@@ -612,7 +617,7 @@ function themePick(){
   const hot=hotAll.slice(0,3);
   let body;
   if(hot.length){
-    const rows=hot.map(m=>`<a class="pickrow" href="#/blast">
+    const rows=hot.map(m=>`<a class="pickrow" href="#/detail/${m.code}">
       <div class="pk-nm"><b>${m.name}</b><small>${m.theme||m.code} ・ ¥${(m.price||0).toLocaleString()}</small></div>
       <div class="pk-ev"><span style="color:#ff6b9d">🔥${m.blast}</span><small>1ヶ月 ${m.r20!=null?`${m.r20>=0?"+":""}${Math.round(m.r20)}%`:"—"}</small></div></a>`).join("");
     body=`<div class="picklist">${rows}</div>
@@ -1195,7 +1200,7 @@ function viewBlast(){
   const st=tb.stats||{}, pl=tb.plan||{};
   const hot=tb.members.filter(m=>m.blast>=tb.threshold);
   const ref=tb.members.filter(m=>m.blast<tb.threshold);
-  const card=(m,main)=>`<div class="card bcard${main?" hot":""}">
+  const card=(m,main)=>`<a class="card bcard${main?" hot":""}" href="#/detail/${m.code}" style="display:block;color:inherit">
       <div style="display:flex;align-items:baseline;gap:8px">
         <b style="font-size:15px">${m.name}</b><span class="muted" style="font-size:11px">${m.code}・¥${(m.price||0).toLocaleString()}</span>
         <span class="bscore${main?"":" dim"}" style="margin-left:auto">🔥${m.blast}</span></div>
@@ -1204,7 +1209,8 @@ function viewBlast(){
         <div class="b"><div class="l">25MA乖離</div><div class="v ${cls(m.dev)}">${fmtPct(m.dev)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(m.r20)}">${fmtPct(m.r20)}</div></div>
         <div class="b"><div class="l">テーマ熱</div><div class="v">${m.heat!=null?m.heat:"—"}</div></div>
-      </div></div>`;
+      </div>
+      <div class="muted" style="font-size:11px;margin-top:7px">タップで銘柄ページ → 📒記録（8日・損切-12%）</div></a>`;
   return `${head}
   <div class="card" style="margin:10px 0">
     <div style="font-weight:700">📋 検証済みプラン <span class="muted" style="font-weight:400">（テーマデータ: ${tb.date||"—"} 終値）</span></div>
