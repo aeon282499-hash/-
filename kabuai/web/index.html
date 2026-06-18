@@ -114,6 +114,17 @@
   .exitline b{font-weight:800;color:var(--C)}
   .exitline .exsub{display:block;margin-top:3px;font-size:11px}
   .exitline .exsub small{font-size:10px;opacity:.85;margin-left:3px}
+  .yrline{margin-top:8px;font-size:12px;line-height:1.5}
+  .yrline .yrh{font-weight:700;color:var(--tx);margin-bottom:5px}
+  .yrgrid{display:flex;flex-wrap:wrap;gap:6px}
+  .yrcell{display:inline-flex;flex-direction:column;align-items:center;min-width:62px;border-radius:8px;padding:4px 8px;border:1px solid var(--line);background:var(--card2);font-variant-numeric:tabular-nums}
+  .yrcell .yy{font-size:10px;color:var(--mut);font-weight:600}
+  .yrcell .ww{font-size:13px;font-weight:800;line-height:1.1}
+  .yrcell .aa{font-size:10px;opacity:.9}
+  .yrcell.pos{border-color:rgba(107,203,119,.5);background:rgba(107,203,119,.1)}
+  .yrcell.neg{border-color:rgba(255,91,91,.45);background:rgba(255,91,91,.09)}
+  .yrcell.pos .ww{color:var(--C)} .yrcell.neg .ww{color:#ff5b5b}
+  .yrsum{display:block;margin-top:5px;font-size:11px}
   .exitcard{border:1px solid rgba(107,203,119,.45);background:rgba(107,203,119,.08);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
   .exitcard .exitline{border:0;background:none;padding:0}
   .buyplan{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;padding:7px 10px;
@@ -897,6 +908,23 @@ function bestHorizon(g,hs){
     if(best===null||x.win>best.x.win||(x.win===best.x.win&&x.avg>best.x.avg)) best={h,x};});
   return best;
 }
+// 年別ロバストネス＝出口実績(保有8日/-12%)を発動年で割った勝率・平均。相場局面が変わっても
+// 同じ傾向が再現するか＝「まぐれ／単年の偶然でないか」を示す、信頼性の核心。標本が薄い年は出さない。
+function yearLine(g){
+  const ys=g.exit_years; if(!ys||!ys.length) return "";
+  const ex=g.exit||{};
+  const pos=ys.filter(y=>y.avg>0).length;
+  // セルの色＝その年が儲かったか(avg符号)。出口は「勝ちを伸ばし-12%で損切り」なので
+  // 勝率<50%でもavgはプラスになり得る→大きい数字は年間平均リターン、勝率は添える。
+  const cells=ys.map(y=>`<span class="yrcell ${y.avg>0?"pos":"neg"}">
+    <span class="yy">${y.y}年</span><span class="ww">${y.avg>=0?"+":""}${y.avg}%</span>
+    <span class="aa">勝率${y.win}%</span></span>`).join("");
+  return `<div class="yrline">
+    <div class="yrh">📅 年別の出口実績<span class="muted" style="font-weight:400">（保有${ex.t||8}日・損切り-${ex.sl||12}%）</span></div>
+    <div class="yrgrid">${cells}</div>
+    <span class="muted yrsum"><b class="${pos===ys.length?"pos":(pos>=Math.ceil(ys.length*0.7)?"":"neg")}">${pos}/${ys.length}年でプラス</b>。相場が違う年でも同じ傾向か＝まぐれ／単年の偶然でないかの確認です。</span>
+  </div>`;
+}
 function trackPanel(key){
   const t=DATA.signal_track; if(!t||!t.available) return "";
   const g=t.groups&&t.groups[key]; if(!g||!g.n) return "";
@@ -922,12 +950,14 @@ function trackPanel(key){
   const ex=g.exit;
   const exline=(ok&&ex&&ex.n)?`<div class="exitline">🚪 出口の目安 <b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）
     <span class="muted exsub">この出口で過去：勝率${ex.win}%／平均${ex.avg>=0?"+":""}${ex.avg}%${ex.rr?`／RR ${ex.rr}`:""}<small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回）</small></span></div>`:"";
+  const eyline=(ok)?yearLine(g):"";
   return `<div class="card trk">
     <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span>${tag}</div>
     <table class="trktab">
       <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
       <tbody>${rows}</tbody></table>
     ${exline}
+    ${eyline}
     <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。${span}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
   </div>`;
 }

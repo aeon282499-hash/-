@@ -23,6 +23,7 @@ from momentum import (
 )
 
 TRACK_LOOKBACK = 250  # 評価する直近営業日数の上限（検証窓を一定に保つ）
+YEAR_MIN_N = 40       # 年別実績を出す最小発動数（標本が薄い年は出さない＝誤誘導回避）
 
 # 出口の目安（bt_signal_exit.py で確定: 買い系3シグナル60万発動・2021-2026）。
 # 発動日終値でエントリー → 保有EXIT_T営業日の時間決済 ×（翌日以降の安値が
@@ -98,6 +99,7 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
 
     agg = {k: {h: [] for h in hs} for (k, *_rest) in defs}
     exit_agg = {k: [] for (k, *_rest) in defs}   # 出口ポリシー(EXIT_T×EXIT_SL)の実現リターン
+    exit_yr = {k: [] for (k, *_rest) in defs}    # 上と同順の発動年（年別ロバストネス用）
     counts = {k: 0 for (k, *_rest) in defs}
     dmin = None
     dmax = None
@@ -154,10 +156,12 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
                             stop = ep * (1.0 - EXIT_SL / 100.0)
                             if (low[p + 1: p + 1 + EXIT_T] <= stop).any():
                                 exit_agg[k].append(-EXIT_SL / 100.0)
+                                exit_yr[k].append(idx[p].year)
                             else:
                                 xc = close[p + EXIT_T]
                                 if not np.isnan(xc):
                                     exit_agg[k].append(xc / ep - 1.0)
+                                    exit_yr[k].append(idx[p].year)
                 except Exception:
                     pass
             if fired:
@@ -182,8 +186,10 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
                     "n": int(arr.size),
                 }
         ea = np.asarray(exit_agg[k], dtype=float)
+        ey = np.asarray(exit_yr[k], dtype=int)
         if ea.size == 0:
             ex = None
+            ex_years = None
         else:
             gw = ea[ea > 0]
             gl = ea[ea < 0]
@@ -198,7 +204,22 @@ def build_track(data: dict, tickers: list[str], horizons=(5, 10, 20),
                 "rr": (round(avgwin / abs(avgloss), 2) if avgloss < 0 else None),
                 "n": int(ea.size),
             }
-        groups[k] = {"label": lb, "emoji": em, "stance": st, "n": counts[k], "h": hh, "exit": ex}
+            # 年別ロバストネス（出口リターンを発動年で割る・標本が薄い年は出さない）
+            ex_years = []
+            for yr in sorted(set(ey.tolist())):
+                sub = ea[ey == yr]
+                if sub.size < YEAR_MIN_N:
+                    continue
+                ex_years.append({
+                    "y": int(yr),
+                    "win": round(float((sub > 0).mean() * 100), 1),
+                    "avg": round(float(sub.mean() * 100), 2),
+                    "n": int(sub.size),
+                })
+            if not ex_years:
+                ex_years = None
+        groups[k] = {"label": lb, "emoji": em, "stance": st, "n": counts[k],
+                     "h": hh, "exit": ex, "exit_years": ex_years}
 
     return {
         "available": any(counts[k] > 0 for k in counts),
