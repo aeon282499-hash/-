@@ -352,6 +352,70 @@ def build_market(data: dict, scored_tickers: list[str], rows: list[dict],
     return overall
 
 
+def _edge_signal_keys(track: dict) -> set:
+    """フロントの sigHasEdge と同じゲート＝出口エッジのある買いシグナル
+    （いずれかの保有期間で勝率52%以上＆平均プラス）。業種の✅買い候補数の集計に使う。"""
+    keys: set = set()
+    if not track or not track.get("available"):
+        return keys
+    hs = track.get("horizons", [5, 10, 20])
+    for k, g in (track.get("groups") or {}).items():
+        best = None
+        for h in hs:
+            x = (g.get("h") or {}).get(str(h))
+            if x and x.get("n"):
+                if best is None or x["win"] > best["win"]:
+                    best = x
+        if best and best["win"] >= 52 and best["avg"] > 0:
+            keys.add(k)
+    return keys
+
+
+def build_sector_heat(rows: list[dict], track: dict,
+                      min_members: int = 5, top_n: int = 12) -> dict | None:
+    """33業種ごとに 熱(=所属銘柄の指数の中央値)・広がり(=1ヶ月プラス率)・✅買い候補数 を集計し、
+    熱の高い順にランキング。各業種に上位 top_n 銘柄を同梱（タップで展開＝ドリルダウン用）。
+    熱い=今その業種に資金が来ている/過熱の記述子であって買い推奨ではない（買いは✅印を参照）。"""
+    try:
+        with open(PARENT / "sector33_map.json", encoding="utf-8") as f:
+            raw = json.load(f)
+    except Exception as e:
+        print(f"[build] 業種マップ読込スキップ（業種熱なし）: {e}")
+        return None
+    sec_of = {str(k)[:4]: v for k, v in raw.items()}
+    edge = _edge_signal_keys(track)
+    from collections import defaultdict
+    buckets: dict[str, list] = defaultdict(list)
+    for r in rows:                       # rows=流動性ユニバース（採点・シグナル対象）
+        sec = sec_of.get(r["code"])
+        if sec:
+            buckets[sec].append(r)
+    sectors = []
+    for sec, mem in buckets.items():
+        if len(mem) < min_members:
+            continue
+        heat = sum(x["momentum"] for x in mem) / len(mem)   # 平均指数（業種の勢い）
+        strong = sum(1 for x in mem if x["grade"] in ("S", "A"))  # 強い銘柄(指数60↑)
+        breadth = round(100.0 * sum(1 for x in mem if x["r20"] > 0) / len(mem))
+        buycand = sum(1 for x in mem if any(s in edge for s in (x.get("signals") or [])))
+        mem.sort(key=lambda x: x["momentum"], reverse=True)
+        top = [{"code": x["code"], "name": x["name"], "momentum": x["momentum"],
+                "grade": x["grade"], "price": x["price"], "r1": x["r1"], "r5": x["r5"],
+                "signals": x.get("signals") or []} for x in mem[:top_n]]
+        sectors.append({"sector": sec, "n": len(mem), "heat": round(heat, 1),
+                        "strong": strong, "breadth": breadth, "buycand": buycand, "top": top})
+    # ✅検証済み買い候補の多い順（同数は平均指数=勢いで）。33業種は大箱で平均指数は団子に
+    # なりがちなので、アプリのエッジ優先思想に合わせ「今いちばん買える業種」を上に出す。
+    sectors.sort(key=lambda s: (s["buycand"], s["heat"]), reverse=True)
+    return {
+        "sectors": sectors,
+        "top_n": top_n,
+        "note": ("各業種の『熱（勢い）』＝所属銘柄の指数（勢いスコア）の平均。広がり＝1ヶ月プラスの銘柄割合。"
+                 "✅＝検証済み買い候補の数。熱い業種＝いまその業種に資金が来ている/過熱の目安であって"
+                 "買い推奨ではありません（買いは各銘柄の✅検証済み買い候補を参照）。"),
+    }
+
+
 def build() -> dict:
     if SOURCE == "jquants_cache":
         data, name_map, data_date, seg_map = load_jquants_cache()
@@ -570,6 +634,12 @@ def build() -> dict:
     except Exception:
         data_lag_days = None
 
+    # ── 業種別の熱（33業種ブラウズ: 熱ランキング→タップで銘柄ドリルダウン） ──
+    sector_heat = build_sector_heat(rows, track)
+    if sector_heat:
+        print(f"[build] 業種熱: {len(sector_heat['sectors'])}業種 "
+              f"(1位 {sector_heat['sectors'][0]['sector']} 熱{sector_heat['sectors'][0]['heat']})")
+
     top = rows[:TOP_N]
     out = {
         "schema": "kabuai-phase13",
@@ -589,6 +659,7 @@ def build() -> dict:
         "rebound": rebound,
         "theme_blast": theme_blast,
         "sector_today": sector_today,
+        "sector_heat": sector_heat,
         "signals": signals,
         "signal_track": track,
         "ranking": top,

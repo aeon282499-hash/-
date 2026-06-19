@@ -125,6 +125,23 @@
   .yrcell.neg{border-color:rgba(255,91,91,.45);background:rgba(255,91,91,.09)}
   .yrcell.pos .ww{color:var(--C)} .yrcell.neg .ww{color:#ff5b5b}
   .yrsum{display:block;margin-top:5px;font-size:11px}
+  .seccard{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:8px;overflow:hidden}
+  .sechead{display:flex;align-items:center;gap:9px;padding:11px 13px;cursor:pointer;list-style:none}
+  .sechead::-webkit-details-marker{display:none}
+  .secrank{flex:0 0 22px;height:22px;border-radius:6px;background:var(--card2);color:var(--mut);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .secname{font-weight:700;font-size:14px}
+  .seckpi{margin-left:auto;font-size:11px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .seckpi b{font-size:13px;font-weight:800}
+  .secbuy{background:rgba(107,203,119,.16);color:var(--C);border:1px solid var(--C);border-radius:6px;padding:1px 6px;font-weight:800}
+  .secarrow{color:var(--mut);font-size:11px;transition:transform .15s}
+  details[open] .secarrow{transform:rotate(180deg)}
+  .secbody{padding:4px 9px 9px}
+  .secstock{display:block;text-decoration:none;color:inherit;border-top:1px solid var(--card2);padding:8px 4px}
+  .ssline{display:flex;align-items:center;gap:8px}
+  .ssn{font-weight:600;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ssc{font-size:11px}
+  .ssm{font-variant-numeric:tabular-nums;font-size:13px;font-weight:700}
+  .ssr{font-variant-numeric:tabular-nums;font-size:12px;min-width:54px;text-align:right}
   .exitcard{border:1px solid rgba(107,203,119,.45);background:rgba(107,203,119,.08);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
   .exitcard .exitline{border:0;background:none;padding:0}
   .buyplan{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;padding:7px 10px;
@@ -675,9 +692,13 @@ function viewHome(){
 
         <h2>🎯 今日の買い候補ぜんぶ <a class="more" href="#/signals">すべて見る →</a></h2>
         <div class="card">${signalSummary()}</div>
-        ${(()=>{const sc=DATA.sector_today;if(!sc)return "";
-          const n=(sc.buy||[]).length+(sc.sell||[]).length;
-          return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">今日のセクターローテ</b> — ${sc.is_today?`本日 <b>${n}件</b>`:`${sc.date}分 ${n}件（8:40過ぎ更新）`}</span><span class="muted">→</span></a>`;})()}
+        ${(()=>{const sc=DATA.sector_today, sh=DATA.sector_heat;
+          if(!sc&&!sh)return "";
+          const n=sc?((sc.buy||[]).length+(sc.sell||[]).length):0;
+          const heatTxt=(sh&&sh.sectors&&sh.sectors.length)?`業種の熱ランキング（タップで銘柄）`:"";
+          const rotTxt=sc?(sc.is_today?`ローテ本日${n}件`:`ローテ${sc.date}分${n}件`):"";
+          const sub=[heatTxt,rotTxt].filter(Boolean).join(" ・ ");
+          return `<a href="#/sector" class="blast-tease" style="border-color:rgba(77,171,247,.45);background:rgba(77,171,247,.08)">📡 <span style="flex:1"><b style="color:#4dabf7">セクター</b> — ${sub}</span><span class="muted">→</span></a>`;})()}
 
         <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
         ${idxNote()}
@@ -1258,41 +1279,76 @@ function viewBlast(){
   <p class="disc">${tb.note||""}<br>${DATA.disclaimer}</p>`;
 }
 
-// ── フェーズ13: 📡今日のセクターローテ（当日寄り執行シグナル・Discordから移設） ──
+// 業種ドリルダウンの銘柄1行（タップで詳細へ・点灯シグナルは✅チップ表示）。
+function secStock(t){
+  const chips=sigChips({signals:t.signals});
+  return `<a class="secstock" href="#/detail/${t.code}">
+    <div class="ssline">
+      <span class="ssn">${t.name}<span class="muted ssc"> ${t.code}</span></span>
+      <span class="ssm">${(t.momentum||0).toFixed(0)} ${badge(t.grade)}</span>
+      <span class="ssr ${cls(t.r1)}">${fmtPct(t.r1)}</span>
+    </div>${chips}</a>`;
+}
+// 🌡️ 業種の熱ランキング（33業種・タップで銘柄ドリルダウン）。熱=記述子であって買い推奨ではない。
+function sectorHeatBlock(){
+  const sh=DATA.sector_heat; if(!sh||!sh.sectors||!sh.sectors.length) return "";
+  const cards=sh.sectors.map((s,i)=>{
+    const bc=s.breadth>=60?"pos":(s.breadth>=40?"":"neg");
+    const items=(s.top||[]).map(secStock).join("");
+    const more=s.n>(s.top||[]).length?`<div class="muted" style="font-size:11px;padding:8px 4px 2px">上位${(s.top||[]).length}銘柄を表示（この業種は流動性ユニバースに全${s.n}銘柄）</div>`:"";
+    return `<details class="seccard"${i===0?" open":""}>
+      <summary class="sechead">
+        <span class="secrank">${i+1}</span>
+        <span class="secname">${s.sector}</span>
+        <span class="seckpi">${s.buycand?`<span class="secbuy">✅${s.buycand}</span>`:`<span class="muted" style="font-size:11px">✅0</span>`}<span class="muted">勢い${s.heat}</span><span class="${bc}">広がり${s.breadth}%</span></span>
+        <span class="secarrow">▾</span>
+      </summary>
+      <div class="secbody">${items}${more}</div>
+    </details>`;
+  }).join("");
+  return `<h2 style="margin-top:18px">🌡️ 業種の熱（33業種・タップで銘柄）</h2>
+    <div class="muted" style="font-size:11.5px;margin:4px 2px 9px;line-height:1.7"><b style="color:var(--C)">✅検証済み買い候補が多い業種順</b>（＝いま“買える”銘柄が多い業種が上）。勢い＝業種の指数（勢いスコア）の平均／広がり＝1ヶ月プラスの銘柄割合。<b style="color:var(--tx)">勢い・広がりは資金が来てる/過熱の目安で買い推奨ではありません</b>。タップで業種内の銘柄が開きます（点灯中は✅チップ付き）。</div>
+    ${cards}`;
+}
+// ── フェーズ13: 📡今日のセクターローテ＋🌡️業種の熱（Discordから移設＋業種ドリルダウン） ──
 function viewSector(){
   const sc=DATA.sector_today;
   const head=`<h2>📡 今日のセクターローテ <span class="muted" style="font-size:12px;font-weight:400">（当日の寄り付きで執行するシグナル）</span></h2>`;
-  if(!sc) return head+`<div class="card muted" style="margin-top:10px">セクターローテのデータがまだありません。平日の朝8:40過ぎの更新で当日分が載ります。</div>`;
-  const fresh=sc.is_today
-    ?`<span class="tag" style="margin:8px 0;display:inline-block">✅ 本日 ${sc.date} 分</span>`
-    :`<div class="idxnote" style="margin-top:8px">⚠️ これは <b>${sc.date}</b> のシグナルです（参考表示）。当日分は<b>平日 朝8:40過ぎ</b>の更新で反映されます。寄りが終わった後に古いシグナルを追いかけないでください。</div>`;
-  const st=sc.stats||{};
-  const row=(s,sell)=>`<div class="card">
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <b style="font-size:15px">${s.name}</b><span class="muted" style="font-size:11px">${s.code}${s.price?`・前日 ¥${(s.price||0).toLocaleString()}`:""}</span>
-        <span style="margin-left:auto;font-weight:800;color:${sell?"#ff6b6b":"#6bcb77"}">${sell?"🔻空売り":"🟢買い"}</span></div>
-      <div class="muted" style="font-size:11.5px;margin-top:3px">${s.sector||""}${s.in_theme?"・テーマ該当":""}${sell&&s.day_change!=null?`・前日比+${(+s.day_change).toFixed(1)}%`:""}</div>
-      <div class="ret3" style="margin-top:6px">
-        <div class="b"><div class="l">RSI</div><div class="v">${s.rsi!=null?s.rsi:"—"}</div></div>
-        <div class="b"><div class="l">25MA乖離</div><div class="v ${cls(s.dev)}">${fmtPct(s.dev)}</div></div>
-        <div class="b"><div class="l">売買代金</div><div class="v">${s.turnover_oku!=null?s.turnover_oku+"億":"—"}</div></div>
-      </div>
-      <div class="muted" style="font-size:11.5px;margin-top:6px">🚪 ${sell?sc.plan_sell:sc.plan_buy}</div></div>`;
-  const buys=(sc.buy||[]).map(s=>row(s,false)).join("");
-  const sells=(sc.sell||[]).map(s=>row(s,true)).join("");
-  return `${head}${fresh}
-  <div class="card" style="margin:10px 0">
-    <div style="font-weight:700">📋 これは何？</div>
-    <div class="muted" style="font-size:12px;line-height:1.75;margin-top:5px">
-      ・<b style="color:var(--tx)">買い</b>＝売られすぎ反発狙い×「強いセクター or ホットテーマ」だけに絞った逆張り（過去検証 PF${(st.buy||{}).pf}・累積+${(st.buy||{}).cum}%）<br>
-      ・<b style="color:var(--tx)">空売り</b>＝最弱セクターの不自然な急騰を売る（PF${(st.sell||{}).pf}・全5年プラス・1日1件まで）<br>
-      ・🔰 <b>初心者の方は、まずホームの✅買い候補（4.4年検証・寄指で安全に入る）だけでOK</b>。これは当日朝に成行で動ける中級者向けです<br>
-      ・あくまで過去の傾向で、利益を保証するものではありません</div>
-  </div>
-  ${(sc.buy||[]).length?`<div class="sigsub buyhead">🟢 買い（${sc.buy.length}件）</div><div class="cardgrid">${buys}</div>`:""}
-  ${(sc.sell||[]).length?`<div class="sigsub" style="margin-top:10px;font-weight:700">🔻 空売り（${sc.sell.length}件）</div><div class="cardgrid">${sells}</div>`:""}
-  ${!(sc.buy||[]).length&&!(sc.sell||[]).length?`<div class="card muted">この日のセクターローテシグナルは0件です（条件成立なし＝見送りが正解の日）。</div>`:""}
-  <p class="disc">${DATA.disclaimer}</p>`;
+  let rot;
+  if(!sc){
+    rot=head+`<div class="card muted" style="margin-top:10px">セクターローテのシグナルはまだありません（平日 朝8:40過ぎの更新で当日分が載ります）。</div>`;
+  }else{
+    const fresh=sc.is_today
+      ?`<span class="tag" style="margin:8px 0;display:inline-block">✅ 本日 ${sc.date} 分</span>`
+      :`<div class="idxnote" style="margin-top:8px">⚠️ これは <b>${sc.date}</b> のシグナルです（参考表示）。当日分は<b>平日 朝8:40過ぎ</b>の更新で反映されます。寄りが終わった後に古いシグナルを追いかけないでください。</div>`;
+    const st=sc.stats||{};
+    const row=(s,sell)=>`<div class="card">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <b style="font-size:15px">${s.name}</b><span class="muted" style="font-size:11px">${s.code}${s.price?`・前日 ¥${(s.price||0).toLocaleString()}`:""}</span>
+          <span style="margin-left:auto;font-weight:800;color:${sell?"#ff6b6b":"#6bcb77"}">${sell?"🔻空売り":"🟢買い"}</span></div>
+        <div class="muted" style="font-size:11.5px;margin-top:3px">${s.sector||""}${s.in_theme?"・テーマ該当":""}${sell&&s.day_change!=null?`・前日比+${(+s.day_change).toFixed(1)}%`:""}</div>
+        <div class="ret3" style="margin-top:6px">
+          <div class="b"><div class="l">RSI</div><div class="v">${s.rsi!=null?s.rsi:"—"}</div></div>
+          <div class="b"><div class="l">25MA乖離</div><div class="v ${cls(s.dev)}">${fmtPct(s.dev)}</div></div>
+          <div class="b"><div class="l">売買代金</div><div class="v">${s.turnover_oku!=null?s.turnover_oku+"億":"—"}</div></div>
+        </div>
+        <div class="muted" style="font-size:11.5px;margin-top:6px">🚪 ${sell?sc.plan_sell:sc.plan_buy}</div></div>`;
+    const buys=(sc.buy||[]).map(s=>row(s,false)).join("");
+    const sells=(sc.sell||[]).map(s=>row(s,true)).join("");
+    rot=`${head}${fresh}
+    <div class="card" style="margin:10px 0">
+      <div style="font-weight:700">📋 これは何？</div>
+      <div class="muted" style="font-size:12px;line-height:1.75;margin-top:5px">
+        ・<b style="color:var(--tx)">買い</b>＝売られすぎ反発狙い×「強いセクター or ホットテーマ」だけに絞った逆張り（過去検証 PF${(st.buy||{}).pf}・累積+${(st.buy||{}).cum}%）<br>
+        ・<b style="color:var(--tx)">空売り</b>＝最弱セクターの不自然な急騰を売る（PF${(st.sell||{}).pf}・全5年プラス・1日1件まで）<br>
+        ・🔰 <b>初心者の方は、まずホームの✅買い候補（4.4年検証・寄指で安全に入る）だけでOK</b>。これは当日朝に成行で動ける中級者向けです<br>
+        ・あくまで過去の傾向で、利益を保証するものではありません</div>
+    </div>
+    ${(sc.buy||[]).length?`<div class="sigsub buyhead">🟢 買い（${sc.buy.length}件）</div><div class="cardgrid">${buys}</div>`:""}
+    ${(sc.sell||[]).length?`<div class="sigsub" style="margin-top:10px;font-weight:700">🔻 空売り（${sc.sell.length}件）</div><div class="cardgrid">${sells}</div>`:""}
+    ${!(sc.buy||[]).length&&!(sc.sell||[]).length?`<div class="card muted">この日のセクターローテシグナルは0件です（条件成立なし＝見送りが正解の日）。</div>`:""}`;
+  }
+  return rot + sectorHeatBlock() + `<p class="disc">${DATA.disclaimer}</p>`;
 }
 
 function setNav(h){
