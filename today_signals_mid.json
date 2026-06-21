@@ -1,4 +1,12 @@
 {
-  "date": "2026-06-19",
-  "signals": []
+  "date": "2026-06-22",
+  "signals": [
+    {
+      "ticker": "3397.T",
+      "name": "トリドールホールディングス",
+      "direction": "BUY",
+      "prev_close": 3569.0,
+      "limit_price": 3600
+    }
+  ]
 }
