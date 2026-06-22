@@ -799,6 +799,16 @@
       "close": 2735.5,
       "pnl": 1.2,
       "win": true
+    },
+    {
+      "date": "2026-06-22",
+      "ticker": "3397.T",
+      "name": "トリドールホールディングス",
+      "direction": "BUY",
+      "open": 3570.0,
+      "close": 3598.0,
+      "pnl": 0.78,
+      "win": true
     }
   ]
 }
