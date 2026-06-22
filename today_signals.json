@@ -1,12 +1,40 @@
 {
-  "date": "2026-06-22",
+  "date": "2026-06-23",
   "signals": [
     {
-      "ticker": "3397.T",
-      "name": "トリドールホールディングス",
+      "ticker": "4403.T",
+      "name": "日油",
       "direction": "BUY",
-      "prev_close": 3569.0,
-      "limit_price": 3600
+      "prev_close": 2657.0,
+      "limit_price": 2683
+    },
+    {
+      "ticker": "8698.T",
+      "name": "マネックスグループ",
+      "direction": "BUY",
+      "prev_close": 626.0,
+      "limit_price": 632
+    },
+    {
+      "ticker": "9008.T",
+      "name": "京王電鉄",
+      "direction": "BUY",
+      "prev_close": 723.6,
+      "limit_price": 730
+    },
+    {
+      "ticker": "8060.T",
+      "name": "キヤノンマーケティングジャパン",
+      "direction": "BUY",
+      "prev_close": 3373.0,
+      "limit_price": 3405
+    },
+    {
+      "ticker": "4527.T",
+      "name": "ロート製薬",
+      "direction": "BUY",
+      "prev_close": 2317.5,
+      "limit_price": 2340
     }
   ]
 }
