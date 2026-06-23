@@ -10,11 +10,6 @@ name: モメンタムチンパン 日次ビルド＋Pages公開
 
 on:
   workflow_dispatch:            # 手動実行も常時可
-    inputs:
-      notify:
-        description: 'Discord通知も送る（broad=全面リバウンド日のときだけ送信される）'
-        type: boolean
-        default: false
   # JPX商用条件の確認済み（2026-06-04）。平日の朝と夕方に自動更新。
   # J-Quants はその日の EOD を翌日に公開するため、朝ビルドで前営業日の終値を確実に反映し、
   # 夕方ビルドは当日 EOD が間に合えば拾う（build_data は JST 当日から取得し未公開日は自動で前日にフォールバック）。
@@ -79,17 +74,6 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v5
 
-  # 全面リバウンド日（rebound.mode=broad）だけ Discord 通知。散発日・通常日は何も送らない。
-  # 朝ビルド（UTC22:00=JST翌07:00）のみ発火＝寄り2時間前に知らせる。夕方ビルドは同じ
-  # data_date の重複になるため送らない。手動実行は notify=true を指定した時だけ。
-  notify:
-    needs: deploy
-    if: ${{ github.event.schedule == '0 22 * * 0-4' || (github.event_name == 'workflow_dispatch' && inputs.notify) }}
-    runs-on: ubuntu-latest
-    env:
-      KABUAI_DISCORD_WEBHOOK: ${{ secrets.KABUAI_DISCORD_WEBHOOK }}
-      PYTHONIOENCODING: utf-8
-    steps:
-      - uses: actions/checkout@v6
-      - name: 広がり日チェック→Discord通知（デプロイ済みの latest.json を参照）
-        run: python kabuai/notify_discord.py
+  # 全面リバウンド日の Discord 通知は本人指示で停止（2026-06-24）。アプリ内の
+  # 🌊全面リバウンド日タブはビルドで生成され続けるが、朝の Discord push は送らない。
+  # 復活させる場合は notify_discord.py を呼ぶ notify ジョブをここに戻す（git 履歴参照）。
