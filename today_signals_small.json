@@ -1,40 +1,4 @@
 {
-  "date": "2026-06-23",
-  "signals": [
-    {
-      "ticker": "4403.T",
-      "name": "日油",
-      "direction": "BUY",
-      "prev_close": 2657.0,
-      "limit_price": 2683
-    },
-    {
-      "ticker": "8698.T",
-      "name": "マネックスグループ",
-      "direction": "BUY",
-      "prev_close": 626.0,
-      "limit_price": 632
-    },
-    {
-      "ticker": "9008.T",
-      "name": "京王電鉄",
-      "direction": "BUY",
-      "prev_close": 723.6,
-      "limit_price": 730
-    },
-    {
-      "ticker": "4527.T",
-      "name": "ロート製薬",
-      "direction": "BUY",
-      "prev_close": 2317.5,
-      "limit_price": 2340
-    },
-    {
-      "ticker": "2433.T",
-      "name": "博報堂ＤＹホールディングス",
-      "direction": "BUY",
-      "prev_close": 1094.5,
-      "limit_price": 1105
-    }
-  ]
+  "date": "2026-06-24",
+  "signals": []
 }
