@@ -809,6 +809,36 @@
       "close": 3598.0,
       "pnl": 0.78,
       "win": true
+    },
+    {
+      "date": "2026-06-23",
+      "ticker": "8698.T",
+      "name": "マネックスグループ",
+      "direction": "BUY",
+      "open": 625.0,
+      "close": 616.0,
+      "pnl": -1.44,
+      "win": false
+    },
+    {
+      "date": "2026-06-23",
+      "ticker": "9008.T",
+      "name": "京王電鉄",
+      "direction": "BUY",
+      "open": 725.0,
+      "close": 726.9,
+      "pnl": 0.26,
+      "win": true
+    },
+    {
+      "date": "2026-06-23",
+      "ticker": "4527.T",
+      "name": "ロート製薬",
+      "direction": "BUY",
+      "open": 2307.0,
+      "close": 2351.0,
+      "pnl": 1.91,
+      "win": true
     }
   ]
 }
