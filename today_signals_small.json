@@ -1,4 +1,12 @@
 {
-  "date": "2026-06-24",
-  "signals": []
+  "date": "2026-06-25",
+  "signals": [
+    {
+      "ticker": "5406.T",
+      "name": "神戸製鋼所",
+      "direction": "BUY",
+      "prev_close": 1883.5,
+      "limit_price": 1902
+    }
+  ]
 }
