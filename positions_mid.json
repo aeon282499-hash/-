@@ -628,9 +628,9 @@
     "limit_price": 2683,
     "entry_open": 2686.0,
     "status": "expired",
-    "hold_days": 2,
+    "hold_days": 0,
     "pnl_pct": null,
-    "unrealized_pnl": -2.327,
+    "unrealized_pnl": null,
     "exit_type": "NOFILL",
     "exit_date": "2026-06-23"
   },
@@ -676,9 +676,9 @@
     "limit_price": 3405,
     "entry_open": 3409.0,
     "status": "expired",
-    "hold_days": 2,
+    "hold_days": 0,
     "pnl_pct": null,
-    "unrealized_pnl": -2.581,
+    "unrealized_pnl": null,
     "exit_type": "NOFILL",
     "exit_date": "2026-06-23"
   },

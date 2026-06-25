@@ -123,7 +123,10 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
 
     updated = []
     for pos in positions:
-        if pos["status"] == "closed":
+        # closed=決済済み / expired=寄指不成立(NOFILL・約定なし) はどちらも終端状態。
+        # 再処理すると失効ポジに含み損益・保有日数が付き still_open に混入し、
+        # 朝レポートで「保有中・本日処分」と誤通知される（2026-06-25 日油の事故）。
+        if pos["status"] in ("closed", "expired"):
             updated.append(pos)
             continue
 

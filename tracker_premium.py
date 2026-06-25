@@ -92,7 +92,8 @@ def update_positions_premium(positions: list[dict], today: date) -> tuple[list[d
     updated:      list[dict] = []
 
     for pos in positions:
-        if pos["status"] == "closed":
+        # closed/expired(NOFILL) は終端状態＝再処理しない（tracker.py と同仕様）
+        if pos["status"] in ("closed", "expired"):
             updated.append(pos)
             continue
 
