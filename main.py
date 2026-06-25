@@ -90,6 +90,18 @@ def next_trading_day(d) -> object:
     return nxt
 
 
+def prev_trading_day(d) -> object:
+    prv = d - timedelta(days=1)
+    while not is_trading_day(prv):
+        prv -= timedelta(days=1)
+    return prv
+
+
+def is_month_first_trading_day(d) -> bool:
+    """今日がその月の最初の営業日か（前営業日が別月なら True）。"""
+    return prev_trading_day(d).month != d.month
+
+
 def _select_tier_signals(all_buy_candidates: list[dict],
                          all_sell_candidates: list[dict],
                          tier: dict,
@@ -156,6 +168,13 @@ def main() -> None:
         # 大資金用 top5 はメインチャンネル用に保存
         entry_date = today  # 当日寄り付きエントリー
 
+        # 月別・年間損益レポートは「その月の最初の営業日」だけ配信する（毎日は不要・
+        # ユーザー指示 2026-06-26）。月初に前月が確定した形で月1回届く。同日の二重実行は
+        # 上の today_signals.json 日付ガードで弾かれるので重複配信にはならない。
+        send_monthly = is_month_first_trading_day(today)
+        if send_monthly:
+            print("[main] 月初営業日 → 月別・年間損益レポートを配信")
+
         # ── ② 各階層を順に処理 ──────────────────────────
         first_tier_signals = []
         first_tier_sell_signals = []
@@ -184,7 +203,8 @@ def main() -> None:
             if active:
                 positions, closed_today, expired_today, still_open = update_positions(positions, today)
                 send_results(closed_today, still_open, today, tier=tier, expired=expired_today)
-                send_monthly_report(positions, today, tier=tier)
+                if send_monthly:
+                    send_monthly_report(positions, today, tier=tier)
 
             sell_closed_today = []
             sell_still_open   = []
@@ -192,7 +212,8 @@ def main() -> None:
             if sell_active:
                 sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(sell_positions, today)
                 send_sell_results(sell_closed_today, sell_still_open, today, tier=tier)
-                send_sell_monthly_report(sell_positions, today, tier=tier)
+                if send_monthly:
+                    send_sell_monthly_report(sell_positions, today, tier=tier)
 
             # 階層別シグナル選定
             tier_signals, tier_sell_signals = _select_tier_signals(
