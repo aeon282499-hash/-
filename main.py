@@ -201,8 +201,10 @@ def main() -> None:
             closed_today = []
             still_open   = []
             if active:
+                # update_positions は約定確認・決済・寄指不成立(NOFILL)確定の帳簿処理なので継続。
+                # 日別の決済結果レポート(send_results)はユーザー指示(2026-06-26)で廃止＝成績は
+                # 週次/月次のみ。保有/処分期限とNOFILLは15時の大引けチェックで吸収される。
                 positions, closed_today, expired_today, still_open = update_positions(positions, today)
-                send_results(closed_today, still_open, today, tier=tier, expired=expired_today)
                 if send_monthly:
                     send_monthly_report(positions, today, tier=tier)
 
@@ -210,8 +212,8 @@ def main() -> None:
             sell_still_open   = []
             sell_active = [p for p in sell_positions if p["status"] in ("pending", "open")]
             if sell_active:
+                # 帳簿処理は継続・日別の決済結果レポート(send_sell_results)は廃止（同上）。
                 sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(sell_positions, today)
-                send_sell_results(sell_closed_today, sell_still_open, today, tier=tier)
                 if send_monthly:
                     send_sell_monthly_report(sell_positions, today, tier=tier)
 
