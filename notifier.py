@@ -625,6 +625,79 @@ def send_sell_monthly_report(positions: list[dict], today: date,
         print(f"[notifier-{tier['label']}] SELL月別・年間損益送信")
 
 
+# ── 週次レポート（金曜＝その週の最終営業日の引け後）──────────────
+def _week_closed(positions: list[dict], week_start: str, today_str: str,
+                 direction: str) -> list[dict]:
+    """今週(月〜今日)に決済された指定directionのポジションを返す。"""
+    return [p for p in positions
+            if p.get("status") == "closed" and p.get("pnl_pct") is not None
+            and p.get("direction") == direction
+            and week_start <= (p.get("exit_date") or "") <= today_str]
+
+
+def _pf_str(pnls: list[float]) -> str:
+    gains  = sum(p for p in pnls if p > 0)
+    losses = -sum(p for p in pnls if p < 0)
+    if losses <= 0:
+        return "∞" if gains > 0 else "—"
+    return f"{gains / losses:.2f}"
+
+
+def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
+                       today: date, *, tier: dict | None = None) -> None:
+    """金曜引け後の週次サマリー。今週の確定損益(BUY+SELL)＋保有中持ち越しを1通で配信。"""
+    from datetime import timedelta
+    tier = _tier(tier)
+    week_start = today - timedelta(days=today.weekday())  # 月曜
+    ws, ts     = week_start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
+
+    buy_week  = _week_closed(buy_positions, ws, ts, "BUY")
+    sell_week = _week_closed(sell_positions or [], ws, ts, "SELL")
+    holdings  = [p for p in buy_positions if p.get("status") == "open"]
+
+    size_yen = tier["size"]
+    capital  = size_yen * 5
+    weight   = 1 / 5
+
+    def block(week: list[dict], label: str, emoji: str) -> str:
+        if not week:
+            return f"{emoji} {label}: 今週は決済なし"
+        pnls = [p["pnl_pct"] for p in week]
+        wins = sum(1 for x in pnls if x > 0)
+        wk   = sum(pnls) * weight
+        yen  = wk / 100 * capital
+        sign = "+" if wk >= 0 else ""
+        best  = max(week, key=lambda p: p["pnl_pct"])
+        worst = min(week, key=lambda p: p["pnl_pct"])
+        line = (f"{emoji} {label}: {len(week)}件決済 勝率{wins}/{len(week)}"
+                f"（{round(wins / len(week) * 100)}%）"
+                f" **週間{sign}{wk:.1f}%**（{sign}{yen / 10000:.1f}万円）・PF {_pf_str(pnls)}")
+        line += (f"\n　🏆 {best['name']} {best['pnl_pct']:+.1f}%"
+                 f"　🥶 {worst['name']} {worst['pnl_pct']:+.1f}%")
+        return line
+
+    lines = [block(buy_week, "BUY", "📈")]
+    if sell_week:
+        lines.append(block(sell_week, "空売り", "📉"))
+    if holdings:
+        names = "、".join(p["name"] for p in holdings[:5])
+        more  = f" ほか{len(holdings) - 5}件" if len(holdings) > 5 else ""
+        lines.append(f"💼 保有中（持ち越し）: {len(holdings)}件 — {names}{more}")
+    else:
+        lines.append("💼 保有中（持ち越し）: なし")
+
+    range_str = f"{week_start.strftime('%m/%d')}–{today.strftime('%m/%d')}"
+    wk_total  = sum(p["pnl_pct"] for p in buy_week) * weight if buy_week else 0
+    embed = {
+        "title":       f"{_tier_title_prefix(tier)}📅【週次レポート】今週のスイング成績｜{range_str}",
+        "description": "\n".join(lines),
+        "color":       COLOR_WIN if wk_total >= 0 else COLOR_ERROR,
+        "footer":      {"text": f"※資金{capital // 10000}万・1トレード{size_yen // 10000}万・MAX5並列基準"},
+    }
+    _dispatch({"embeds": [embed]}, tier=tier, side="BUY")
+    print(f"[notifier-{tier['label']}] 週次レポート送信（BUY{len(buy_week)}/SELL{len(sell_week)}/保有{len(holdings)}）")
+
+
 # ── 15:00 大引け処分指示 ──────────────────────────────────
 def _build_close_embed(targets: list[dict], today: date, tier: dict, *, sell: bool) -> dict:
     date_str = today.strftime("%m/%d")

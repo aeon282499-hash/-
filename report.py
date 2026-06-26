@@ -12,15 +12,29 @@ import os
 import sys
 import time
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import zoneinfo
 
+import jpholiday
 from dotenv import load_dotenv
 
 load_dotenv()
 JST              = zoneinfo.ZoneInfo("Asia/Tokyo")
 HISTORY_FILE      = "trade_history.json"
 SELL_HISTORY_FILE = "trade_history_sell.json"
+
+
+def _is_trading_day(d) -> bool:
+    return d.weekday() < 5 and not jpholiday.is_holiday(d)
+
+
+def _is_week_last_trading_day(d) -> bool:
+    """その週の最終営業日か（次の営業日が別の週なら True）。
+    通常は金曜・金曜が祝日ならその週の最後の営業日（木曜等）に発火する。"""
+    nxt = d + timedelta(days=1)
+    while not _is_trading_day(nxt):
+        nxt += timedelta(days=1)
+    return nxt.isocalendar()[:2] != d.isocalendar()[:2]
 
 # 階層定義（main.py / close_check.py の TIERS と整合）
 TIERS = [
@@ -323,7 +337,8 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
 
 
 def main() -> None:
-    today_str = date.today().strftime("%Y-%m-%d")
+    today_jst = datetime.now(JST).date()
+    today_str = today_jst.strftime("%Y-%m-%d")
 
     # 全階層のsignalsをまずロードしてticker集合を作る
     tier_signals = {}
@@ -358,6 +373,17 @@ def main() -> None:
 
         if sell_sigs is not None:
             _process_signals(sell_sigs, ohlc, today_str, tier["sell_history_file"])
+
+        # 週次レポート（金曜＝その週の最終営業日の引け後だけ・2026-06-26追加）。
+        # 今週の確定損益(BUY/SELL)＋保有中持ち越しを1通で配信。実現損益は positions_*.json
+        # から集計（trade_historyは初日スナップなので使わない）。
+        if _is_week_last_trading_day(today_jst):
+            from notifier import send_weekly_report
+            pos_file      = "positions.json"      if key == "main" else f"positions_{key}.json"
+            sell_pos_file = "positions_sell.json" if key == "main" else f"positions_sell_{key}.json"
+            buy_pos  = json.load(open(pos_file, encoding="utf-8"))      if os.path.exists(pos_file)      else []
+            sell_pos = json.load(open(sell_pos_file, encoding="utf-8")) if os.path.exists(sell_pos_file) else []
+            send_weekly_report(buy_pos, sell_pos, today_jst, tier=tier)
 
 
 if __name__ == "__main__":
