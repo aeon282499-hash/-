@@ -369,6 +369,16 @@
       "close": 1085.0,
       "pnl": 0.23,
       "win": true
+    },
+    {
+      "date": "2026-06-26",
+      "ticker": "3659.T",
+      "name": "ネクソン",
+      "direction": "BUY",
+      "open": 2127.0,
+      "close": 2136.5,
+      "pnl": 0.45,
+      "win": true
     }
   ]
 }
