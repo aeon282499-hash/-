@@ -350,15 +350,14 @@ def main() -> None:
         buy_sigs, sell_sigs = tier_signals[key]
         print(f"\n[report-{tier['label']}] 処理開始")
 
+        # 夕方の「日中結果｜1日目スナップショット（参考値）」Discord配信は
+        # ユーザー指示(2026-06-26)で完全廃止。trade_history.json への日次蓄積は
+        # _process_signals 内で継続（後参照・バックアップ用）＝send_report系は呼ばない。
         if buy_sigs is not None:
-            results, all_trades = _process_signals(
-                buy_sigs, ohlc, today_str, tier["buy_history_file"])
-            send_report(results, today_str, all_trades, tier=tier)
+            _process_signals(buy_sigs, ohlc, today_str, tier["buy_history_file"])
 
         if sell_sigs is not None:
-            results_sell, all_sell_trades = _process_signals(
-                sell_sigs, ohlc, today_str, tier["sell_history_file"])
-            send_sell_report(results_sell, today_str, all_sell_trades, tier=tier)
+            _process_signals(sell_sigs, ohlc, today_str, tier["sell_history_file"])
 
 
 if __name__ == "__main__":
