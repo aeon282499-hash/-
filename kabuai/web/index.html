@@ -179,9 +179,6 @@
   .rhtbl td.pos{color:#6bcb77;font-weight:700}.rhtbl td.neg{color:#ff6b6b;font-weight:700}
   .bcard.hot{border:1px solid rgba(194,24,91,.55);background:linear-gradient(180deg,rgba(194,24,91,.13),rgba(194,24,91,.04))}
   .bscore{font-size:15px;font-weight:900;color:#ff6b9d}.bscore.dim{color:var(--mut);font-weight:700}
-  .blast-tease{display:flex;align-items:center;gap:10px;margin-top:11px;padding:10px 13px;border-radius:11px;
-    border:1px solid rgba(194,24,91,.45);background:rgba(194,24,91,.08);color:var(--tx);font-size:13px}
-  .blast-tease b{color:#ff6b9d}
   /* 🏠 今日これ買え（option A: 一画面で「どれ買う」に即答＋低位株カット） */
   .todaypick{margin:0 0 12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
   .todaypick.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.05));border-color:rgba(77,171,247,.55)}
@@ -576,24 +573,7 @@ function posForm(code,name,price){
       <button class="posadd" onclick="addPosFromForm('${code}','${esc(name).replace(/'/g,"")}')">保存</button>
     </div></div>`;
 }
-// 🧭 今日の作戦（日種別×買い候補×爆益×セクターの統合・初心者向けの一言指示）
-function todayPlan(){
-  const rb=reboundInfo(), bb=buyBasket(), tb=DATA.theme_blast, sc=DATA.sector_today, pos=loadPos();
-  let main, tone="";
-  if(rb&&rb.mode==="broad"){tone="broad";
-    main=`🌊 <b>全面リバウンド日</b> — ✅買い候補 ${bb?bb.count:0}銘柄を<b>1点集中せず広めに</b>拾う日（過去勝率62.5%）。出口だけ厳守`;}
-  else if(rb&&rb.mode==="sparse"){tone="sparse";
-    main=`⚠️ <b>散発点灯日</b> — 無理に買わない。${bb&&bb.count?`入るなら✅買い候補 ${bb.count}件を小さく`:"今日は見送りが無難"}`;}
-  else if(bb&&bb.count){main=`✅ 買い候補 <b>${bb.count}銘柄</b>（平均期待値 ${bb.avgEV>=0?"+":""}${bb.avgEV}%）— 本命 ${bb.top.name}`;}
-  else{main=`本日は検証済みの買いシグナルなし — <b>買わない日も戦略のうち</b>`;}
-  const chips=[];
-  if(pos.length)chips.push(`📒 持ち株 ${pos.length}件 → 下のコーチの指示を確認`);
-  if(tb&&tb.n_hot)chips.push(`🔥 爆益本命 ${tb.n_hot}件`);
-  if(sc&&sc.is_today&&((sc.buy||[]).length+(sc.sell||[]).length))chips.push(`📡 セクター ${(sc.buy||[]).length+(sc.sell||[]).length}件`);
-  return `<div class="rbanner ${tone}" style="margin-top:11px${tone?"":";border:1px solid var(--line);background:var(--card2)"}">
-    <b>🧭 今日の作戦</b>
-    <div class="rb-sub" style="font-size:12.5px;color:var(--tx)">${main}${chips.length?`<div class="muted" style="margin-top:4px;font-size:11px">${chips.join(" ・ ")}</div>`:""}</div></div>`;
-}
+// 🧭 今日の作戦(todayPlan)はホーム未使用の死にコードだったため撤去（2026-06-27・爆益/セクターのチップを含むため）。
 
 // 🏠 今日これ買え — 「結局どれ買えばいい」に一画面で即答（option A）。
 // 日種別 → 今日の方針 → ¥1000以上の検証済み買い候補を分散リスト → 出口プラン。
