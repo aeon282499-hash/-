@@ -1001,8 +1001,15 @@ function viewSignals(active){
     ${disc}`;
   }
   const g=s.groups[active];
-  const cards=(g.members||[]).map(r=>sigMemberCard(r,false)).join("");
+  // 検証済み買いシグナル(buyKeys)のタブでは各カードに期待値/勝率/出口/✅チップを出す
+  // （指数0.0・グレードDだけが目立って「数字が入ってない」ように見える問題への対処）。
+  const isEdgeActive=buyKeys.includes(active);
+  const cards=(g.members||[]).map(r=>sigMemberCard(r,isEdgeActive,isEdgeActive)).join("");
   const stanceColor={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[g.stance]||"#8a94a3";
+  const isDipFamily=active==="reversal"||active==="strong_reversal";
+  const edgeNote=isEdgeActive
+    ? `<div class="muted" style="font-size:11.5px;margin-top:7px;line-height:1.7">買いの根拠は指数(勢いスコア)の高さではなく、各カードの<b style="color:var(--C)">期待値・勝率（出口込み）</b>です。${isDipFamily?"反発系は<b>売られすぎ</b>を買う形のため、指数が低く<b>グレードDが普通</b>です（高指数＝買いではない）。":""}</div>`
+    : "";
   return `
     <h2>チンパンシグナル</h2>
     <div class="tabs">${tabs}</div>
@@ -1011,6 +1018,7 @@ function viewSignals(active){
         <span class="tag" style="border-color:${stanceColor};color:${stanceColor}">${g.stance}</span>
         <span class="muted" style="font-weight:400">・${g.count}銘柄点灯</span></div>
       <div class="muted" style="font-size:12px;margin-top:6px">${g.desc}</div>
+      ${edgeNote}
     </div>
     ${trackPanel(active)}
     <div class="cardgrid">${cards||`<div class="card muted">該当なし</div>`}</div>
