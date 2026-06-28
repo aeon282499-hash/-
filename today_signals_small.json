@@ -1,12 +1,4 @@
 {
-  "date": "2026-06-26",
-  "signals": [
-    {
-      "ticker": "3659.T",
-      "name": "ネクソン",
-      "direction": "BUY",
-      "prev_close": 2134.0,
-      "limit_price": 2155
-    }
-  ]
+  "date": "2026-06-29",
+  "signals": []
 }

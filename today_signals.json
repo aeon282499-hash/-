@@ -1,19 +1,26 @@
 {
-  "date": "2026-06-26",
+  "date": "2026-06-29",
   "signals": [
     {
-      "ticker": "8766.T",
-      "name": "東京海上ホールディングス",
+      "ticker": "8058.T",
+      "name": "三菱商事",
       "direction": "BUY",
-      "prev_close": 6850.0,
-      "limit_price": 6910
+      "prev_close": 4403.0,
+      "limit_price": 4445
     },
     {
-      "ticker": "3659.T",
-      "name": "ネクソン",
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
       "direction": "BUY",
-      "prev_close": 2134.0,
-      "limit_price": 2155
+      "prev_close": 4139.0,
+      "limit_price": 4180
+    },
+    {
+      "ticker": "8031.T",
+      "name": "三井物産",
+      "direction": "BUY",
+      "prev_close": 4508.0,
+      "limit_price": 4550
     }
   ]
 }
