@@ -1,4 +1,12 @@
 {
-  "date": "2026-06-29",
-  "signals": []
+  "date": "2026-06-30",
+  "signals": [
+    {
+      "ticker": "7752.T",
+      "name": "リコー",
+      "direction": "BUY",
+      "prev_close": 1420.5,
+      "limit_price": 1434
+    }
+  ]
 }

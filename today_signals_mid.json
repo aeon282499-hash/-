@@ -1,26 +1,12 @@
 {
-  "date": "2026-06-29",
+  "date": "2026-06-30",
   "signals": [
     {
-      "ticker": "8058.T",
-      "name": "三菱商事",
+      "ticker": "7752.T",
+      "name": "リコー",
       "direction": "BUY",
-      "prev_close": 4403.0,
-      "limit_price": 4445
-    },
-    {
-      "ticker": "9042.T",
-      "name": "阪急阪神ホールディングス",
-      "direction": "BUY",
-      "prev_close": 4139.0,
-      "limit_price": 4180
-    },
-    {
-      "ticker": "8031.T",
-      "name": "三井物産",
-      "direction": "BUY",
-      "prev_close": 4508.0,
-      "limit_price": 4550
+      "prev_close": 1420.5,
+      "limit_price": 1434
     }
   ]
 }
