@@ -117,6 +117,28 @@ def _entry_day_open(pos: dict, today: date, historical_data: dict) -> float | No
     return None
 
 
+def _oco_fill(direction: str, entry_open: float | None,
+              day_high: float | None, day_low: float | None) -> dict | None:
+    """ザラ場OCO(TP +5% / STOP -3%)が当日中に約定したかを当日高安から判定。
+    約定していれば {kind, pnl_pct, level, hit} を返す（STOP優先＝backtest_rangeと同順）。
+    OCOは証券会社の実注文なので、約定済み＝もう保有していない＝処分対象でも保有継続でもない。"""
+    if not entry_open or day_high is None or day_low is None:
+        return None
+    if direction == "BUY":
+        stop, tp = entry_open * 0.97, entry_open * 1.05
+        if day_low <= stop:
+            return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_low}
+        if day_high >= tp:
+            return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_high}
+    else:  # SELL（空売り：利確は下＝entry×0.95 / 損切は上＝entry×1.03）
+        stop, tp = entry_open * 1.03, entry_open * 0.95
+        if day_high >= stop:
+            return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_high}
+        if day_low <= tp:
+            return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_low}
+    return None
+
+
 def collect_targets(open_positions: list[dict], direction: str, today: date,
                     historical_data: dict) -> tuple[list[dict], list[dict]]:
     """指定directionのオープンポジションから大引け処分対象を抽出する。
@@ -169,6 +191,35 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 continue
             entry_open = day_open  # 実際の約定値（含み損益表示の基準を寄り値に補正）
 
+        # ── 当日ザラ場データ取得（OCO判定＋RSI判定に共用）──
+        day_high = day_low = current_price = None
+        try:
+            intraday = yf.Ticker(ticker).history(period="1d", interval="5m")
+            if not intraday.empty:
+                current_price = float(intraday["Close"].iloc[-1])
+                day_high      = float(intraday["High"].max())
+                day_low       = float(intraday["Low"].min())
+        except Exception as e:
+            print(f"  [yfinance] {ticker} 失敗: {e}")
+
+        # ── 最優先: ザラ場OCO(+5%/-3%)約定チェック ──
+        # 当日高安がTP/STOPに触れていれば証券会社のOCOで既に決済済み＝
+        # 「処分対象」でも「保有継続」でもない。その旨だけ通知して以降の判定はしない。
+        fill = _oco_fill(direction, entry_open, day_high, day_low)
+        if fill:
+            verb = "利確" if fill["kind"] == "TP" else "損切"
+            act  = "買戻し" if direction == "SELL" else "決済"
+            print(f"  [OCO] {ticker} 本日{fill['kind']} {fill['pnl_pct']:+.0f}% 約定済み")
+            _checked(
+                note=(f"本日OCO **{fill['pnl_pct']:+.0f}%{verb}**で{act}済み"
+                      f"（{fill['hit']:,.0f}円が{fill['kind']} {fill['level']:,.0f}円に到達・保有なし）"),
+                price=current_price, hold=today_hold,
+            )
+            checked[-1]["settled"] = True
+            checked[-1]["pnl_pct"] = fill["pnl_pct"]
+            continue
+
+        # ── MAXHOLD（OCO未約定で保有最終日 → 大引け強制処分）──
         if today_hold >= MAX_HOLD:
             targets.append({
                 "ticker":        ticker,
@@ -183,19 +234,11 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
             })
             continue
 
-        try:
-            yf_obj = yf.Ticker(ticker)
-            intraday = yf_obj.history(period="1d", interval="5m")
-            if intraday.empty:
-                print(f"  [yfinance] {ticker} intraday 空 → スキップ")
-                _checked(note="現在値の取得失敗（要手動確認）", hold=today_hold)
-                continue
-            current_price = float(intraday["Close"].iloc[-1])
-        except Exception as e:
-            print(f"  [yfinance] {ticker} 失敗: {e}")
+        # ── RSI判定（現在値が必要）──
+        if current_price is None:
+            print(f"  [yfinance] {ticker} 現在値取れず → 手動確認")
             _checked(note="現在値の取得失敗（要手動確認）", hold=today_hold)
             continue
-
         if ticker not in historical_data:
             print(f"  [J-Quants] {ticker} データなし")
             _checked(note="履歴データなし・RSI判定不可（要手動確認）", hold=today_hold)

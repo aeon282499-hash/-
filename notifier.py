@@ -826,11 +826,17 @@ def _build_close_no_targets_embed(checked: list[dict], today: date, tier: dict,
     lines.append("─" * 22)
 
     warn = False
+    settled_any = False
     for c in checked:
         ticker = c["ticker"].replace(".T", "")
         name   = c["name"]
         hold   = c.get("today_hold")
         note   = c.get("note")
+        if c.get("settled"):
+            settled_any = True
+            hold_str = f"{hold}日目 — " if hold else ""
+            lines.append(f"✅ **{name}** ({ticker}) {hold_str}{note}")
+            continue
         if note:
             warn = True
             hold_str = f"{hold}日目 — " if hold else ""
@@ -853,7 +859,7 @@ def _build_close_no_targets_embed(checked: list[dict], today: date, tier: dict,
     return {
         "title":       title,
         "description": "\n".join(lines),
-        "color":       COLOR_ERROR if warn else COLOR_NONE,
+        "color":       COLOR_ERROR if warn else (COLOR_WIN if settled_any else COLOR_NONE),
         "footer":      {"text": f"配信時刻: {time_str}"},
     }
 
