@@ -546,11 +546,40 @@ def send_sell_results(closed: list[dict], still_open: list[dict], today: date,
 
 
 # ── 月別・年間損益 ─────────────────────────────────────────
-def _build_monthly_embed(closed: list[dict], today: date, tier: dict, *, sell: bool) -> dict | None:
+def _slot_funded(positions: list[dict], nslots: int = 5) -> set[int]:
+    """資金枠(満枠は見送り)を再現し、実際に取れた(funded)ポジションの id 集合を返す。
+
+    本番は1日最大5新規・最大3営業日保有なので同時保有が最大15銘柄まで膨らむが、資金は
+    size×5(=5枠)しかない。entry日時点で空き枠が無いポジは「資金不足で見送り」として
+    損益集計から除外する（=正しい資本リターンにする）。open(未決済)も枠を占有する。
+    ※score は期待値と無相関(bt_score_buckets)なので、枠埋まり時にどれを落とすかは
+      損益に中立 → entry日時順の処理で不偏。
+    """
+    FAR = "9999-12-31"
+    pos = [p for p in positions if p.get("entry_date")]
+    order = sorted(range(len(pos)),
+                   key=lambda i: (pos[i]["entry_date"], pos[i].get("exit_date") or FAR))
+    open_exits: list[str] = []
+    funded: set[int] = set()
+    for i in order:
+        ed = pos[i]["entry_date"]
+        ex = pos[i].get("exit_date") or FAR
+        open_exits = [e for e in open_exits if e >= ed]   # entry前にexit→枠解放
+        if len(open_exits) < nslots:
+            open_exits.append(ex)
+            funded.add(id(pos[i]))
+    return funded
+
+
+def _build_monthly_embed(positions: list[dict], today: date, tier: dict, *, sell: bool) -> dict | None:
     from collections import defaultdict
 
+    funded = _slot_funded(positions, 5)
     monthly = defaultdict(list)
-    for p in closed:
+    for p in positions:
+        if (p.get("status") != "closed" or p.get("pnl_pct") is None
+                or id(p) not in funded):
+            continue
         ym = (p.get("exit_date") or "")[:7]
         if ym:
             monthly[ym].append(p["pnl_pct"])
@@ -595,18 +624,17 @@ def _build_monthly_embed(closed: list[dict], today: date, tier: dict, *, sell: b
         "title":       title,
         "description": desc,
         "color":       color,
-        "footer":      {"text": f"※資金{capital//10000}万・1トレード{size_yen//10000}万・MAX5並列基準"},
+        "footer":      {"text": f"※資金{capital//10000}万・5枠(1件{size_yen//10000}万)・資金枠に収まる分のみ集計"},
     }
 
 
 def send_monthly_report(positions: list[dict], today: date,
                         *, tier: dict | None = None) -> None:
     tier = _tier(tier)
-    closed = [p for p in positions
-              if p.get("status") == "closed" and p.get("pnl_pct") is not None]
-    if not closed:
+    if not any(p.get("status") == "closed" and p.get("pnl_pct") is not None
+               for p in positions):
         return
-    embed = _build_monthly_embed(closed, today, tier, sell=False)
+    embed = _build_monthly_embed(positions, today, tier, sell=False)
     if embed:
         _dispatch({"embeds": [embed]}, tier=tier, side="BUY", public_url=PUBLIC_MONTHLY)
         print(f"[notifier-{tier['label']}] 月別・年間損益送信")
@@ -615,11 +643,10 @@ def send_monthly_report(positions: list[dict], today: date,
 def send_sell_monthly_report(positions: list[dict], today: date,
                              *, tier: dict | None = None) -> None:
     tier = _tier(tier)
-    closed = [p for p in positions
-              if p.get("status") == "closed" and p.get("pnl_pct") is not None]
-    if not closed:
+    if not any(p.get("status") == "closed" and p.get("pnl_pct") is not None
+               for p in positions):
         return
-    embed = _build_monthly_embed(closed, today, tier, sell=True)
+    embed = _build_monthly_embed(positions, today, tier, sell=True)
     if embed:
         _dispatch({"embeds": [embed]}, tier=tier, side="SELL", public_url=PUBLIC_MONTHLY)
         print(f"[notifier-{tier['label']}] SELL月別・年間損益送信")
@@ -651,8 +678,10 @@ def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
     week_start = today - timedelta(days=today.weekday())  # 月曜
     ws, ts     = week_start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
 
-    buy_week  = _week_closed(buy_positions, ws, ts, "BUY")
-    sell_week = _week_closed(sell_positions or [], ws, ts, "SELL")
+    buy_funded  = _slot_funded(buy_positions, 5)
+    sell_funded = _slot_funded(sell_positions or [], 5)
+    buy_week  = [p for p in _week_closed(buy_positions, ws, ts, "BUY") if id(p) in buy_funded]
+    sell_week = [p for p in _week_closed(sell_positions or [], ws, ts, "SELL") if id(p) in sell_funded]
     holdings  = [p for p in buy_positions if p.get("status") == "open"]
 
     size_yen = tier["size"]
@@ -692,7 +721,7 @@ def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
         "title":       f"{_tier_title_prefix(tier)}📅【週次レポート】今週のスイング成績｜{range_str}",
         "description": "\n".join(lines),
         "color":       COLOR_WIN if wk_total >= 0 else COLOR_ERROR,
-        "footer":      {"text": f"※資金{capital // 10000}万・1トレード{size_yen // 10000}万・MAX5並列基準"},
+        "footer":      {"text": f"※資金{capital // 10000}万・5枠(1件{size_yen // 10000}万)・資金枠に収まる分のみ集計"},
     }
     _dispatch({"embeds": [embed]}, tier=tier, side="BUY")
     print(f"[notifier-{tier['label']}] 週次レポート送信（BUY{len(buy_week)}/SELL{len(sell_week)}/保有{len(holdings)}）")
