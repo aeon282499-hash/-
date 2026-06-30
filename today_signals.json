@@ -1,12 +1,19 @@
 {
-  "date": "2026-06-30",
+  "date": "2026-07-01",
   "signals": [
     {
-      "ticker": "7752.T",
-      "name": "リコー",
+      "ticker": "7270.T",
+      "name": "ＳＵＢＡＲＵ",
       "direction": "BUY",
-      "prev_close": 1420.5,
-      "limit_price": 1434
+      "prev_close": 2390.0,
+      "limit_price": 2413
+    },
+    {
+      "ticker": "4272.T",
+      "name": "日本化薬",
+      "direction": "BUY",
+      "prev_close": 1993.0,
+      "limit_price": 2012
     }
   ]
 }
