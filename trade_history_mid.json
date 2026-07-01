@@ -469,6 +469,26 @@
       "close": 4265.0,
       "pnl": 3.04,
       "win": true
+    },
+    {
+      "date": "2026-07-01",
+      "ticker": "7270.T",
+      "name": "ＳＵＢＡＲＵ",
+      "direction": "BUY",
+      "open": 2404.5,
+      "close": 2406.0,
+      "pnl": 0.06,
+      "win": true
+    },
+    {
+      "date": "2026-07-01",
+      "ticker": "4272.T",
+      "name": "日本化薬",
+      "direction": "BUY",
+      "open": 2006.0,
+      "close": 1997.5,
+      "pnl": -0.42,
+      "win": false
     }
   ]
 }
