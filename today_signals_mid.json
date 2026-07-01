@@ -1,19 +1,12 @@
 {
-  "date": "2026-07-01",
+  "date": "2026-07-02",
   "signals": [
     {
-      "ticker": "7270.T",
-      "name": "ＳＵＢＡＲＵ",
+      "ticker": "7532.T",
+      "name": "パン・パシフィック・インターナショナルホールディングス",
       "direction": "BUY",
-      "prev_close": 2390.0,
-      "limit_price": 2413
-    },
-    {
-      "ticker": "4272.T",
-      "name": "日本化薬",
-      "direction": "BUY",
-      "prev_close": 1993.0,
-      "limit_price": 2012
+      "prev_close": 793.6,
+      "limit_price": 801
     }
   ]
 }
