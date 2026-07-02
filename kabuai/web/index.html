@@ -215,9 +215,12 @@ function candidates(){
     all.push({...r,signals:(r.signals||[]).filter(x=>BUY_KEYS.indexOf(x)>=0&&sigHasEdge(x))});
   }));
   const list=all.filter(priceOK), hidden=all.length-list.length;
-  // ソート優先度: ①自力（先物に振られにくい）→ ②期待値の高い順 → ③RSI低い順
-  list.sort((a,b)=>(ftagRank(a)-ftagRank(b))
-    ||(((buyStat(b)||{ev:-1e9}).ev)-((buyStat(a)||{ev:-1e9}).ev))
+  // ソート優先度（2026-07-02 本人指示「買いで勝てる順」）:
+  // ①期待値の高い順（出口込みの過去平均リターン＝BT検証済みの「勝てる」数字）
+  // ②同率内は自力優先（先物に振られにくい・高連動は下げる）③RSI低い順
+  // 注: 期待値はシグナル種類ごとの統計なので、同じシグナルの銘柄は同率＝②③で並ぶ。
+  list.sort((a,b)=>((((buyStat(b)||{ev:-1e9}).ev)-((buyStat(a)||{ev:-1e9}).ev)))
+    ||(ftagRank(a)-ftagRank(b))
     ||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50)));
   return {list,hidden};
 }
@@ -342,7 +345,7 @@ function candHero(){
         <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
           <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div></div>
         <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;}).join("");
-    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。<b>先物に振られにくい順 → 期待値順</b>に並べています。</div>
+    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は先物に振られにくい自力を上に）。</div>
       ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 過去実績では買い候補全体に追い風の日です。</div>`:""}
       <div class="picklist">${rows}</div>
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
@@ -695,7 +698,7 @@ function viewAbout(){
     <p style="margin:0;line-height:1.8">「出来高をともなって資金が入ってきている」<b>買い集め系のシグナル</b>のうち、
       過去数年の検証で<b>勝率と平均リターンにプラスの実績</b>があったものだけを表示します。</p>
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
-      <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。</li>
+      <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。買い候補は<b style="color:var(--tx)">この期待値が高い順（勝てる順）</b>に並びます。シグナル種類ごとの統計のため、同じシグナルの銘柄は同率＝自力優先→RSI低い順で並べます。</li>
       <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
       <li>反発（反転）系のシグナルは現在表示していません（2026-07 整理）。</li>
       <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。</li>
@@ -710,7 +713,7 @@ function viewAbout(){
       <span class="ftag self">自力 r0.31</span><span class="ftag mid">中連動 r0.55</span><span class="ftag high">高連動 r0.82</span>
     </div>
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
-      <li><b style="color:var(--up)">自力</b>（r ${f.th_mid!=null?f.th_mid:0.40} 未満）… 自分の需給で動く。押し目→反発の「型」が出やすい<b style="color:var(--tx)">狙い目</b>。買い候補の並びで最上位。</li>
+      <li><b style="color:var(--up)">自力</b>（r ${f.th_mid!=null?f.th_mid:0.40} 未満）… 自分の需給で動く。押し目→反発の「型」が出やすい<b style="color:var(--tx)">狙い目</b>。買い候補では同じ期待値の中で上に並びます。</li>
       <li><b style="color:var(--tx)">中連動</b>（r ${f.th_mid!=null?f.th_mid:0.40}〜）… 中間。</li>
       <li><b style="color:var(--dn)">高連動</b>（r ${f.th_high!=null?f.th_high:0.70} 以上）… 指数寄与の大きい値嵩株など。先物のアービトラージで<b style="color:var(--tx)">機械的に振られ、型が壊れやすい</b>ので注意（並びも一段下げます）。</li>
       <li>直近の共通5分足 ${f.window!=null?f.window:48}本（約4時間分）で計算。<b style="color:var(--tx)">朝の表示は前営業日のザラ場ベース</b>、夕方更新後は当日ベース。足が足りない銘柄はタグ非表示。</li>
