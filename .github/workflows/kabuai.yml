@@ -36,6 +36,10 @@ jobs:
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       JQUANTS_VERIFY_SSL: "true"
       KABUAI_DATA_SOURCE: jquants_api
+      # 200営業日: 銘柄探検の初動判定は75日線+60日レジームで135本の履歴が必要。
+      # 200日なら直近約65日のイベントをCI単独で検出でき、explorer_longterm.json の
+      # 月1更新でそれ以前をカバーする（140日のままだと直近5日しか判定できない）。
+      KABUAI_API_LOOKBACK: "200"
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v6

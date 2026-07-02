@@ -658,6 +658,20 @@ def build() -> dict:
     ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
     ai_meta = ai_summary.annotate(ai_targets)
 
+    # ── 銘柄探検（探索用スクリーナー・2026-07-02追加） ──
+    # ストップ高/初動/上昇中/押し目/短期反発をカテゴリ化して data/explorer.json に出力。
+    # ロジックは explorer_signals.py 1ファイル・閾値は explorer_config.json。
+    # ✅買い候補（BT検証済み）とは独立の探索機能なので、失敗してもビルドは止めない。
+    try:
+        import explorer_signals
+        exp = explorer_signals.build_explorer(data, name_map, data_date)
+        with open(DATA_DIR / "explorer.json", "w", encoding="utf-8") as f:
+            json.dump(exp, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"[build] 銘柄探検: counts={exp['counts']} / ランキング{len(exp['ranking']['items'])}件 "
+              f"/ 長期イベント={'あり' if exp['ranking']['longterm']['available'] else 'なし'}")
+    except Exception as e:
+        print(f"[build] 銘柄探検はスキップ（非致命）: {e}")
+
     disclaimer = "価格・指標はAI等で整理・加工した参考表示です。リアルタイム配信ではありません。投資判断は自己責任。"
     # ── フェーズ5: 詳細チャートJSON書き出し ──
     n_charts = export_stocks(data, rows, data_date, disclaimer)

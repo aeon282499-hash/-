@@ -1,0 +1,58 @@
+{
+  "note": "銘柄探検スクリーナーの閾値設定。ロジック本体は explorer_signals.py（1ファイル集約）。ここの数値を変えるだけで条件を微調整できる。",
+
+  "stop_high": {
+    "tol_pct": 0.3,
+    "recent_days": 5,
+    "history_days": 30,
+    "_doc": "tol_pct=値幅上限との許容差(%・調整後株価ゆえ完全一致にしない)。recent_days=カテゴリ一覧に出す直近日数。history_days=日付付き履歴の保持日数。"
+  },
+
+  "shodo": {
+    "ma_long": 75,
+    "vol_avg_days": 20,
+    "vol_ratio_min": 2.0,
+    "high_break_days": 60,
+    "regime_lookback": 60,
+    "regime_below_ma_min": 0.6,
+    "fresh_days": 5,
+    "min_turnover": 100000000,
+    "_doc": "初動=①75日線を上抜け(前日以下→当日上) ②出来高が20日平均の2倍以上 ③直近60日高値ブレイク ④直前60日の6割以上は75日線の下(長期低迷からの転換)を全て満たす日。fresh_days以内が「初動」カテゴリ。"
+  },
+
+  "shodo_wait": {
+    "min_conditions": 2,
+    "ma_near_pct": 3.0,
+    "vol_ratio_min": 1.5,
+    "_doc": "初動待ち=初動の4条件のうちmin_conditions以上を満たし、かつ75日線まで-ma_near_pct%以内（あと一歩）。"
+  },
+
+  "state": {
+    "horizon_days": 90,
+    "fail_below_shodo_pct": 10.0,
+    "rising_pullback_max": 20.0,
+    "_doc": "初動後の状態遷移。初動株価-10%割れ or 75日線割れで状態終了。押し(高値からの戻し%がフィボ計算)がrising_pullback_max未満なら上昇中、それ以上でrebound.fib_hi以内なら押し目。"
+  },
+
+  "ranking": {
+    "windows_days": { "3m": 92, "1y": 366 },
+    "max_items": 200,
+    "spark_points": 40,
+    "_doc": "上昇ランキング=初動日からの最大上昇率で降順。max_items=配信上限（1年窓の上位＋3ヶ月窓の上位をマージ）。"
+  },
+
+  "rebound": {
+    "surge_lookback_days": 25,
+    "high_within_days": 15,
+    "surge_min_gain_pct": 25.0,
+    "fib_lo": 20.0,
+    "fib_hi": 61.8,
+    "zone_lo": 38.2,
+    "zone_hi": 50.0,
+    "min_turnover": 50000000,
+    "sagedomari_vol_ratio_max": 0.7,
+    "sagedomari_wick_min": 0.4,
+    "nji_rise_from_low_pct": 3.0,
+    "_doc": "短期反発候補=直近high_within_days日以内に高値をつけた急騰(起点安値→高値でsurge_min_gain_pct%以上・S高含む)が、フィボ押しfib_lo〜fib_hi%の範囲で押し目形成中。zone_lo〜zone_hi(38.2-50%)を優先表示。下げ止まり=陽線反転or下ヒゲ+出来高減。N字=押し安値からnji_rise_from_low_pct%以上戻して再上昇。"
+  }
+}

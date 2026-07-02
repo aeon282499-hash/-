@@ -122,6 +122,7 @@
 <main id="view"><div class="muted">読み込み中…</div></main>
 <nav>
   <a href="#/" id="nav-home" class="on"><span class="i">✅</span>今日の買い</a>
+  <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/search" id="nav-search"><span class="i">🔍</span>検索</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
 </nav>
@@ -534,6 +535,145 @@ function viewSearch(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── 🧭 銘柄探検（カテゴリ・スクリーナー。data/explorer.json を遅延fetch） ──
+// ✅今日の買い候補（BT検証済み）とは別物の「探索用」。優位性未検証のため
+// 勝率等は出さず、note で正直に明示する。
+let EXP=null, EXP_LOADING=false;
+async function loadExplorer(){
+  if(EXP||EXP_LOADING)return EXP;
+  EXP_LOADING=true;
+  const cands=["../data/explorer.json","data/explorer.json","./data/explorer.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){EXP=await r.json();break;}}catch(e){}
+  }
+  EXP_LOADING=false;
+  return EXP;
+}
+const CAT_DEFS={
+  shodo:["🌱","初動","長期低迷から出来高を伴って75日線を上抜けた転換の初日"],
+  shodo_wait:["⏳","初動待ち","初動の条件にあと一歩（75日線のすぐ下まで接近）"],
+  rising:["🚀","上昇中","初動後もトレンド継続中（押しが浅い）"],
+  oshime:["🎯","押し目","初動後の上昇から調整中（フィボ押しの範囲内）"],
+  rebound:["⚡","短期反発候補","急騰後にフィボ38.2〜50%押しゾーンで押し目形成中"],
+  stop_high:["🔥","ストップ高","値幅制限いっぱいまで買われた銘柄（張り付き含む）"]};
+function expReload(hash){loadExplorer().then(()=>{if((location.hash||"#/")===hash)render();});}
+function viewExplore(){
+  if(!EXP){expReload("#/explore");return `<h2>🧭 銘柄探検</h2><div class="card muted">読み込み中…</div>`;}
+  const c=EXP.counts||{};
+  const cell=k=>{const[e,l,d]=CAT_DEFS[k];
+    return `<a class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" href="#/explore/${k}">
+      <span style="font-size:20px">${e}</span>
+      <span style="flex:1;min-width:0"><b>${l}</b><span class="muted" style="display:block;font-size:11px">${d}</span></span>
+      <b style="font-size:18px;${(c[k]||0)?"color:var(--up)":"color:var(--mut)"}">${c[k]||0}</b><span class="muted" style="font-size:11px">件</span></a>`;};
+  return `
+    <h2>🧭 銘柄探検 <span class="muted" style="font-weight:400;font-size:12px">${EXP.data_date||""} 終値時点</span></h2>
+    <a class="card" style="display:flex;align-items:center;gap:10px;border-left:3px solid var(--acc)" href="#/explore/ranking">
+      <span style="font-size:20px">🏆</span>
+      <span style="flex:1"><b>上昇ランキング</b><span class="muted" style="display:block;font-size:11px">過去の初動銘柄を初動日からの最大上昇率で並べる</span></span>
+      <span class="muted">→</span></a>
+    <h2 style="margin-top:14px">スイング狙い</h2>
+    ${["shodo","shodo_wait","rising","oshime"].map(cell).join("")}
+    <h2 style="margin-top:14px">デイトレ・短期</h2>
+    ${["rebound","stop_high"].map(cell).join("")}
+    <div class="card muted" style="font-size:11.5px;line-height:1.7">${EXP.note||""} 状態は毎日引け後のバッチで更新（初動→上昇中→押し目と遷移）。</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+// カテゴリ別の一覧行
+function catRow(cat,r){
+  const head=`<div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>`;
+  let sub="", right="";
+  if(cat==="stop_high"){
+    sub=`<div class="chips"><span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.5)">🔥 ${r.stuck?"張り付き":"S高タッチ"}</span>${r.today?`<span class="chip">当日</span>`:""}</div>`;
+    right=`<div class="pk-ev">${r.date||""}</div>`;
+  }else if(cat==="shodo"){
+    sub=`<div class="chips"><span class="chip buy">🌱 初動</span><span class="chip">出来高 ${r.volr!=null?r.volr+"倍":"—"}</span></div>`;
+    right=`<div class="pk-ev">初動 ¥${(r.shodo_price||0).toLocaleString()}<small>${r.shodo_date||""}</small></div>`;
+  }else if(cat==="shodo_wait"){
+    sub=`<div class="chips"><span class="chip">⏳ 75日線まで ${r.ma_gap_pct}%</span><span class="chip">条件 ${r.conds}/3</span></div>`;
+    right="";
+  }else if(cat==="rising"||cat==="oshime"){
+    sub=`<div class="chips"><span class="chip ${cat==="rising"?"buy":""}">${cat==="rising"?"🚀 押し "+r.pullback_pct+"%":"🎯 押し "+r.pullback_pct+"%"}</span><span class="chip">高値 ¥${(r.hi||0).toLocaleString()}</span></div>`;
+    right=`<div class="pk-ev">初動比 <span class="${r.price>=r.shodo_price?"pos":"neg"}">${r.shodo_price?((r.price/r.shodo_price-1)*100).toFixed(1):"—"}%</span><small>${r.shodo_date||""}</small></div>`;
+  }else if(cat==="rebound"){
+    const tags=(r.tags||[]).map(t=>`<span class="chip" style="${t==="下げ止まり"?"color:var(--up);border-color:rgba(22,199,132,.5)":t==="N字"?"color:var(--acc);border-color:rgba(77,150,255,.5)":"color:var(--dn);border-color:rgba(234,57,67,.5)"}">${t}</span>`).join("");
+    sub=`<div class="chips"><span class="chip ${r.in_zone?"buy":""}">押し ${r.fib_pct}%${r.in_zone?"（38.2〜50ゾーン）":""}</span>${tags}</div>`;
+    right=`<div class="pk-ev">急騰 +${r.surge_gain_pct}%<small>高値 ${r.high_date||""}</small></div>`;
+  }
+  return `<a class="pickrow" href="#/detail/${r.code}">${head}${sub}</div>${right}</a>`;
+}
+let REB_FILTER="all", EXP_Q="";
+function onExpSearch(v){EXP_Q=v;const el=document.getElementById("explist");if(el)el.innerHTML=catListInner(EXP_CAT_CUR);}
+function setRebFilter(f){REB_FILTER=f;const el=document.getElementById("explist");if(el)el.innerHTML=catListInner("rebound");render();}
+let EXP_CAT_CUR="";
+function catListInner(cat){
+  let items=((EXP.categories||{})[cat])||[];
+  if(cat==="rebound"&&REB_FILTER==="sagedomari") items=items.filter(r=>(r.tags||[]).includes("下げ止まり"));
+  const q=(EXP_Q||"").trim().toLowerCase();
+  if(q) items=items.filter(r=>r.code.startsWith(q)||String(r.name).toLowerCase().includes(q));
+  if(!items.length) return `<div class="card muted">該当なし${q?`（「${esc(EXP_Q)}」に一致する銘柄なし）`:""}</div>`;
+  return `<div class="card" style="padding:4px 12px"><div class="picklist" style="border-top:0">${items.map(r=>catRow(cat,r)).join("")}</div></div>`;
+}
+function viewExploreList(cat){
+  if(!EXP){expReload(`#/explore/${cat}`);return `<div class="card muted">読み込み中…</div>`;}
+  EXP_CAT_CUR=cat;
+  const def=CAT_DEFS[cat]; if(!def) return `<div class="card muted">不明なカテゴリです。</div>`;
+  const [e,l,d]=def, n=(EXP.counts||{})[cat]||0;
+  // ストップ高は日付付き履歴（「DB」相当）も表示
+  const hist=(cat==="stop_high"&&(EXP.stop_high_history||[]).length)
+    ? `<div class="card"><div style="font-weight:700;font-size:13px">🗓 日別のストップ高件数（直近）</div>
+        <div class="chips" style="margin-top:8px">${EXP.stop_high_history.slice(0,10).map(h=>`<span class="chip">${h.date.slice(5)} <b>${h.count}</b>件${h.stuck?`（張付${h.stuck}）`:""}</span>`).join("")}</div></div>`:"";
+  const filters=(cat==="rebound")
+    ? `<div style="display:flex;gap:8px;margin:0 0 8px;flex-wrap:wrap">
+        <a class="chip ${REB_FILTER==="all"?"buy":""}" onclick="event.preventDefault();setRebFilter('all')">すべて</a>
+        <a class="chip ${REB_FILTER==="sagedomari"?"buy":""}" onclick="event.preventDefault();setRebFilter('sagedomari')">下げ止まりのみ</a></div>
+       <input class="searchbox" style="margin-bottom:8px" type="search" placeholder="銘柄名・コードで絞り込み" value="${esc(EXP_Q)}" oninput="onExpSearch(this.value)">`:"";
+  return `
+    <a class="back" href="#/explore">← 銘柄探検</a>
+    <h2>${e} ${l} <span class="muted" style="font-weight:400;font-size:12px">${n}件 ・ ${EXP.data_date||""} 終値時点</span></h2>
+    <div class="muted" style="font-size:12px;margin:0 2px 8px">${d}${cat==="rebound"?"。38.2〜50%ゾーン優先・押し率順":""}</div>
+    ${filters}
+    ${hist}
+    <div id="explist">${catListInner(cat)}</div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">${EXP.note||""}</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+// 🏆 上昇ランキング（初動日からの最大上昇率・3ヶ月/1年トグル）
+let RANK_WIN="3m";
+function setRankWin(w){RANK_WIN=w;render();}
+function sparkSVG(a){
+  if(!a||a.length<2)return "";
+  const mn=Math.min(...a),mx=Math.max(...a),W=72,H=26;
+  const pts=a.map((v,i)=>`${(i/(a.length-1)*W).toFixed(1)},${(H-2-(mx===mn?H/2:(v-mn)/(mx-mn)*(H-4))).toFixed(1)}`).join(" ");
+  const up=a[a.length-1]>=a[0];
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${pts}" fill="none" stroke="${up?"#16C784":"#EA3943"}" stroke-width="1.5"/></svg>`;
+}
+function viewRankingUp(){
+  if(!EXP){expReload("#/explore/ranking");return `<div class="card muted">読み込み中…</div>`;}
+  const rk=EXP.ranking||{items:[]};
+  const days=(rk.windows_days||{"3m":92,"1y":366})[RANK_WIN]||92;
+  const cutoff=new Date(Date.parse((EXP.data_date||"")+"T00:00:00")-days*86400000);
+  const items=(rk.items||[]).filter(r=>new Date(r.shodo_date+"T00:00:00")>=cutoff);
+  const lt=rk.longterm||{};
+  const rows=items.map((r,i)=>`
+    <a class="pickrow" href="#/detail/${r.code}">
+      <div style="width:22px;text-align:center;color:var(--mut);font-weight:700;font-size:12px">${i+1}</div>
+      <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 初動 ${r.shodo_date} ¥${(r.shodo_price||0).toLocaleString()} → 最高値 ¥${(r.max_high||0).toLocaleString()}</small></div>
+      <div>${sparkSVG(r.spark)}</div>
+      <div class="pk-ev"><span class="pos">+${r.max_gain_pct}%</span><small class="${(r.cur_gain_pct||0)>=0?"pos":"neg"}">現在 ${(r.cur_gain_pct||0)>=0?"+":""}${r.cur_gain_pct}%</small></div>
+    </a>`).join("");
+  return `
+    <a class="back" href="#/explore">← 銘柄探検</a>
+    <h2>🏆 上昇ランキング <span class="muted" style="font-weight:400;font-size:12px">初動日からの最大上昇率</span></h2>
+    <div style="display:flex;gap:8px;margin:0 0 8px">
+      <a class="chip ${RANK_WIN==="3m"?"buy":""}" onclick="event.preventDefault();setRankWin('3m')">3ヶ月</a>
+      <a class="chip ${RANK_WIN==="1y"?"buy":""}" onclick="event.preventDefault();setRankWin('1y')">1年</a>
+    </div>
+    ${RANK_WIN==="1y"&&!lt.available?`<div class="card muted" style="font-size:11.5px">1年分の初動イベント（explorer_longterm.json）が未生成のため、直近データのみ表示しています。</div>`:""}
+    <div class="card" style="padding:4px 12px"><div class="picklist" style="border-top:0">${rows||`<div class="card muted" style="border:0">期間内の初動イベントがありません</div>`}</div></div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">最大上昇率＝初動日の終値→その後の最高値。現在＝初動日の終値→最新終値。あくまで過去に検知できた例の一覧で、次も上がることを保証しません（生存バイアスに注意）。</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 // ── 使い方・データについて・免責 ──
 function viewAbout(){
   const f=DATA.futures||{};
@@ -614,6 +754,7 @@ function viewAbout(){
 // ── ルーター ──
 function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
+  $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-search").classList.toggle("on",h.startsWith("#/search"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -624,6 +765,9 @@ function render(){
   try{
     if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
+    else if(h==="#/explore/ranking") $("#view").innerHTML=viewRankingUp();
+    else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
+    else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
     else $("#view").innerHTML=viewHome();
   }catch(e){
