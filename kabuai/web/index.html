@@ -192,11 +192,19 @@ function ftagRank(r){
   if(t==="高連動")return 3;   // 買い候補でも一段下げる（先物に振られやすい）
   return 2;                   // データ不足/未計測はその間
 }
+// 相関係数 r は分かりにくいので「日経連動◯%」表記にする（2026-07-02 本人指示）。
+// 連動は少ないほど日経に引きずられない（日経が下げた日でも自分の需給で動ける）。
+// マイナス相関＝日経が下げる日にむしろ上がりやすい傾向なので「日経と逆◯%」と明示。
+function ftagPct(corr){
+  if(corr==null||isNaN(corr))return null;
+  const p=Math.round(Math.abs(Number(corr))*100);
+  return Number(corr)<0?`日経と逆${p}%`:`日経連動${p}%`;
+}
 function ftagChip(r){
   const t=r&&r.futures_tag; if(!t) return "";
   const c=t==="自力"?"self":t==="高連動"?"high":"mid";
-  const rv=(r.futures_corr!=null&&!isNaN(r.futures_corr))?" r"+Number(r.futures_corr).toFixed(2):"";
-  return `<span class="ftag ${c}" title="先物（日経レバ1570）との連動度。自力=自分の需給で動く／高連動=先物に振られやすい">${t}${rv}</span>`;
+  const pct=ftagPct(r.futures_corr);
+  return `<span class="ftag ${c}" title="日経平均（先物・日経レバ1570）との連動度。少ないほど日経に振られず自分の需給で動く＝日経が下げた日でも自力で動けるタイプ">${pct?pct+"・":""}${t}</span>`;
 }
 
 // ── 低位株(¥1000未満)は既定で隠す（従来設定を引き継ぎ） ──
@@ -345,7 +353,7 @@ function candHero(){
         <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
           <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div></div>
         <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;}).join("");
-    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は先物に振られにくい自力を上に）。</div>
+    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は日経連動の少ない自力を上に）。</div>
       ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 過去実績では買い候補全体に追い風の日です。</div>`:""}
       <div class="picklist">${rows}</div>
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
@@ -402,8 +410,8 @@ function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code)
 function exitGuide(ks,fut){
   const st=buyStat({signals:ks}); if(!st) return "";
   const ftNote=fut&&fut.tag==="高連動"
-    ? `<div class="warn" style="font-size:12px;margin-top:6px">⚠ <b>高連動（r${fut.corr!=null?Number(fut.corr).toFixed(2):"—"}）</b>: 先物（日経レバ）と連動して機械的に振られやすく、型が壊れやすい銘柄です。入るなら小さく。</div>`
-    : (fut&&fut.tag==="自力"?`<div class="pos" style="font-size:12px;margin-top:6px">🟢 <b>自力（r${fut.corr!=null?Number(fut.corr).toFixed(2):"—"}）</b>: 先物に振られにくく、自分の需給で動くタイプ。型が出やすい狙い目です。</div>`:"");
+    ? `<div class="warn" style="font-size:12px;margin-top:6px">⚠ <b>${ftagPct(fut.corr)||"日経連動 高"}（高連動）</b>: 日経先物と一緒に機械的に振られやすく、型が壊れやすい銘柄です。日経が下げる日は一緒に下げやすい。入るなら小さく。</div>`
+    : (fut&&fut.tag==="自力"?`<div class="pos" style="font-size:12px;margin-top:6px">🟢 <b>${ftagPct(fut.corr)||"日経連動 低"}（自力）</b>: 日経に振られにくく、自分の需給で動くタイプ。日経が下げた日でも自力で動けて、型が出やすい狙い目です。</div>`:"");
   return `<div class="card exitcard">
     <div style="font-weight:800">🚪 買いの目安（期待値・出口） <span class="muted" style="font-weight:400">（✅${esc(st.emoji)}${esc(st.label)}）</span></div>
     <div style="margin-top:6px"><span class="${st.ev>=0?"pos":"neg"}" style="font-size:18px;font-weight:800">期待値 ${st.ev>=0?"+":""}${st.ev}%</span><span class="muted" style="font-size:11px">/件（出口ルール込みの過去平均）</span></div>
@@ -705,19 +713,21 @@ function viewAbout(){
     </ul>
   </div>
 
-  <h2>先物連動タグとは</h2>
+  <h2>日経連動タグとは</h2>
   <div class="card">
-    <p style="margin:0;line-height:1.8">各銘柄が<b>先物（日経レバ ${esc(f.bench||"1570.T")}）とどれだけ連動して動いているか</b>を、
-      5分足リターンの相関係数 r で測ったタグです。</p>
+    <p style="margin:0;line-height:1.8">各銘柄が<b>日経平均（先物・日経レバ ${esc(f.bench||"1570.T")}）とどれだけ一緒に動いているか</b>を
+      「<b>日経連動◯%</b>」で表したタグです。<b style="color:var(--up)">連動が少ないほど日経に引きずられない</b>
+      ＝日経が下げた日でも自分の需給で動けるタイプです。</p>
     <div class="chips" style="margin-top:9px">
-      <span class="ftag self">自力 r0.31</span><span class="ftag mid">中連動 r0.55</span><span class="ftag high">高連動 r0.82</span>
+      <span class="ftag self">日経連動17%・自力</span><span class="ftag mid">日経連動55%・中連動</span><span class="ftag high">日経連動82%・高連動</span>
     </div>
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
-      <li><b style="color:var(--up)">自力</b>（r ${f.th_mid!=null?f.th_mid:0.40} 未満）… 自分の需給で動く。押し目→反発の「型」が出やすい<b style="color:var(--tx)">狙い目</b>。買い候補では同じ期待値の中で上に並びます。</li>
-      <li><b style="color:var(--tx)">中連動</b>（r ${f.th_mid!=null?f.th_mid:0.40}〜）… 中間。</li>
-      <li><b style="color:var(--dn)">高連動</b>（r ${f.th_high!=null?f.th_high:0.70} 以上）… 指数寄与の大きい値嵩株など。先物のアービトラージで<b style="color:var(--tx)">機械的に振られ、型が壊れやすい</b>ので注意（並びも一段下げます）。</li>
-      <li>直近の共通5分足 ${f.window!=null?f.window:48}本（約4時間分）で計算。<b style="color:var(--tx)">朝の表示は前営業日のザラ場ベース</b>、夕方更新後は当日ベース。足が足りない銘柄はタグ非表示。</li>
-      <li>β（変動の大きさ）ではなく「方向がどれだけ一緒に動くか」だけを見ています。しきい値は運用しながら調整します。</li>
+      <li><b style="color:var(--up)">自力</b>（連動${Math.round((f.th_mid!=null?f.th_mid:0.40)*100)}%未満）… 自分の需給で動く。押し目→反発の「型」が出やすい<b style="color:var(--tx)">狙い目</b>。買い候補では同じ期待値の中で上に並びます。</li>
+      <li><b style="color:var(--tx)">中連動</b>（連動${Math.round((f.th_mid!=null?f.th_mid:0.40)*100)}%〜）… 中間。</li>
+      <li><b style="color:var(--dn)">高連動</b>（連動${Math.round((f.th_high!=null?f.th_high:0.70)*100)}%以上）… 指数寄与の大きい値嵩株など。日経先物と一緒に<b style="color:var(--tx)">機械的に振られ、型が壊れやすい</b>ので注意（並びも一段下げます）。日経が下げる日は一緒に下げやすい。</li>
+      <li><b style="color:var(--up)">日経と逆◯%</b> … 日経と反対方向に動きやすい銘柄。日経が下げる日にむしろ上がりやすい傾向（直近データ上）。</li>
+      <li>直近の5分足 ${f.window!=null?f.window:48}本（約4時間分）の値動きで計算。<b style="color:var(--tx)">朝の表示は前営業日のザラ場ベース</b>、夕方更新後は当日ベース。データが足りない銘柄はタグ非表示。</li>
+      <li>「一緒に動く度合い」だけを見ています（値動きの大きさは見ない）。しきい値は運用しながら調整します。</li>
     </ul>
   </div>
 
@@ -739,7 +749,7 @@ function viewAbout(){
     <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">
       表示は<b style="color:var(--tx)">最新営業日の終値（EOD）ベース</b>です。リアルタイムではなく、<b style="color:var(--tx)">場中（9〜15時）は数字が変わりません</b>。
       原データは <b style="color:var(--tx)">J-Quants（JPX）</b> の日足を加工・計算したものです。
-      先物連動タグのみ、Yahoo!ファイナンス由来の遅延5分足（yfinance）から計算した参考値です。</p>
+      日経連動タグのみ、Yahoo!ファイナンス由来の遅延5分足（yfinance）から計算した参考値です。</p>
   </div>
 
   <h2>免責・ライセンス</h2>
