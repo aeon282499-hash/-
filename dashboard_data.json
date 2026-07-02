@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-02 08:37:11",
+  "generated_at": "2026-07-02 10:31:01",
   "date": "2026-07-02",
   "tier_summary": {
     "S": 0,
@@ -13,7 +13,7 @@
     "AMZN": 1.41,
     "ASML": -7.36,
     "AVGO": -2.23,
-    "CRWD": 10.22,
+    "CRWD": 305.03,
     "GEV": -3.45,
     "GOOGL": 1.07,
     "IONQ": -3.49,
@@ -446,7 +446,7 @@
         "S"
       ],
       "policy": "",
-      "us_tailwind": 5.21
+      "us_tailwind": 78.91
     },
     {
       "theme": "量子コンピューティング",
@@ -3649,7 +3649,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 5.21,
+      "us_tailwind": 78.91,
       "score": 38.0,
       "tier": "C",
       "init_stars": 3,
@@ -4109,7 +4109,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 5.21,
+      "us_tailwind": 78.91,
       "score": 32.0,
       "tier": "C",
       "init_stars": 3,
@@ -4151,7 +4151,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 5.21,
+      "us_tailwind": 78.91,
       "score": 32.0,
       "tier": "C",
       "init_stars": 3,
@@ -4655,7 +4655,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 5.21,
+      "us_tailwind": 78.91,
       "score": 27.0,
       "tier": "C",
       "init_stars": 2,
