@@ -9,507 +9,269 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>モメンタムチンパン — 株モメンタム分析</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<title>モメンタムチンパン — 今日の買い候補</title>
 <style>
+  /* v2（2026-07-02 いちから作り直し）: 画面は「✅検証済み買い候補＋出口＋先物連動タグ」だけに絞る。
+     反発（反転）系シグナルは本人指示で非表示（ロジックはデータ側に残置・BUY_KEYSで制御）。 */
   :root{
     --bg:#0e1116; --card:#171b22; --card2:#1e242d; --line:#2a313c;
     --tx:#e8edf3; --mut:#8a94a3; --acc:#4d96ff;
-    --S:#ff5d8f; --A:#ff9f43; --B:#ffd93d; --C:#6bcb77; --D:#4d96ff;
+    --up:#16C784; --dn:#EA3943; --wa:#ff9f43;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--tx);
     font-family:-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
-    padding-bottom:64px;font-size:14px;line-height:1.5}
+    padding-bottom:64px;font-size:14px;line-height:1.55}
   a{color:inherit;text-decoration:none}
   header{position:sticky;top:0;z-index:10;background:rgba(14,17,22,.92);
     backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
     padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
-  header .app{font-weight:700;font-size:16px;letter-spacing:.02em}
+  header .app{font-weight:700;font-size:16px}
   header .app small{color:var(--acc);font-weight:700}
   .datepill{font-size:11px;color:var(--mut);background:var(--card2);
     border:1px solid var(--line);border-radius:999px;padding:3px 10px}
   main{max-width:560px;margin:0 auto;padding:16px}
-  h2{font-size:15px;margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
-  h2 .more{margin-left:auto;font-size:12px;color:var(--acc);font-weight:600}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  h2{font-size:15px;margin:20px 2px 10px;display:flex;align-items:center;gap:8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
   .muted{color:var(--mut)}
-  .soon{display:inline-block;font-size:11px;color:var(--mut);
-    border:1px dashed var(--line);border-radius:8px;padding:8px 10px}
-  /* grade badge */
-  .badge{display:inline-flex;align-items:center;justify-content:center;
-    min-width:26px;height:24px;border-radius:7px;font-weight:800;font-size:13px;color:#0e1116}
-  .g-S{background:var(--S)} .g-A{background:var(--A)} .g-B{background:var(--B)}
-  .g-C{background:var(--C)} .g-D{background:var(--D)}
-  /* rank rows */
-  .row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
-  .row:last-child{border-bottom:0}
-  .rk{width:30px;text-align:center;color:var(--mut);font-weight:700;font-size:13px}
-  .nm{flex:1;min-width:0}
-  .nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nm small{color:var(--mut)}
-  .mom{text-align:right;min-width:64px}
-  .mom b{font-size:20px;font-variant-numeric:tabular-nums}
-  .pos{color:#6bcb77}.neg{color:#ff6b6b}
-  /* ranking detailed card */
-  .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:13px 14px;margin-bottom:10px;display:block}
-  .rcard .top{display:flex;align-items:flex-start;gap:10px}
-  .rcard .mval{margin-left:auto;text-align:right}
-  .rcard .mval b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1}
-  .metrics{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;font-size:12px}
-  .metrics span{color:var(--mut)} .metrics b{color:var(--tx)}
-  .spark{margin-top:8px;font-size:12px;color:var(--mut)}
-  .spark b{color:var(--tx);font-variant-numeric:tabular-nums}
-  /* detail */
-  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-  .kpi{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
-  .kpi .l{font-size:12px;color:var(--mut)}
-  .kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-  .kpi .h{font-size:11px;color:var(--mut)}
-  .ret3{display:flex;gap:10px;margin-top:6px}
-  .ret3 .b{flex:1;background:var(--card2);border:1px solid var(--line);
-    border-radius:12px;padding:10px;text-align:center}
-  .ret3 .b .l{font-size:11px;color:var(--mut)} .ret3 .b .v{font-size:17px;font-weight:700}
-  /* nav */
+  .pos{color:var(--up)}.neg{color:#ff6b6b}
+  .back{font-size:13px;color:var(--acc);font-weight:600;margin-bottom:8px;display:inline-block}
+  .disc{margin:18px 2px 4px;font-size:11px;color:var(--mut);line-height:1.6}
   nav{position:fixed;bottom:0;left:0;right:0;background:#11151c;
     border-top:1px solid var(--line);display:flex;height:56px;z-index:20}
   nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:2px;color:var(--mut);font-size:11px}
   nav a.on{color:var(--acc)}
   nav a .i{font-size:18px}
-  .disc{margin:18px 2px 4px;font-size:11px;color:var(--mut);line-height:1.6}
-  .back{font-size:13px;color:var(--acc);font-weight:600;margin-bottom:8px;display:inline-block}
-  .pchip{font-size:12px;color:var(--mut)}
-  .tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:2px 7px}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-  .chip{font-size:11px;background:var(--card2);border:1px solid var(--line);
-    border-radius:999px;padding:3px 9px;color:var(--tx)}
-  .chip.buy{border-color:rgba(107,203,119,.5);background:rgba(107,203,119,.1);color:var(--C);font-weight:700}
-  .chip.buy small{display:block;font-size:9.5px;font-weight:600;color:var(--mut);margin-top:1px;letter-spacing:.1px}
-  .chip.ref{opacity:.6}
-  .bar{height:6px;background:var(--card2);border-radius:999px;margin-top:8px;overflow:hidden}
-  .bar.slim{height:4px;margin-top:5px}
-  .barfill{height:100%;border-radius:999px}
-  .segwrap{display:flex;gap:8px;margin-top:12px}
-  .seg{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-  .segh{display:flex;align-items:center;justify-content:space-between;gap:6px}
-  .segn{font-size:12px;font-weight:700}
-  .segs{font-size:18px;font-weight:800;margin-top:2px}
-  .trk{margin:10px 0}
-  .trkh{font-weight:700;font-size:13px}
-  .trktab{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
-  .trktab th{color:var(--mut);font-weight:600;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
-  .trktab th:first-child{text-align:left}
-  .trktab td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--card2);font-variant-numeric:tabular-nums}
-  .trktab td:first-child{text-align:left;color:var(--tx);font-weight:600}
-  .trktab td b{font-weight:800}
-  .trkn{font-size:10px;margin-top:8px;line-height:1.6}
-  .bstpill{display:inline-block;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;margin-left:6px;background:rgba(107,203,119,.15);color:var(--C);border:1px solid var(--C)}
-  .bstpill small{font-weight:500;opacity:.85;margin-left:5px;font-size:10px}
-  .bstpill.warn{background:rgba(255,159,67,.12);color:#ff9f43;border-color:#ff9f43}
-  .trktab tr.bestrow td{background:rgba(107,203,119,.08)}
-  .bsttag{font-size:9px;font-weight:800;color:var(--C);border:1px solid var(--C);border-radius:5px;padding:0 4px;margin-left:5px;vertical-align:middle}
-  .exitline{margin-top:9px;padding:8px 10px;border-radius:8px;background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.28);font-size:12px;line-height:1.55}
-  .exitline b{font-weight:800;color:var(--C)}
-  .exitline .exsub{display:block;margin-top:3px;font-size:11px}
-  .exitline .exsub small{font-size:10px;opacity:.85;margin-left:3px}
-  .yrline{margin-top:8px;font-size:12px;line-height:1.5}
-  .yrline .yrh{font-weight:700;color:var(--tx);margin-bottom:5px}
-  .yrgrid{display:flex;flex-wrap:wrap;gap:6px}
-  .yrcell{display:inline-flex;flex-direction:column;align-items:center;min-width:62px;border-radius:8px;padding:4px 8px;border:1px solid var(--line);background:var(--card2);font-variant-numeric:tabular-nums}
-  .yrcell .yy{font-size:10px;color:var(--mut);font-weight:600}
-  .yrcell .ww{font-size:13px;font-weight:800;line-height:1.1}
-  .yrcell .aa{font-size:10px;opacity:.9}
-  .yrcell.pos{border-color:rgba(107,203,119,.5);background:rgba(107,203,119,.1)}
-  .yrcell.neg{border-color:rgba(255,91,91,.45);background:rgba(255,91,91,.09)}
-  .yrcell.pos .ww{color:var(--C)} .yrcell.neg .ww{color:#ff5b5b}
-  .yrsum{display:block;margin-top:5px;font-size:11px}
-  .seccard{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:8px;overflow:hidden}
-  .sechead{display:flex;align-items:center;gap:9px;padding:11px 13px;cursor:pointer;list-style:none}
-  .sechead::-webkit-details-marker{display:none}
-  .secrank{flex:0 0 22px;height:22px;border-radius:6px;background:var(--card2);color:var(--mut);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
-  .secname{font-weight:700;font-size:14px}
-  .seckpi{margin-left:auto;font-size:11px;display:flex;align-items:center;gap:8px;white-space:nowrap}
-  .seckpi b{font-size:13px;font-weight:800}
-  .secbuy{background:rgba(107,203,119,.16);color:var(--C);border:1px solid var(--C);border-radius:6px;padding:1px 6px;font-weight:800}
-  .secarrow{color:var(--mut);font-size:11px;transition:transform .15s}
-  details[open] .secarrow{transform:rotate(180deg)}
-  .secbody{padding:4px 9px 9px}
-  .secstock{display:block;text-decoration:none;color:inherit;border-top:1px solid var(--card2);padding:8px 4px}
-  .ssline{display:flex;align-items:center;gap:8px}
-  .ssn{font-weight:600;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ssc{font-size:11px}
-  .ssm{font-variant-numeric:tabular-nums;font-size:13px;font-weight:700}
-  .ssr{font-variant-numeric:tabular-nums;font-size:12px;min-width:54px;text-align:right}
-  .exitcard{border:1px solid rgba(107,203,119,.45);background:rgba(107,203,119,.08);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
-  .exitcard .exitline{border:0;background:none;padding:0}
-  .buyplan{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;padding:7px 10px;
-    border-radius:9px;background:rgba(107,203,119,.1);border:1px solid rgba(107,203,119,.4);font-size:12px}
-  .buyplan .bp-ev{font-weight:800;font-size:13px}
-  .buyplan .bp-ev small{font-weight:600;font-size:10px;color:var(--mut);margin-left:1px}
-  .buyplan .bp-meta{color:var(--tx)}
-  .buyplan .bp-sig{font-size:10.5px;font-weight:700;color:var(--C);border:1px solid rgba(107,203,119,.5);border-radius:999px;padding:1px 8px}
-  .buyplan .bp-conf{font-size:10px;font-weight:800;color:#0e1116;background:var(--C);border-radius:999px;padding:1px 7px}
-  .buylede{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 11px;padding:10px 13px;
-    border-radius:11px;background:linear-gradient(180deg,rgba(107,203,119,.16),rgba(107,203,119,.07));
-    border:1px solid rgba(107,203,119,.5);color:var(--tx)}
-  .buylede .bl-ev{font-weight:900;font-size:18px;letter-spacing:.2px}
-  .buylede .bl-ev small{font-weight:700;font-size:10px;color:var(--mut);margin-left:1px}
-  .buylede .bl-cnt{font-size:12px;font-weight:700}.buylede .bl-cnt b{color:var(--C)}
-  .buylede .bl-top{font-size:12px;font-weight:700;margin-left:auto}
-  .buylede .bl-top b{color:var(--tx)}.buylede .bl-top small{color:var(--C);font-weight:800;margin-left:3px}
-  .hero{display:block;margin-top:11px;padding:12px 14px;border-radius:12px;color:var(--tx);
-    background:linear-gradient(180deg,rgba(107,203,119,.18),rgba(107,203,119,.06));
-    border:1px solid rgba(107,203,119,.55);box-shadow:0 0 0 1px rgba(107,203,119,.12) inset}
-  .hero .h-tag{font-size:11px;font-weight:800;color:var(--C);letter-spacing:.3px}
-  .hero .h-nm{display:flex;align-items:baseline;gap:8px;margin-top:3px}
-  .hero .h-nm b{font-size:16px;font-weight:800}.hero .h-nm span{font-size:11px;color:var(--mut)}
-  .hero .h-ev{font-size:20px;font-weight:900;margin-top:4px}
-  .hero .h-ev small{font-size:10px;font-weight:700;color:var(--mut);margin-left:2px}
-  .hero .buyplan{margin-top:9px}
-  .rbanner{margin:0 0 11px;padding:10px 13px;border-radius:11px;font-size:13px;line-height:1.6;color:var(--tx)}
-  .rbanner.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.06));border:1px solid rgba(77,171,247,.5)}
-  .rbanner.sparse{background:rgba(255,159,67,.09);border:1px solid rgba(255,159,67,.38)}
-  .rbanner .rb-sub{font-size:11.5px;color:var(--mut);margin-top:4px}
-  .rbanner .rb-sub b{color:var(--tx)}
-  .rhtbl{width:100%;border-collapse:collapse;font-size:12px}
-  .rhtbl th{text-align:left;color:var(--mut);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
-  .rhtbl td{padding:4px 6px;border-bottom:1px solid var(--line)}
-  .rhtbl td.pos{color:#6bcb77;font-weight:700}.rhtbl td.neg{color:#ff6b6b;font-weight:700}
-  .bcard.hot{border:1px solid rgba(194,24,91,.55);background:linear-gradient(180deg,rgba(194,24,91,.13),rgba(194,24,91,.04))}
-  .bscore{font-size:15px;font-weight:900;color:#ff6b9d}.bscore.dim{color:var(--mut);font-weight:700}
-  /* 🏠 今日これ買え（option A: 一画面で「どれ買う」に即答＋低位株カット） */
-  .todaypick{margin:0 0 12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
-  .todaypick.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.05));border-color:rgba(77,171,247,.55)}
-  .todaypick.sparse{background:rgba(255,159,67,.08);border-color:rgba(255,159,67,.4)}
-  .todaypick.attack{background:linear-gradient(180deg,rgba(255,107,157,.13),rgba(255,107,157,.04));border-color:rgba(255,107,157,.5)}
-  .todaypick .tp-h{font-weight:900;font-size:16px;display:flex;align-items:center;gap:8px}
-  .todaypick .tp-tag{font-size:11px;color:var(--mut);margin-top:3px}
-  .todaypick .tp-lead{font-size:13px;line-height:1.6;color:var(--tx);margin-top:6px}
+  /* ✅ 今日の買い候補（ホームの主役） */
+  .hero{margin:0 0 12px;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+  .hero.broad{background:linear-gradient(180deg,rgba(77,171,247,.14),rgba(77,171,247,.04));border-color:rgba(77,171,247,.5)}
+  .hero .hh{font-weight:900;font-size:16px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .hero .hh small{font-weight:400;font-size:11px;color:var(--mut)}
+  .hero .lead{font-size:13px;line-height:1.65;margin-top:6px}
+  .broadline{margin-top:8px;font-size:12px;color:var(--tx);background:rgba(77,171,247,.1);
+    border:1px solid rgba(77,171,247,.35);border-radius:9px;padding:7px 10px}
   .picklist{margin-top:10px;border-top:1px solid var(--line)}
-  .pickrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .pickrow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
   .pickrow .pk-nm{flex:1;min-width:0}
-  .pickrow .pk-nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;color:var(--tx)}
+  .pickrow .pk-nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
   .pickrow .pk-nm small{color:var(--mut);font-size:11px}
   .pickrow .pk-ev{font-weight:800;font-size:13px;text-align:right;white-space:nowrap}
   .pickrow .pk-ev small{display:block;font-weight:600;font-size:10px;color:var(--mut)}
-  .pickexit{margin-top:9px;font-size:12.5px;color:var(--tx);background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.32);border-radius:9px;padding:8px 10px}
-  .pickexit b{color:var(--tx)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .chip{font-size:10.5px;background:var(--card2);border:1px solid var(--line);
+    border-radius:999px;padding:2px 8px;color:var(--tx)}
+  .chip.buy{border-color:rgba(22,199,132,.5);background:rgba(22,199,132,.09);color:var(--up);font-weight:700}
+  /* 先物連動タグ: 自力=緑（狙い目）/ 中連動=グレー / 高連動=赤（先物依存・注意） */
+  .ftag{font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .ftag.self{color:var(--up);border:1px solid rgba(22,199,132,.55);background:rgba(22,199,132,.08)}
+  .ftag.mid{color:var(--mut);border:1px solid var(--line);background:var(--card2)}
+  .ftag.high{color:var(--dn);border:1px solid rgba(234,57,67,.55);background:rgba(234,57,67,.08)}
+  .exitbox{margin-top:10px;font-size:12.5px;background:rgba(22,199,132,.07);
+    border:1px solid rgba(22,199,132,.3);border-radius:9px;padding:8px 10px;line-height:1.7}
   .pickfoot{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:9px}
-  .pickfoot .more{color:var(--acc);font-weight:700;font-size:12px}
-  .pickfoot .lpt{margin-left:auto;font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 9px;cursor:pointer}
-  .advbox{margin:8px 0 0;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-  .advbox>summary{cursor:pointer;list-style:none;padding:11px 13px;font-weight:700;font-size:13px;color:var(--tx)}
-  .advbox>summary::-webkit-details-marker{display:none}
-  .advbox>summary::after{content:"▾";float:right;color:var(--mut)}
-  .advbox[open]>summary::after{content:"▴"}
-  .advbox>.advin{padding:0 13px 10px}
-  .advbox h2{font-size:14px}
+  .pickfoot .lpt{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 9px;cursor:pointer}
+  .pickfoot .more{color:var(--acc);font-weight:700;font-size:12px;margin-left:auto}
+  /* 検索カード */
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:10px;display:block}
+  .rcard .top{display:flex;align-items:flex-start;gap:10px}
+  .rcard .pchip{font-size:12px;color:var(--mut)}
+  .metrics{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;font-size:12px}
+  .metrics span{color:var(--mut)} .metrics b{color:var(--tx)}
+  .nosig{font-size:11px;color:var(--mut);margin-top:8px}
+  .planline{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;padding:7px 10px;
+    border-radius:9px;background:rgba(22,199,132,.08);border:1px solid rgba(22,199,132,.35);font-size:12px}
+  .planline .pl-ev{font-weight:800;font-size:13px}
+  .searchbox{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;color:var(--tx);font-size:16px;outline:none;-webkit-appearance:none}
+  .searchbox:focus{border-color:var(--acc)}
+  .searchbox::placeholder{color:var(--mut)}
+  .star{flex:0 0 auto;cursor:pointer;font-size:18px;line-height:1;color:var(--mut);user-select:none;padding:0 2px}
+  .star.on{color:#ffd93d}
+  .tag{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:2px 7px}
+  .warn{color:var(--wa)}
+  /* 詳細 */
+  .ret3{display:flex;gap:8px;margin-top:8px}
+  .ret3 .b{flex:1;background:var(--card2);border:1px solid var(--line);
+    border-radius:12px;padding:9px 6px;text-align:center}
+  .ret3 .b .l{font-size:11px;color:var(--mut)} .ret3 .b .v{font-size:15px;font-weight:700}
+  .exitcard{border:1px solid rgba(22,199,132,.45);background:rgba(22,199,132,.07)}
+  .hsearch{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:14px}
   .poschip{padding:9px 0;border-bottom:1px solid var(--line)}
   .poschip:last-of-type{border-bottom:none}
   .posdel{font-size:10px;background:none;border:1px solid var(--line);color:var(--mut);
     border-radius:999px;padding:2px 8px;cursor:pointer}
   .posin{background:var(--card2);border:1px solid var(--line);color:var(--tx);
-    border-radius:8px;padding:7px 9px;font-size:13px;width:120px}
-  select.posin{width:auto;max-width:100%}
-  .posadd{background:var(--C);color:#0e1116;font-weight:800;border:none;border-radius:8px;
+    border-radius:8px;padding:7px 9px;font-size:13px;width:130px}
+  .posadd{background:var(--up);color:#0e1116;font-weight:800;border:none;border-radius:8px;
     padding:7px 16px;font-size:13px;cursor:pointer}
-  .idxnote{margin:2px 2px 10px;padding:8px 11px;border-radius:8px;background:rgba(255,159,67,.07);
-    border:1px solid rgba(255,159,67,.26);font-size:11.5px;line-height:1.6;color:var(--tx)}
-  .idxnote b{font-weight:800;color:#ff9f43}
-  .idxnote a{color:var(--acc);font-weight:700}
-  .sigwrap{display:flex;flex-wrap:wrap;gap:8px}
-  .sigpill{font-size:12px;background:var(--card2);border:1px solid var(--line);
-    border-radius:999px;padding:6px 12px;color:var(--tx)}
-  .sigpill b{color:var(--acc);margin-left:4px}
-  .sigsub{font-size:12px;font-weight:700;margin:0 2px 7px}
-  .sigsub.buyhead{color:var(--C)}
-  .sigsub .muted{font-weight:400;font-size:11px;margin-left:2px}
-  .sigpill.buy{border-color:rgba(107,203,119,.45);background:rgba(107,203,119,.09)}
-  .sigpill.buy b{color:var(--C)}
-  .sigpill.ref{opacity:.72}
-  .sigpill small{display:block;font-size:10px;color:var(--mut);margin-top:2px;font-weight:600}
-  .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-  .tab{flex:0 0 auto;font-size:12px;background:var(--card2);border:1px solid var(--line);
-    border-radius:999px;padding:7px 12px;color:var(--mut);white-space:nowrap;display:flex;gap:5px;align-items:center;cursor:pointer}
-  .tab.on{color:#0e1116;background:var(--acc);border-color:var(--acc);font-weight:700}
-  .tab span{background:rgba(0,0,0,.18);border-radius:999px;padding:0 6px;font-size:11px}
-  .tab.on span{background:rgba(0,0,0,.25)}
-  .vtoggle{cursor:pointer;user-select:none;white-space:nowrap}
-  .vtoggle:hover{border-color:var(--acc);color:var(--acc)}
-  .searchbox{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
-    padding:12px 14px;color:var(--tx);font-size:16px;outline:none;-webkit-appearance:none}
-  .searchbox:focus{border-color:var(--acc)}
-  .searchbox::placeholder{color:var(--mut)}
-  .nosig{font-size:11px;color:var(--mut);margin-top:8px}
-  .star{flex:0 0 auto;cursor:pointer;font-size:18px;line-height:1;color:var(--mut);user-select:none;padding:0 2px}
-  .star.on{color:#ffd93d}
-  .bigtag{display:inline-block;font-size:10px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
-  .bigtag.up{background:rgba(46,194,126,.16);color:#2ec27e;border:1px solid rgba(46,194,126,.5)}
-  .bigtag.dn{background:rgba(255,91,91,.14);color:#ff6b6b;border:1px solid rgba(255,91,91,.5)}
-  .hsearch{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:14px;margin-bottom:4px}
-  .hsearch:hover{border-color:var(--acc)}
-  /* PC（ワイド）表示：自動でも幅900px以上、または手動PC指定で適用。ナビは両モードで維持 */
-  body.pc main{max-width:1080px}
-  body.pc .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
-  body.pc .cardgrid .rcard{margin-bottom:0;height:100%}
-  body.pc .kpis{grid-template-columns:repeat(4,1fr)}
+  .cardgrid{margin-top:8px}
+  @media(min-width:900px){
+    main{max-width:1080px}
+    .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+    .cardgrid .rcard{margin-bottom:0;height:100%}
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="app">🐵 モメンタム<small>チンパン</small></div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <a id="viewtoggle" class="datepill vtoggle" onclick="cycleView()" title="表示モード切替（自動／PC／スマホ）">🔄 自動</a>
-    <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
-  </div>
+  <a href="#/about" class="datepill" id="datepill">データ日付 —</a>
 </header>
 <main id="view"><div class="muted">読み込み中…</div></main>
 <nav>
-  <a href="#/" id="nav-home" class="on"><span class="i">🏠</span>ホーム</a>
-  <a href="#/ranking" id="nav-rank"><span class="i">📊</span>ランキング</a>
+  <a href="#/" id="nav-home" class="on"><span class="i">✅</span>今日の買い</a>
   <a href="#/search" id="nav-search"><span class="i">🔍</span>検索</a>
-  <a href="#/signals" id="nav-sig"><span class="i">✅</span>買い候補</a>
-  <a href="#/about" id="nav-about"><span class="i">❓</span>指数とは</a>
+  <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
 </nav>
 
 <script>
-const GRADE_LABEL={S:"S",A:"A",B:"B",C:"C",D:"D"};
 const fmtPct=v=>(v==null||isNaN(v))?"—":(v>=0?"+":"")+v.toFixed(2)+"%";
 const cls=v=>(v==null||isNaN(v))?"muted":(v>=0?"pos":"neg");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 const $=s=>document.querySelector(s);
 let DATA=null;
 
-// ── ウォッチリスト＋当日大幅変動バッジ（気になる銘柄を☆保存してシグナル点灯を見張る） ──
+async function load(){
+  const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){DATA=await r.json();return;}}catch(e){}
+  }
+  throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
+}
+
+// ── 表示する買いシグナル（v2の核心設定） ──
+// 反発（反転/強反転）系は本人指示で非表示（2026-07-02「反転とかいらない・わかりずらい」）。
+// データ側の検出・実績集計はそのまま動いているので、戻す時はこの配列に
+// "strong_reversal","reversal" を足すだけ。
+const BUY_KEYS=["strong_accum","accum"];
+const TRK_WIN_MIN=52;   // 検証済みエッジのゲート（得意保有の勝率52%以上＆平均プラス）
+
+function sigTrack(k){const t=DATA.signal_track;return (t&&t.available&&t.groups&&t.groups[k])||null;}
+function bestHorizon(g,hs){
+  let best=null;
+  hs.forEach(h=>{const x=g.h&&g.h[String(h)]; if(!x||!x.n) return;
+    if(best===null||x.win>best.x.win||(x.win===best.x.win&&x.avg>best.x.avg)) best={h,x};});
+  return best;
+}
+function sigHasEdge(k){
+  if(BUY_KEYS.indexOf(k)<0) return false;
+  const g=sigTrack(k); if(!g||!g.n) return false;
+  const b=bestHorizon(g,(DATA.signal_track.horizons)||[5,10,20]);
+  return !!(b&&b.x.win>=TRK_WIN_MIN&&b.x.avg>0);
+}
+// 期待値(EV)＝出口ルール込み（保有8日・損切り-12%・利を伸ばす）の1件あたり実現平均リターン
+function sigEV(k){
+  if(!sigHasEdge(k)) return null;
+  const g=sigTrack(k);
+  const b=bestHorizon(g,(DATA.signal_track.horizons)||[5,10,20]);
+  const ex=(g.exit&&g.exit.n)?g.exit:null;
+  const m=(DATA.signals&&DATA.signals.groups&&DATA.signals.groups[k])||{};
+  return {k,label:m.label||k,emoji:m.emoji||"",exit:ex,
+    ev:ex?ex.avg:b.x.avg,win:ex?ex.win:b.x.win,hold:ex?ex.t:b.h,sl:ex?ex.sl:12};
+}
+function buyStat(r){
+  const a=(r.signals||[]).map(sigEV).filter(Boolean);
+  if(!a.length) return null;
+  a.sort((x,y)=>y.ev-x.ev);
+  return a[0];
+}
+// 代表出口（表示用）: BUY_KEYS のうち出口実績のある最初のもの。無ければ既定 8日/-12%
+function exitRep(){
+  for(const k of BUY_KEYS){const g=sigTrack(k); if(g&&g.exit&&g.exit.n) return g.exit;}
+  return {t:8,sl:12};
+}
+
+// ── 先物連動度タグ（correlation.py 由来・自力=狙い目/高連動=先物依存で注意） ──
+function ftagRank(r){
+  const t=r&&r.futures_tag;
+  if(t==="自力")return 0;
+  if(t==="中連動")return 1;
+  if(t==="高連動")return 3;   // 買い候補でも一段下げる（先物に振られやすい）
+  return 2;                   // データ不足/未計測はその間
+}
+function ftagChip(r){
+  const t=r&&r.futures_tag; if(!t) return "";
+  const c=t==="自力"?"self":t==="高連動"?"high":"mid";
+  const rv=(r.futures_corr!=null&&!isNaN(r.futures_corr))?" r"+Number(r.futures_corr).toFixed(2):"";
+  return `<span class="ftag ${c}" title="先物（日経レバ1570）との連動度。自力=自分の需給で動く／高連動=先物に振られやすい">${t}${rv}</span>`;
+}
+
+// ── 低位株(¥1000未満)は既定で隠す（従来設定を引き継ぎ） ──
+const BUY_PRICE_MIN=1000;
+function hideLowPrice(){try{return localStorage.getItem("kabuai_lowprice")!=="0";}catch(e){return true;}}
+function toggleLowPrice(){try{localStorage.setItem("kabuai_lowprice",hideLowPrice()?"0":"1");}catch(e){} render();}
+function priceOK(r){return !hideLowPrice()||!(r&&r.price>0&&r.price<BUY_PRICE_MIN);}
+
+// ── 今日の買い候補（BUY_KEYSの点灯銘柄を dedup → 自力優先 → 期待値順） ──
+function candidates(){
+  const s=DATA.signals; if(!s) return {list:[],hidden:0};
+  const lit=(s.order||[]).filter(k=>BUY_KEYS.indexOf(k)>=0&&s.groups[k]&&s.groups[k].count>0&&sigHasEdge(k));
+  const seen={},all=[];
+  lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
+    if(seen[r.code])return; seen[r.code]=1;
+    all.push({...r,signals:(r.signals||[]).filter(x=>BUY_KEYS.indexOf(x)>=0&&sigHasEdge(x))});
+  }));
+  const list=all.filter(priceOK), hidden=all.length-list.length;
+  // ソート優先度: ①自力（先物に振られにくい）→ ②期待値の高い順 → ③RSI低い順
+  list.sort((a,b)=>(ftagRank(a)-ftagRank(b))
+    ||(((buyStat(b)||{ev:-1e9}).ev)-((buyStat(a)||{ev:-1e9}).ev))
+    ||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50)));
+  return {list,hidden};
+}
+function isCand(r){return (r.signals||[]).some(sigHasEdge);}
+
+function pctTag(r1){if(r1==null||isNaN(r1))return "";
+  const c=r1>0?"var(--up)":r1<0?"#ff6b6b":"var(--mut)",s=r1>0?"+":"";
+  return `<span style="color:${c};font-weight:700">${s}${r1.toFixed(1)}%</span>`;}
+function sigChips(r){
+  const edge=(r.signals||[]).filter(sigHasEdge);
+  if(!edge.length) return "";
+  return `<div class="chips">`+edge.map(k=>{
+    const e=sigEV(k); if(!e) return "";
+    return `<span class="chip buy">✅ ${e.emoji}${e.label}<span class="muted" style="font-weight:400"> 勝率${e.win}%</span></span>`;
+  }).join("")+ftagChip(r)+`</div>`;
+}
+// 買い候補カードの期待値・出口ライン
+function planLine(r){
+  const st=buyStat(r); if(!st) return "";
+  return `<div class="planline">
+    <span class="pl-ev ${st.ev>=0?"pos":"neg"}">期待値 ${st.ev>=0?"+":""}${st.ev}%<small class="muted">/件</small></span>
+    <span>勝率${st.win}% ・ 保有${st.hold}日めど ・ 損切り-${st.sl}%</span></div>`;
+}
+
+// ── ⭐ ウォッチ（☆保存。localStorage 従来キーを引き継ぎ） ──
 let WATCH=readWatch();
 function readWatch(){try{return JSON.parse(localStorage.getItem("kabuai_watch")||"[]")||[];}catch(e){return [];}}
 function saveWatch(){try{localStorage.setItem("kabuai_watch",JSON.stringify(WATCH));}catch(e){}}
 function isWatched(code){return WATCH.indexOf(code)>=0;}
 function toggleWatch(code){const i=WATCH.indexOf(code);if(i>=0)WATCH.splice(i,1);else WATCH.unshift(code);saveWatch();return isWatched(code);}
 function star(code){const on=isWatched(code);
-  return `<span class="star${on?" on":""}" data-star="${code}" title="ウォッチに追加/解除" onclick="onStar(event,'${code}')">${on?"★":"☆"}</span>`;}
+  return `<span class="star${on?" on":""}" data-star="${code}" onclick="onStar(event,'${code}')">${on?"★":"☆"}</span>`;}
 function onStar(ev,code){ev.preventDefault();ev.stopPropagation();const on=toggleWatch(code);
-  if(document.querySelectorAll)document.querySelectorAll('[data-star="'+code+'"]').forEach(b=>{b.className="star"+(on?" on":"");b.textContent=on?"★":"☆";});
-  if(location.hash.startsWith("#/search")&&!(SEARCH_Q||"").trim()){const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults("");}}
-function sigScore(r){let s=0;if((r.signals||[]).some(sigHasEdge))s+=200;else if((r.signals||[]).length)s+=100;return s-(r.rank||9999)/1e6;}
-function bigMoveTag(r1){if(r1==null||isNaN(r1))return "";
-  if(r1>=7)return `<span class="bigtag up">大幅高 +${r1.toFixed(1)}%</span>`;
-  if(r1<=-7)return `<span class="bigtag dn">大幅安 ${r1.toFixed(1)}%</span>`;return "";}
-function pctTag(r1){if(r1==null||isNaN(r1))return "";
-  const c=r1>0?"#2ec27e":r1<0?"#ff6b6b":"var(--mut)",s=r1>0?"+":"";
-  return `<span style="color:${c};font-weight:700">${s}${r1.toFixed(1)}%</span>`;}
-
-async function load(){
-  const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
-  for(const u of cands){
-    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){DATA=await r.json();DATA._url=u;return;}}
-    catch(e){}
-  }
-  throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
-}
-function badge(g){return `<span class="badge g-${g}">${GRADE_LABEL[g]||g}</span>`;}
-function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code)
-  ||(SEARCH&&SEARCH.find(r=>r.code===code))||undefined;}
-function sigMeta(key){return (DATA.signals&&DATA.signals.groups&&DATA.signals.groups[key])||null;}
-// 検証済みの買いエッジ(sigHasEdge)があるシグナルだけを✅＋得意保有/勝率つきで表示する。
-// 参考（過熱・中立／エッジ未確認）シグナルは表示しない（stanceではなくBT実績で判定）。
-function sigChips(row){
-  const ks=(row.signals||[]);if(!ks.length)return "";
-  const lbl={5:"5日",10:"10日",20:"20日"};
-  const edge=ks.filter(sigHasEdge);
-  if(!edge.length)return "";   // 参考シグナルしか無ければ何も出さない＝✅検証済み買いのみ
-  const buyChip=k=>{const m=sigMeta(k);if(!m)return "";const b=sigBest(k);
-    return `<span class="chip buy">✅ ${m.emoji} ${m.label}`
-      +`${b?`<small>得意${lbl[b.h]||b.h+"日"}・勝率${b.x.win}%</small>`:""}</span>`;};
-  return `<div class="chips">`+edge.map(buyChip).join("")+`</div>`;
-}
-function marketCard(){
-  const m=DATA.market;
-  if(!m||!m.available) return `<span class="soon">地合いデータなし</span>`;
-  const pct=Math.max(0,Math.min(100,m.score));
-  return `
-    <div style="display:flex;align-items:center;gap:14px">
-      <div style="text-align:center">
-        <div style="font-size:32px;font-weight:800;line-height:1">${m.score.toFixed(0)}</div>
-        <div>${badge(m.grade)}</div>
-      </div>
-      <div style="flex:1">
-        <div style="font-weight:700">${m.label}</div>
-        <div class="muted" style="font-size:12px">地合い <b style="color:var(--tx)">${m.regime}</b> ・ 上昇率(20日) ${m.trail20_pct>=0?"+":""}${m.trail20_pct}% ・ 騰落 ${m.breadth_pct}%が上昇</div>
-        <div class="bar"><div class="barfill" style="width:${pct}%;background:var(--${m.grade})"></div></div>
-      </div>
-    </div>
-    ${marketSegments(m)}
-    <div class="muted" style="font-size:11px;margin-top:8px">${m.note}</div>`;
-}
-function segGauge(g){
-  if(!g) return "";
-  const pct=Math.max(0,Math.min(100,g.score));
-  const short=g.label.split("市場")[0];
-  return `<div class="seg"><div class="segh"><span class="segn">${short}</span> ${badge(g.grade)}</div>
-    <div class="segs">${g.score.toFixed(0)} <small class="muted">${g.regime}</small></div>
-    <div class="bar slim"><div class="barfill" style="width:${pct}%;background:var(--${g.grade})"></div></div>
-    <div class="muted" style="font-size:10px">${g.count}銘柄 ・ 騰落${g.breadth_pct}%</div></div>`;
-}
-function marketSegments(m){
-  const s=m.segments; if(!s) return "";
-  const cells=["prime","standard","growth"].filter(k=>s[k]).map(k=>segGauge(s[k])).join("");
-  if(!cells) return "";
-  return `<div class="segwrap">${cells}</div><div class="muted" style="font-size:10px;margin-top:2px">${m.segments_note||""}</div>`;
-}
-// 検証済みの買いエッジ＝過去に勝率TRK_WIN_MIN%以上＆平均プラスの得意保有がある
-// （得意保有/出口の目安と同じゲート。stanceではなくBT実績で判定するので accum/reversal の
-// ように stance が中立/警戒でも実績エッジがあるものは買い候補に入る）。
-function sigBest(k){
-  const t=DATA.signal_track; const g=t&&t.available&&t.groups&&t.groups[k];
-  return g&&g.n?bestHorizon(g,t.horizons||[5,10,20]):null;
-}
-function sigHasEdge(k){const b=sigBest(k);return !!(b&&b.x.win>=TRK_WIN_MIN&&b.x.avg>0);}
-// 期待値(EV)＝出口ルール込み（保有t日・損切り-sl%・利を伸ばす）の1トレード平均リターン。
-// bt_signal_exit.py 由来の実現値。出口データが無いシグナルのみ得意保有の平均で代替。
-function sigEV(k){
-  const t=DATA.signal_track; const g=t&&t.available&&t.groups&&t.groups[k];
-  if(!g||!g.n) return null;
-  const b=bestHorizon(g,t.horizons||[5,10,20]);
-  if(!(b&&b.x.win>=TRK_WIN_MIN&&b.x.avg>0)) return null;  // 検証済み買いエッジのみ
-  const m=sigMeta(k)||{}, ex=(g.exit&&g.exit.n)?g.exit:null;
-  return {k,label:m.label||k,emoji:m.emoji||"",h:b.h,hwin:b.x.win,havg:b.x.avg,exit:ex,ev:ex?ex.avg:b.x.avg};
-}
-// 銘柄の最良エッジ＝点灯中の買いシグナルのうち期待値が最大のもの＋確認本数。
-function buyStat(r){
-  const a=(r.signals||[]).map(sigEV).filter(Boolean);
-  if(!a.length) return null;
-  a.sort((x,y)=>y.ev-x.ev);
-  return {best:a[0],n:a.length,ev:a[0].ev};
-}
-// 全面リバウンド判定（フェーズ11・bt_best_pick.py 2026-06-10確定）。
-// 強反転のエッジは「その日の強反転点灯数」に依存: 10件以上の日(全面リバウンド)=勝率62.5%/
-// 平均+2.16%/件(陽性年5/5)、1-9件の散発日=勝率42.2%/平均-0.61%(2022-2025全year負け)。
-// 古いdata(phase10以前)には無いので null 安全に。
-function reboundInfo(){const rb=DATA.rebound;return (rb&&rb.mode)?rb:null;}
-function reboundBanner(){
-  const rb=reboundInfo(); if(!rb) return "";
-  const st=rb.stats||{};
-  if(rb.mode==="broad"){const b=st.broad||{};
-    return `<div class="rbanner broad">🌊 <b>全面リバウンド日</b> — 強反転が本日 <b>${rb.sr_count}件</b> 点灯（しきい値${rb.threshold}件以上）
-      <div class="rb-sub">市場全体が深い下落から反発する形。こういう日の強反転は過去検証で<b>勝率${b.win}%・平均${b.avg>=0?"+":""}${b.avg}%/件</b>（陽性年${b.pos_years}・${(b.n||0).toLocaleString()}回）と買い候補の中で最も強く、他の買い候補も底上げされる傾向。<b>1点集中より広く分散</b>が過去実績では有利でした。</div></div>`;}
-  if(rb.mode==="sparse"){const s2=st.sparse||{};
-    return `<div class="rbanner sparse">⚠️ <b>散発点灯日</b> — 強反転は本日 <b>${rb.sr_count}件</b> のみ（しきい値${rb.threshold}件未満）
-      <div class="rb-sub">点灯が散発の日は市場全体でなく銘柄固有の下落が多く、過去検証では強反転でも<b>平均${s2.avg}%/件・勝率${s2.win}%</b>（2022〜2025は毎年マイナス）。<b>無理にエントリーせず見送りが無難</b>です。</div></div>`;}
-  return "";
-}
-// 直近の全面リバウンド日の実績テーブル（rebound.history・手元pklから月1事前計算）。無ければ空文字。
-function reboundHistory(){
-  const rb=reboundInfo(); const h=rb&&rb.history; if(!h||!h.recent||!h.recent.length) return "";
-  const s=h.summary||{}, ex=h.exit||{t:8,sl:12};
-  const rows=h.recent.slice(-8).reverse().map(r=>`<tr><td>${r.date}</td><td>${r.count}件</td>`
-    +`<td class="${r.avg==null?"":(r.avg>=0?"pos":"neg")}">${r.avg==null?"集計中":(r.avg>=0?"+":"")+r.avg+"%"}</td>`
-    +`<td>${r.win==null?"-":r.win+"%"}</td></tr>`).join("");
-  return `<div class="card" style="margin:10px 0">
-    <div style="font-weight:700">🗓 直近の全面リバウンド日
-      <span class="muted" style="font-weight:400">（${h.since}以降で${s.days}日）</span></div>
-    <div class="muted" style="font-size:12px;margin:6px 0">その日の強反転を全銘柄、翌朝の寄りで買い→出口${ex.t}日/-${ex.sl}%で出した場合:
-      出口確定済み${s.days_settled}日・${(s.trades||0).toLocaleString()}トレードで <b style="color:var(--tx)">勝率${s.win}%・平均${s.avg>=0?"+":""}${s.avg}%/件</b>・日単位のプラス率${s.day_pos_pct}%</div>
-    <table class="rhtbl"><thead><tr><th>日付</th><th>点灯</th><th>平均/件</th><th>勝率</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="muted" style="font-size:11px;margin-top:5px">理論値（手数料/スリッページ未考慮）で将来を保証しません。月1回更新のため直近の広がり日が未掲載のことがあります。</div></div>`;
-}
-// 買い候補カードの「期待値＋出口プラン」バー。買い候補でなければ空文字。
-// 注: 「+N本確認」表示は撤去済み（BT検証で点灯本数の多さに優位性なし＝勝率はむしろ低下。
-// 強反転⊂反転などのネスト構造で本数が水増しされるため、信頼度としては使わない）。
-function buyPlanLine(r){
-  const bs=buyStat(r); if(!bs) return "";
-  const st=bs.best, ex=st.exit, ev=st.ev, evc=ev>=0?"pos":"neg";
-  const win=ex?ex.win:st.hwin;
-  const hold=ex?`保有${ex.t}日めど`:`${st.h}日`;
-  const sl=ex?` ・ 損切り-${ex.sl}%`:"";
-  return `<div class="buyplan">`
-    +`<span class="bp-ev ${evc}">期待値 ${ev>=0?"+":""}${ev}%<small>/件</small></span>`
-    +`<span class="bp-meta">勝率${win}% ・ ${hold}${sl}</span>`
-    +`<span class="bp-sig">${st.emoji}${st.label}</span></div>`;
-}
-// 低位株(¥1000未満)を既定で隠す。「おすすめが低位株ばかりで微妙」への対処。
-// client-sideフィルタ（再ビルド不要）。toggleで全部表示にも切替できる。
-const BUY_PRICE_MIN=1000;
-function hideLowPrice(){try{return localStorage.getItem("kabuai_lowprice")!=="0";}catch(e){return true;}}
-function toggleLowPrice(){try{localStorage.setItem("kabuai_lowprice",hideLowPrice()?"0":"1");}catch(e){} render();}
-function priceOK(r){return !hideLowPrice()||!(r&&r.price>0&&r.price<BUY_PRICE_MIN);}
-// 本日の検証済み買い候補のうち¥1000未満で隠れている件数（toggle表示用・dedup）。
-function lowPriceHiddenCount(){
-  const s=DATA.signals; if(!s) return 0;
-  const lit=s.order.filter(k=>s.groups[k].count>0&&sigHasEdge(k));
-  const seen={}; let n=0;
-  lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
-    if(seen[r.code])return; seen[r.code]=1;
-    if(r&&r.price>0&&r.price<BUY_PRICE_MIN)n++;}));
-  return n;
-}
-// 本日の検証済み買い候補バスケット（全買いシグナル横断で銘柄をdedup・低位株カット・期待値順）。
-function buyBasket(){
-  const s=DATA.signals; if(!s) return null;
-  const lit=s.order.filter(k=>s.groups[k].count>0&&sigHasEdge(k));
-  if(!lit.length) return null;
-  const seen={},all=[];
-  lit.forEach(k=>(s.groups[k].members||[]).forEach(r=>{
-    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};all.push(o);}
-    if(o.signals.indexOf(k)<0)o.signals.push(k);}));
-  const members=all.filter(priceOK);
-  if(!members.length) return null;
-  members.sort((a,b)=>{const ea=buyStat(a),eb=buyStat(b);
-    return ((eb?eb.ev:-1e9)-(ea?ea.ev:-1e9))||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50))||(a.momentum-b.momentum);});
-  const evs=members.map(r=>(buyStat(r)||{ev:0}).ev);
-  const avg=evs.length?Math.round(evs.reduce((a,b)=>a+b,0)/evs.length*100)/100:0;
-  return {members,count:members.length,avgEV:avg,top:members[0]};
-}
-function signalSummary(){
-  const s=DATA.signals;if(!s)return `<span class="soon">シグナルなし</span>`;
-  const lit=s.order.filter(k=>s.groups[k].count>0);
-  if(!lit.length)return `<span class="soon">本日の点灯シグナルなし</span>`;
-  const total=lit.reduce((a,k)=>a+s.groups[k].count,0);
-  const lbl={5:"5日",10:"10日",20:"20日"};
-  const buy=lit.filter(sigHasEdge).sort((a,b)=>((sigEV(b)||{ev:-1e9}).ev-(sigEV(a)||{ev:-1e9}).ev));
-  const buyPill=k=>{const g=s.groups[k],e=sigEV(k);
-    const win=e?(e.exit?e.exit.win:e.hwin):0, hold=e?(e.exit?e.exit.t:e.h):0;
-    return `<a class="sigpill buy" href="#/signals/${k}">${g.emoji} ${g.label} <b>${g.count}</b>`
-      +`${e?`<small>期待+${e.ev}%・勝率${win}%・保有${hold}日</small>`:""}</a>`;};
-  const bb=buyBasket();
-  const headline=bb?`<a class="buylede" href="#/signals/buycand"><span class="bl-ev ${bb.avgEV>=0?"pos":"neg"}">平均期待値 ${bb.avgEV>=0?"+":""}${bb.avgEV}%<small>/件</small></span><span class="bl-cnt">✅買い候補 <b>${bb.count}</b>銘柄</span><span class="bl-top">🏆本命 <b>${bb.top.name}</b> <small>期待+${(buyStat(bb.top)||{ev:0}).ev}%</small></span></a>`:"";
-  const buyBlk=buy.length
-    ? `${headline}<div class="sigsub buyhead">✅ 検証済みの買い候補<span class="muted">（期待値の高い順・出口つき）</span></div><div class="sigwrap">${buy.map(buyPill).join("")}</div>`
-    : `<div class="sigsub muted">本日は検証済みの買いシグナルの点灯なし</div>`;
-  // 参考（過熱・中立／エッジ未確認）シグナルは表示しない＝✅検証済み買い候補だけに集約
-  return `<div class="muted" style="margin-bottom:9px">本日 <b style="color:var(--tx)">${total}</b> 件点灯（${DATA.universe_scored.toLocaleString()}銘柄を監視）</div>${reboundBanner()}${buyBlk}`;
-}
-
+  if(document.querySelectorAll)document.querySelectorAll('[data-star="'+code+'"]').forEach(b=>{b.className="star"+(on?" on":"");b.textContent=on?"★":"☆";});}
 function watchSummaryInner(){
   const found=WATCH.map(c=>SEARCH&&SEARCH.find(s=>s.code===c)).filter(Boolean);
   if(!found.length) return `<span class="muted">⭐ ウォッチ ${WATCH.length}件（本日のデータ対象外）</span>`;
-  const firing=found.filter(r=>(r.signals||[]).length).sort((a,b)=>sigScore(b)-sigScore(a));
-  const buy=firing.filter(r=>(r.signals||[]).some(sigHasEdge));
-  const head=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b>`
-    +`<a class="more" href="#/search" style="margin-left:auto">一覧 →</a></div>`;
-  if(!firing.length) return head+`<div class="muted" style="font-size:12px">本日の点灯シグナルはありません。</div>`;
-  const chips=firing.map(r=>`<a class="chip${(r.signals||[]).some(sigHasEdge)?" buy":""}" href="#/detail/${r.code}">${r.name} ${(r.signals||[]).some(sigHasEdge)?"✅":"🔔"}${pctTag(r.r1)?" "+pctTag(r.r1):""}</a>`).join("");
-  const msg=buy.length?`<b style="color:var(--C)">${buy.length}件が検証済みの買い候補</b>`:`${firing.length}件にシグナル点灯`;
-  return head+`<div class="muted" style="font-size:12px;margin-bottom:6px">${msg}</div><div class="chips">${chips}</div>`;
+  const chips=found.map(r=>`<a class="chip${isCand(r)?" buy":""}" href="#/detail/${r.code}">${esc(r.name)} ${isCand(r)?"✅":""}${pctTag(r.r1)?" "+pctTag(r.r1):""}</a>`).join("");
+  const n=found.filter(isCand).length;
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b>
+    <a style="margin-left:auto;color:var(--acc);font-weight:600;font-size:12px" href="#/search">一覧 →</a></div>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${n?`<b class="pos">${n}件が本日の買い候補</b>`:"本日の買い候補はありません"}</div>
+    <div class="chips">${chips}</div>`;
 }
-// ── 📒 かんたん持ち株コーチ（端末内保存・「買った後」の出口規律を毎日指示） ──
-// BT群の結論=勝ち負けを分けるのは銘柄選びより出口規律。初心者が一番事故る
-// 「買った後どうする」を、保有日数・損切りライン・手仕舞い日の自動表示で支える。
-// 出口は検証済み(bt_signal_exit/テーマ爆益BT)に統一＝どちらも8日めど・損切り-12%・利確なし(利を伸ばす)。
-// 旧swing(3日/-3%/+5%)は買い候補の出口表示(8日/-12%)と矛盾していたため是正。ラベルは堅実/攻めで区別。
-const PLANS={
-  swing:{label:"🛟 今日これ買え（反発）", hold:8, sl:12, tp:null},
-  blast:{label:"🔥 勢いに乗る（継続）", hold:8, sl:12, tp:null}};
+
+// ── 📒 持ち株コーチ（端末内保存・買った後の出口規律を毎日指示） ──
+// 出口は検証済みの1本に統一: 保有8日めど・損切り-12%・利確なし（利を伸ばす）。
+const PLAN={hold:8,sl:12};
 function loadPos(){try{return JSON.parse(localStorage.getItem("kabuai_pos")||"[]");}catch(e){return [];}}
 function savePos(a){try{localStorage.setItem("kabuai_pos",JSON.stringify(a));}catch(e){}}
 function addPosFromForm(code,name){
   const pr=parseFloat((document.getElementById("pos-price")||{}).value);
   const dt=(document.getElementById("pos-date")||{}).value;
-  const pl=(document.getElementById("pos-plan")||{}).value||"swing";
   if(!(pr>0)||!dt)return;
-  const a=loadPos(); a.push({code,name,entry:pr,date:dt,plan:pl}); savePos(a); render();
+  const a=loadPos(); a.push({code,name,entry:pr,date:dt}); savePos(a); render();
 }
 function delPos(i){const a=loadPos(); a.splice(i,1); savePos(a); render();}
 function bizDays(from,to){ // 営業日カウント(土日除外・祝日未考慮)・買った日=1日目
@@ -526,207 +288,93 @@ function bizAdd(from,n){ // fromを1日目としてn営業日目の日付(M/D)
 }
 function posCoach(){
   const a=loadPos(); if(!a.length)return "";
-  const ref=DATA.data_date||"";                      // 損益の基準（終値・1日遅れ）
-  const now=new Date();                              // 保有日数・行動指示は「実際の今日」基準
+  const ref=DATA.data_date||"";
+  const now=new Date();
   const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
   const items=a.map((p,i)=>{
-    const pl=PLANS[p.plan]||PLANS.swing;
     const row=(DATA.ranking||[]).find(r=>r.code===p.code)||(SEARCH&&SEARCH.find(r=>r.code===p.code))||null;
     const cur=row?row.price:null;
     const pnl=(cur!=null&&p.entry>0)?(cur/p.entry-1)*100:null;
-    const slP=Math.round(p.entry*(1-pl.sl/100)), tpP=pl.tp?Math.round(p.entry*(1+pl.tp/100)):null;
+    const slP=Math.round(p.entry*(1-PLAN.sl/100));
     const day=bizDays(p.date,todayStr);
-    let act, actCls="";
-    if(cur!=null&&cur<=slP){act=`🔴 損切りライン（¥${slP.toLocaleString()}）割れ — <b>今日売って仕切り直し</b>。ここで迷わないのが勝ち組`; actCls="neg";}
-    else if(tpP&&cur!=null&&cur>=tpP){act=`✅ 利確ライン（+${pl.tp}%）到達 — OCOが約定しているはず。未約定なら売却`; actCls="pos";}
-    else if(day>=pl.hold){act=`⏰ ${pl.hold}営業日目 — <b>今日の大引けで手仕舞い</b>（利益を保有しすぎない）`;}
-    else{act=`🟢 ホールド（${day}日目／${pl.hold}日・手仕舞いめど ${bizAdd(p.date,pl.hold)}）・損切り ¥${slP.toLocaleString()}${tpP?`・利確 ¥${tpP.toLocaleString()}`:"・利確なし（引っ張る）"}`;}
+    let act,actCls="";
+    if(cur!=null&&cur<=slP){act=`🔴 損切りライン（¥${slP.toLocaleString()}）割れ — <b>今日売って仕切り直し</b>`;actCls="neg";}
+    else if(day>=PLAN.hold){act=`⏰ ${PLAN.hold}営業日目 — <b>今日の大引けで手仕舞い</b>（保有しすぎない）`;}
+    else{act=`🟢 ホールド（${day}日目／${PLAN.hold}日・手仕舞いめど ${bizAdd(p.date,PLAN.hold)}）・損切り ¥${slP.toLocaleString()}・利確なし（引っ張る）`;}
     return `<div class="poschip">
       <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-        <a href="#/detail/${p.code}" style="font-weight:800;color:var(--tx)">${esc(p.name||p.code)}</a>
-        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}・${pl.label}</span>
+        <a href="#/detail/${p.code}" style="font-weight:800">${esc(p.name||p.code)}</a>
+        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}</span>
         <span style="margin-left:auto;font-weight:800" class="${pnl!=null?cls(pnl):""}">${pnl!=null?fmtPct(pnl):"—"}</span>
         <button class="posdel" onclick="event.preventDefault();delPos(${i})">売った/削除</button></div>
       <div class="${actCls}" style="font-size:12.5px;margin-top:4px">${act}</div></div>`;
   }).join("");
   return `<h2>📒 持ち株コーチ</h2><div class="card">${items}
-    <div class="muted" style="font-size:11px;margin-top:6px">損益・判定は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。営業日は土日のみ除外（祝日があれば1日読み替え）。記録はこの端末にだけ保存されます。</div></div>`;
+    <div class="muted" style="font-size:11px;margin-top:6px">損益は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。営業日は土日のみ除外。記録はこの端末にだけ保存されます。</div></div>`;
 }
-// 銘柄詳細の「買った記録」フォーム
 function posForm(code,name,price){
   const d=new Date();
   const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const owned=loadPos().filter(p=>p.code===code).length;
-  // テーマ爆益の本命銘柄なら「🔥継続」を初期選択（攻めで買った銘柄の取り違え防止）。出口は両プラン同一。
-  const tb=DATA.theme_blast, isBlast=!!(tb&&(tb.members||[]).some(m=>m.code===code&&m.blast>=tb.threshold));
-  const sel=p=>isBlast===(p==="blast")?" selected":"";
   return `<div class="card">
     <div style="font-weight:700">📒 買った記録をつける ${owned?`<span class="tag">記録 ${owned}件</span>`:""}</div>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">記録すると、ホームの「持ち株コーチ」が毎日 <b style="color:var(--tx)">保有日数・損切りライン・手仕舞い日</b> を教えてくれます（この端末にだけ保存）。</div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">記録すると、ホームの「持ち株コーチ」が毎日 <b style="color:var(--tx)">保有日数・損切りライン・手仕舞い日</b> を教えてくれます（出口: 保有${PLAN.hold}日めど・損切り-${PLAN.sl}%・利確なし）。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;align-items:center">
       <input id="pos-price" class="posin" type="number" inputmode="decimal" value="${price||""}" placeholder="買値（円）">
       <input id="pos-date" class="posin" type="date" value="${ds}">
-      <select id="pos-plan" class="posin">
-        <option value="swing"${sel("swing")}>🛟 今日これ買え／反発（8日・損切-12%・利確なし）</option>
-        <option value="blast"${sel("blast")}>🔥 勢いに乗る／継続（8日・損切-12%・利確なし）</option>
-      </select>
       <button class="posadd" onclick="addPosFromForm('${code}','${esc(name).replace(/'/g,"")}')">保存</button>
     </div></div>`;
 }
-// 🧭 今日の作戦(todayPlan)はホーム未使用の死にコードだったため撤去（2026-06-27・爆益/セクターのチップを含むため）。
 
-// 🏠 今日これ買え — 「結局どれ買えばいい」に一画面で即答（option A）。
-// 日種別 → 今日の方針 → ¥1000以上の検証済み買い候補を分散リスト → 出口プラン。
-function todayPick(){
-  const rb=reboundInfo(), bb=buyBasket(), hiddenLow=lowPriceHiddenCount();
-  // 出口（保有日数/損切り）は強反転の実現出口を代表値に（無ければ8日/-12%）
-  const sg=DATA.signal_track&&DATA.signal_track.groups&&DATA.signal_track.groups.strong_reversal;
-  const ex=(sg&&sg.exit&&sg.exit.n)?sg.exit:{t:8,sl:12};
-  const lpToggle=`<a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株(¥${BUY_PRICE_MIN.toLocaleString()}未満)を${hideLowPrice()?"表示":"隠す"}</a>`;
-  let tone="", head, body="";
-  if(bb&&bb.count){
-    const picks=bb.members.slice(0,5);
-    if(rb&&rb.mode==="broad"){tone="broad";
-      head=`🌊 今日は<b>全面リバウンド日</b>（年45〜55日だけの最高エッジ）。下から<b>3〜5銘柄を分散</b>して今日の寄りで買う日`;}
-    else if(rb&&rb.mode==="sparse"){tone="sparse";
-      head=`⚠️ 散発点灯日。<b>無理に張らない</b>。入るなら下から小さく1〜2銘柄まで`;}
-    else{head=`✅ 検証済みの買い候補が <b>${bb.count}銘柄</b>。下から数銘柄を<b>分散</b>して仕込む`;}
-    const rows=picks.map(r=>{const st=(buyStat(r)||{}).best||{};const win=st.exit?st.exit.win:st.hwin;
+// ── ホーム: ✅今日の買い候補（唯一の主役画面） ──
+function candHero(){
+  const {list,hidden}=candidates();
+  const ex=exitRep();
+  const rb=DATA.rebound;
+  const broad=!!(rb&&rb.mode==="broad");
+  const lpToggle=(hidden||!hideLowPrice())
+    ? `<a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株(¥${BUY_PRICE_MIN.toLocaleString()}未満)を${hideLowPrice()?`表示${hidden?`（+${hidden}件）`:""}`:"隠す"}</a>`:"";
+  let body;
+  if(list.length){
+    const rows=list.map(r=>{const st=buyStat(r)||{ev:0,win:0};
       return `<a class="pickrow" href="#/detail/${r.code}">
-        <div class="pk-nm"><b>${r.name}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()}</small></div>
-        <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待${st.ev>=0?"+":""}${st.ev}%<small>勝率${win}%</small></div></a>`;}).join("");
-    body=`<div class="picklist">${rows}</div>
-      <div class="pickexit">🚪 出口の規律: <b>今日の寄りで買い → 保有約${ex.t}日 → 損切り-${ex.sl}%（利確なし・利は伸ばす）</b>。1銘柄に全張りせず分散が過去実績で有利。</div>
-      <div class="pickfoot"><a class="more" href="#/signals/buycand">✅買い候補をぜんぶ見る →</a>${lpToggle}</div>`;
-  } else {
-    tone="sparse";
-    const onlyLow=hideLowPrice()&&hiddenLow>0;
-    head=`本日は${onlyLow?`¥${BUY_PRICE_MIN.toLocaleString()}以上の`:""}検証済み買い候補なし — <b>買わない日も立派な戦略</b>。エッジのある日だけ張る`;
-    body=`<div class="pickfoot">${onlyLow?`<a class="lpt" style="margin-left:0" onclick="event.preventDefault();toggleLowPrice()">低位株も含めて見る（${hiddenLow}件）</a>`:""}<a class="more" href="#/signals" style="margin-left:auto">シグナル一覧 →</a></div>`;
+        <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
+          <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div></div>
+        <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;}).join("");
+    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。<b>先物に振られにくい順 → 期待値順</b>に並べています。</div>
+      ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 過去実績では買い候補全体に追い風の日です。</div>`:""}
+      <div class="picklist">${rows}</div>
+      <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
+      <div class="pickfoot">${lpToggle}<a class="more" href="#/about">タグと数字の意味 →</a></div>`;
+  }else{
+    body=`<div class="lead">本日は${(hideLowPrice()&&hidden)?`¥${BUY_PRICE_MIN.toLocaleString()}以上の`:""}検証済み買い候補なし — <b>買わない日も立派な戦略</b>。型が出た日だけ張ります。</div>
+      <div class="pickfoot">${lpToggle}<a class="more" href="#/about">このアプリの使い方 →</a></div>`;
   }
-  return `<div class="todaypick ${tone}">
-    <div class="tp-h">🏠 今日これ買え <span class="muted" style="font-weight:400;font-size:11px">${DATA.data_date||""} 終値時点</span></div>
-    <div class="tp-tag">🛟 堅実 ・ 売られすぎの反発取り（勝率高め・約8日）</div>
-    <div class="tp-lead">${head}</div>${body}</div>`;
+  return `<div class="hero${broad?" broad":""}">
+    <div class="hh">✅ 今日の買い候補 <small>${DATA.data_date||""} 終値時点</small></div>
+    ${body}</div>`;
 }
-
-// 🔥 勢いに乗る（テーマ爆益）ヒーローは撤去（2026-06-27）。「勝てる買い候補だけに集約」方針。
-
 function viewHome(){
   if(WATCH.length||loadPos().length) loadSearch().then(()=>{
     const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
     const pc=document.getElementById("poscoach"); if(pc)pc.innerHTML=posCoach();
   });
-  const top=DATA.ranking.slice(0,5);
-  const gc=DATA.grade_counts||{};
-  const rows=top.map(r=>`
-    <a class="row" href="#/detail/${r.code}">
-      <div class="rk">${r.rank}</div>
-      <div class="nm"><b>${r.name}</b><small>${r.code} ・ ¥${r.price.toLocaleString()}</small></div>
-      <div class="mom"><b>${r.momentum.toFixed(0)}</b></div>
-      ${badge(r.grade)}
-    </a>`).join("");
   return `
-    ${todayPick()}
+    ${candHero()}
     <div id="poscoach">${posCoach()}</div>
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
-    ${WATCH.length?`<div class="card" id="watchsum" style="margin-bottom:4px"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
-      `<a href="#/about" class="card" style="display:flex;align-items:center;gap:8px;border-left:3px solid var(--C);margin-bottom:4px">
+    ${WATCH.length?`<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
+      `<a href="#/about" class="card" style="display:flex;align-items:center;gap:8px;border-left:3px solid var(--up)">
         <span style="font-size:18px">🔰</span>
-        <span style="flex:1;font-size:13px">はじめての方へ — 使い方と用語をやさしく解説（30秒）</span>
+        <span style="flex:1;font-size:13px">はじめての方へ — 使い方と数字の意味（30秒）</span>
         <span class="muted">→</span></a>`}
-    <details class="advbox">
-      <summary>📂 もっと見る（地合い・買い候補ぜんぶ・ランキング）</summary>
-      <div class="advin">
-        <h2>地合い</h2>
-        <div class="card">${marketCard()}</div>
-
-        <h2>🎯 今日の買い候補ぜんぶ <a class="more" href="#/signals">すべて見る →</a></h2>
-        <div class="card">${signalSummary()}</div>
-
-        <h2>モメンタム指数ランキング <a class="more" href="#/ranking">全銘柄を見る →</a></h2>
-        ${idxNote()}
-        <div class="card" style="padding:4px 12px">${rows}</div>
-
-        <h2>サマリー</h2>
-        <div class="card">
-          <div>対象 <b>${DATA.universe_scored.toLocaleString()}</b> 銘柄（全${DATA.universe_total.toLocaleString()}銘柄中・流動性フィルタ後）</div>
-          <div class="metrics" style="margin-top:10px">
-            ${["S","A","B","C","D"].map(g=>`<span>${badge(g)} <b>${gc[g]||0}</b></span>`).join("")}
-          </div>
-        </div>
-      </div>
-    </details>
-
-    <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at} / source: ${DATA.source}</p>`;
+    <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"}</p>`;
 }
 
-let RANK_GRADE="ALL", RANK_SORT="momentum", RANK_LIMIT=60;
-const SORT_DEFS=[["momentum","指数"],["r5","5日"],["r10","10日"],["r20","1ヶ月"],["r1","前日比"],["power","POWER"],["sr","SR"]];
-function setRankGrade(g){RANK_GRADE=g; RANK_LIMIT=60;
-  if(g==="BUY")RANK_SORT="ev"; else if(RANK_SORT==="ev")RANK_SORT="momentum";
-  $("#view").innerHTML=viewRanking();}
-function setRankSort(s){RANK_SORT=s; RANK_LIMIT=60; $("#view").innerHTML=viewRanking();}
-function rankMore(){RANK_LIMIT+=120; $("#view").innerHTML=viewRanking();}
-function idxNote(){
-  return `<div class="idxnote">📊 この指数は「いま強い／過熱しているか」を測る目安です。`
-    +`<b>高いほど今後上がるという予測ではありません</b>`
-    +`（過去実績ではむしろ最上位グレードほど過熱して反落しやすい傾向）。`
-    +`買いの優位性は<a href="#/signals">チンパンシグナル</a>の検証済みシグナル＋出口の目安を参照。</div>`;
-}
-function viewRanking(){
-  const full=!!(SEARCH&&SEARCH.length);
-  if(!full&&!SEARCH_LOADING) loadSearch().then(()=>{
-    if(location.hash.replace(/^#/,"").split("?")[0].startsWith("/ranking")) $("#view").innerHTML=viewRanking();
-  });
-  const base=full?SEARCH.filter(r=>!r.illiq):DATA.ranking.slice();   // 低流動はランキング対象外（検索/詳細のみ）
-  const isBuy=r=>(r.signals||[]).some(sigHasEdge);
-  let list=RANK_GRADE==="ALL"?base
-          :RANK_GRADE==="BUY"?base.filter(r=>isBuy(r)&&priceOK(r))
-          :base.filter(r=>r.grade===RANK_GRADE);
-  const sk=RANK_SORT;
-  const evOf=r=>{const b=buyStat(r);return b?b.ev:-1e9;};
-  list=list.slice().sort(sk==="ev"
-    ? (a,b)=>(evOf(b)-evOf(a))||((b.momentum??-1e9)-(a.momentum??-1e9))
-    : (a,b)=>((b[sk]??-1e9)-(a[sk]??-1e9)));
-  const total=list.length, shown=list.slice(0,RANK_LIMIT);
-  const gdefs=[["ALL","全"],["BUY","✅買い候補"],["S","S"],["A","A"],["B","B"],["C","C"],["D","D"]];
-  const gchips=gdefs.map(([g,l])=>{
-    const n=g==="ALL"?base.length:g==="BUY"?base.filter(isBuy).length:base.filter(r=>r.grade===g).length;
-    return `<a class="tab ${g===RANK_GRADE?"on":""}" onclick="setRankGrade('${g}')">${l}<span>${n}</span></a>`;
-  }).join("");
-  const sdefs=RANK_GRADE==="BUY"?[["ev","期待値"],...SORT_DEFS]:SORT_DEFS;
-  const schips=sdefs.map(([k,l])=>`<a class="tab ${k===RANK_SORT?"on":""}" onclick="setRankSort('${k}')">${l}</a>`).join("");
-  const cards=shown.map(r=>searchCard(r,RANK_GRADE==="BUY")).join("");
-  const more=total>shown.length
-    ? `<div class="tabs" style="margin-top:12px;justify-content:center"><a class="tab" onclick="rankMore()">もっと見る（残り${(total-shown.length).toLocaleString()}件）</a></div>`
-    : "";
-  const scope=full?`全${base.length.toLocaleString()}銘柄`:`TOP${shown.length}（全銘柄読込中…）`;
-  const gradeLbl=RANK_GRADE==="ALL"?"全グレード":RANK_GRADE==="BUY"?"✅検証済みの買い候補":RANK_GRADE+"グレード";
-  const cnt=`${gradeLbl} ${total.toLocaleString()}件中 ${shown.length.toLocaleString()}件表示`;
-  const emptyMsg=RANK_GRADE==="BUY"?"本日は検証済みの買い候補が点灯していません":"該当グレードの銘柄がありません";
-  const buyNote=RANK_GRADE==="BUY"
-    ? `<div class="idxnote">✅買い候補＝点灯中の<a href="#/signals">検証済み買いシグナル</a>（勝率${TRK_WIN_MIN}%以上＆平均プラス）を持つ銘柄。`
-      +`<b>期待値＝出口ルール込み（保有約8日・損切り-12%・利を伸ばす）の1件あたり平均リターン</b>（過去検証の実現値）。`
-      +`既定は<b>期待値の高い順</b>。指数・前日比などにも並べ替えできます（指数の高さは予測ではない点に注意）。</div>`
-    : "";
-  return `
-    <h2>モメンタム指数ランキング <span class="muted" style="font-size:12px;font-weight:400">${scope}</span> <a class="more" href="#/about">指数とは →</a></h2>
-    ${idxNote()}
-    <div class="muted" style="font-size:11px;margin:0 2px 6px">グレード・買い候補で絞り込み</div>
-    <div class="tabs">${gchips}</div>
-    ${buyNote}
-    <div class="muted" style="font-size:11px;margin:12px 2px 6px">並び替え</div>
-    <div class="tabs">${schips}</div>
-    <div class="muted" style="font-size:11px;margin:8px 2px 0">${cnt}</div>
-    <div class="cardgrid" style="margin-top:8px">${cards||`<div class="card muted">${emptyMsg}</div>`}</div>
-    ${more}
-    <p class="disc">${DATA.disclaimer}</p>`;
-}
-
+// ── 銘柄詳細 ──
 function viewDetail(code){
   setTimeout(()=>loadStockDetail(code),0);
-  return `<a class="back" href="#/ranking">← ランキング</a><div id="dbody"><div class="card muted">読み込み中…</div></div>`;
+  return `<a class="back" href="#/">← 今日の買い候補</a><div id="dbody"><div class="card muted">読み込み中…</div></div>`;
 }
 async function loadStockDetail(code){
   const cands=[`../data/stocks/${code}.json`,`data/stocks/${code}.json`,`./data/stocks/${code}.json`];
@@ -734,298 +382,88 @@ async function loadStockDetail(code){
   for(const u of cands){try{const r=await fetch(u,{cache:"no-store"});if(r.ok){s=await r.json();break;}}catch(e){}}
   const el=document.getElementById("dbody");if(!el)return;
   if(!s){
+    if(!SEARCH)await loadSearch();
     const r=findStock(code);
-    el.innerHTML=r?renderDetail({code:r.code,name:r.name,rank:r.rank,indicators:r,signals:r.signals||[],
-      chart:null,disclaimer:DATA.disclaimer}):`<div class="card">銘柄 ${code} の詳細データがありません（ランキング・シグナル外）。</div>`;
-    if(r)drawRadar(r);
+    el.innerHTML=r?renderDetail({code:r.code,name:r.name,indicators:r,signals:r.signals||[],
+      futures:(r.futures_tag?{corr:r.futures_corr,tag:r.futures_tag}:null),
+      chart:null,disclaimer:DATA.disclaimer}):`<div class="card">銘柄 ${esc(code)} のデータがありません。</div>`;
     return;
   }
   el.innerHTML=renderDetail(s);
   drawCandle(s.chart);
-  drawRadar(s.indicators);
 }
-function aiCard(ai){
-  if(!ai||!ai.note)return "";
-  const col={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[ai.stance]||"#8a94a3";
-  const src=ai.source==="rule"?"指標ベースの自動メモ":`AI要約（無料LLM: ${ai.source}）`;
-  return `<div class="card" style="border-left:3px solid ${col}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <b>⚠ 警戒メモ</b>
-        <span class="tag" style="border-color:${col};color:${col}">${ai.stance}</span>
-        <span class="muted" style="font-size:11px;margin-left:auto">${src}</span>
-      </div>
-      <div style="font-size:14px;line-height:1.5">${ai.note}</div>
-    </div>`;
-}
-// 詳細画面用: 検証済み買いシグナルがある時だけ「出口の目安」を目立つ callout で出す。
-// 主シグナルは買い候補リストと同じ「期待値が最大のもの」(buyStat)を採用し、画面間で一致させる。
-function exitGuide(ks){
-  const bs=buyStat({signals:ks}); if(!bs) return "";
-  const st=bs.best, ex=st.exit; if(!ex||!ex.n) return "";
-  const m=sigMeta(st.k), ev=ex.avg, evc=ev>=0?"pos":"neg";
-  // 全面リバウンド/散発の日種別（reversal系シグナルの時だけ・データに無ければ非表示）
-  const rb=reboundInfo();
-  const isRev=(st.k==="strong_reversal"||st.k==="reversal");
-  const rbl=(rb&&isRev)?(rb.mode==="broad"
-    ?`<span class="exsub pos">🌊 本日は全面リバウンド日（強反転${rb.sr_count}件）— この型が過去検証で最も強い日です（勝率${(rb.stats&&rb.stats.broad&&rb.stats.broad.win)||62.5}%）</span>`
-    :(rb.mode==="sparse"?`<span class="muted exsub">⚠️ 本日は散発点灯日（強反転${rb.sr_count}件のみ）— 広がりのない日の反転系は過去検証で平均マイナス。見送りも選択肢です</span>`:"")):"";
+function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code)
+  ||(SEARCH&&SEARCH.find(r=>r.code===code))||undefined;}
+// 買い候補なら期待値＋出口を目立たせる。高連動なら注意書きを添える。
+function exitGuide(ks,fut){
+  const st=buyStat({signals:ks}); if(!st) return "";
+  const ftNote=fut&&fut.tag==="高連動"
+    ? `<div class="warn" style="font-size:12px;margin-top:6px">⚠ <b>高連動（r${fut.corr!=null?Number(fut.corr).toFixed(2):"—"}）</b>: 先物（日経レバ）と連動して機械的に振られやすく、型が壊れやすい銘柄です。入るなら小さく。</div>`
+    : (fut&&fut.tag==="自力"?`<div class="pos" style="font-size:12px;margin-top:6px">🟢 <b>自力（r${fut.corr!=null?Number(fut.corr).toFixed(2):"—"}）</b>: 先物に振られにくく、自分の需給で動くタイプ。型が出やすい狙い目です。</div>`:"");
   return `<div class="card exitcard">
-    <div class="exitline" style="margin-top:0">🚪 <b style="font-size:13px">買いの目安（期待値・出口）</b>${m?` <span class="muted">（${m.emoji} ${m.label}）</span>`:""}
-      <div style="margin-top:6px"><span class="${evc}" style="font-size:18px;font-weight:800">期待値 ${ev>=0?"+":""}${ev}%</span><span class="muted" style="font-size:11px;font-weight:600">/件（出口ルール込み）</span></div>
-      <div style="margin-top:4px;font-size:13px"><b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）・勝率${ex.win}%${ex.rr?`・RR ${ex.rr}`:""}</div>
-      <span class="muted exsub"><small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回検証）</small></span>
-      ${rbl}
-      <span class="muted exsub" style="opacity:.8">※翌朝の寄りでエントリー想定。固定ルールの過去シミュレーション（手数料/スリッページ未考慮）で将来を保証しません。</span></div></div>`;
+    <div style="font-weight:800">🚪 買いの目安（期待値・出口） <span class="muted" style="font-weight:400">（✅${esc(st.emoji)}${esc(st.label)}）</span></div>
+    <div style="margin-top:6px"><span class="${st.ev>=0?"pos":"neg"}" style="font-size:18px;font-weight:800">期待値 ${st.ev>=0?"+":""}${st.ev}%</span><span class="muted" style="font-size:11px">/件（出口ルール込みの過去平均）</span></div>
+    <div style="margin-top:4px;font-size:13px"><b>保有${st.hold}日めど</b>・<b>損切り-${st.sl}%</b>・利確なし（利を伸ばす）・勝率${st.win}%</div>
+    ${ftNote}
+    <div class="muted" style="font-size:11px;margin-top:6px">※次の寄り付きでのエントリー想定。固定ルールの過去シミュレーション（手数料等未考慮）で、将来を保証しません。</div></div>`;
 }
 function renderDetail(s){
-  const i=s.indicators, total=DATA.universe_scored;
-  const chip={...i,signals:s.signals};
+  const i=s.indicators||{};
+  const fut=s.futures||null;
+  const futRow=fut?{futures_tag:fut.tag,futures_corr:fut.corr}:{};
   return `
     <div class="card">
       <div style="display:flex;align-items:center;gap:10px">
         ${star(s.code)}
-        <div style="flex:1"><div style="font-size:18px;font-weight:700">${s.name}</div>
-          <div class="pchip">${s.code} ・ ¥${i.price.toLocaleString()} ${bigMoveTag(i.r1)}</div></div>
-        <div style="text-align:right"><div style="font-size:30px;font-weight:800;line-height:1">${i.momentum.toFixed(1)}</div>
-          <div>${badge(i.grade)} <span class="muted" style="font-size:12px">${s.rank!=null?`${total}銘柄中 #${s.rank}`:"ランク対象外"}</span></div></div>
+        <div style="flex:1"><div style="font-size:18px;font-weight:700">${esc(s.name)}</div>
+          <div class="pchip muted" style="font-size:12px">${s.code} ・ ¥${(i.price||0).toLocaleString()} ${pctTag(i.r1)}</div></div>
+        <div>${ftagChip(futRow)}</div>
       </div>
-      ${i.illiq?`<div class="idxnote" style="margin-top:8px">⚠️ <b>低流動銘柄</b>（売買代金20日平均が1億円未満）。板が薄く成行で値が飛びやすいため、<b>シグナル・ランキングの対象外</b>です。指数・騰落率は参考表示。</div>`:""}
+      ${sigChips({signals:s.signals,futures_tag:null})||`<div class="nosig">本日、このアプリの✅買い候補ではありません</div>`}
       <div class="ret3">
         <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
         <div class="b"><div class="l">10日</div><div class="v ${cls(i.r10)}">${fmtPct(i.r10)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div>
       </div>
-      <div class="muted" style="font-size:11px;margin-top:5px">指数・グレード・騰落率はすべて <b style="color:var(--tx)">${DATA.data_date||"最新"} の終値</b>時点（騰落率は前営業日終値比）。<b style="color:var(--tx)">場中（9〜15時）は変わりません</b>。更新は平日 朝7時・夕18時半ごろ（終値ベース・ザラ場のリアルタイム値ではありません）。</div>
-      ${sigChips(chip)}
+      <div class="muted" style="font-size:11px;margin-top:6px">すべて <b style="color:var(--tx)">${DATA.data_date||"最新"} の終値</b>時点（1日遅れ・場中は変わりません）。更新は平日 朝7時・8:40・夕18:30ごろ。</div>
     </div>
-    ${exitGuide(s.signals)}
+    ${exitGuide(s.signals,fut)}
     ${posForm(s.code,s.name,i.price)}
-    ${aiCard(s.ai)}
-
-    ${s.chart?`<h2>日足3ヶ月 × モメンタム指数</h2>
+    ${s.chart?`<h2>日足3ヶ月</h2>
     <div class="card"><canvas id="candle" style="width:100%;display:block"></canvas>
-      <div class="muted" style="font-size:11px;margin-top:6px">左軸=指数(0〜100・線色は指数値で変化) / 右軸=価格(¥)。${s.chart_note||""}</div></div>`:
-    `<div class="card"><span class="soon">3ヶ月チャートはこの銘柄では未生成（ランキング上位・シグナル点灯銘柄のみ書き出し）</span></div>`}
-
-    <h2>レーダー</h2>
-    <div class="card"><canvas id="radar" height="220"></canvas></div>
-
-    <h2>主要指標</h2>
-    <div class="kpis">
-      <div class="kpi"><div class="l">SR（上昇効率）</div><div class="v">${i.sr.toFixed(2)}</div><div class="h">リターン÷値動きのブレ</div></div>
-      <div class="kpi"><div class="l">POWER（押し上げ力）</div><div class="v">${i.power.toFixed(2)}</div><div class="h">出来高×値幅 [-3,+8]</div></div>
-      <div class="kpi"><div class="l">STAB（安定度）</div><div class="v">${i.stab.toFixed(0)}</div><div class="h">値動きの安定</div></div>
-      <div class="kpi"><div class="l">RSI（買われすぎ度）</div><div class="v">${i.rsi.toFixed(1)}</div><div class="h">${i.rsi>=70?"過熱圏（買われすぎ）":i.rsi<=30?"売られすぎ":"中立"}</div></div>
+      <div class="muted" style="font-size:11px;margin-top:6px">右軸=価格(¥)。${esc(s.chart_note||"")}</div></div>`:""}
+    <div class="card">
+      <div class="muted" style="font-size:12px">参考値: RSI（買われすぎ度）<b style="color:var(--tx)">${i.rsi!=null?Number(i.rsi).toFixed(0):"—"}</b> ・ 勢いスコア <b style="color:var(--tx)">${i.momentum!=null?Number(i.momentum).toFixed(0):"—"}</b>（高い=いま強い/過熱の目安で、上がる予測ではありません）</div>
     </div>
     <p class="disc">${s.disclaimer||DATA.disclaimer}</p>`;
 }
-
-const MOMCOL=m=>m>=80?"#ff5d8f":m>=60?"#ff9f43":m>=40?"#ffd93d":m>=20?"#6bcb77":"#4d96ff";
 function drawCandle(ch){
   const cv=document.getElementById("candle");if(!cv||!ch||!ch.c||!ch.c.length)return;
-  const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.parentElement.clientWidth-28, H=260;
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.parentElement.clientWidth-28, H=240;
   cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px";
   const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,W,H);
-  const padL=38,padR=50,padT=10,padB=22, cw=W-padL-padR, chh=H-padT-padB;
-  const o=ch.o,h=ch.h,l=ch.l,c=ch.c,mom=ch.momentum,n=c.length;
+  const padL=8,padR=50,padT=10,padB=22, cw=W-padL-padR, chh=H-padT-padB;
+  const o=ch.o,h=ch.h,l=ch.l,c=ch.c,n=c.length;
   let pmin=Math.min(...l),pmax=Math.max(...h); if(pmin===pmax){pmin*=0.99;pmax*=1.01;}
   const pad=(pmax-pmin)*0.08; pmin-=pad; pmax+=pad;
   const xOf=i=> padL+(n<=1?cw/2:i*cw/(n-1)), band=cw/n;
-  const yP=v=> padT+(pmax-v)/(pmax-pmin)*chh, yM=v=> padT+(100-v)/100*chh;
+  const yP=v=> padT+(pmax-v)/(pmax-pmin)*chh;
   g.font="10px sans-serif";
   g.strokeStyle="#2a313c"; g.lineWidth=1; g.fillStyle="#8a94a3";
-  [0,50,100].forEach(v=>{const y=yM(v); g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke();
-    g.textAlign="right"; g.fillText(v,padL-4,y+3);});
-  [pmin,(pmin+pmax)/2,pmax].forEach(v=>{g.textAlign="left"; g.fillText("¥"+Math.round(v),W-padR+4,yP(v)+3);});
+  [pmin,(pmin+pmax)/2,pmax].forEach(v=>{const y=yP(v);
+    g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke();
+    g.textAlign="left"; g.fillText("¥"+Math.round(v),W-padR+4,y+3);});
   const bw=Math.max(2,Math.min(9,band*0.6));
   for(let i=0;i<n;i++){const x=xOf(i),up=c[i]>=o[i];
-    g.strokeStyle=up?"#2ec27e":"#ff5b5b"; g.fillStyle=up?"#2ec27e":"#ff5b5b";
+    g.strokeStyle=up?"#16C784":"#EA3943"; g.fillStyle=up?"#16C784":"#EA3943";
     g.beginPath();g.moveTo(x,yP(h[i]));g.lineTo(x,yP(l[i]));g.stroke();
     const yo=yP(o[i]),yc=yP(c[i]); g.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));}
-  g.lineWidth=2;
-  for(let i=1;i<n;i++){if(mom[i]==null||mom[i-1]==null)continue;
-    g.strokeStyle=MOMCOL(mom[i]); g.beginPath();g.moveTo(xOf(i-1),yM(mom[i-1]));g.lineTo(xOf(i),yM(mom[i]));g.stroke();}
   g.fillStyle="#8a94a3"; g.textAlign="center";
   [0,Math.floor(n/2),n-1].forEach(i=>{g.fillText((ch.dates[i]||"").slice(5),xOf(i),H-6);});
 }
-let radarChart;
-function drawRadar(r){
-  const el=document.getElementById("radar");if(!el)return;
-  if(typeof Chart==="undefined"){el.outerHTML=`<div class="muted">STAB ${r.stab} / POWER ${r.power} / RSI ${r.rsi} / SR ${r.sr} / 指数 ${r.momentum}</div>`;return;}
-  if(radarChart)radarChart.destroy();
-  radarChart=new Chart(el,{type:"radar",data:{
-    labels:["STAB","POWER","RSI","SR","指数"],
-    datasets:[{data:[
-      r.stab, (r.power+3)/11*100, r.rsi, Math.max(0,Math.min(100,(r.sr+2)/7*100)), r.momentum
-    ],fill:true,backgroundColor:"rgba(77,150,255,.25)",borderColor:"#4d96ff",pointBackgroundColor:"#4d96ff"}]},
-    options:{plugins:{legend:{display:false}},scales:{r:{min:0,max:100,
-      grid:{color:"#2a313c"},angleLines:{color:"#2a313c"},
-      pointLabels:{color:"#e8edf3"},ticks:{display:false}}}}});
-}
 
-// 得意保有＝過去に最も勝率が高かった保有日数。勝率は保有期間に対して単調でないため
-// 平均リターン(長いほど大→常に最長になる)よりシグナル固有の構造を素直に映す。
-const TRK_WIN_MIN=52;  // この勝率＆平均プラスを満たす保有期間が無ければ「得意なし」と正直表示
-function bestHorizon(g,hs){
-  let best=null;
-  hs.forEach(h=>{const x=g.h&&g.h[String(h)]; if(!x||!x.n) return;
-    if(best===null||x.win>best.x.win||(x.win===best.x.win&&x.avg>best.x.avg)) best={h,x};});
-  return best;
-}
-// 年別ロバストネス＝出口実績(保有8日/-12%)を発動年で割った勝率・平均。相場局面が変わっても
-// 同じ傾向が再現するか＝「まぐれ／単年の偶然でないか」を示す、信頼性の核心。標本が薄い年は出さない。
-function yearLine(g){
-  const ys=g.exit_years; if(!ys||!ys.length) return "";
-  const ex=g.exit||{};
-  const pos=ys.filter(y=>y.avg>0).length;
-  // セルの色＝その年が儲かったか(avg符号)。出口は「勝ちを伸ばし-12%で損切り」なので
-  // 勝率<50%でもavgはプラスになり得る→大きい数字は年間平均リターン、勝率は添える。
-  const cells=ys.map(y=>`<span class="yrcell ${y.avg>0?"pos":"neg"}">
-    <span class="yy">${y.y}年</span><span class="ww">${y.avg>=0?"+":""}${y.avg}%</span>
-    <span class="aa">勝率${y.win}%</span></span>`).join("");
-  return `<div class="yrline">
-    <div class="yrh">📅 年別の出口実績<span class="muted" style="font-weight:400">（保有${ex.t||8}日・損切り-${ex.sl||12}%）</span></div>
-    <div class="yrgrid">${cells}</div>
-    <span class="muted yrsum"><b class="${pos===ys.length?"pos":(pos>=Math.ceil(ys.length*0.7)?"":"neg")}">${pos}/${ys.length}年でプラス</b>。相場が違う年でも同じ傾向か＝まぐれ／単年の偶然でないかの確認です。</span>
-  </div>`;
-}
-function trackPanel(key){
-  const t=DATA.signal_track; if(!t||!t.available) return "";
-  const g=t.groups&&t.groups[key]; if(!g||!g.n) return "";
-  const hs=t.horizons||[5,10,20];
-  const lbl={5:"5日",10:"10日",20:"20日"};
-  const best=bestHorizon(g,hs);
-  const ok=!!(best&&best.x.win>=TRK_WIN_MIN&&best.x.avg>0);
-  const rows=hs.map(h=>{const x=g.h&&g.h[String(h)]; if(!x) return "";
-    const wc=x.win>=50?"pos":"neg", ac=x.avg>=0?"pos":"neg", mc=x.med>=0?"pos":"neg";
-    const isBest=ok&&best.h===h;
-    return `<tr class="${isBest?"bestrow":""}"><td>${lbl[h]||(h+"日")}後${isBest?'<span class="bsttag">得意</span>':''}</td>
-      <td><b class="${wc}">${x.win}%</b></td>
-      <td class="${ac}">${x.avg>=0?"+":""}${x.avg}%</td>
-      <td class="${mc}">${x.med>=0?"+":""}${x.med}%</td>
-      <td class="muted">${(x.n||0).toLocaleString()}</td></tr>`;}).join("");
-  if(!rows) return "";
-  const tag=ok
-    ? `<span class="bstpill">得意保有 ${lbl[best.h]||(best.h+"日")}<small>勝率${best.x.win}%・平均+${best.x.avg}%</small></span>`
-    : `<span class="bstpill warn">明確な得意保有なし<small>どの期間も勝率5割級</small></span>`;
-  const p=t.period||{};
-  const span=t.window?`${t.window}`:`検証期間 ${p.from||"—"}〜${p.to||"—"}`;
-  // 出口の目安: エッジのある買い系(ok)のみ表示。固定ポリシーの実現リターン(bt_signal_exit.py由来)。
-  const ex=g.exit;
-  const exline=(ok&&ex&&ex.n)?`<div class="exitline">🚪 出口の目安 <b>保有${ex.t}日めど</b>・<b>損切り-${ex.sl}%</b>・利確なし（利を伸ばす）
-    <span class="muted exsub">この出口で過去：勝率${ex.win}%／平均${ex.avg>=0?"+":""}${ex.avg}%${ex.rr?`／RR ${ex.rr}`:""}<small>（平均益+${ex.avgwin}%＝平均損${ex.avgloss}%・${(ex.n||0).toLocaleString()}回）</small></span></div>`:"";
-  const eyline=(ok)?yearLine(g):"";
-  return `<div class="card trk">
-    <div class="trkh">📊 ヒストリカル実績 <span class="muted" style="font-weight:400">（${g.label}・発動日終値を基準）</span>${tag}</div>
-    <table class="trktab">
-      <thead><tr><th>保有</th><th>勝率</th><th>平均</th><th>中央値</th><th>標本</th></tr></thead>
-      <tbody>${rows}</tbody></table>
-    ${exline}
-    ${eyline}
-    <div class="muted trkn">「得意保有」＝過去に最も勝率が高かった保有日数（勝率${TRK_WIN_MIN}%以上＆平均プラスの時のみ表示）。${span}（${(g.n||0).toLocaleString()}回発動）。${t.note}</div>
-  </div>`;
-}
-function sigMemberCard(r,withChips,withPlan){
-  return `
-    <a class="rcard" href="#/detail/${r.code}">
-      <div class="top">
-        ${star(r.code)}
-        <div><b>${r.name}</b><div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div></div>
-        <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
-      </div>
-      ${withPlan?buyPlanLine(r):""}
-      <div class="metrics">
-        <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
-        <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
-        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
-        <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
-      </div>
-      ${withChips?sigChips(r):""}
-    </a>`;
-}
-function viewSignals(active){
-  const s=DATA.signals;
-  if(!s) return `<div class="card"><span class="soon">シグナルデータがありません</span></div>`;
-  const lit=s.order.filter(k=>s.groups[k].count>0);
-  if(!lit.length) return `<div class="card muted" style="margin-top:10px">本日の点灯シグナルはありません。</div>`;
-  // 検証済み買い候補を全シグナル横断で集約（複数点灯は1枚に統合）
-  const buyKeys=lit.filter(k=>sigHasEdge(k));
-  const seen={},buyAll=[];
-  buyKeys.forEach(k=>{(s.groups[k].members||[]).forEach(r=>{
-    let o=seen[r.code]; if(!o){o=seen[r.code]={...r,signals:[]};buyAll.push(o);}
-    if(o.signals.indexOf(k)<0)o.signals.push(k);
-  });});
-  const buyMembers=buyAll.filter(priceOK);          // 低位株(¥1000未満)カット
-  const buyHidden=buyAll.length-buyMembers.length;
-  buyMembers.sort((a,b)=>{const ea=buyStat(a),eb=buyStat(b);
-    return ((eb?eb.ev:-1e9)-(ea?ea.ev:-1e9))||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50))||(a.momentum-b.momentum);});
-  let isBuy=(active==="buycand"||!active)&&buyMembers.length>0;
-  if(!isBuy && (!active||active==="buycand"||!s.groups[active]||s.groups[active].count===0)) active=lit[0];
-  const buyTab=buyMembers.length?`<a class="tab ${isBuy?"on":""}" href="#/signals/buycand">✅買い候補<span>${buyMembers.length}</span></a>`:"";
-  // タブは「✅買い候補」＋検証済み買いシグナル(buyKeys)のみ。参考（エッジ未確認）シグナルや
-  // 別戦略（テーマ爆益/セクターローテ）は出さない＝勝てる買い候補だけに画面を集約する。
-  const tabs=buyTab+buyKeys.map(k=>{const g=s.groups[k];
-    return `<a class="tab ${(!isBuy&&k===active)?"on":""}" href="#/signals/${k}">${g.emoji}${g.label}<span>${g.count}</span></a>`;}).join("");
-  const disc=`<p class="disc">${DATA.disclaimer}<br>「ヒストリカル実績」は固定ルールの過去シミュレーション（理論値・手数料/スリッページ未考慮）であり、将来の成績や約定を保証するものではありません。</p>`;
-  if(isBuy){
-    const cards=buyMembers.map(r=>sigMemberCard(r,true,true)).join("");
-    const evs=buyMembers.map(r=>(buyStat(r)||{ev:0}).ev);
-    const avgEV=Math.round(evs.reduce((a,b)=>a+b,0)/evs.length*100)/100;
-    const top=buyMembers[0], ts=buyStat(top)||{ev:0,n:1};
-    const hero=`<a class="hero" href="#/detail/${top.code}">
-        <div class="h-tag">🏆 本命（期待値トップ）</div>
-        <div class="h-nm"><b>${top.name}</b><span>${top.code}・¥${(top.price||0).toLocaleString()}</span></div>
-        <div class="h-ev ${ts.ev>=0?"pos":"neg"}">期待値 ${ts.ev>=0?"+":""}${ts.ev}%<small>/件</small></div>
-        ${buyPlanLine(top)}</a>`;
-    return `
-    <h2>チンパンシグナル</h2>
-    <div class="tabs">${tabs}</div>
-    ${reboundBanner()}
-    <div class="card" style="margin:10px 0">
-      <div style="font-weight:700">✅ 検証済みの買い候補
-        <span class="muted" style="font-weight:400">・${buyMembers.length}銘柄・期待値順・平均期待値 ${avgEV>=0?"+":""}${avgEV}%/件</span></div>
-      ${hero}
-      <div style="font-size:13px;line-height:1.7;margin-top:6px">今日点灯したシグナルのうち、<b>過去の検証で「買い」の成績がよかったタイプ</b>だけを、<b>期待値（出口込みの平均リターン）が高い順</b>に並べた一覧です。</div>
-      <div class="muted" style="font-size:11.5px;line-height:1.75;margin-top:7px">
-        ・対象＝${buyKeys.map(k=>s.groups[k].label).join("・")}（過去に勝率${TRK_WIN_MIN}%以上かつ平均プラスの「得意な保有期間」があったシグナル）<br>
-        ・<b style="color:var(--C)">期待値</b>＝出口ルール込み（保有約8日・損切り-12%・利を伸ばす）の<b>1件あたり平均リターン</b>（過去検証の実現値）。これが高いほど統計的に有利<br>
-        ・同じ銘柄に複数点灯しても1枚にまとめます（点灯本数の多さは過去検証で優位性が確認できず、信頼度には使いません）<br>
-        ・<b style="color:var(--C)">🌊 全面リバウンド日</b>（強反転が${(reboundInfo()||{threshold:10}).threshold}件以上点灯した日）は買い候補全体が強く、<b>散発点灯日の強反転はむしろ弱い</b>——上の日種別バナーを参照<br>
-        ・各カードに<b style="color:var(--C)">期待値・勝率・出口プラン（保有日数/損切り）</b>を表示、銘柄ページに詳細<br>
-        ・あくまで過去の傾向で、上がることを保証するものではありません</div>
-    </div>
-    <div class="pickfoot" style="margin:0 0 8px">${(buyHidden||!hideLowPrice())?`<a class="lpt" style="margin-left:0" onclick="event.preventDefault();toggleLowPrice()">低位株(¥1,000未満)を${hideLowPrice()?`表示する${buyHidden?`（+${buyHidden}件）`:""}`:"隠す"}</a>`:""}</div>
-    <div class="cardgrid">${cards||`<div class="card muted">本日は¥1,000以上の検証済み買い候補はありません。${buyHidden?` <a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株を表示（${buyHidden}件）</a>`:""}</div>`}</div>
-    ${reboundHistory()}
-    ${disc}`;
-  }
-  const g=s.groups[active];
-  // 検証済み買いシグナル(buyKeys)のタブでは各カードに期待値/勝率/出口/✅チップを出す
-  // （指数0.0・グレードDだけが目立って「数字が入ってない」ように見える問題への対処）。
-  const isEdgeActive=buyKeys.includes(active);
-  const cards=(g.members||[]).map(r=>sigMemberCard(r,isEdgeActive,isEdgeActive)).join("");
-  const stanceColor={"期待":"#6bcb77","中立":"#8a94a3","警戒":"#ff9f43"}[g.stance]||"#8a94a3";
-  const isDipFamily=active==="reversal"||active==="strong_reversal";
-  const edgeNote=isEdgeActive
-    ? `<div class="muted" style="font-size:11.5px;margin-top:7px;line-height:1.7">買いの根拠は指数(勢いスコア)の高さではなく、各カードの<b style="color:var(--C)">期待値・勝率（出口込み）</b>です。${isDipFamily?"反発系は<b>売られすぎ</b>を買う形のため、指数が低く<b>グレードDが普通</b>です（高指数＝買いではない）。":""}</div>`
-    : "";
-  return `
-    <h2>チンパンシグナル</h2>
-    <div class="tabs">${tabs}</div>
-    <div class="card" style="margin:10px 0">
-      <div style="font-weight:700">${g.emoji} ${g.label}
-        <span class="tag" style="border-color:${stanceColor};color:${stanceColor}">${g.stance}</span>
-        <span class="muted" style="font-weight:400">・${g.count}銘柄点灯</span></div>
-      <div class="muted" style="font-size:12px;margin-top:6px">${g.desc}</div>
-      ${edgeNote}
-    </div>
-    ${trackPanel(active)}
-    <div class="cardgrid">${cards||`<div class="card muted">該当なし</div>`}</div>
-    ${disc}`;
-}
-
-// ── 銘柄検索（全scoredをlazy fetch。気になる銘柄にシグナルが出ているか確認用） ──
+// ── 銘柄検索（全銘柄・遅延fetch） ──
 let SEARCH=null, SEARCH_LOADING=false, SEARCH_Q="";
 async function loadSearch(){
   if(SEARCH||SEARCH_LOADING)return SEARCH;
@@ -1037,28 +475,23 @@ async function loadSearch(){
   SEARCH_LOADING=false;
   return SEARCH;
 }
-function searchCard(r,showNoSig=true){
-  const sig=(r.signals||[]);
-  const hist=(r.mom_hist||[]).filter(x=>x!=null).map(x=>x.toFixed(0)).join("→");
+function searchCard(r){
   return `<a class="rcard" href="#/detail/${r.code}">
       <div class="top">
         ${star(r.code)}
-        <div>
-          <div><span class="rk" style="color:var(--mut)">${r.rank!=null?"#"+r.rank:""}</span> <b>${r.name}</b>${r.illiq?` <span class="tag" style="border-color:#ff9f43;color:#ff9f43;font-size:10px">⚠️低流動</span>`:""}</div>
-          <div class="pchip">${r.code} ・ ¥${r.price.toLocaleString()} ${bigMoveTag(r.r1)}</div>
+        <div style="flex:1;min-width:0">
+          <div><b>${esc(r.name)}</b>${r.illiq?` <span class="tag warn" style="border-color:var(--wa);font-size:10px">⚠️低流動</span>`:""}</div>
+          <div class="pchip">${r.code} ・ ¥${(r.price||0).toLocaleString()} ${pctTag(r.r1)}</div>
         </div>
-        <div class="mval"><b>${r.momentum.toFixed(1)}</b> ${badge(r.grade)}</div>
       </div>
-      ${buyPlanLine(r)}
+      ${planLine(r)}
       <div class="metrics">
         <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
         <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
-        <span>10日 <b class="${cls(r.r10)}">${fmtPct(r.r10)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
       </div>
-      ${hist?`<div class="spark">指数推移(5日) <b>${hist}</b></div>`:""}
-      ${r.illiq?`<div class="nosig">売買代金が少なくシグナル・ランキング対象外（執行困難のため・指標は参考表示）</div>`
-        :sig.length?sigChips(r):(showNoSig?`<div class="nosig">本日の点灯シグナルなし</div>`:"")}
+      ${r.illiq?`<div class="nosig">売買代金が少なく買い候補の対象外（板が薄く執行困難のため・指標は参考表示）</div>`
+        :(sigChips(r)||`<div class="nosig">本日、✅買い候補ではありません</div>`)}
     </a>`;
 }
 function searchResults(q){
@@ -1067,100 +500,89 @@ function searchResults(q){
   if(!q){
     const prompt=`<div class="card muted" style="margin-top:10px">コード（例 7203）か銘柄名の一部を入力すると、`
       +`監視中の <b style="color:var(--tx)">${SEARCH.length.toLocaleString()}</b> 銘柄から、`
-      +`その銘柄に<b style="color:var(--tx)">シグナルが点灯しているか</b>を確認できます。</div>`;
+      +`その銘柄が<b style="color:var(--tx)">✅買い候補かどうか</b>を確認できます。</div>`;
     const found=[],missing=[];
     WATCH.forEach(c=>{const r=SEARCH.find(s=>s.code===c);r?found.push(r):missing.push(c);});
     if(!found.length&&!missing.length)
-      return `<div class="card muted">⭐ カードの☆を押すと気になる銘柄をここに保存でき、`
-        +`点灯シグナルを毎回まとめて確認できます。</div>`+prompt;
-    found.sort((a,b)=>sigScore(b)-sigScore(a));
-    const miss=missing.length?`<div class="muted" style="font-size:11px;margin:8px 2px">`
-      +`${missing.map(esc).join("・")} は本日は対象外（流動性フィルタ）</div>`:"";
-    return `<div class="sigsub buyhead">⭐ ウォッチ中（${found.length+missing.length}件）</div>`
-      +`<div class="cardgrid">${found.map(r=>searchCard(r)).join("")}</div>${miss}${prompt}`;
+      return `<div class="card muted">⭐ カードの☆を押すと気になる銘柄をここに保存できます。</div>`+prompt;
+    found.sort((a,b)=>(isCand(b)?1:0)-(isCand(a)?1:0));
+    const miss=missing.length?`<div class="muted" style="font-size:11px;margin:8px 2px">${missing.map(esc).join("・")} は本日は対象外</div>`:"";
+    return `<div style="font-weight:700;margin:0 2px 7px;color:var(--up)">⭐ ウォッチ中（${found.length+missing.length}件）</div>`
+      +`<div class="cardgrid">${found.map(searchCard).join("")}</div>${miss}${prompt}`;
   }
   const ql=q.toLowerCase();
   let hits=SEARCH.filter(r=>r.code.startsWith(q)||r.name.toLowerCase().includes(ql));
-  const score=r=>(r.code===q?1000:r.code.startsWith(q)?500:0)+sigScore(r);
+  const score=r=>(r.code===q?1000:r.code.startsWith(q)?500:0)+(isCand(r)?100:0);
   hits.sort((a,b)=>score(b)-score(a));
   const shown=hits.slice(0,60);
   if(!shown.length)return `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。`
-    +`<br><span style="font-size:11px">※上場後まもない等で指標計算に必要な履歴が足りない銘柄は出ないことがあります。</span></div>`;
+    +`<br><span style="font-size:11px">※上場後まもない等で履歴が足りない銘柄は出ないことがあります。</span></div>`;
   const more=hits.length>shown.length?`<div class="muted" style="font-size:11px;margin:2px 2px 8px">上位${shown.length}件を表示（${hits.length}件一致・絞り込んでください）</div>`:
     `<div class="muted" style="font-size:11px;margin:2px 2px 8px">${shown.length}件一致</div>`;
-  return more+`<div class="cardgrid">${shown.map(r=>searchCard(r)).join("")}</div>`;
+  return more+`<div class="cardgrid">${shown.map(searchCard).join("")}</div>`;
 }
 function onSearchInput(v){SEARCH_Q=v;const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(v);}
 function viewSearch(){
   if(!SEARCH)loadSearch().then(()=>{const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(SEARCH_Q);});
   setTimeout(()=>{const i=document.getElementById("searchinput");if(i&&!SEARCH_Q)i.focus();},0);
   return `
-    <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">気になる銘柄のシグナルを確認</span></h2>
+    <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">✅買い候補か・連動タグを確認</span></h2>
     <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off"
       placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
-    <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去実績で勝率の高い<b style="color:var(--C)">検証済みの買い候補</b>（それ以外の点灯は参考）。<b style="color:#ffd93d">☆</b>を押すとウォッチに保存（検索欄を空にするとウォッチ一覧）。</div>
+    <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去検証で勝てた「買いの型」が出ている銘柄。<b style="color:#ffd93d">☆</b>でウォッチ保存（検索欄を空にすると一覧）。</div>
     <div id="searchres">${searchResults(SEARCH_Q)}</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── 使い方・データについて・免責 ──
 function viewAbout(){
+  const f=DATA.futures||{};
+  const ex=exitRep();
   return `
   <h2>はじめての方へ</h2>
   <div class="card">
-    <p style="line-height:1.85">東証の銘柄を<b>「いまどれだけ勢いがあるか」＝勢いスコア（モメンタム指数 0〜100）</b>で並べて見られる無料ツールです。
-      さらに、過去データで“買って勝てたか”を検証したシグナルだけを<b style="color:var(--C)">✅買い候補</b>として表示し、
-      <b>出口の目安（保有日数・損切りライン）</b>まで添えています。</p>
+    <p style="line-height:1.85;margin:0">このアプリは、東証全銘柄から<b>過去データの検証で「買って勝てた型」が出た銘柄だけ</b>を、
+      <b>出口（いつ・どこで手仕舞うか）とセット</b>で毎日表示します。むずかしい指標は出しません。</p>
     <div style="margin-top:10px;line-height:1.95">
-      <div>① 下メニューの<b>🔔シグナル</b>で <b style="color:var(--C)">✅買い候補</b> をチェック</div>
-      <div>② 気になる銘柄は<b> ☆ </b>を押して<b>ウォッチ</b>に追加（ホームで点灯をまとめて確認）</div>
-      <div>③ 銘柄ページの <b>「🚪出口の目安」</b>で、いつ・どこで手仕舞うかの目安を確認</div>
+      <div>① ホームの <b style="color:var(--up)">✅今日の買い候補</b> を見る（0件の日は買わない日）</div>
+      <div>② 買うなら<b>次の寄り付き</b>で。1銘柄に全張りせず<b>分散</b></div>
+      <div>③ 買ったら銘柄ページで<b>📒記録</b> → ホームのコーチが毎日「持つ/売る」を指示</div>
     </div>
-    <p class="muted" style="margin-top:12px;font-size:12px;line-height:1.75">⚠ <b style="color:#ff9f43">勢いスコアが高い＝今後上がる、ではありません。</b>
-      「いま強い／過熱している」度合いの目安です。買いの優位性は高スコアではなく、
-      <a href="#/signals" style="color:var(--acc);font-weight:700">✅検証済みシグナル＋出口の目安</a>にあります（理由は下記）。</p>
   </div>
 
-  <h2>モメンタム指数（勢いスコア）とは</h2>
+  <h2>✅買い候補とは</h2>
   <div class="card">
-    <p>0〜100 で<b>「いま勢いがあるか」を一つの数字にした目安</b>です（高いほど足元の上昇の勢いが強い／過熱している）。
-      数字が大きいほど将来上がる、という意味ではありません。</p>
-    <p class="muted" style="font-size:12px;margin:8px 0 4px">参考：計算式（公開ロジック準拠）</p>
-    <pre style="background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12px">base      = SR × 18
-power_adj = clamp(出来高込みの押し上げ力, -3, +8)
-指数      = clamp(base + power_adj, 0, 100)</pre>
-    <div class="metrics" style="margin-top:12px;gap:8px">
-      ${[["S","80超 強い上昇"],["A","60〜 上昇"],["B","40〜59 中立〜やや強"],["C","20〜39 弱い"],["D","失速・停滞（リバ余地）"]]
-        .map(([g,t])=>`<div style="width:100%;display:flex;align-items:center;gap:10px;padding:4px 0">${badge(g)}<span class="muted">${t}</span></div>`).join("")}
-    </div>
-    <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">※ 計算窓・係数・閾値は仮（未最適化）。本家も「最適化で決める前提」と明記。<br>
-      ※ <b style="color:#ff9f43">この指数は「現在の強さ・過熱度」の目安であり、将来の予測ではありません。</b>
-      過去実績（2021〜2026・432万サンプル）を検証すると、指数の高低で翌日〜数週間の騰落率は<b style="color:var(--tx)">単調にならず</b>、
-      むしろ<b style="color:var(--tx)">最上位グレードほど過熱して反落しやすい</b>傾向でした（高指数＝今後上がる、ではありません）。
-      買いの優位性は指数ランキングではなく、<a href="#/signals" style="color:var(--acc);font-weight:700">チンパンシグナル</a>の検証済みシグナル＋出口の目安にあります。</p>
+    <p style="margin:0;line-height:1.8">「出来高をともなって資金が入ってきている」<b>買い集め系のシグナル</b>のうち、
+      過去数年の検証で<b>勝率と平均リターンにプラスの実績</b>があったものだけを表示します。</p>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
+      <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。</li>
+      <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
+      <li>反発（反転）系のシグナルは現在表示していません（2026-07 整理）。</li>
+      <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。</li>
+    </ul>
   </div>
 
-  <h2>用語ミニ辞典</h2>
+  <h2>先物連動タグとは</h2>
   <div class="card">
-    <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.9;color:var(--mut)">
-      <li><b style="color:var(--tx)">勢いスコア（モメンタム指数）</b>… 0〜100。いまの上昇の勢い・過熱度。高い＝強い／過熱（予測ではない）。</li>
-      <li><b style="color:var(--tx)">グレード S〜D</b>… 勢いスコアの大きさを S(最強)〜D(失速) で区分けしたもの。</li>
-      <li><b style="color:var(--C)">✅買い候補</b>… 過去データで“買って勝てた”実績があるシグナルだけに付く印。</li>
-      <li><b style="color:var(--tx)">出口の目安</b>… 検証で決めた手仕舞いの目安（例：保有8日めど・損切り−12%）。利益を保証するものではありません。</li>
-      <li><b style="color:var(--tx)">RSI（買われすぎ度）</b>… 0〜100。高いほど短期で買われすぎ＝過熱気味。</li>
-      <li><b style="color:var(--tx)">SR（上昇効率）</b>… 値動きのブレに対して、どれだけ効率よく上げているか。高いほど素直な上昇。</li>
-      <li><b style="color:var(--tx)">押し目</b>… 上昇途中の一時的な下げ。　<b style="color:var(--tx)">反転</b>… 下げ止まって上向きに変わる初動。</li>
-      <li><b style="color:var(--tx)">🔥 テーマ爆益（blast）</b>… テーマ銘柄の「もう走っている×超ホットなテーマ×大商い」継続スコア。70以上が本命。検証済みプランは<b style="color:var(--tx)">翌寄り買い→8営業日・利確なし・損切り-12%</b>（平均+2.36%/件・PF1.62・勝率53%のバーベル型＝損切り厳守）。買い候補シグナル（反発取り・3日回転）とは正反対の戦略です。</li>
-      <li><b style="color:var(--tx)">🌊 全面リバウンド日</b>… 強反転シグナルが市場全体で10件以上点灯した日。市場ぐるみの反発で、過去検証（2021〜2026）では<b style="color:var(--tx)">この日の強反転が勝率62.5%・平均+2.16%/件と最も強く</b>、点灯が散発（1〜9件）の日の強反転は<b style="color:var(--tx)">毎年平均マイナス</b>でした。ホーム・シグナル画面に日種別バナーで表示します。</li>
-      <li><b style="color:var(--tx)">前日比</b>… <b style="color:var(--tx)">データ日付（最新の終値日）</b>の終値が、その前営業日の終値からどれだけ動いたか(％)。証券会社のザラ場・リアルタイムの前日比とは基準日がズレるため、数字が違って見えることがあります（このアプリは終値ベース・1日遅れ）。　<b style="color:var(--tx)">大幅高／安</b>… その終値日に ±7% 以上の大きな変動。</li>
+    <p style="margin:0;line-height:1.8">各銘柄が<b>先物（日経レバ ${esc(f.bench||"1570.T")}）とどれだけ連動して動いているか</b>を、
+      5分足リターンの相関係数 r で測ったタグです。</p>
+    <div class="chips" style="margin-top:9px">
+      <span class="ftag self">自力 r0.31</span><span class="ftag mid">中連動 r0.55</span><span class="ftag high">高連動 r0.82</span>
+    </div>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
+      <li><b style="color:var(--up)">自力</b>（r ${f.th_mid!=null?f.th_mid:0.40} 未満）… 自分の需給で動く。押し目→反発の「型」が出やすい<b style="color:var(--tx)">狙い目</b>。買い候補の並びで最上位。</li>
+      <li><b style="color:var(--tx)">中連動</b>（r ${f.th_mid!=null?f.th_mid:0.40}〜）… 中間。</li>
+      <li><b style="color:var(--dn)">高連動</b>（r ${f.th_high!=null?f.th_high:0.70} 以上）… 指数寄与の大きい値嵩株など。先物のアービトラージで<b style="color:var(--tx)">機械的に振られ、型が壊れやすい</b>ので注意（並びも一段下げます）。</li>
+      <li>直近の共通5分足 ${f.window!=null?f.window:48}本（約4時間分）で計算。<b style="color:var(--tx)">朝の表示は前営業日のザラ場ベース</b>、夕方更新後は当日ベース。足が足りない銘柄はタグ非表示。</li>
+      <li>β（変動の大きさ）ではなく「方向がどれだけ一緒に動くか」だけを見ています。しきい値は運用しながら調整します。</li>
     </ul>
   </div>
 
   <h2>アプリとして使う</h2>
   <div class="card">
     <p class="muted" style="margin:0;font-size:12px;line-height:1.8">
-      📱 このページはスマホの<b style="color:var(--tx)">「ホーム画面に追加」</b>でアプリのように使えます
-      （iPhone: 共有ボタン→ホーム画面に追加 ／ Android: メニュー→アプリをインストール）。
-      通知が必要な売買シグナルはDiscord配信、このアプリは「開いた時にいつでも最新の作戦・候補・出口」を見る場所です。</p>
+      📱 スマホの<b style="color:var(--tx)">「ホーム画面に追加」</b>でアプリのように使えます
+      （iPhone: 共有→ホーム画面に追加 ／ Android: メニュー→アプリをインストール）。</p>
   </div>
 
   <h2>データについて</h2>
@@ -1168,40 +590,31 @@ power_adj = clamp(出来高込みの押し上げ力, -3, +8)
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <span class="tag">データ日付 ${DATA.data_date||"—"}</span>
       <span class="tag">${freshnessText()}</span>
-      <span class="tag">更新 平日 朝7時・夕18時半ごろ</span>
-      <span class="tag">対象 ${DATA.universe_scored?.toLocaleString?.()||"—"}銘柄</span>
+      <span class="tag">更新 平日 朝7時・8:40・夕18:30ごろ</span>
+      <span class="tag">対象 ${DATA.universe_scored?DATA.universe_scored.toLocaleString():"—"}銘柄</span>
     </div>
     <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.7">
-      表示はすべて<b style="color:var(--tx)">最新営業日の終値（EOD）ベース</b>です。リアルタイム配信・PTS（夜間取引）には対応していません。
-      数値は<b style="color:var(--tx)">平日 朝（7時ごろ）と夕（18時半ごろ）の2回</b>、終値ベースで再計算します（自動更新の都合で前後することがあります）。
-      <b style="color:var(--tx)">場中（9〜15時）はグレード・指数・前日比は変わりません</b>。その時点のデータ日付を常に明示しています。
+      表示は<b style="color:var(--tx)">最新営業日の終値（EOD）ベース</b>です。リアルタイムではなく、<b style="color:var(--tx)">場中（9〜15時）は数字が変わりません</b>。
       原データは <b style="color:var(--tx)">J-Quants（JPX）</b> の日足を加工・計算したものです。
-    </p>
+      先物連動タグのみ、Yahoo!ファイナンス由来の遅延5分足（yfinance）から計算した参考値です。</p>
   </div>
 
   <h2>免責・ライセンス</h2>
   <div class="card">
     <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.8;color:var(--mut)">
       <li>本アプリは<b style="color:var(--tx)">参考情報</b>であり、特定銘柄の売買を推奨するものではありません。<b style="color:var(--tx)">投資判断は利用者ご自身の責任</b>で行ってください。</li>
-      <li>モメンタム指数・シグナル・警戒メモは AI／ルールによる<b style="color:var(--tx)">推定値で、将来の値動きや精度を保証しません</b>。</li>
+      <li>シグナル・期待値・タグはルール／AIによる<b style="color:var(--tx)">推定値で、将来の値動きや精度を保証しません</b>。</li>
       <li>生の株価（OHLCV）は<b style="color:var(--tx)">再配布していません</b>。出力は計算済みの指標と、表示用に窓を限定した加工チャートのみです。</li>
-      <li>商用での一般公開にあたっては、<b style="color:var(--tx)">J-Quants の利用条件を JPX に確認</b>のうえ運用してください（公開前の必須事項）。</li>
+      <li>商用での一般公開にあたっては、<b style="color:var(--tx)">J-Quants の利用条件を JPX に確認</b>のうえ運用してください。</li>
     </ul>
   </div>
   <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"} / source: ${DATA.source||"—"}</p>`;
 }
 
-// ── フェーズ12: 🔥テーマ爆益（blast・親テーマトラッカー由来） ──
-// 検証(bt_exit/bt_exit_regime 2026-06-01): blast70以上×「翌寄り買い→8営業日・利確なし・
-// SL-12%」=+2.36%/件・PF1.62(n=1,481)。勝率53%のバーベル型=損切り厳守が前提。
-// 🔥テーマ爆益(viewBlast) / 📡セクターローテ＋🌡️業種の熱(viewSector/sectorHeatBlock/secStock) の
-// 各ビューは撤去（2026-06-27・勝てる買い候補だけに集約）。データは latest.json に残るが画面には出さない。
-
+// ── ルーター ──
 function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
-  $("#nav-rank").classList.toggle("on",h.startsWith("#/ranking"));
   $("#nav-search").classList.toggle("on",h.startsWith("#/search"));
-  $("#nav-sig").classList.toggle("on",h.startsWith("#/signals"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
 function render(){
@@ -1209,14 +622,12 @@ function render(){
   setNav(h);
   window.scrollTo(0,0);
   try{
-    if(h.startsWith("#/ranking")) $("#view").innerHTML=viewRanking();
-    else if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
+    if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
-    else if(h.startsWith("#/signals")) $("#view").innerHTML=viewSignals(h.split("/")[2]);
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
     else $("#view").innerHTML=viewHome();
   }catch(e){
-    $("#view").innerHTML=`<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${e.message}</div></div>`;
+    $("#view").innerHTML=`<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${esc(e.message)}</div></div>`;
   }
 }
 window.addEventListener("hashchange",render);
@@ -1225,38 +636,14 @@ try{if(typeof navigator!=="undefined"&&navigator.serviceWorker)navigator.service
 function freshnessText(){
   const lag=DATA.data_lag_days;
   if(lag==null) return "終値ベース";
-  if(lag<=0) return "前営業日・終値";
+  if(lag<=0) return "当日・終値";
+  if(lag===1) return "前営業日・終値";
   return `${lag}日前・終値`;
 }
-/* 表示モード：auto（幅で自動）／pc（ワイド固定）／mobile（スマホ固定）。localStorageに保存 */
-const VIEW_MODES=["auto","pc","mobile"];
-const VIEW_LABEL={auto:"🔄 自動",pc:"🖥 PC",mobile:"📱 スマホ"};
-function readView(){try{return localStorage.getItem("kabuai_view")||"auto";}catch(e){return "auto";}}
-function saveView(m){try{localStorage.setItem("kabuai_view",m);}catch(e){}}
-function applyView(){
-  const m=readView();
-  const wide=(window.innerWidth||1024)>=900;
-  const pc=(m==="pc")||(m==="auto"&&wide);
-  if(document.body){
-    document.body.classList.toggle("pc",pc);
-    document.body.classList.toggle("mobile",!pc);
-  }
-  const el=document.getElementById("viewtoggle");
-  if(el)el.textContent=VIEW_LABEL[m]||VIEW_LABEL.auto;
-}
-function cycleView(){
-  const cur=readView();
-  saveView(VIEW_MODES[(VIEW_MODES.indexOf(cur)+1)%VIEW_MODES.length]);
-  applyView();
-}
-window.addEventListener("resize",()=>{if(readView()==="auto")applyView();});
-applyView();
-
 load().then(()=>{
   $("#datepill").textContent="データ日付 "+(DATA.data_date||"—")+"（"+freshnessText()+"）";
-  applyView();
   render();
-}).catch(e=>{$("#view").innerHTML=`<div class="card">${e.message}</div>`;});
+}).catch(e=>{$("#view").innerHTML=`<div class="card">${esc(e.message)}</div>`;});
 </script>
 </body>
 </html>

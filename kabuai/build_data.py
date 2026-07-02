@@ -40,6 +40,7 @@ from momentum import indicators, chart_series, SR_COEF, SR_WINDOW, GRADE_BANDS  
 import signals as sig  # noqa: E402
 import signal_track  # noqa: E402
 import ai_summary  # noqa: E402
+import correlation  # noqa: E402  先物連動度タグ（yfinance は使用時にのみ import）
 
 # ── 仮パラメータ ────────────────────────────────────────────
 MIN_TURNOVER = 1e8     # 平均売買代金（円/日）下限＝流動性フィルタ（仮）
@@ -235,6 +236,8 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
             "code": r["code"], "name": r["name"], "data_date": data_date, "rank": r["rank"],
             "indicators": {k: r[k] for k in keep},
             "signals": r.get("signals", []),
+            "futures": ({"corr": r.get("futures_corr"), "tag": r["futures_tag"]}
+                        if r.get("futures_tag") else None),
             "ai": r.get("ai"),
             "chart": chart_series(df, days=CHART_DAYS),
             "disclaimer": disclaimer,
@@ -259,6 +262,9 @@ def export_search_index(rows: list[dict], data_date: str, rows_illiq: list[dict]
         o = {k: r[k] for k in keep}
         if r.get("signals"):          # 非点灯は省略（[]）してサイズ削減。フロントは signals||[] で受ける
             o["signals"] = r["signals"]
+        if r.get("futures_tag"):      # 先物連動タグ（付与済み銘柄のみ・データ不足は省略=非表示）
+            o["futures_corr"] = r.get("futures_corr")
+            o["futures_tag"] = r["futures_tag"]
         stocks.append(o)
     for r in (rows_illiq or []):
         o = {k: r.get(k) for k in keep}
@@ -471,6 +477,36 @@ def build() -> dict:
     signals = sig.detect(rows)
     sig_counts = {k: signals["groups"][k]["count"] for k in signals["order"]}
 
+    # ── 先物連動度タグ（2026-07-02 追加仕様・correlation.py） ──
+    # 買い系シグナル点灯銘柄に、先物(既定=日経レバ 1570.T)との5分足リターン相関を付与。
+    # 高連動=先物依存(押し目→反発の型が壊れやすい・注意) / 自力=自分の需給で動く(型が
+    # 出やすい・狙い目)。yfinance が落ちていてもビルドは止めない（タグ無し=フロント非表示）。
+    FUTURES_SIGNALS = ("strong_accum", "accum", "strong_reversal", "reversal")
+    futures_meta = None
+    try:
+        f_codes = [r["code"] for r in rows
+                   if any(k in FUTURES_SIGNALS for k in (r.get("signals") or []))]
+        f_tags = correlation.tag_codes(f_codes) if f_codes else {}
+        for r in rows:
+            t = f_tags.get(r["code"])
+            if t:
+                r["futures_corr"] = t["futures_corr"]
+                r["futures_tag"] = t["futures_tag"]
+        for g in signals["groups"].values():   # members は detect 時のコピーなので別途反映
+            for m in g["members"]:
+                t = f_tags.get(m["code"])
+                if t:
+                    m["futures_corr"] = t["futures_corr"]
+                    m["futures_tag"] = t["futures_tag"]
+        futures_meta = {"bench": correlation.BENCHMARK_CODE,
+                        "th_high": correlation.TH_HIGH, "th_mid": correlation.TH_MID,
+                        "window": correlation.WINDOW,
+                        "targets": len(f_codes), "tagged": len(f_tags)}
+        print(f"[build] 先物連動タグ: 対象{len(f_codes)}銘柄 → 付与{len(f_tags)} "
+              f"(bench={correlation.BENCHMARK_CODE})")
+    except Exception as e:
+        print(f"[build] 先物連動タグはスキップ（非致命）: {e}")
+
     # ── フェーズ11: 全面リバウンド判定（強反転の「広がり」ゲート） ──
     # bt_best_pick.py (2026-06-10・2021-2026・4636銘柄54万発動・翌朝寄りentry・出口8日/-12%・
     # 流動性1億円) で確定: 強反転のエッジは「その日の強反転点灯数」に強く依存する。
@@ -642,7 +678,7 @@ def build() -> dict:
 
     top = rows[:TOP_N]
     out = {
-        "schema": "kabuai-phase13",
+        "schema": "kabuai-phase14",  # phase14 = 先物連動タグ + v2フロント（2026-07-02）
         "data_date": data_date,
         "data_lag_days": data_lag_days,
         "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S"),   # JST表示（runnerはUTC）
@@ -656,6 +692,7 @@ def build() -> dict:
         "search_index": n_search,
         "ai": ai_meta,
         "market": market,
+        "futures": futures_meta,
         "rebound": rebound,
         "theme_blast": theme_blast,
         "sector_today": sector_today,
