@@ -265,6 +265,17 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
     sh_cfg, rk = cfg["stop_high"], cfg["ranking"]
     ref = pd.Timestamp(data_date)          # 基準日（この直近に足が無い銘柄=非アクティブは除外）
 
+    # 長期初動イベント（手元pkl由来・月1コミット）。CI窓(200日)では初動判定に135本の
+    # 履歴が要るため直近約65日しか検出できない＝65〜90日前のイベントの状態遷移
+    # (上昇中/押し目)が消える。長期イベントを状態判定にもマージして取りこぼしを防ぐ。
+    lt = load_longterm()
+    lt_latest: dict[str, dict] = {}
+    if lt:
+        for e in lt["events"]:
+            cur = lt_latest.get(e["code"])
+            if cur is None or e["date"] > cur["date"]:
+                lt_latest[e["code"]] = e
+
     def name_of(code: str) -> str:
         for k in (code, code + ".T"):
             if k in name_map:
@@ -315,12 +326,17 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
                 events = shodo_events(df, cfg)
                 if events:
                     fresh_events.extend([{**e, "code": code, "name": base["name"]} for e in events])
-                    last_e = events[-1]
+                # 直近イベント＝CI窓の検出と長期イベントの新しい方（同日ならCI優先）
+                last_e = events[-1] if events else None
+                lte = lt_latest.get(code)
+                if lte and (last_e is None or lte["date"] > last_e["date"]):
+                    last_e = {"date": lte["date"], "price": lte["price"], "volr": lte.get("volr")}
+                if last_e:
                     latest_event_by_code[code] = last_e
                     days_ago = int((ts_last - pd.Timestamp(last_e["date"])).days)
                     if days_ago <= int(cfg["shodo"]["fresh_days"]) + 2:
                         cats["shodo"].append({**base, "shodo_date": last_e["date"],
-                                              "shodo_price": last_e["price"], "volr": last_e["volr"]})
+                                              "shodo_price": last_e["price"], "volr": last_e.get("volr")})
                     elif days_ago <= int(cfg["state"]["horizon_days"]):
                         stt = classify_state(df, last_e, cfg)
                         if stt:
@@ -342,7 +358,6 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
             continue
 
     # ── 上昇ランキング（CI窓の新鮮イベント＋手元pkl由来の長期イベントをマージ） ──
-    lt = load_longterm()
     merged: dict[tuple, dict] = {}
     for e in fresh_events:
         merged[(e["code"], e["date"])] = {"code": e["code"], "name": e["name"],
