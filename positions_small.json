@@ -633,12 +633,12 @@
     "prev_close": 2390.0,
     "limit_price": 2413,
     "entry_open": 2404.5,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": 4.034,
     "unrealized_pnl": 0.062,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-07-02"
   },
   {
     "signal_date": "2026-07-01",
@@ -650,9 +650,9 @@
     "limit_price": 2012,
     "entry_open": 2006.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": -0.424,
+    "unrealized_pnl": 0.199,
     "exit_type": null,
     "exit_date": null
   },
@@ -664,12 +664,12 @@
     "direction": "BUY",
     "prev_close": 793.6,
     "limit_price": 801,
-    "entry_open": null,
-    "status": "pending",
+    "entry_open": 814.0,
+    "status": "expired",
     "hold_days": 0,
     "pnl_pct": null,
     "unrealized_pnl": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "NOFILL",
+    "exit_date": "2026-07-02"
   }
 ]

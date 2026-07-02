@@ -1,12 +1,19 @@
 {
-  "date": "2026-07-02",
+  "date": "2026-07-03",
   "signals": [
     {
-      "ticker": "7532.T",
-      "name": "パン・パシフィック・インターナショナルホールディングス",
+      "ticker": "9532.T",
+      "name": "大阪瓦斯",
       "direction": "BUY",
-      "prev_close": 793.6,
-      "limit_price": 801
+      "prev_close": 5334.0,
+      "limit_price": 5380
+    },
+    {
+      "ticker": "9104.T",
+      "name": "商船三井",
+      "direction": "BUY",
+      "prev_close": 5121.0,
+      "limit_price": 5170
     }
   ]
 }
