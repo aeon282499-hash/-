@@ -366,6 +366,25 @@ function candHero(){
     <div class="hh">✅ 今日の買い候補 <small>${DATA.data_date||""} 終値時点</small></div>
     ${body}</div>`;
 }
+// ── 🔻 今日の売り（セクターローテSELL＝唯一の検証済み売りエッジ・2026-07-02追加） ──
+// PF1.37・2021〜2026の5年すべてプラス・1日1件上限。発火は稀（月数回）なので、
+// 「当日分が発火した日」だけホームに出す。過去分は執行不可なので出さない（is_todayゲート）。
+// データは親リポの today_signals_sector_theme.json → build_data の sector_today。
+function sellHero(){
+  const st=DATA.sector_today;
+  if(!st||!st.is_today||!(st.sell||[]).length) return "";
+  const s=(st.stats||{}).sell||{};
+  const rows=st.sell.map(r=>`<a class="pickrow" href="#/detail/${r.code}">
+    <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 前日終値 ¥${(r.price||0).toLocaleString()}${r.sector?` ・ ${esc(r.sector)}`:""}</small>
+      <div class="chips"><span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.5)">🔻 最弱セクターの急騰売り${(r.day_change!=null&&!isNaN(r.day_change))?` 前日+${Number(r.day_change).toFixed(1)}%`:""}</span></div></div>
+    </a>`).join("");
+  return `<div class="hero" style="border-color:rgba(234,57,67,.5)">
+    <div class="hh">🔻 今日の売り（空売り） <small>${st.date||""} 当日分</small></div>
+    <div class="lead">最弱セクターで急騰した銘柄の反落を取る、<b>過去5年すべてプラス（PF${s.pf!=null?s.pf:1.37}）</b>の検証済み売りシグナル。<b>1日1件まで・空売りには信用口座が必要</b>。</div>
+    <div class="picklist">${rows}</div>
+    <div class="exitbox" style="background:rgba(234,57,67,.06);border-color:rgba(234,57,67,.3)">🚪 <b>出口</b>: ${esc(st.plan_sell||"当日9:00 寄り成行で空売り → 損切り+3%/利確-5%のOCO・RSI50か3日目大引けで買い戻し")}</div>
+  </div>`;
+}
 function viewHome(){
   if(WATCH.length||loadPos().length) loadSearch().then(()=>{
     const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
@@ -373,6 +392,7 @@ function viewHome(){
   });
   return `
     ${candHero()}
+    ${sellHero()}
     <div id="poscoach">${posCoach()}</div>
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     ${WATCH.length?`<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:
@@ -728,6 +748,19 @@ function viewAbout(){
       <li><b style="color:var(--up)">日経と逆◯%</b> … 日経と反対方向に動きやすい銘柄。日経が下げる日にむしろ上がりやすい傾向（直近データ上）。</li>
       <li>直近の5分足 ${f.window!=null?f.window:48}本（約4時間分）の値動きで計算。<b style="color:var(--tx)">朝の表示は前営業日のザラ場ベース</b>、夕方更新後は当日ベース。データが足りない銘柄はタグ非表示。</li>
       <li>「一緒に動く度合い」だけを見ています（値動きの大きさは見ない）。しきい値は運用しながら調整します。</li>
+    </ul>
+  </div>
+
+  <h2>🔻今日の売り（空売り）とは</h2>
+  <div class="card">
+    <p style="margin:0;line-height:1.8"><b>出る日は稀（月に数回）</b>。最弱セクターで急騰した銘柄の反落を取る検証済みシグナルで、
+      過去検証は<b>PF1.37・2021〜2026の5年すべてプラス・1日1件上限</b>。
+      発火した日だけホームに🔻カードが出ます（出ない日は何も表示しません）。</p>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
+      <li>執行: <b style="color:var(--tx)">当日9:00 寄り成行で空売り → 損切り+3%／利確-5%のOCO・RSI50回復か3日目大引けで買い戻し</b>。</li>
+      <li><b style="color:var(--tx)">空売りには信用口座が必要</b>です。貸株料・逆日歩は検証に含まれていません。</li>
+      <li>なお「保有株をいつ売るか」は📒持ち株コーチが毎日指示します（そちらは現物の手仕舞い）。</li>
+      <li>単純な空売りシグナル（過熱株ショート等）は過去検証で優位性が出ず不採用です（勝率4割台・上昇年に大負け）。</li>
     </ul>
   </div>
 
