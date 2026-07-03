@@ -374,16 +374,57 @@ def main() -> None:
         if sell_sigs is not None:
             _process_signals(sell_sigs, ohlc, today_str, tier["sell_history_file"])
 
-        # 週次レポート（金曜＝その週の最終営業日の引け後だけ・2026-06-26追加）。
-        # 今週の確定損益(BUY/SELL)＋保有中持ち越しを1通で配信。実現損益は positions_*.json
-        # から集計（trade_historyは初日スナップなので使わない）。
-        if _is_week_last_trading_day(today_jst):
-            from notifier import send_weekly_report
-            pos_file      = "positions.json"      if key == "main" else f"positions_{key}.json"
-            sell_pos_file = "positions_sell.json" if key == "main" else f"positions_sell_{key}.json"
-            buy_pos  = json.load(open(pos_file, encoding="utf-8"))      if os.path.exists(pos_file)      else []
-            sell_pos = json.load(open(sell_pos_file, encoding="utf-8")) if os.path.exists(sell_pos_file) else []
-            send_weekly_report(buy_pos, sell_pos, today_jst, tier=tier)
+    # 週次レポート（金曜＝その週の最終営業日の引け後だけ・2026-06-26追加）。
+    # 今週の確定損益(BUY/SELL)＋保有中持ち越しを全決済の金額明細つきで1通配信。
+    # 実現損益は positions_*.json から集計（trade_historyは初日スナップなので使わない）。
+    if _is_week_last_trading_day(today_jst):
+        _send_weekly_reports(today_jst)
+
+
+def _send_weekly_reports(today_jst: date) -> None:
+    """全階層の週次レポートを送信する。
+
+    帳簿(positions_*.json)は翌営業日朝の main.py が確定するため、金曜15:40時点では
+    当日決済分(MAXHOLD/RSI/OCO)が open のまま・当日エントリーが pending のまま残る。
+    そのままだと「処分済みなのに持ち越し」表示になる（2026-07-03 日本化薬の誤表示）ので、
+    コピーに対して update_positions を当日の引けまでドライランしてから集計する。
+    ここではファイル保存しない＝帳簿の確定は従来どおり翌朝の main.py が行う。
+    """
+    import copy
+    from tracker import update_positions
+    from notifier import send_weekly_report
+    from screener import batch_download_jquants, _jquants_id_token
+
+    # 引け後なので「明日」を基準にすると update_positions が当日バーまで処理する
+    virtual_today = today_jst + timedelta(days=1)
+
+    tier_pos: list[tuple[dict, list, list]] = []
+    has_active = False
+    for tier in TIERS:
+        if not tier["buy_webhook"] and tier["key"] != "main":
+            continue
+        key = tier["key"]
+        pos_file      = "positions.json"      if key == "main" else f"positions_{key}.json"
+        sell_pos_file = "positions_sell.json" if key == "main" else f"positions_sell_{key}.json"
+        buy_pos  = json.load(open(pos_file, encoding="utf-8"))      if os.path.exists(pos_file)      else []
+        sell_pos = json.load(open(sell_pos_file, encoding="utf-8")) if os.path.exists(sell_pos_file) else []
+        tier_pos.append((tier, buy_pos, sell_pos))
+        has_active = has_active or any(p.get("status") in ("pending", "open")
+                                       for p in buy_pos + sell_pos)
+
+    # 全階層で使い回す価格データを1回だけ取得（RSI計算用に30日窓・tracker と同じ）
+    all_data = None
+    if has_active:
+        start = (virtual_today - timedelta(days=30)).strftime("%Y-%m-%d")
+        end   = virtual_today.strftime("%Y-%m-%d")
+        print(f"[report] 週次ドライラン用の価格データ取得中（{start}〜{end}）...")
+        token    = _jquants_id_token()
+        all_data = batch_download_jquants(token, start=start, end=end)
+
+    for tier, buy_pos, sell_pos in tier_pos:
+        sim_buy  = update_positions(copy.deepcopy(buy_pos),  virtual_today, all_data=all_data)[0]
+        sim_sell = update_positions(copy.deepcopy(sell_pos), virtual_today, all_data=all_data)[0]
+        send_weekly_report(sim_buy, sim_sell, today_jst, tier=tier)
 
 
 if __name__ == "__main__":

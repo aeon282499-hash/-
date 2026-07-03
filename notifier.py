@@ -670,9 +670,26 @@ def _pf_str(pnls: list[float]) -> str:
     return f"{gains / losses:.2f}"
 
 
+_EXIT_LABEL = {"TP": "利確", "STOP": "損切", "RSI": "RSI回復", "MAXHOLD": "期限"}
+
+
+def _trade_shares(p: dict, size_yen: int) -> int:
+    """朝シグナルの推奨株数と同じ式（前日終値基準・100株単位）。"""
+    base = p.get("prev_close") or p.get("entry_open") or 0
+    if base <= 0:
+        return 100
+    return max(100, int(size_yen / base / 100) * 100)
+
+
+def _md(date_str: str | None) -> str:
+    return f"{date_str[5:7]}/{date_str[8:10]}" if date_str and len(date_str) >= 10 else "?"
+
+
 def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
                        today: date, *, tier: dict | None = None) -> None:
-    """金曜引け後の週次サマリー。今週の確定損益(BUY+SELL)＋保有中持ち越しを1通で配信。"""
+    """金曜引け後の週次サマリー。今週の確定損益(BUY+SELL)を全件の金額明細つきで、
+    保有中持ち越しと合わせて1通で配信。positions は当日引けまで決済反映済み
+    （report.py がドライラン済み）の前提。"""
     from datetime import timedelta
     tier = _tier(tier)
     week_start = today - timedelta(days=today.weekday())  # 月曜
@@ -682,49 +699,76 @@ def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
     sell_funded = _slot_funded(sell_positions or [], 5)
     buy_week  = [p for p in _week_closed(buy_positions, ws, ts, "BUY") if id(p) in buy_funded]
     sell_week = [p for p in _week_closed(sell_positions or [], ws, ts, "SELL") if id(p) in sell_funded]
-    holdings  = [p for p in buy_positions if p.get("status") == "open"]
+    holdings  = ([p for p in buy_positions if p.get("status") in ("open", "pending")]
+                 + [p for p in (sell_positions or []) if p.get("status") in ("open", "pending")])
 
     size_yen = tier["size"]
     capital  = size_yen * 5
     weight   = 1 / 5
+    week_yen_total = 0
 
-    def block(week: list[dict], label: str, emoji: str) -> str:
+    def block(week: list[dict], label: str, emoji: str, *, sell: bool) -> str:
+        nonlocal week_yen_total
         if not week:
             return f"{emoji} {label}: 今週は決済なし"
         pnls = [p["pnl_pct"] for p in week]
         wins = sum(1 for x in pnls if x > 0)
         wk   = sum(pnls) * weight
-        yen  = wk / 100 * capital
         sign = "+" if wk >= 0 else ""
-        best  = max(week, key=lambda p: p["pnl_pct"])
-        worst = min(week, key=lambda p: p["pnl_pct"])
-        line = (f"{emoji} {label}: {len(week)}件決済 勝率{wins}/{len(week)}"
+        head = (f"{emoji} {label}: {len(week)}件決済 勝率{wins}/{len(week)}"
                 f"（{round(wins / len(week) * 100)}%）"
-                f" **週間{sign}{wk:.1f}%**（{sign}{yen / 10000:.1f}万円）・PF {_pf_str(pnls)}")
-        line += (f"\n　🏆 {best['name']} {best['pnl_pct']:+.1f}%"
-                 f"　🥶 {worst['name']} {worst['pnl_pct']:+.1f}%")
-        return line
+                f" **週間{sign}{wk:.1f}%**・PF {_pf_str(pnls)}")
 
-    lines = [block(buy_week, "BUY", "📈")]
+        # 全決済の金額明細（買付額→売却額・損益円）。株数は朝シグナルの推奨株数と同じ。
+        in_label, out_label = ("売建", "買戻") if sell else ("買", "売")
+        rows, entry_total, exit_total, pnl_total = [], 0, 0, 0
+        for p in sorted(week, key=lambda x: (x.get("exit_date") or "", x["ticker"])):
+            shares    = _trade_shares(p, size_yen)
+            entry_amt = round(shares * (p.get("entry_open") or 0))
+            pnl_yen   = round(entry_amt * p["pnl_pct"] / 100)
+            exit_amt  = entry_amt - pnl_yen if sell else entry_amt + pnl_yen
+            entry_total += entry_amt
+            exit_total  += exit_amt
+            pnl_total   += pnl_yen
+            mark  = "✅" if p["pnl_pct"] > 0 else "❌"
+            elabel = _EXIT_LABEL.get(p.get("exit_type") or "", p.get("exit_type") or "?")
+            rows.append(
+                f"{mark} {p['name']} {_md(p.get('entry_date'))}→{_md(p.get('exit_date'))}"
+                f" {shares:,}株｜{in_label} {entry_amt:,}円 → {out_label} {exit_amt:,}円"
+                f"｜**{pnl_yen:+,}円**（{p['pnl_pct']:+.1f}% {elabel}）"
+            )
+        week_yen_total += pnl_total
+        in_total, out_total = ("売建合計", "買戻合計") if sell else ("買付合計", "売却合計")
+        total_line = (f"💰 {in_total} {entry_total:,}円 → {out_total} {exit_total:,}円"
+                      f" ＝ **{pnl_total:+,}円**")
+        return "\n".join([head, *rows, total_line])
+
+    lines = [block(buy_week, "BUY", "📈", sell=False)]
     if sell_week:
-        lines.append(block(sell_week, "空売り", "📉"))
+        lines.append(block(sell_week, "空売り", "📉", sell=True))
     if holdings:
-        names = "、".join(p["name"] for p in holdings[:5])
+        def _hold_str(p: dict) -> str:
+            tag = "空売り " if p.get("direction") == "SELL" else ""
+            if p.get("status") == "pending":
+                return f"{p['name']}（{tag}約定未確認）"
+            u = p.get("unrealized_pnl")
+            return f"{p['name']}（{tag}{u:+.1f}%）" if u is not None else f"{p['name']}（{tag}保有中）"
+        names = "、".join(_hold_str(p) for p in holdings[:5])
         more  = f" ほか{len(holdings) - 5}件" if len(holdings) > 5 else ""
         lines.append(f"💼 保有中（持ち越し）: {len(holdings)}件 — {names}{more}")
     else:
         lines.append("💼 保有中（持ち越し）: なし")
 
     range_str = f"{week_start.strftime('%m/%d')}–{today.strftime('%m/%d')}"
-    wk_total  = sum(p["pnl_pct"] for p in buy_week) * weight if buy_week else 0
     embed = {
         "title":       f"{_tier_title_prefix(tier)}📅【週次レポート】今週のスイング成績｜{range_str}",
         "description": "\n".join(lines),
-        "color":       COLOR_WIN if wk_total >= 0 else COLOR_ERROR,
+        "color":       COLOR_WIN if week_yen_total >= 0 else COLOR_ERROR,
         "footer":      {"text": f"※資金{capital // 10000}万・5枠(1件{size_yen // 10000}万)・資金枠に収まる分のみ集計"},
     }
     _dispatch({"embeds": [embed]}, tier=tier, side="BUY")
-    print(f"[notifier-{tier['label']}] 週次レポート送信（BUY{len(buy_week)}/SELL{len(sell_week)}/保有{len(holdings)}）")
+    print(f"[notifier-{tier['label']}] 週次レポート送信（BUY{len(buy_week)}/SELL{len(sell_week)}"
+          f"/保有{len(holdings)}/週間{week_yen_total:+,}円）")
 
 
 # ── 15:00 大引け処分指示 ──────────────────────────────────

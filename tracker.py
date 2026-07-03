@@ -97,9 +97,13 @@ def add_signals_to_positions(
     return positions
 
 
-def update_positions(positions: list[dict], today: date) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+def update_positions(positions: list[dict], today: date,
+                     all_data: dict | None = None) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """
     オープンポジションを前日データで更新する。
+
+    all_data に取得済みの {ticker: DataFrame} を渡すとJ-Quants取得をスキップする
+    （週次レポートのドライラン等、複数階層で同じデータを使い回す用）。
 
     Returns
     -------
@@ -109,13 +113,14 @@ def update_positions(positions: list[dict], today: date) -> tuple[list[dict], li
     if not active:
         return positions, [], [], []
 
-    tickers = list({p["ticker"] for p in active})
-    start   = (today - timedelta(days=30)).strftime("%Y-%m-%d")
-    end     = today.strftime("%Y-%m-%d")
+    if all_data is None:
+        tickers = list({p["ticker"] for p in active})
+        start   = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+        end     = today.strftime("%Y-%m-%d")
 
-    print(f"[tracker] {len(tickers)} 銘柄のデータ取得中（結果チェック用）...")
-    token    = _jquants_id_token()
-    all_data = batch_download_jquants(token, start=start, end=end, tickers=tickers)
+        print(f"[tracker] {len(tickers)} 銘柄のデータ取得中（結果チェック用）...")
+        token    = _jquants_id_token()
+        all_data = batch_download_jquants(token, start=start, end=end, tickers=tickers)
 
     closed_today  = []
     expired_today = []
