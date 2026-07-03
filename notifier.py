@@ -719,12 +719,15 @@ def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
                 f"（{round(wins / len(week) * 100)}%）"
                 f" **週間{sign}{wk:.1f}%**・PF {_pf_str(pnls)}")
 
-        # 全決済の金額明細（買付額→売却額・損益円）。株数は朝シグナルの推奨株数と同じ。
+        # 全決済の明細（イン株価→アウト株価・損益円）。株数は朝シグナルの推奨株数と同じ。
         in_label, out_label = ("売建", "買戻") if sell else ("買", "売")
         rows, entry_total, exit_total, pnl_total = [], 0, 0, 0
         for p in sorted(week, key=lambda x: (x.get("exit_date") or "", x["ticker"])):
-            shares    = _trade_shares(p, size_yen)
-            entry_amt = round(shares * (p.get("entry_open") or 0))
+            shares      = _trade_shares(p, size_yen)
+            entry_price = p.get("entry_open") or 0
+            exit_price  = entry_price * (1 - p["pnl_pct"] / 100 if sell
+                                         else 1 + p["pnl_pct"] / 100)
+            entry_amt = round(shares * entry_price)
             pnl_yen   = round(entry_amt * p["pnl_pct"] / 100)
             exit_amt  = entry_amt - pnl_yen if sell else entry_amt + pnl_yen
             entry_total += entry_amt
@@ -734,7 +737,7 @@ def send_weekly_report(buy_positions: list[dict], sell_positions: list[dict],
             elabel = _EXIT_LABEL.get(p.get("exit_type") or "", p.get("exit_type") or "?")
             rows.append(
                 f"{mark} {p['name']} {_md(p.get('entry_date'))}→{_md(p.get('exit_date'))}"
-                f" {shares:,}株｜{in_label} {entry_amt:,}円 → {out_label} {exit_amt:,}円"
+                f" {shares:,}株｜{in_label} {entry_price:,.0f}円 → {out_label} {exit_price:,.0f}円"
                 f"｜**{pnl_yen:+,}円**（{p['pnl_pct']:+.1f}% {elabel}）"
             )
         week_yen_total += pnl_total
