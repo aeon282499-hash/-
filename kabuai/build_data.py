@@ -244,7 +244,7 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
             "chart_note": "日足は約3ヶ月・表示用に加工した参考データ（生データ配信ではありません）",
         }
         with open(sdir / f"{r['code']}.json", "w", encoding="utf-8") as f:
-            json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+            json.dump(payload, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
         written += 1
     return written
 
@@ -273,7 +273,7 @@ def export_search_index(rows: list[dict], data_date: str, rows_illiq: list[dict]
     payload = {"schema": "kabuai-search-1", "data_date": data_date,
                "count": len(stocks), "stocks": stocks}
     with open(DATA_DIR / "search_index.json", "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     return len(stocks)
 
 
@@ -666,7 +666,7 @@ def build() -> dict:
         import explorer_signals
         exp = explorer_signals.build_explorer(data, name_map, data_date)
         with open(DATA_DIR / "explorer.json", "w", encoding="utf-8") as f:
-            json.dump(exp, f, ensure_ascii=False, separators=(",", ":"))
+            json.dump(exp, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
         print(f"[build] 銘柄探検: counts={exp['counts']} / ランキング{len(exp['ranking']['items'])}件 "
               f"/ 長期イベント={'あり' if exp['ranking']['longterm']['available'] else 'なし'}")
     except Exception as e:
@@ -750,7 +750,7 @@ def main():
     latest = DATA_DIR / "latest.json"
     for p in (dated, latest):
         with open(p, "w", encoding="utf-8") as f:
-            json.dump(out, f, ensure_ascii=False, indent=2)
+            json.dump(out, f, ensure_ascii=False, indent=2, allow_nan=False)
     print(f"[build] 出力: {dated.name} / {latest.name}  (データ日付 {out['data_date']})")
     print("[build] TOP5 プレビュー:")
     for r in out["ranking"][:5]:

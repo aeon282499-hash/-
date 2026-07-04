@@ -109,6 +109,13 @@ def indicators(df: pd.DataFrame) -> dict | None:
     mom_hist = _momentum_history(close, ret, vol, high, low, days=5)
     turnover = float((close.iloc[-1] * vol.tail(VOL_SLOW).mean()))
 
+    # 直近の出来高が欠損(NaN)だと vr / turnover が NaN になり、二重事故になる:
+    #  ① JSON 出力に NaN が載り、ブラウザの JSON.parse が全体で落ちる（アプリ白画面）
+    #  ② `turnover < MIN_TURNOVER` が NaN 比較で False になり流動性フィルタをすり抜ける
+    # daily_std ガード（Close 由来）は出来高欠損を捕まえないため、ここで明示的に除外する。
+    if not np.isfinite(vr) or not np.isfinite(turnover):
+        return None
+
     return {
         "price": round(float(close.iloc[-1]), 1),
         "momentum": round(momentum, 1),
