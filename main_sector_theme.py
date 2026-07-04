@@ -55,13 +55,14 @@ def main():
         except Exception:
             pass
 
-    # ── 2026-06-11 ユーザー決定(最終形): Discord=スイング寄指+15時処分だけに絞る ──
-    # セクターローテはBUY/SELLとも判定・JSONコミットは毎朝継続するが、Discordには送らず
-    # モメンタムチンパンの「今日のシグナル」(朝8:40ビルド)が today_signals_sector_theme.json
-    # を取り込んで表示する=アプリ集約。SELLの1日1件上限は維持。
+    # ── 2026-06-11 ユーザー決定: Discordはスイング寄指+15時処分に絞り、セクターローテは
+    #    アプリ集約(DISCORD_NOTIFY=False)としていた。
+    # ── 2026-07-04 方針変更: セクターローテ(BUY PF1.31/+459% / SELL PF1.37・検証済み)を
+    #    専用の別Discordへ配信ONに戻す。webhookは Secret DISCORD_WEBHOOK_URL_SECTOR_THEME
+    #    (新チャンネル用に更新すること)。JSONコミット/アプリ表示・SELL1日1件上限は従来どおり維持。
     SELL_ONLY = False
     MAX_SELL_PER_DAY = 1
-    DISCORD_NOTIFY = False   # True に戻せばDiscord配信が復活
+    DISCORD_NOTIFY = True   # 2026-07-04 セクターローテ専用Discordへ配信再開（False で再びアプリ集約に戻せる）
 
     try:
         signals, sell_signals, all_pass, macro, diag = run_sector_theme_screener()
