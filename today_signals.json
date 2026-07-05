@@ -1,19 +1,19 @@
 {
-  "date": "2026-07-03",
+  "date": "2026-07-06",
   "signals": [
     {
-      "ticker": "9532.T",
-      "name": "大阪瓦斯",
+      "ticker": "9503.T",
+      "name": "関西電力",
       "direction": "BUY",
-      "prev_close": 5334.0,
-      "limit_price": 5380
+      "prev_close": 2275.5,
+      "limit_price": 2298
     },
     {
-      "ticker": "9104.T",
-      "name": "商船三井",
+      "ticker": "8282.T",
+      "name": "ケーズホールディングス",
       "direction": "BUY",
-      "prev_close": 5121.0,
-      "limit_price": 5170
+      "prev_close": 1809.5,
+      "limit_price": 1827
     }
   ]
 }

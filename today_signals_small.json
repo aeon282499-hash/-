@@ -1,4 +1,19 @@
 {
-  "date": "2026-07-03",
-  "signals": []
+  "date": "2026-07-06",
+  "signals": [
+    {
+      "ticker": "9503.T",
+      "name": "関西電力",
+      "direction": "BUY",
+      "prev_close": 2275.5,
+      "limit_price": 2298
+    },
+    {
+      "ticker": "8282.T",
+      "name": "ケーズホールディングス",
+      "direction": "BUY",
+      "prev_close": 1809.5,
+      "limit_price": 1827
+    }
+  ]
 }
