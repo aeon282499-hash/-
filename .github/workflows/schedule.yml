@@ -28,6 +28,7 @@ jobs:
       DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
       DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       DISCORD_WEBHOOK_URL_SECTOR_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME }}
+      DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL }}
       DISCORD_WEBHOOK_URL_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_THEME }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
@@ -68,10 +69,12 @@ jobs:
             echo "JST $day日: 月初ではないのでスキップ"
           fi
 
-      # ── セクターローテ: 2026-06-11 ユーザー決定で「SELL専用・1日1件上限」に限定再開 ──
-      # (BUY側配信は main_sector_theme.py の SELL_ONLY=True で停止のまま。
-      #  2026-06-03の全停止 → 06-11にSELLのみ復活。完全停止に戻すには下3行をコメントアウト)
-      - name: スイングセクターローテ配信実行（SELL専用・相乗りで確実発火）
+      # ── セクターローテ: 2026-07-04 買い＋売りとも専用Discordへ配信ON ──
+      # (main_sector_theme.py: SELL_ONLY=False / MAX_SELL_PER_DAY=1 / DISCORD_NOTIFY=True。
+      #  買い=DISCORD_WEBHOOK_URL_SECTOR_THEME / 売り=DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL
+      #  （売り用が未設定なら買い用へフォールバック＝1チャンネルにまとまる）。
+      #  完全停止に戻すには下3行をコメントアウト、アプリ集約に戻すなら DISCORD_NOTIFY=False)
+      - name: スイングセクターローテ配信実行（買い＋売り・相乗りで確実発火）
         continue-on-error: true
         run: python main_sector_theme.py
 

@@ -11,19 +11,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-WEBHOOK = (os.getenv("DISCORD_WEBHOOK_URL_SECTOR_THEME", "") or "").strip()
+# 買いと売りは別チャンネルへ配信する（2026-07-04）。売り用が未設定なら買い用へ
+# フォールバック（＝旧来どおり1本にまとめて送る挙動に自動で戻る＝後方互換）。
+WEBHOOK_BUY = (os.getenv("DISCORD_WEBHOOK_URL_SECTOR_THEME", "") or "").strip()
+WEBHOOK_SELL = (os.getenv("DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL", "") or "").strip() or WEBHOOK_BUY
 _VERIFY_SSL = os.getenv("DISCORD_VERIFY_SSL", "true").lower() not in ("0", "false", "no")
 COLOR_BUY = 0x8E24AA   # 紫 (既存BUYの赤と差別化)
 COLOR_SELL = 0xE53935  # 赤 (空売り)
 COLOR_NONE = 0x757575
 
 
-def _post(payload: dict, tag: str = "") -> None:
-    if not WEBHOOK:
-        print(f"[notifier_st{tag}] DISCORD_WEBHOOK_URL_SECTOR_THEME 未設定 → スキップ")
+def _post(payload: dict, webhook: str, tag: str = "") -> None:
+    if not webhook:
+        print(f"[notifier_st{tag}] webhook 未設定 → スキップ")
         return
     try:
-        r = requests.post(WEBHOOK, json=payload, timeout=10, verify=_VERIFY_SSL)
+        r = requests.post(webhook, json=payload, timeout=10, verify=_VERIFY_SSL)
         if r.status_code not in (200, 204):
             print(f"[notifier_st{tag}] HTTP {r.status_code} {r.text[:200]}")
         else:
@@ -74,45 +77,52 @@ def _fmt_sell_signal_embed(s: dict, rank: int) -> dict:
     }
 
 
+def _send_embeds(embeds: list[dict], webhook: str, tag: str) -> None:
+    """Discord は 1 メッセージに embed 10 個まで → 10 個ずつ分割送信。"""
+    for chunk_start in range(0, len(embeds), 10):
+        _post({"embeds": embeds[chunk_start:chunk_start + 10]},
+              webhook, tag=f"{tag}{chunk_start}")
+
+
 def send_signals(signals: list[dict], sell_signals: list[dict] | None,
                  macro: dict, diag: dict | None = None) -> None:
     from screener import _today_jst   # JST基準（UTCランナーの朝は1日古い日付表示になる）
     today = _today_jst().strftime("%Y-%m-%d (%a)")
+    signals = signals or []
     sell_signals = sell_signals or []
 
-    if not signals and not sell_signals:
-        _post({"embeds": [{
-            "title": f"🔻 セクターSELL — {today}",
-            "description": ("本日の空売りシグナルは0件です。\n"
-                            "（セクターSELL専用運用・最弱セクターの急騰時のみ点灯／買いはスイング本体で配信）"),
-            "color": COLOR_NONE,
-        }]}, tag="-empty")
-        return
-
-    embeds = []
+    # ── 買い（紫）→ 買い用チャンネル ──
     if signals:
-        embeds.append({
+        buy_embeds = [{
             "title": f"🟣 本日の買いシグナル — {today}",
             "description": f"本日の買いシグナルは {len(signals)} 件です。",
             "color": COLOR_BUY,
-        })
+        }]
         for i, s in enumerate(signals, 1):
-            embeds.append(_fmt_signal_embed(s, i))
+            buy_embeds.append(_fmt_signal_embed(s, i))
+        _send_embeds(buy_embeds, WEBHOOK_BUY, tag="-buy")
 
+    # ── 売り（赤）→ 売り用チャンネル（未設定なら買い用にフォールバック）──
     if sell_signals:
-        embeds.append({
+        sell_embeds = [{
             "title": f"🔻 本日の空売りシグナル — {today}",
             "description": (f"最弱セクターの急騰後反落 {len(sell_signals)} 件。"
                             "翌寄り成りでショート・損切+3%/利確-5%/最大3日。"),
             "color": COLOR_SELL,
-        })
+        }]
         for i, s in enumerate(sell_signals, 1):
-            embeds.append(_fmt_sell_signal_embed(s, i))
+            sell_embeds.append(_fmt_sell_signal_embed(s, i))
+        _send_embeds(sell_embeds, WEBHOOK_SELL, tag="-sell")
 
-    # Discord は 1 メッセージに embed 10 個まで
-    for chunk_start in range(0, len(embeds), 10):
-        chunk = embeds[chunk_start:chunk_start + 10]
-        _post({"embeds": chunk}, tag=f"-sig{chunk_start}")
+    # ── 0件ハートビート（稼働確認・買い用チャンネルへ毎営業日）──
+    if not signals and not sell_signals:
+        _post({"embeds": [{
+            "title": f"🟣 セクターローテ — {today}",
+            "description": ("本日の買い・空売りシグナルはともに0件です。\n"
+                            "（最強セクターの押し目買い＋最弱セクターの急騰空売り／"
+                            "点灯時のみ配信）"),
+            "color": COLOR_NONE,
+        }]}, WEBHOOK_BUY, tag="-empty")
 
 
 def send_error(msg: str) -> None:
@@ -120,4 +130,4 @@ def send_error(msg: str) -> None:
         "title": "⚠️ スイングセクターローテ エラー",
         "description": msg[:1900],
         "color": 0xFDD835,
-    }]}, tag="-err")
+    }]}, WEBHOOK_BUY, tag="-err")
