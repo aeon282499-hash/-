@@ -72,6 +72,24 @@
   .pickfoot{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:9px}
   .pickfoot .lpt{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:2px 9px;cursor:pointer}
   .pickfoot .more{color:var(--acc);font-weight:700;font-size:12px;margin-left:auto}
+  /* 💴 分散サイジング（資金→1銘柄あたりの目安） */
+  .sizer{margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12px;
+    background:rgba(77,150,255,.06);border:1px solid rgba(77,150,255,.28);border-radius:9px;padding:8px 10px}
+  .sizer input{width:84px;background:var(--card2);border:1px solid var(--line);color:var(--tx);
+    border-radius:8px;padding:6px 9px;font-size:15px;-webkit-appearance:none;outline:none}
+  .sizer input:focus{border-color:var(--acc)}
+  .sizer .sm{flex-basis:100%;height:0}
+  .pk-sz{font-size:10.5px;color:var(--acc);font-weight:700;margin-top:3px}
+  .pk-sz.short{color:var(--mut);font-weight:600}
+  /* 📅 年別のロバストネス表示 */
+  .proofline{margin-top:9px;font-size:12px;color:var(--tx);background:rgba(77,150,255,.08);
+    border:1px solid rgba(77,150,255,.3);border-radius:9px;padding:7px 10px;line-height:1.6}
+  .yrline{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:stretch}
+  .yrcell{font-size:10.5px;border:1px solid var(--line);border-radius:8px;padding:3px 8px;text-align:center;line-height:1.35}
+  .yrcell b{display:block;font-size:12px}
+  .yrcell.pos{border-color:rgba(22,199,132,.45);background:rgba(22,199,132,.08);color:var(--up)}
+  .yrcell.neg{border-color:rgba(234,57,67,.45);background:rgba(234,57,67,.08);color:#ff6b6b}
+  .heromore{display:block;text-align:center;color:var(--acc);font-weight:700;font-size:12.5px;padding:10px 0}
   /* 検索カード */
   .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
     padding:13px 14px;margin-bottom:10px;display:block}
@@ -213,6 +231,55 @@ function hideLowPrice(){try{return localStorage.getItem("kabuai_lowprice")!=="0"
 function toggleLowPrice(){try{localStorage.setItem("kabuai_lowprice",hideLowPrice()?"0":"1");}catch(e){} render();}
 function priceOK(r){return !hideLowPrice()||!(r&&r.price>0&&r.price<BUY_PRICE_MIN);}
 
+// ── 💴 分散サイジング（資金→1銘柄いくら買えばいいかの目安・localStorage・万円で入力） ──
+// 「分散」はBTでも1点集中より有利（feedback: 全件分散が有利）。掛け声だけでなく金額に落とす。
+const SPLIT_MAX=5;   // 分散のめやす銘柄数（資金を最大N分割）
+function loadCapital(){try{const v=parseFloat(localStorage.getItem("kabuai_capital"));return v>0?v:0;}catch(e){return 0;}}
+function setCapital(v){try{const man=parseFloat(v);
+  if(man>0)localStorage.setItem("kabuai_capital",String(Math.round(man*10000)));
+  else localStorage.removeItem("kabuai_capital");}catch(e){} render();}
+function splitCount(n){return Math.max(1,Math.min(SPLIT_MAX,n||1));}
+// 1銘柄予算 per円で買える株数と概算金額。単元未満株(S株)前提で1株から計算し、
+// 100株(単元)に届くかを lots で示す。1株すら買えなければ under。
+function lotFor(perYen,price){
+  if(!(perYen>0)||!(price>0))return null;
+  const sh=Math.floor(perYen/price);
+  if(sh<1)return {under:true,need:Math.round(price)};
+  return {shares:sh,cost:Math.round(sh*price),lots:sh>=100};
+}
+function sizeHint(r,perYen){
+  const lot=lotFor(perYen,r&&r.price); if(!lot)return "";
+  if(lot.under)return `<div class="pk-sz short">1株¥${lot.need.toLocaleString()}〜（予算を上げるか他の候補へ）</div>`;
+  return `<div class="pk-sz">≈ ${lot.shares.toLocaleString()}株 ¥${lot.cost.toLocaleString()}${lot.lots?"":"（単元未満株）"}（1銘柄めやす）</div>`;
+}
+
+// ── 📅 全年プラスの実績（exit_years＝検証済みエッジの年別ロバストネス） ──
+function sigYears(k){const g=sigTrack(k);return (g&&g.exit_years&&g.exit_years.length)?g.exit_years:null;}
+// 表示中の買い候補に含まれるエッジシグナルを横断し「毎年プラスだったか」を集計。
+function heroYears(list){
+  const keys=[...new Set((list||[]).flatMap(r=>(r.signals||[]).filter(sigHasEdge)))];
+  const arrs=keys.map(sigYears).filter(Boolean);
+  if(!arrs.length)return null;
+  const yset=arrs[0].map(y=>y.y);
+  let allPos=0;
+  yset.forEach(y=>{if(arrs.every(a=>{const f=a.find(z=>z.y===y);return f&&f.avg>0;}))allPos++;});
+  return {from:yset[0],to:yset[yset.length-1],allPos,total:yset.length};
+}
+// 詳細ページ用: 特定シグナル(EVトップ)の年別セル
+function yearLine(ks){
+  const st=buyStat({signals:ks}); if(!st)return "";
+  const ys=sigYears(st.k); if(!ys)return "";
+  const pos=ys.filter(y=>y.avg>0).length;
+  const cells=ys.map(y=>`<span class="yrcell ${y.avg>0?"pos":"neg"}"><b>${y.y}</b>${y.avg>0?"+":""}${y.avg}%<span class="muted" style="display:block;font-size:9px">勝率${y.win}%</span></span>`).join("");
+  return `<div class="muted" style="margin-top:9px;font-size:11.5px">📅 年別の実績（この型・保有${st.hold}日/-${st.sl}%）— <b style="color:var(--tx)">${ys.length}年中${pos}年プラス</b>：</div>
+    <div class="yrline">${cells}</div>`;
+}
+
+// ── ✅今日の買い候補ヒーロー: 上位N件だけ先に見せて残りは展開 ──
+const HERO_CAP=8;
+let HERO_EXPAND=false;
+function toggleHeroExpand(){HERO_EXPAND=!HERO_EXPAND;render();}
+
 // ── 今日の買い候補（BUY_KEYSの点灯銘柄を dedup → 自力優先 → 期待値順） ──
 function candidates(){
   const s=DATA.signals; if(!s) return {list:[],hidden:0};
@@ -339,24 +406,55 @@ function posForm(code,name,price){
 }
 
 // ── ホーム: ✅今日の買い候補（唯一の主役画面） ──
+function sizerBox(nCand){
+  const cap=loadCapital(), nSplit=splitCount(nCand), val=cap?Math.round(cap/10000):"";
+  const per=cap?Math.floor(cap/nSplit):0;
+  const out=cap
+    ? `1銘柄の目安 <b class="pos">約¥${per.toLocaleString()}</b>（資金を${nSplit}銘柄に分散）。<span class="muted">100株に満たない分は単元未満株（S株）で。</span>`
+    : `<span class="muted">入れると、1銘柄いくら買えばいいか（株数・金額）を各候補に表示します。1点集中せず分散するほど失敗の影響が小さくなります。</span>`;
+  return `<div class="sizer">💴 投資予定額
+    <input type="number" inputmode="numeric" value="${val}" placeholder="30" onchange="setCapital(this.value)"> 万円
+    ${cap?`<a class="lpt" onclick="event.preventDefault();setCapital('')">クリア</a>`:""}
+    <span class="sm"></span>${out}</div>`;
+}
+function pickRow(r,perYen){
+  const st=buyStat(r)||{ev:0,win:0};
+  return `<a class="pickrow" href="#/detail/${r.code}">
+    <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
+      <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div>
+      ${perYen?sizeHint(r,perYen):""}</div>
+    <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;
+}
+function proofLine(list){
+  const y=heroYears(list); if(!y)return "";
+  const msg=(y.allPos===y.total)
+    ? `${y.from}〜${y.to}の<b>${y.total}年すべてでプラス</b>`
+    : `${y.from}〜${y.to}の<b>${y.total}年中${y.allPos}年でプラス</b>`;
+  return `<div class="proofline">📅 表示中の「買いの型」は、過去検証で ${msg}（単年のまぐれでない裏づけ・保有8日/-12%）。</div>`;
+}
 function candHero(){
   const {list,hidden}=candidates();
   const ex=exitRep();
   const rb=DATA.rebound;
   const broad=!!(rb&&rb.mode==="broad");
+  const rh=(broad&&rb&&rb.history&&rb.history.summary)||null;
   const lpToggle=(hidden||!hideLowPrice())
     ? `<a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株(¥${BUY_PRICE_MIN.toLocaleString()}未満)を${hideLowPrice()?`表示${hidden?`（+${hidden}件）`:""}`:"隠す"}</a>`:"";
   let body;
   if(list.length){
-    const rows=list.map(r=>{const st=buyStat(r)||{ev:0,win:0};
-      return `<a class="pickrow" href="#/detail/${r.code}">
-        <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
-          <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div></div>
-        <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;}).join("");
-    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は日経連動の少ない自力を上に）。</div>
-      ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 過去実績では買い候補全体に追い風の日です。</div>`:""}
-      <div class="picklist">${rows}</div>
+    const perYen=loadCapital()?Math.floor(loadCapital()/splitCount(list.length)):0;
+    const shown=HERO_EXPAND?list:list.slice(0,HERO_CAP);
+    const rest=list.length-shown.length;
+    const rows=shown.map(r=>pickRow(r,perYen)).join("");
+    const expander=(list.length>HERO_CAP)
+      ? `<a class="heromore" onclick="event.preventDefault();toggleHeroExpand()">${HERO_EXPAND?"上位だけ表示に戻す ▴":`残り ${rest}件をすべて見る ▾`}</a>`:"";
+    const broadStat=rh?` 過去の全面リバウンド日は<b>勝率${rh.win}%・平均+${rh.avg}%</b>（${rh.days}日で検証）。`:"";
+    body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は日経連動の少ない自力を上に）。${list.length>HERO_CAP?`まずは上位${HERO_CAP}銘柄。`:""}</div>
+      ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 買い候補全体に追い風の日です。${broadStat}</div>`:""}
+      ${sizerBox(list.length)}
+      <div class="picklist">${rows}</div>${expander}
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
+      ${proofLine(list)}
       <div class="pickfoot">${lpToggle}<a class="more" href="#/about">タグと数字の意味 →</a></div>`;
   }else{
     body=`<div class="lead">本日は${(hideLowPrice()&&hidden)?`¥${BUY_PRICE_MIN.toLocaleString()}以上の`:""}検証済み買い候補なし — <b>買わない日も立派な戦略</b>。型が出た日だけ張ります。</div>
@@ -436,6 +534,7 @@ function exitGuide(ks,fut){
     <div style="font-weight:800">🚪 買いの目安（期待値・出口） <span class="muted" style="font-weight:400">（✅${esc(st.emoji)}${esc(st.label)}）</span></div>
     <div style="margin-top:6px"><span class="${st.ev>=0?"pos":"neg"}" style="font-size:18px;font-weight:800">期待値 ${st.ev>=0?"+":""}${st.ev}%</span><span class="muted" style="font-size:11px">/件（出口ルール込みの過去平均）</span></div>
     <div style="margin-top:4px;font-size:13px"><b>保有${st.hold}日めど</b>・<b>損切り-${st.sl}%</b>・利確なし（利を伸ばす）・勝率${st.win}%</div>
+    ${yearLine(ks)}
     ${ftNote}
     <div class="muted" style="font-size:11px;margin-top:6px">※次の寄り付きでのエントリー想定。固定ルールの過去シミュレーション（手数料等未考慮）で、将来を保証しません。</div></div>`;
 }
@@ -716,7 +815,7 @@ function viewAbout(){
       <b>出口（いつ・どこで手仕舞うか）とセット</b>で毎日表示します。むずかしい指標は出しません。</p>
     <div style="margin-top:10px;line-height:1.95">
       <div>① ホームの <b style="color:var(--up)">✅今日の買い候補</b> を見る（0件の日は買わない日）</div>
-      <div>② 買うなら<b>次の寄り付き</b>で。1銘柄に全張りせず<b>分散</b></div>
+      <div>② 買うなら<b>次の寄り付き</b>で。ヒーローに<b>💴投資予定額</b>を入れると、1銘柄いくら（何株）買えばいいかの目安が出ます。1銘柄に全張りせず<b>分散</b></div>
       <div>③ 買ったら銘柄ページで<b>📒記録</b> → ホームのコーチが毎日「持つ/売る」を指示</div>
     </div>
   </div>
@@ -728,6 +827,8 @@ function viewAbout(){
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
       <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。買い候補は<b style="color:var(--tx)">この期待値が高い順（勝てる順）</b>に並びます。シグナル種類ごとの統計のため、同じシグナルの銘柄は同率＝自力優先→RSI低い順で並べます。</li>
       <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
+      <li><b style="color:var(--tx)">📅 年別の実績</b> … 銘柄ページの「買いの目安」に、この型が<b style="color:var(--tx)">各年でプラスだったか</b>を年別に表示します。単年のまぐれでなく毎年通用してきたかの裏づけです。</li>
+      <li><b style="color:var(--tx)">🌊 全面リバウンド日</b> … 市場全体が反発した日は、過去実績で買い候補全体に追い風でした。その日はホームに勝率・平均リターンを表示します。</li>
       <li>反発（反転）系のシグナルは現在表示していません（2026-07 整理）。</li>
       <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。</li>
     </ul>
