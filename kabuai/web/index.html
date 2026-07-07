@@ -90,6 +90,9 @@
   .yrcell.pos{border-color:rgba(22,199,132,.45);background:rgba(22,199,132,.08);color:var(--up)}
   .yrcell.neg{border-color:rgba(234,57,67,.45);background:rgba(234,57,67,.08);color:#ff6b6b}
   .heromore{display:block;text-align:center;color:var(--acc);font-weight:700;font-size:12.5px;padding:10px 0}
+  .chip.new{border-color:rgba(255,159,67,.6);background:rgba(255,159,67,.12);color:var(--wa);font-weight:800}
+  .possum{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;
+    padding:8px 10px;margin-bottom:8px;border-radius:9px;background:var(--card2);border:1px solid var(--line)}
   /* 検索カード */
   .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
     padding:13px 14px;margin-bottom:10px;display:block}
@@ -155,10 +158,24 @@ let DATA=null;
 async function load(){
   const cands=["../data/latest.json","data/latest.json","./data/latest.json"];
   for(const u of cands){
-    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){DATA=await r.json();return;}}catch(e){}
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){DATA=await r.json();break;}}catch(e){}
   }
-  throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
+  if(!DATA) throw new Error("latest.json が見つかりません（build_data.py を実行してください）");
+  computeNewCodes();
 }
+// ── 🆕 前回見た日から新しく点灯した買い候補（localStorage で日付比較・当日だけ光らせる） ──
+let NEW_CODES=new Set();
+function computeNewCodes(){
+  try{
+    const cur=candidates().list.map(r=>r.code);
+    const prev=JSON.parse(localStorage.getItem("kabuai_seen")||"null");
+    NEW_CODES=(prev&&prev.date&&prev.date!==DATA.data_date&&Array.isArray(prev.codes))
+      ? new Set(cur.filter(c=>prev.codes.indexOf(c)<0)) : new Set();
+    localStorage.setItem("kabuai_seen",JSON.stringify({date:DATA.data_date,codes:cur}));
+  }catch(e){NEW_CODES=new Set();}
+}
+function isNew(code){return NEW_CODES.has(code);}
+function newChip(code){return isNew(code)?`<span class="chip new">🆕新規</span>`:"";}
 
 // ── 表示する買いシグナル（v2の核心設定） ──
 // 反発（反転/強反転）系は本人指示で非表示（2026-07-02「反転とかいらない・わかりずらい」）。
@@ -307,7 +324,7 @@ function pctTag(r1){if(r1==null||isNaN(r1))return "";
 function sigChips(r){
   const edge=(r.signals||[]).filter(sigHasEdge);
   if(!edge.length) return "";
-  return `<div class="chips">`+edge.map(k=>{
+  return `<div class="chips">`+newChip(r.code)+edge.map(k=>{
     const e=sigEV(k); if(!e) return "";
     return `<span class="chip buy">✅ ${e.emoji}${e.label}<span class="muted" style="font-weight:400"> 勝率${e.win}%</span></span>`;
   }).join("")+ftagChip(r)+`</div>`;
@@ -370,15 +387,17 @@ function posCoach(){
   const ref=DATA.data_date||"";
   const now=new Date();
   const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  let sum=0,cnt=0,winN=0,loseN=0,actN=0;
   const items=a.map((p,i)=>{
     const row=(DATA.ranking||[]).find(r=>r.code===p.code)||(SEARCH&&SEARCH.find(r=>r.code===p.code))||null;
     const cur=row?row.price:null;
     const pnl=(cur!=null&&p.entry>0)?(cur/p.entry-1)*100:null;
+    if(pnl!=null){sum+=pnl;cnt++;if(pnl>0)winN++;else if(pnl<0)loseN++;}
     const slP=Math.round(p.entry*(1-PLAN.sl/100));
     const day=bizDays(p.date,todayStr);
     let act,actCls="";
-    if(cur!=null&&cur<=slP){act=`🔴 損切りライン（¥${slP.toLocaleString()}）割れ — <b>今日売って仕切り直し</b>`;actCls="neg";}
-    else if(day>=PLAN.hold){act=`⏰ ${PLAN.hold}営業日目 — <b>今日の大引けで手仕舞い</b>（保有しすぎない）`;}
+    if(cur!=null&&cur<=slP){act=`🔴 損切りライン（¥${slP.toLocaleString()}）割れ — <b>今日売って仕切り直し</b>`;actCls="neg";actN++;}
+    else if(day>=PLAN.hold){act=`⏰ ${PLAN.hold}営業日目 — <b>今日の大引けで手仕舞い</b>（保有しすぎない）`;actN++;}
     else{act=`🟢 ホールド（${day}日目／${PLAN.hold}日・手仕舞いめど ${bizAdd(p.date,PLAN.hold)}）・損切り ¥${slP.toLocaleString()}・利確なし（引っ張る）`;}
     return `<div class="poschip">
       <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
@@ -388,8 +407,13 @@ function posCoach(){
         <button class="posdel" onclick="event.preventDefault();delPos(${i})">売った/削除</button></div>
       <div class="${actCls}" style="font-size:12.5px;margin-top:4px">${act}</div></div>`;
   }).join("");
-  return `<h2>📒 持ち株コーチ</h2><div class="card">${items}
-    <div class="muted" style="font-size:11px;margin-top:6px">損益は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。営業日は土日のみ除外。記録はこの端末にだけ保存されます。</div></div>`;
+  const avg=cnt?sum/cnt:null;
+  const summary=`<div class="possum"><b>保有 ${a.length}件</b>
+    ${avg!=null?`<span>平均損益 <b class="${cls(avg)}">${fmtPct(avg)}</b></span>`:""}
+    ${cnt?`<span class="muted">🟢利益中${winN} / 🔴損失中${loseN}</span>`:""}
+    ${actN?`<span class="warn" style="font-weight:700">⚠ 今日うごく ${actN}件</span>`:`<span class="muted">今日はホールドでOK</span>`}</div>`;
+  return `<h2>📒 持ち株コーチ</h2><div class="card">${summary}${items}
+    <div class="muted" style="font-size:11px;margin-top:6px">損益は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。平均損益は各銘柄の騰落率の単純平均（株数は未記録）。営業日は土日のみ除外。記録はこの端末にだけ保存されます。</div></div>`;
 }
 function posForm(code,name,price){
   const d=new Date();
@@ -421,7 +445,7 @@ function pickRow(r,perYen){
   const st=buyStat(r)||{ev:0,win:0};
   return `<a class="pickrow" href="#/detail/${r.code}">
     <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
-      <div class="chips">${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div>
+      <div class="chips">${newChip(r.code)}${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div>
       ${perYen?sizeHint(r,perYen):""}</div>
     <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;
 }
@@ -520,7 +544,9 @@ async function loadStockDetail(code){
     return;
   }
   el.innerHTML=renderDetail(s);
-  drawCandle(s.chart);
+  const ch=s.chart;
+  const lastC=(ch&&ch.c&&ch.c.length)?ch.c[ch.c.length-1]:((s.indicators||{}).price||0);
+  drawCandle(ch, (isCand({signals:s.signals})&&lastC>0)?{stop:lastC*(1-PLAN.sl/100)}:null);
 }
 function findStock(code){return (DATA.ranking||[]).find(r=>r.code===code)
   ||(SEARCH&&SEARCH.find(r=>r.code===code))||undefined;}
@@ -563,20 +589,22 @@ function renderDetail(s){
     ${posForm(s.code,s.name,i.price)}
     ${s.chart?`<h2>日足3ヶ月</h2>
     <div class="card"><canvas id="candle" style="width:100%;display:block"></canvas>
-      <div class="muted" style="font-size:11px;margin-top:6px">右軸=価格(¥)。${esc(s.chart_note||"")}</div></div>`:""}
+      <div class="muted" style="font-size:11px;margin-top:6px">右軸=価格(¥)。${isCand({signals:s.signals})?`<span style="color:#ff6b6b">赤い破線＝直近終値から損切り-${PLAN.sl}%の目安。</span>`:""}${esc(s.chart_note||"")}</div></div>`:""}
     <div class="card">
       <div class="muted" style="font-size:12px">参考値: RSI（買われすぎ度）<b style="color:var(--tx)">${i.rsi!=null?Number(i.rsi).toFixed(0):"—"}</b> ・ 勢いスコア <b style="color:var(--tx)">${i.momentum!=null?Number(i.momentum).toFixed(0):"—"}</b>（高い=いま強い/過熱の目安で、上がる予測ではありません）</div>
     </div>
     <p class="disc">${s.disclaimer||DATA.disclaimer}</p>`;
 }
-function drawCandle(ch){
+function drawCandle(ch,opts){
   const cv=document.getElementById("candle");if(!cv||!ch||!ch.c||!ch.c.length)return;
   const dpr=window.devicePixelRatio||1, W=cv.clientWidth||cv.parentElement.clientWidth-28, H=240;
   cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px";
   const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,W,H);
   const padL=8,padR=50,padT=10,padB=22, cw=W-padL-padR, chh=H-padT-padB;
   const o=ch.o,h=ch.h,l=ch.l,c=ch.c,n=c.length;
+  const stop=(opts&&opts.stop>0)?opts.stop:0;
   let pmin=Math.min(...l),pmax=Math.max(...h); if(pmin===pmax){pmin*=0.99;pmax*=1.01;}
+  if(stop) pmin=Math.min(pmin,stop);   // 損切りラインが下にはみ出ないよう軸を広げる
   const pad=(pmax-pmin)*0.08; pmin-=pad; pmax+=pad;
   const xOf=i=> padL+(n<=1?cw/2:i*cw/(n-1)), band=cw/n;
   const yP=v=> padT+(pmax-v)/(pmax-pmin)*chh;
@@ -590,7 +618,13 @@ function drawCandle(ch){
     g.strokeStyle=up?"#16C784":"#EA3943"; g.fillStyle=up?"#16C784":"#EA3943";
     g.beginPath();g.moveTo(x,yP(h[i]));g.lineTo(x,yP(l[i]));g.stroke();
     const yo=yP(o[i]),yc=yP(c[i]); g.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));}
-  g.fillStyle="#8a94a3"; g.textAlign="center";
+  // 損切りライン（赤破線）: 直近終値から -SL% の目安。出口を目で覚えるため。
+  if(stop){const y=yP(stop);
+    g.strokeStyle="#EA3943"; g.lineWidth=1; if(g.setLineDash)g.setLineDash([5,4]);
+    g.beginPath();g.moveTo(padL,y);g.lineTo(W-padR,y);g.stroke(); if(g.setLineDash)g.setLineDash([]);
+    g.fillStyle="#EA3943"; g.textAlign="left"; g.font="10px sans-serif";
+    g.fillText(`損切り-${PLAN.sl}% ¥${Math.round(stop).toLocaleString()}`,padL+2,y-3);}
+  g.fillStyle="#8a94a3"; g.textAlign="center"; g.font="10px sans-serif";
   [0,Math.floor(n/2),n-1].forEach(i=>{g.fillText((ch.dates[i]||"").slice(5),xOf(i),H-6);});
 }
 
