@@ -1,0 +1,62 @@
+name: 投げ売りブースター大引けチェック（A/Bテスト）
+
+# 案A検証口座の15:00大引けチェック（処分/保有）＋金曜はA/B比較レポート。
+# 本番 schedule_close.yml とは完全独立。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '58 5 * * 1-5'   # 14:58 JST（本番14:55の後・保険）
+
+concurrency:
+  group: capitulation-close
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_TEST_URL: ${{ secrets.DISCORD_WEBHOOK_TEST_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      CAPIT_THRESHOLD: ${{ vars.CAPIT_THRESHOLD }}
+      CAPIT_BOOST: ${{ vars.CAPIT_BOOST }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 大引けチェック実行
+        run: python capitulation.py close
+
+      - name: A/B比較レポート（金曜のみ）
+        continue-on-error: true
+        run: |
+          dow=$(TZ=Asia/Tokyo date +%u)   # 5=金曜
+          if [ "$dow" = "5" ]; then
+            echo "金曜 → A/B比較レポート配信"
+            python capitulation.py report
+          else
+            echo "金曜ではないのでレポートはスキップ"
+          fi
+
+      - name: テスト用ポジション保存
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          for f in positions_test.json last_close_check_test.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          git diff --cached --quiet || git commit -m "chore(capit): update test positions (close) [skip ci]"
+          git pull --rebase --autostash origin main
+          git push origin main
