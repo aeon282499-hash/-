@@ -791,11 +791,7 @@ function viewExplore(){
       <b style="font-size:18px;${(c[k]||0)?"color:var(--up)":"color:var(--mut)"}">${c[k]||0}</b><span class="muted" style="font-size:11px">件</span></a>`;};
   return `
     <h2>🧭 銘柄探検 <span class="muted" style="font-weight:400;font-size:12px">${EXP.data_date||""} 終値時点</span></h2>
-    <a class="card" style="display:flex;align-items:center;gap:10px;border-left:3px solid var(--acc)" href="#/explore/ranking">
-      <span style="font-size:20px">🏆</span>
-      <span style="flex:1"><b>上昇ランキング</b><span class="muted" style="display:block;font-size:11px">過去の初動銘柄を初動日からの最大上昇率で並べる</span></span>
-      <span class="muted">→</span></a>
-    <h2 style="margin-top:14px">スイング狙い</h2>
+    <h2 style="margin-top:4px">スイング狙い</h2>
     ${["shodo","shodo_wait","rising","oshime"].map(cell).join("")}
     <h2 style="margin-top:14px">デイトレ・短期</h2>
     ${["rebound","stop_high"].map(cell).join("")}
@@ -1089,7 +1085,6 @@ function render(){
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/theme")) $("#view").innerHTML=viewTheme();
-    else if(h==="#/explore/ranking") $("#view").innerHTML=viewRankingUp();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
