@@ -92,11 +92,13 @@ def detect(rows: list[dict]) -> dict:
         for k in hit:
             groups[k]["count"] += 1
 
-    member_fields = ("code", "name", "price", "momentum", "grade", "r1", "r5", "r10", "r20", "rsi", "signals")
+    member_fields = ("code", "name", "price", "momentum", "grade", "r1", "r5", "r10", "r20",
+                     "rsi", "turnover_oku", "signals")
     for k, g in groups.items():
         members = [r for r in rows if k in r["signals"]]
         members.sort(key=lambda x: x["momentum"], reverse=True)
-        g["members"] = [{f: r[f] for f in member_fields} for r in members[:MEMBERS_PER_SIGNAL]]
+        # r.get(f): turnover_oku 等が無い row を渡されても壊れない（build以外の呼び出し耐性）
+        g["members"] = [{f: r.get(f) for f in member_fields} for r in members[:MEMBERS_PER_SIGNAL]]
 
     # 点灯のあるシグナルだけ、SIGNAL_DEFS の順序を保って返す
     return {"order": [k for (k, *_ ) in defs],

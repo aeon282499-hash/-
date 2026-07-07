@@ -43,7 +43,13 @@ import ai_summary  # noqa: E402
 import correlation  # noqa: E402  先物連動度タグ（yfinance は使用時にのみ import）
 
 # ── 仮パラメータ ────────────────────────────────────────────
-MIN_TURNOVER = 1e8     # 平均売買代金（円/日）下限＝流動性フィルタ（仮）
+MIN_TURNOVER = 1e8     # 採点・シグナル検出・リバウンド判定の土台（全銘柄・不変）
+# v3(2026-07-07): ✅買い候補として「表示」する床＝10億。板の厚い銘柄だけ推奨する。
+# 採点/シグナル検出/全面リバウンド日の判定は MIN_TURNOVER(1億)の全銘柄のまま＝decouple。
+# 根拠: _edge_by_turnover.py で反発・買い集めの勝率/PFは10億がピーク(小型偏重でない)、
+#       _turnover_check.py で10億でも候補68件/日・毎日≥5件と枯れない。フロントが
+#       各候補の turnover_oku で ≥ pick_min_oku を絞る。
+PICK_MIN_TURNOVER = 1e9
 TOP_N = 50             # ランキング掲載件数
 EXPORT_TOP = 120       # 詳細チャートJSONを書き出す上位件数（＋シグナル点灯銘柄）
 CHART_DAYS = 60        # 詳細チャートの営業日数（≒3ヶ月）
@@ -256,7 +262,7 @@ def export_search_index(rows: list[dict], data_date: str, rows_illiq: list[dict]
     2026-06-12: 低流動銘柄(売買代金1億円未満)も illiq=1 フラグつきで収録（検索/詳細は全銘柄
     対応・ランキング/シグナルは従来どおり流動性フィルタ後のみ＝フロント側でilliqを除外）。"""
     keep = ("code", "name", "price", "momentum", "grade", "sr", "power", "rsi",
-            "stab", "r1", "r5", "r10", "r20", "rank")
+            "stab", "r1", "r5", "r10", "r20", "rank", "turnover_oku")
     stocks = []
     for r in rows:
         o = {k: r[k] for k in keep}
@@ -460,6 +466,7 @@ def build() -> dict:
             "r10": ind["r10"],
             "r20": ind["r20"],
             "vr": ind["vr"],
+            "turnover_oku": round(ind["turnover"] / 1e8, 1),  # 売買代金(億円/日)。ピック床の絞りに使う
             "mom_hist": ind["mom_hist"],
         })
 
@@ -701,6 +708,8 @@ def build() -> dict:
         "universe_total": len(data),
         "universe_scored": len(rows),
         "min_turnover_yen": MIN_TURNOVER,
+        "pick_min_oku": round(PICK_MIN_TURNOVER / 1e8, 1),  # v3: ✅買い候補の表示床（10億）
+
         "grade_counts": grade_counts,
         "stock_charts": n_charts,
         "search_index": n_search,

@@ -138,6 +138,28 @@
   .posadd{background:var(--up);color:#0e1116;font-weight:800;border:none;border-radius:8px;
     padding:7px 16px;font-size:13px;cursor:pointer}
   .cardgrid{margin-top:8px}
+  /* 🐵 モメンタム（強さ・過熱ランキング）＝買い推奨でなく"眺める"ビュー */
+  .warnbar{margin:0 0 12px;font-size:12.5px;line-height:1.65;background:rgba(234,57,67,.08);
+    border:1px solid rgba(234,57,67,.35);border-radius:12px;padding:11px 13px}
+  .warnbar b{color:#ff6b6b}
+  .gchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .gchip{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--card2);
+    border:1px solid var(--line);color:var(--mut);cursor:pointer}
+  .gchip.on{color:var(--wa);border-color:rgba(255,159,67,.6);background:rgba(255,159,67,.12)}
+  .mrow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .mrow:last-child{border-bottom:0}
+  .grb{width:30px;height:30px;flex:0 0 auto;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:14px;color:#0e1116}
+  .grb.S{background:linear-gradient(135deg,#ff8a4b,#ea3943)}         /* S=熱/危険色（過熱＝買い場でない） */
+  .grb.A{background:linear-gradient(135deg,#ffc04a,#ff7a45)}
+  .grb.B{background:#39434f;color:#cdd6e0}
+  .grb.C,.grb.D{background:var(--card2);color:var(--mut);border:1px solid var(--line)}
+  .mrow .m-nm{flex:1;min-width:0}
+  .mrow .m-nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+  .mrow .m-nm small{color:var(--mut);font-size:11px}
+  .mrow .m-px{text-align:right;white-space:nowrap;font-size:13px;font-weight:700;line-height:1.35}
+  /* 🔥 テーマ（勢いに乗る・攻め）＝継続型のバーベルを正直に */
+  .themecard{border-color:rgba(255,159,67,.45);background:linear-gradient(180deg,rgba(255,159,67,.08),transparent)}
   @media(min-width:900px){
     main{max-width:1080px}
     .cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
@@ -153,8 +175,9 @@
 <main id="view"><div class="muted">読み込み中…</div></main>
 <nav>
   <a href="#/" id="nav-home" class="on"><span class="i">✅</span>今日の買い</a>
+  <a href="#/momentum" id="nav-momentum"><span class="i">🐵</span>モメンタム</a>
+  <a href="#/theme" id="nav-theme"><span class="i">🔥</span>テーマ</a>
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
-  <a href="#/search" id="nav-search"><span class="i">🔍</span>検索</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
 </nav>
 
@@ -187,11 +210,11 @@ function computeNewCodes(){
 function isNew(code){return NEW_CODES.has(code);}
 function newChip(code){return isNew(code)?`<span class="chip new">🆕新規</span>`:"";}
 
-// ── 表示する買いシグナル（v2の核心設定） ──
-// 反発（反転/強反転）系は本人指示で非表示（2026-07-02「反転とかいらない・わかりずらい」）。
-// データ側の検出・実績集計はそのまま動いているので、戻す時はこの配列に
-// "strong_reversal","reversal" を足すだけ。
-const BUY_KEYS=["strong_accum","accum"];
+// ── 表示する買いシグナル（v3の核心設定） ──
+// v3(2026-07-07)で反発（反転/強反転＝ダウ的な"反発初動"）を主軸に戻した。
+// _edge_by_turnover.py で反発が買い集めより勝率/PFで上（強反転57.7%/PF1.77・反転53%/PF1.39
+// vs 買い集め48.7%/PF1.20＝中央値マイナス）と確認済み。並びは期待値順なので強反転が自然に先頭。
+const BUY_KEYS=["strong_reversal","reversal","strong_accum","accum"];
 const TRK_WIN_MIN=52;   // 検証済みエッジのゲート（得意保有の勝率52%以上＆平均プラス）
 
 function sigTrack(k){const t=DATA.signal_track;return (t&&t.available&&t.groups&&t.groups[k])||null;}
@@ -316,7 +339,11 @@ function candidates(){
     if(seen[r.code])return; seen[r.code]=1;
     all.push({...r,signals:(r.signals||[]).filter(x=>BUY_KEYS.indexOf(x)>=0&&sigHasEdge(x))});
   }));
-  const list=all.filter(priceOK), hidden=all.length-list.length;
+  // v3: 板の厚い銘柄だけ推奨（売買代金 ≥ pick_min_oku=10億）。薄い銘柄は買い候補に出さない
+  // （_edge_by_turnover.py: 厚い銘柄ほど勝率/PF高い＝小型偏重でない・「出来高少ない」を根治）。
+  const pickMin=Number(DATA.pick_min_oku)||0;
+  const thick=all.filter(r=>(r.turnover_oku!=null?r.turnover_oku:pickMin)>=pickMin);
+  const list=thick.filter(priceOK), hidden=thick.length-list.length;
   // ソート優先度（2026-07-02 本人指示「買いで勝てる順」）:
   // ①期待値の高い順（出口込みの過去平均リターン＝BT検証済みの「勝てる」数字）
   // ②同率内は自力優先（先物に振られにくい・高連動は下げる）③RSI低い順
@@ -900,16 +927,27 @@ function viewAbout(){
 
   <h2>✅買い候補とは</h2>
   <div class="card">
-    <p style="margin:0;line-height:1.8">「出来高をともなって資金が入ってきている」<b>買い集め系のシグナル</b>のうち、
-      過去数年の検証で<b>勝率と平均リターンにプラスの実績</b>があったものだけを表示します。</p>
+    <p style="margin:0;line-height:1.8"><b>反発（＝深い下げからの反発初動）</b>と<b>買い集め</b>のシグナルのうち、
+      過去数年の検証で<b>勝率と平均リターンにプラスの実績</b>があったものだけを表示します。
+      推奨は<b style="color:var(--tx)">売買代金が多い（板の厚い）銘柄</b>に絞っています（薄い株は値動きが荒く買いにくいため）。</p>
+    <p class="muted" style="margin:8px 0 0;font-size:12px;line-height:1.75">※「反発」は上がってる勢い株ではなく、<b style="color:var(--tx)">売られすぎの反転を早く拾う逆張り</b>です。ドカンと上がる株を狙う機能ではありません（それは負けやすいことが検証で分かっています）。数と分散・損切りで勝つ設計です。</p>
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
       <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。買い候補は<b style="color:var(--tx)">この期待値が高い順（勝てる順）</b>に並びます。シグナル種類ごとの統計のため、同じシグナルの銘柄は同率＝自力優先→RSI低い順で並べます。</li>
       <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
       <li><b style="color:var(--tx)">📅 年別の実績</b> … 銘柄ページの「買いの目安」に、この型が<b style="color:var(--tx)">各年でプラスだったか</b>を年別に表示します。単年のまぐれでなく毎年通用してきたかの裏づけです。</li>
       <li><b style="color:var(--tx)">🌊 全面リバウンド日</b> … 市場全体が反発した日は、過去実績で買い候補全体に追い風でした。その日はホームに勝率・平均リターンを表示します。</li>
-      <li>反発（反転）系のシグナルは現在表示していません（2026-07 整理）。</li>
-      <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。</li>
+      <li>主力は<b style="color:var(--tx)">反発（反転の初動）</b>です。グレードはD（売られすぎ＝勢いスコアが低い）に出ますが、買いの根拠は勢いスコアではなく<b style="color:var(--tx)">期待値・勝率</b>です。</li>
+      <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。単発では半分近く負けます（だから分散＋損切り-${ex.sl}%）。</li>
     </ul>
+  </div>
+
+  <h2>ほかのタブ</h2>
+  <div class="card">
+    <div style="line-height:1.95">
+      <div>🐵 <b>モメンタム</b> … 「今いちばん勢いがある／過熱している」順のランキング（S〜D）。<b style="color:#ff6b6b">買い推奨ではありません</b>——過去データではS評価ほど翌10日は弱い（平均マイナス）。眺める・☆ウォッチ用です。</div>
+      <div>🔥 <b>テーマ</b> … 「上がってる勢いに乗る」攻めの居場所。走っているテーマ銘柄の継続を取る<b>バーベル型（勝率5割・当たれば大／損切り-12%必須）</b>。堅実な✅今日の買いとは別物です。</div>
+      <div>🧭 <b>探検</b> … 初動・押し目・ストップ高などの探索用スクリーナー（優位性は未検証・勝率は出しません）。</div>
+    </div>
   </div>
 
   <h2>日経連動タグとは</h2>
@@ -976,11 +1014,70 @@ function viewAbout(){
   <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"} / source: ${DATA.source||"—"}</p>`;
 }
 
+// ── 🐵 モメンタム（強さ・過熱ランキング）＝看板ビュー。買い推奨ではない（正直フレーム） ──
+// 名前どおり「今いちばん勢いがある/過熱している」順を出す。ただし bt_momentum_core.py で
+// グレードSは翌10日 平均-2.65%（最も過熱で反落しやすい）と実証済みなので「買い推奨でない・
+// 眺める/ウォッチ用」を明示し、Sを熱/危険色にする。買うのは✅今日の買い。
+let MOM_GRADE="all";
+function setMomGrade(g){MOM_GRADE=g;render();}
+function viewMomentum(){
+  const rk=DATA.ranking||[];
+  const gc=DATA.grade_counts||{};
+  const chip=(g,lbl)=>`<a class="gchip ${MOM_GRADE===g?"on":""}" onclick="event.preventDefault();setMomGrade('${g}')">${lbl}</a>`;
+  const list=MOM_GRADE==="all"?rk:rk.filter(r=>r.grade===MOM_GRADE);
+  const rows=list.map(r=>{
+    const cand=isCand(r);
+    return `<a class="mrow" href="#/detail/${r.code}">
+      <div class="grb ${esc(r.grade||"D")}">${esc(r.grade||"-")}</div>
+      <div class="m-nm"><b>${esc(r.name)}${cand?' <span class="chip buy" style="padding:0 6px">✅買い</span>':""}</b>
+        <small>${r.code} ・ 勢い${r.momentum!=null?Math.round(r.momentum):"—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku!=null?Math.round(r.turnover_oku)+"億":"—"}</small></div>
+      <div class="m-px">¥${(r.price||0).toLocaleString()}<br>${pctTag(r.r1)||"—"}</div></a>`;
+  }).join("");
+  return `
+    <h2>🐵 モメンタム <span class="muted" style="font-weight:400;font-size:12px">強さ・過熱ランキング</span></h2>
+    <div class="warnbar">🔥 <b>買い推奨ではありません。</b>「今いちばん勢いがある／過熱している」順です。
+      過去データでは<b>S評価ほど翌10日は弱い（平均-2.65%＝高値づかみになりやすい）</b>。
+      眺める・☆ウォッチ・勉強用に。実際に買うのは <a href="#/" style="color:var(--acc);font-weight:700">✅今日の買い</a> で。</div>
+    <div class="gchips">${chip("all","すべて")}${["S","A","B","C"].filter(g=>gc[g]).map(g=>chip(g,g+" "+gc[g])).join("")}</div>
+    <div class="card" style="padding:4px 14px">${rows||`<div class="muted" style="padding:12px 0">この評価の銘柄はランキング上位にありません。</div>`}</div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。✅＝この銘柄は今日の買い候補にも入っています。</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
+// ── 🔥 テーマ（勢いに乗る・攻め）＝継続型モメンタム。バーベルを正直に ──
+// 「上がってる勢いに乗る」欲求の正しい居場所。bt_exit（2026-06-01）で blast>=70 ×翌寄り→8日・
+// 損切り-12%・利確なし = +2.36%/件・PF1.62・勝率53.7%（バーベル）。下げ相場では自然に沈黙。
+function viewTheme(){
+  const tb=DATA.theme_blast;
+  if(!tb||!(tb.members||[]).length){
+    return `<h2>🔥 テーマ（勢いに乗る）</h2>
+      <div class="card muted">本日は該当するテーマ銘柄がありません。テーマ勢いは下げ相場では条件が同時成立しにくく、自然に静かになります（内蔵の下げ相場プロテクション）。</div>
+      <p class="disc">${DATA.disclaimer}</p>`;
+  }
+  const s=tb.stats||{}, pl=tb.plan||{};
+  const rows=(tb.members||[]).slice(0,20).map(m=>`<a class="pickrow" href="#/detail/${m.code}">
+    <div class="pk-nm"><b>${esc(m.name)}</b><small>${m.code}${m.theme?" ・ "+esc(m.theme):""} ・ ¥${(m.price||0).toLocaleString()}${m.r20!=null?" ・ 1ヶ月 "+fmtPct(m.r20):""}</small>
+      <div class="chips"><span class="chip" style="color:var(--wa);border-color:rgba(255,159,67,.5)">🔥 爆益スコア ${m.blast}</span>${m.overext?`<span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.5)">過熱</span>`:""}</div></div></a>`).join("");
+  return `
+    <h2>🔥 テーマ（勢いに乗る） <span class="muted" style="font-weight:400;font-size:12px">${tb.date||""} 時点</span></h2>
+    <div class="card themecard">
+      <div style="font-weight:800">継続型モメンタム＝“もう走っている × ホットなテーマ × 大商い”</div>
+      <div style="font-size:12.5px;margin-top:6px;line-height:1.7">「上がってる勢いに乗りたい」はここで。ただし<b>バーベル型（勝率${s.win!=null?s.win:53}%）＝当たれば大きいが外れも多い</b>。
+        <b style="color:#ff6b6b">損切り-${pl.sl!=null?pl.sl:12}%の厳守が前提</b>（PF${s.pf!=null?s.pf:1.62}／検証${s.period||"約1年"}）。グレードSの勢い株を単に買うのとは別物です。</div>
+      <div class="exitbox" style="background:rgba(255,159,67,.07);border-color:rgba(255,159,67,.3)">🚪 <b>出口</b>: ${esc(pl.text||"翌寄り買い → 約8営業日保有・利確なし・損切り-12%")}</div>
+    </div>
+    <div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${rows}</div></div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">${esc(tb.note||"")}</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 // ── ルーター ──
 function setNav(h){
-  $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail"));
+  // 検索は#/detail同様ホーム系（ナビは点灯させない）。5タブ=今日の買い/モメンタム/テーマ/探検/使い方
+  $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail")||h.startsWith("#/search"));
+  $("#nav-momentum").classList.toggle("on",h.startsWith("#/momentum"));
+  $("#nav-theme").classList.toggle("on",h.startsWith("#/theme"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
-  $("#nav-search").classList.toggle("on",h.startsWith("#/search"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
 function render(){
@@ -990,6 +1087,8 @@ function render(){
   try{
     if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
+    else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
+    else if(h.startsWith("#/theme")) $("#view").innerHTML=viewTheme();
     else if(h==="#/explore/ranking") $("#view").innerHTML=viewRankingUp();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
