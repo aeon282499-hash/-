@@ -93,6 +93,16 @@
   .chip.new{border-color:rgba(255,159,67,.6);background:rgba(255,159,67,.12);color:var(--wa);font-weight:800}
   .possum{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;
     padding:8px 10px;margin-bottom:8px;border-radius:9px;background:var(--card2);border:1px solid var(--line)}
+  /* 今日の日タイプ（追い風/ふつう/見送り） */
+  .dayband{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;
+    margin-bottom:10px;border:1px solid var(--line);background:var(--card)}
+  .dayband .db-emoji{font-size:26px;line-height:1;flex:0 0 auto}
+  .dayband .db-title{font-weight:900;font-size:15px}
+  .dayband .db-sub{font-size:12px;color:var(--mut);line-height:1.55;margin-top:2px}
+  .dayband.broad{background:linear-gradient(180deg,rgba(77,171,247,.16),rgba(77,171,247,.04));border-color:rgba(77,171,247,.55)}
+  .dayband.normal{border-color:rgba(22,199,132,.4)}
+  .dayband.none{background:var(--card2)}
+  .dayband.none .db-title{color:var(--mut)}
   /* 検索カード */
   .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;
     padding:13px 14px;margin-bottom:10px;display:block}
@@ -456,12 +466,36 @@ function proofLine(list){
     : `${y.from}〜${y.to}の<b>${y.total}年中${y.allPos}年でプラス</b>`;
   return `<div class="proofline">📅 表示中の「買いの型」は、過去検証で ${msg}（単年のまぐれでない裏づけ・保有8日/-12%）。</div>`;
 }
+// ── 今日はどんな日か（🌊追い風 / ✅ふつう / 🚫見送り の3段階・正直に） ──
+// 「注意して買う日」という中間ラベルは作らない: 出す買い候補はふつうの日でも
+// 全年プラスなので、はっきり止めるのは候補0件の日だけ。追い風はそこにボーナスが乗る関係。
+function dayTypeBanner(){
+  const {list,hidden}=candidates();
+  const broad=!!(DATA.rebound&&DATA.rebound.mode==="broad");
+  const rh=(broad&&DATA.rebound.history&&DATA.rebound.history.summary)||null;
+  let cls,emoji,title,sub;
+  if(!list.length){
+    cls="none";emoji="🚫";title="見送りの日";
+    sub=hidden
+      ? `¥${BUY_PRICE_MIN.toLocaleString()}以上の検証済み買い候補はありません（低位株${hidden}件は下で表示できます）。無理に買わないのも立派な戦略です。`
+      : `検証済みの買い候補が出ていません。無理に買わないのも立派な戦略です。`;
+  }else if(broad){
+    cls="broad";emoji="🌊";title="追い風の日（全面リバウンド日）";
+    sub=`市場全体が反発。過去の全面リバウンド日は${rh?`<b>勝率${rh.win}%・平均+${rh.avg}%</b>（${rh.days}日で検証）`:"買い候補全体に追い風でした"}。候補${list.length}件をいつもより積極的に（分散・損切りは厳守）。`;
+  }else{
+    cls="normal";emoji="✅";title="ふつうの日";
+    sub=`買い候補が${list.length}件。特別な追い風はありませんが、この型は<b>過去どの年も期待値プラス</b>。1件ずつ出口ルールを守って淡々と。`;
+  }
+  return `<div class="dayband ${cls}">
+    <div class="db-emoji">${emoji}</div>
+    <div style="min-width:0"><div class="db-title">今日は「${title}」 <span class="muted" style="font-weight:400;font-size:11px">${DATA.data_date||""} 終値時点</span></div>
+      <div class="db-sub">${sub}</div></div></div>`;
+}
 function candHero(){
   const {list,hidden}=candidates();
   const ex=exitRep();
   const rb=DATA.rebound;
   const broad=!!(rb&&rb.mode==="broad");
-  const rh=(broad&&rb&&rb.history&&rb.history.summary)||null;
   const lpToggle=(hidden||!hideLowPrice())
     ? `<a class="lpt" onclick="event.preventDefault();toggleLowPrice()">低位株(¥${BUY_PRICE_MIN.toLocaleString()}未満)を${hideLowPrice()?`表示${hidden?`（+${hidden}件）`:""}`:"隠す"}</a>`:"";
   let body;
@@ -472,9 +506,7 @@ function candHero(){
     const rows=shown.map(r=>pickRow(r,perYen)).join("");
     const expander=(list.length>HERO_CAP)
       ? `<a class="heromore" onclick="event.preventDefault();toggleHeroExpand()">${HERO_EXPAND?"上位だけ表示に戻す ▴":`残り ${rest}件をすべて見る ▾`}</a>`:"";
-    const broadStat=rh?` 過去の全面リバウンド日は<b>勝率${rh.win}%・平均+${rh.avg}%</b>（${rh.days}日で検証）。`:"";
     body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は日経連動の少ない自力を上に）。${list.length>HERO_CAP?`まずは上位${HERO_CAP}銘柄。`:""}</div>
-      ${broad?`<div class="broadline">🌊 今日は市場全体の反発日（全面リバウンド日）— 買い候補全体に追い風の日です。${broadStat}</div>`:""}
       ${sizerBox(list.length)}
       <div class="picklist">${rows}</div>${expander}
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
@@ -513,6 +545,7 @@ function viewHome(){
     const pc=document.getElementById("poscoach"); if(pc)pc.innerHTML=posCoach();
   });
   return `
+    ${dayTypeBanner()}
     ${candHero()}
     ${sellHero()}
     <div id="poscoach">${posCoach()}</div>
@@ -848,10 +881,21 @@ function viewAbout(){
     <p style="line-height:1.85;margin:0">このアプリは、東証全銘柄から<b>過去データの検証で「買って勝てた型」が出た銘柄だけ</b>を、
       <b>出口（いつ・どこで手仕舞うか）とセット</b>で毎日表示します。むずかしい指標は出しません。</p>
     <div style="margin-top:10px;line-height:1.95">
-      <div>① ホームの <b style="color:var(--up)">✅今日の買い候補</b> を見る（0件の日は買わない日）</div>
+      <div>① ホーム最上部の<b>「今日はどんな日か」</b>を見る（🌊追い風／✅ふつう／🚫見送りの3段階）。<b>見送りの日は買わない</b></div>
       <div>② 買うなら<b>次の寄り付き</b>で。ヒーローに<b>💴投資予定額</b>を入れると、1銘柄いくら（何株）買えばいいかの目安が出ます。1銘柄に全張りせず<b>分散</b></div>
       <div>③ 買ったら銘柄ページで<b>📒記録</b> → ホームのコーチが毎日「持つ/売る」を指示</div>
     </div>
+  </div>
+
+  <h2>今日はどんな日か（3タイプ）</h2>
+  <div class="card">
+    <p style="margin:0 0 8px;line-height:1.8">ホーム最上部に、今日が買いに向く日かを<b>3段階</b>で正直に表示します。「買ってもいいけど注意」という曖昧な中間は作っていません。</p>
+    <div style="line-height:1.95">
+      <div>🌊 <b style="color:var(--acc)">追い風の日（全面リバウンド日）</b> … 市場全体が反発した日。過去実績で買い候補全体に追い風（勝率・平均リターンを表示）。<b>いつもより積極的に</b>（ただし分散・損切りは厳守）。</div>
+      <div>✅ <b style="color:var(--up)">ふつうの日</b> … 追い風はないが候補は出ている日。この型は<b>過去どの年も期待値プラス</b>なので<b>買ってOK</b>。出口ルールを守って淡々と。</div>
+      <div>🚫 <b class="muted">見送りの日</b> … 検証済みの買い候補が0件の日。<b>買わない</b>。無理に張らないのも立派な戦略。</div>
+    </div>
+    <p class="muted" style="margin:8px 0 0;font-size:11.5px;line-height:1.7">※「注意」は日ではなく<b style="color:var(--tx)">銘柄</b>の方に出ます（🔴高連動タグ＝注意／🟢自力＝狙い目）。分散と損切り-12%はどの日でも守るルールです。</p>
   </div>
 
   <h2>✅買い候補とは</h2>
