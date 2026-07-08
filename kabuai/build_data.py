@@ -262,7 +262,7 @@ def export_search_index(rows: list[dict], data_date: str, rows_illiq: list[dict]
     2026-06-12: 低流動銘柄(売買代金1億円未満)も illiq=1 フラグつきで収録（検索/詳細は全銘柄
     対応・ランキング/シグナルは従来どおり流動性フィルタ後のみ＝フロント側でilliqを除外）。"""
     keep = ("code", "name", "price", "momentum", "grade", "sr", "power", "rsi",
-            "stab", "r1", "r5", "r10", "r20", "rank", "turnover_oku")
+            "stab", "r1", "r5", "r10", "r20", "rank", "turnover_oku", "sector")
     stocks = []
     for r in rows:
         o = {k: r[k] for k in keep}
@@ -437,6 +437,14 @@ def build() -> dict:
         raise NotImplementedError(f"KABUAI_DATA_SOURCE={SOURCE} は未実装（jquants_cache / jquants_api）")
 
     t0 = time.time()
+    # 業種マップ（33業種）を先読み。買い候補の分散キャップ＋「なぜ買い」表示用に各rowへ付与。
+    try:
+        with open(PARENT / "sector33_map.json", encoding="utf-8") as _sf:
+            _sec_raw = json.load(_sf)
+        SEC_OF = {str(k)[:4]: v for k, v in _sec_raw.items()}
+    except Exception as _e:
+        print(f"[build] 業種マップ先読みスキップ（分散キャップは無効化）: {_e}")
+        SEC_OF = {}
     rows: list[dict] = []
     rows_illiq: list[dict] = []       # 低流動（検索/詳細にのみ載せる・採点/シグナル対象外）
     scored_tickers: list[str] = []
@@ -467,6 +475,7 @@ def build() -> dict:
             "r20": ind["r20"],
             "vr": ind["vr"],
             "turnover_oku": round(ind["turnover"] / 1e8, 1),  # 売買代金(億円/日)。ピック床の絞りに使う
+            "sector": SEC_OF.get(ticker.replace(".T", "")),   # 33業種（買い候補の分散キャップ用）
             "mom_hist": ind["mom_hist"],
         })
 

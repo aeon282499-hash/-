@@ -246,6 +246,13 @@ function buyStat(r){
   a.sort((x,y)=>y.ev-x.ev);
   return a[0];
 }
+// ③ なぜ買い？の一言（主シグナル＝EVトップの型を平易語に）
+const WHY_BUY={
+  strong_reversal:"20日で大きく下げたあとの力強い反発初動",
+  reversal:"下げトレンドからの反発の初動",
+  strong_accum:"大商いをともなう強い買い集め",
+  accum:"出来高をともなう緩やかな買い集め"};
+function whyBuy(r){const st=buyStat(r);return (st&&WHY_BUY[st.k])||"";}
 // 代表出口（表示用）: BUY_KEYS のうち出口実績のある最初のもの。無ければ既定 8日/-12%
 function exitRep(){
   for(const k of BUY_KEYS){const g=sigTrack(k); if(g&&g.exit&&g.exit.n) return g.exit;}
@@ -284,6 +291,7 @@ function priceOK(r){return !hideLowPrice()||!(r&&r.price>0&&r.price<BUY_PRICE_MI
 // ── 💴 分散サイジング（資金→1銘柄いくら買えばいいかの目安・localStorage・万円で入力） ──
 // 「分散」はBTでも1点集中より有利（feedback: 全件分散が有利）。掛け声だけでなく金額に落とす。
 const SPLIT_MAX=5;   // 分散のめやす銘柄数（資金を最大N分割）
+const SECTOR_CAP=3;  // ①同一33業種は最大N件まで買い候補に出す（bt_sector_cap.pyでcap=3が最良）
 function loadCapital(){try{const v=parseFloat(localStorage.getItem("kabuai_capital"));return v>0?v:0;}catch(e){return 0;}}
 function setCapital(v){try{const man=parseFloat(v);
   if(man>0)localStorage.setItem("kabuai_capital",String(Math.round(man*10000)));
@@ -343,15 +351,24 @@ function candidates(){
   // （_edge_by_turnover.py: 厚い銘柄ほど勝率/PF高い＝小型偏重でない・「出来高少ない」を根治）。
   const pickMin=Number(DATA.pick_min_oku)||0;
   const thick=all.filter(r=>(r.turnover_oku!=null?r.turnover_oku:pickMin)>=pickMin);
-  const list=thick.filter(priceOK), hidden=thick.length-list.length;
+  const sorted=thick.filter(priceOK), hidden=thick.length-sorted.length;
   // ソート優先度（2026-07-02 本人指示「買いで勝てる順」）:
   // ①期待値の高い順（出口込みの過去平均リターン＝BT検証済みの「勝てる」数字）
   // ②同率内は自力優先（先物に振られにくい・高連動は下げる）③RSI低い順
   // 注: 期待値はシグナル種類ごとの統計なので、同じシグナルの銘柄は同率＝②③で並ぶ。
-  list.sort((a,b)=>((((buyStat(b)||{ev:-1e9}).ev)-((buyStat(a)||{ev:-1e9}).ev)))
+  sorted.sort((a,b)=>((((buyStat(b)||{ev:-1e9}).ev)-((buyStat(a)||{ev:-1e9}).ev)))
     ||(ftagRank(a)-ftagRank(b))
     ||((a.rsi!=null?a.rsi:50)-(b.rsi!=null?b.rsi:50)));
-  return {list,hidden};
+  // ① 業種分散キャップ: 同一33業種は最大 SECTOR_CAP 件（bt_sector_cap.py: cap=3が件数ほぼ
+  // 不変でPF/累積微増・弱い年を底上げ）。特に追い風の日は候補が同業種に固まるので連れ安を抑える。
+  const secCount={},list=[]; let dropped=0;
+  for(const r of sorted){
+    const sec=r.sector||("_"+r.code);   // 業種不明は個別扱い（相互キャップしない）
+    if((secCount[sec]||0)>=SECTOR_CAP){dropped++;continue;}
+    secCount[sec]=(secCount[sec]||0)+1; list.push(r);
+  }
+  const sectors=Object.keys(secCount).filter(k=>k[0]!=="_").length;
+  return {list,hidden,dropped,sectors};
 }
 function isCand(r){return (r.signals||[]).some(sigHasEdge);}
 
@@ -403,8 +420,10 @@ function savePos(a){try{localStorage.setItem("kabuai_pos",JSON.stringify(a));}ca
 function addPosFromForm(code,name){
   const pr=parseFloat((document.getElementById("pos-price")||{}).value);
   const dt=(document.getElementById("pos-date")||{}).value;
+  const shR=parseFloat((document.getElementById("pos-shares")||{}).value);
   if(!(pr>0)||!dt)return;
-  const a=loadPos(); a.push({code,name,entry:pr,date:dt}); savePos(a); render();
+  const rec={code,name,entry:pr,date:dt}; if(shR>0)rec.shares=Math.round(shR);  // 株数は任意
+  const a=loadPos(); a.push(rec); savePos(a); render();
 }
 function delPos(i){const a=loadPos(); a.splice(i,1); savePos(a); render();}
 function bizDays(from,to){ // 営業日カウント(土日除外・祝日未考慮)・買った日=1日目
@@ -424,12 +443,14 @@ function posCoach(){
   const ref=DATA.data_date||"";
   const now=new Date();
   const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-  let sum=0,cnt=0,winN=0,loseN=0,actN=0;
+  let sum=0,cnt=0,winN=0,loseN=0,actN=0,sumYen=0,hasYen=false;
   const items=a.map((p,i)=>{
     const row=(DATA.ranking||[]).find(r=>r.code===p.code)||(SEARCH&&SEARCH.find(r=>r.code===p.code))||null;
     const cur=row?row.price:null;
     const pnl=(cur!=null&&p.entry>0)?(cur/p.entry-1)*100:null;
     if(pnl!=null){sum+=pnl;cnt++;if(pnl>0)winN++;else if(pnl<0)loseN++;}
+    const yen=(pnl!=null&&p.shares>0)?Math.round((cur-p.entry)*p.shares):null;  // ②株数があれば実損益(円)
+    if(yen!=null){sumYen+=yen;hasYen=true;}
     const slP=Math.round(p.entry*(1-PLAN.sl/100));
     const day=bizDays(p.date,todayStr);
     let act,actCls="";
@@ -439,18 +460,19 @@ function posCoach(){
     return `<div class="poschip">
       <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
         <a href="#/detail/${p.code}" style="font-weight:800">${esc(p.name||p.code)}</a>
-        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}</span>
-        <span style="margin-left:auto;font-weight:800" class="${pnl!=null?cls(pnl):""}">${pnl!=null?fmtPct(pnl):"—"}</span>
+        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}${p.shares?`×${p.shares}株`:""}</span>
+        <span style="margin-left:auto;font-weight:800" class="${pnl!=null?cls(pnl):""}">${pnl!=null?fmtPct(pnl):"—"}${yen!=null?`<span style="font-size:11px;font-weight:600">（${yen>=0?"+":"−"}¥${Math.abs(yen).toLocaleString()}）</span>`:""}</span>
         <button class="posdel" onclick="event.preventDefault();delPos(${i})">売った/削除</button></div>
       <div class="${actCls}" style="font-size:12.5px;margin-top:4px">${act}</div></div>`;
   }).join("");
   const avg=cnt?sum/cnt:null;
   const summary=`<div class="possum"><b>保有 ${a.length}件</b>
     ${avg!=null?`<span>平均損益 <b class="${cls(avg)}">${fmtPct(avg)}</b></span>`:""}
+    ${hasYen?`<span>合計 <b class="${cls(sumYen)}">${sumYen>=0?"+":"−"}¥${Math.abs(sumYen).toLocaleString()}</b></span>`:""}
     ${cnt?`<span class="muted">🟢利益中${winN} / 🔴損失中${loseN}</span>`:""}
     ${actN?`<span class="warn" style="font-weight:700">⚠ 今日うごく ${actN}件</span>`:`<span class="muted">今日はホールドでOK</span>`}</div>`;
   return `<h2>📒 持ち株コーチ</h2><div class="card">${summary}${items}
-    <div class="muted" style="font-size:11px;margin-top:6px">損益は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。平均損益は各銘柄の騰落率の単純平均（株数は未記録）。営業日は土日のみ除外。記録はこの端末にだけ保存されます。</div></div>`;
+    <div class="muted" style="font-size:11px;margin-top:6px">損益は <b style="color:var(--tx)">${ref} の終値</b>ベース（1日遅れ・場中は動きません）。平均損益は騰落率の単純平均。<b style="color:var(--tx)">株数を入れた銘柄は実損益（円）も表示・合計</b>します。営業日は土日のみ除外。記録はこの端末にだけ保存されます。</div></div>`;
 }
 function posForm(code,name,price){
   const d=new Date();
@@ -461,6 +483,7 @@ function posForm(code,name,price){
     <div class="muted" style="font-size:11.5px;margin-top:4px">記録すると、ホームの「持ち株コーチ」が毎日 <b style="color:var(--tx)">保有日数・損切りライン・手仕舞い日</b> を教えてくれます（出口: 保有${PLAN.hold}日めど・損切り-${PLAN.sl}%・利確なし）。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;align-items:center">
       <input id="pos-price" class="posin" type="number" inputmode="decimal" value="${price||""}" placeholder="買値（円）">
+      <input id="pos-shares" class="posin" type="number" inputmode="numeric" placeholder="株数（任意）" style="width:120px">
       <input id="pos-date" class="posin" type="date" value="${ds}">
       <button class="posadd" onclick="addPosFromForm('${code}','${esc(name).replace(/'/g,"")}')">保存</button>
     </div></div>`;
@@ -483,6 +506,7 @@ function pickRow(r,perYen){
   return `<a class="pickrow" href="#/detail/${r.code}">
     <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
       <div class="chips">${newChip(r.code)}${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div>
+      ${whyBuy(r)?`<div class="muted" style="font-size:10.5px;margin-top:3px">💡 ${whyBuy(r)}${r.sector?` ・ ${esc(r.sector)}`:""}</div>`:""}
       ${perYen?sizeHint(r,perYen):""}</div>
     <div class="pk-ev ${st.ev>=0?"pos":"neg"}">期待 ${st.ev>=0?"+":""}${st.ev}%<small>勝率${st.win}%</small></div></a>`;
 }
@@ -519,7 +543,7 @@ function dayTypeBanner(){
       <div class="db-sub">${sub}</div></div></div>`;
 }
 function candHero(){
-  const {list,hidden}=candidates();
+  const {list,hidden,sectors,dropped}=candidates();
   const ex=exitRep();
   const rb=DATA.rebound;
   const broad=!!(rb&&rb.mode==="broad");
@@ -537,6 +561,7 @@ function candHero(){
       ${sizerBox(list.length)}
       <div class="picklist">${rows}</div>${expander}
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
+      ${sectors>1?`<div class="proofline">🧩 この${list.length}件は<b>${sectors}業種</b>に分散（同じ業種は最大${SECTOR_CAP}件まで）。${dropped?`同業種の超過${dropped}件は候補から外しました。`:""}1業種への集中＝連れ安リスクを抑えます。</div>`:""}
       ${proofLine(list)}
       <div class="pickfoot">${lpToggle}<a class="more" href="#/about">タグと数字の意味 →</a></div>`;
   }else{
@@ -857,42 +882,8 @@ function viewExploreList(cat){
     <div class="card muted" style="font-size:11px;line-height:1.7">${EXP.note||""}</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
-// 🏆 上昇ランキング（初動日からの最大上昇率・3ヶ月/1年トグル）
-let RANK_WIN="3m";
-function setRankWin(w){RANK_WIN=w;render();}
-function sparkSVG(a){
-  if(!a||a.length<2)return "";
-  const mn=Math.min(...a),mx=Math.max(...a),W=72,H=26;
-  const pts=a.map((v,i)=>`${(i/(a.length-1)*W).toFixed(1)},${(H-2-(mx===mn?H/2:(v-mn)/(mx-mn)*(H-4))).toFixed(1)}`).join(" ");
-  const up=a[a.length-1]>=a[0];
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${pts}" fill="none" stroke="${up?"#16C784":"#EA3943"}" stroke-width="1.5"/></svg>`;
-}
-function viewRankingUp(){
-  if(!EXP){expReload("#/explore/ranking");return `<div class="card muted">読み込み中…</div>`;}
-  const rk=EXP.ranking||{items:[]};
-  const days=(rk.windows_days||{"3m":92,"1y":366})[RANK_WIN]||92;
-  const cutoff=new Date(Date.parse((EXP.data_date||"")+"T00:00:00")-days*86400000);
-  const items=(rk.items||[]).filter(r=>new Date(r.shodo_date+"T00:00:00")>=cutoff);
-  const lt=rk.longterm||{};
-  const rows=items.map((r,i)=>`
-    <a class="pickrow" href="#/detail/${r.code}">
-      <div style="width:22px;text-align:center;color:var(--mut);font-weight:700;font-size:12px">${i+1}</div>
-      <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 初動 ${r.shodo_date} ¥${(r.shodo_price||0).toLocaleString()} → 最高値 ¥${(r.max_high||0).toLocaleString()}</small></div>
-      <div>${sparkSVG(r.spark)}</div>
-      <div class="pk-ev"><span class="pos">+${r.max_gain_pct}%</span><small class="${(r.cur_gain_pct||0)>=0?"pos":"neg"}">現在 ${(r.cur_gain_pct||0)>=0?"+":""}${r.cur_gain_pct}%</small></div>
-    </a>`).join("");
-  return `
-    <a class="back" href="#/explore">← 銘柄探検</a>
-    <h2>🏆 上昇ランキング <span class="muted" style="font-weight:400;font-size:12px">初動日からの最大上昇率</span></h2>
-    <div style="display:flex;gap:8px;margin:0 0 8px">
-      <a class="chip ${RANK_WIN==="3m"?"buy":""}" onclick="event.preventDefault();setRankWin('3m')">3ヶ月</a>
-      <a class="chip ${RANK_WIN==="1y"?"buy":""}" onclick="event.preventDefault();setRankWin('1y')">1年</a>
-    </div>
-    ${RANK_WIN==="1y"&&!lt.available?`<div class="card muted" style="font-size:11.5px">1年分の初動イベント（explorer_longterm.json）が未生成のため、直近データのみ表示しています。</div>`:""}
-    <div class="card" style="padding:4px 12px"><div class="picklist" style="border-top:0">${rows||`<div class="card muted" style="border:0">期間内の初動イベントがありません</div>`}</div></div>
-    <div class="card muted" style="font-size:11px;line-height:1.7">最大上昇率＝初動日の終値→その後の最高値。現在＝初動日の終値→最新終値。あくまで過去に検知できた例の一覧で、次も上がることを保証しません（生存バイアスに注意）。</div>
-    <p class="disc">${DATA.disclaimer}</p>`;
-}
+// 🏆 上昇ランキングは v3 で撤去（ユーザー指示「上昇ランキングいらない」・2026-07-07）。
+// viewRankingUp/setRankWin/sparkSVG/RANK_WIN および #/explore/ranking ルート・導線カードを削除。
 
 // ── 使い方・データについて・免責 ──
 function viewAbout(){
