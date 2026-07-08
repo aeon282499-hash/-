@@ -706,6 +706,20 @@ def build() -> dict:
         print(f"[build] 業種熱: {len(sector_heat['sectors'])}業種 "
               f"(1位 {sector_heat['sectors'][0]['sector']} 熱{sector_heat['sectors'][0]['heat']})")
 
+    # ④ 買い候補の直近の調子メーター（make_picks_scoreboard.py で月1事前計算→コミット）。
+    # 無ければ非表示（非致命・track_longterm/rebound_history と同じ運用）。
+    picks_scoreboard = None
+    ps_path = HERE / "picks_scoreboard.json"
+    if ps_path.exists():
+        try:
+            with open(ps_path, encoding="utf-8") as f:
+                picks_scoreboard = json.load(f)
+            rc = picks_scoreboard.get("recent", {})
+            print(f"[build] 買い候補スコアボード注入: regime={picks_scoreboard.get('regime')} "
+                  f"直近{picks_scoreboard.get('recent_weeks')}週 勝率{rc.get('win')}%/平均{rc.get('avg')}%")
+        except Exception as e:
+            print(f"[build] スコアボード読込スキップ: {e}")
+
     top = rows[:TOP_N]
     out = {
         "schema": "kabuai-phase14",  # phase14 = 先物連動タグ + v2フロント（2026-07-02）
@@ -726,6 +740,7 @@ def build() -> dict:
         "market": market,
         "futures": futures_meta,
         "rebound": rebound,
+        "picks_scoreboard": picks_scoreboard,   # ④ 直近の調子メーター
         "theme_blast": theme_blast,
         "sector_today": sector_today,
         "sector_heat": sector_heat,

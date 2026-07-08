@@ -591,6 +591,32 @@ function sellHero(){
     <div class="exitbox" style="background:rgba(234,57,67,.06);border-color:rgba(234,57,67,.3)">🚪 <b>出口</b>: ${esc(st.plan_sell||"当日9:00 寄り成行で空売り → 損切り+3%/利確-5%のOCO・RSI50か3日目大引けで買い戻し")}</div>
   </div>`;
 }
+// ── 📊 買い候補の「最近の調子」メーター（④・picks_scoreboard.json）──
+// 直近の実成績を正直に見せ、冷えていたら見送り/小さく張るを促す（含み損の再発防止）。
+// 選定ロジックは多年BTのまま（直近で追い最適化しない）＝メーターは"警告"であって銘柄選定は変えない。
+function scoreboardCard(){
+  const sb=DATA.picks_scoreboard; if(!sb||!sb.recent) return "";
+  const rc=sb.recent, rg=sb.regime;
+  const meta=({cold:["🥶","不調","neg","rgba(234,57,67,"],
+               warm:["🔥","好調","pos","rgba(22,199,132,"],
+               flat:["😐","ふつう","muted","rgba(138,148,163,"]})[rg]||["😐","ふつう","muted","rgba(138,148,163,"];
+  const emo=meta[0],lbl=meta[1],cl=meta[2],rgb=meta[3];
+  const mcells=(sb.months||[]).slice(-6).map(m=>`<span class="yrcell ${m.avg>0?"pos":"neg"}"><b>${(m.m||"").slice(5)}月</b>${m.avg>0?"+":""}${m.avg}%</span>`).join("");
+  const warn=rg==="cold"
+    ? `<div style="color:#ff6b6b;font-size:12px;margin-top:7px;line-height:1.6"><b>⚠️ いまは不調な地合い</b> — 買い候補が最近効いていません。<b>小さく張る／見送り</b>も選択肢。損切り-${PLAN.sl}%は必ず守る。</div>`
+    : (rg==="warm"?`<div class="pos" style="font-size:12px;margin-top:7px">最近は好調。ただし出口の規律（8日/-${PLAN.sl}%）は同じく守る。</div>`:"");
+  return `<div class="card" style="border-color:${rgb}.45)">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="font-size:26px;line-height:1">${emo}</div>
+      <div style="flex:1;min-width:0"><b>📊 買い候補の最近の調子</b>
+        <div class="muted" style="font-size:11px">直近${sb.recent_weeks}週の実績（翌寄り→8日/-${PLAN.sl}%で再現）</div></div>
+      <div class="${cl}" style="font-weight:800;text-align:right;white-space:nowrap">${lbl}<br><span style="font-size:11.5px">勝率${rc.win}%・${rc.avg>0?"+":""}${rc.avg}%/件</span></div>
+    </div>
+    ${warn}
+    <div class="yrline" style="margin-top:8px">${mcells}</div>
+    <div class="muted" style="font-size:10.5px;margin-top:6px">月別の1件あたり平均リターン（${sb.as_of||""}時点・月1更新）。上位数銘柄でなく候補全体の平均・過去実績で将来を保証しません。</div>
+  </div>`;
+}
 function viewHome(){
   if(WATCH.length||loadPos().length) loadSearch().then(()=>{
     const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
@@ -598,6 +624,7 @@ function viewHome(){
   });
   return `
     ${dayTypeBanner()}
+    ${scoreboardCard()}
     ${candHero()}
     ${sellHero()}
     <div id="poscoach">${posCoach()}</div>
@@ -926,6 +953,13 @@ function viewAbout(){
       <li>主力は<b style="color:var(--tx)">反発（反転の初動）</b>です。グレードはD（売られすぎ＝勢いスコアが低い）に出ますが、買いの根拠は勢いスコアではなく<b style="color:var(--tx)">期待値・勝率</b>です。</li>
       <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。単発では半分近く負けます（だから分散＋損切り-${ex.sl}%）。</li>
     </ul>
+  </div>
+
+  <h2>📊 最近の調子とは</h2>
+  <div class="card">
+    <p style="margin:0;line-height:1.8">ホーム上部の「買い候補の最近の調子」は、<b>直近の買い候補が実際どれだけ勝てたか</b>（翌寄り→8日/-${ex.sl}%で再現）を正直に表示します。
+      <b style="color:#ff6b6b">🥶不調</b>のときは相場がこの戦略（売られすぎの反発を買う逆張り）に逆風＝<b>小さく張る／見送り</b>も立派な選択肢。<b style="color:var(--up)">🔥好調</b>なら追い風です。
+      なお<b style="color:var(--tx)">銘柄の選び方自体は変えません</b>（多年の検証に基づくため・直近数ヶ月で追い最適化はしない）。冷えているかを"隠さず見せる"のが役目です。</p>
   </div>
 
   <h2>ほかのタブ</h2>
