@@ -1,12 +1,4 @@
 {
-  "date": "2026-07-08",
-  "signals": [
-    {
-      "ticker": "8473.T",
-      "name": "ＳＢＩホールディングス",
-      "direction": "BUY",
-      "prev_close": 2738.0,
-      "limit_price": 2765
-    }
-  ]
+  "date": "2026-07-09",
+  "signals": []
 }
