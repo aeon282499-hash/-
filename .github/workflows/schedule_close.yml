@@ -10,6 +10,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ── 投げ売りブースター(A/B検証)の大引けチェックを同じ確実経路で発火 ──
+  # 本体(run)とは独立ジョブ＝ここが失敗しても本番の大引け判定は無傷。
+  # capitulation.py側に同日ガードがあるため二重発火は無害。
+  trigger-capit-close:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      actions: write
+    steps:
+      - name: 投げ売りブースター大引けチェックをdispatch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run schedule_capitulation_close.yml --repo "${{ github.repository }}" --ref main
+
   run:
     runs-on: ubuntu-latest
     permissions:

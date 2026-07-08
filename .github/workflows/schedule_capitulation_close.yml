@@ -2,6 +2,8 @@ name: 投げ売りブースター大引けチェック（A/Bテスト）
 
 # 案A検証口座の15:00大引けチェック（処分/保有）＋金曜はA/B比較レポート。
 # 本番 schedule_close.yml とは完全独立。
+# 確実発火(2026-07-09〜): schedule_close.yml の trigger-capit-close ジョブが14:55 JSTにdispatch
+# （cron-job.org→Cloudflare Worker経路に相乗り）。下のcronはGitHub側の保険。
 on:
   workflow_dispatch:
   schedule:
@@ -58,5 +60,9 @@ jobs:
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet || git commit -m "chore(capit): update test positions (close) [skip ci]"
-          git pull --rebase --autostash origin main
-          git push origin main
+          # 本番schedule_close.ymlと同時刻に走るため push 衝突をリトライで吸収
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push衝突 → リトライ ($i/3)"; sleep 15
+          done
+          echo "push失敗（3回試行）"; exit 1
