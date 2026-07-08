@@ -509,6 +509,16 @@
       "close": 1825.0,
       "pnl": 0.94,
       "win": true
+    },
+    {
+      "date": "2026-07-08",
+      "ticker": "8473.T",
+      "name": "ＳＢＩホールディングス",
+      "direction": "BUY",
+      "open": 2743.0,
+      "close": 2722.0,
+      "pnl": -0.77,
+      "win": false
     }
   ]
 }
