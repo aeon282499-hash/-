@@ -848,6 +848,7 @@ async function loadExplorer(){
 const CAT_DEFS={
   shodo:["🌱","初動","長期低迷から出来高を伴って75日線を上抜けた転換の初日"],
   shodo_wait:["⏳","初動待ち","初動の条件にあと一歩（75日線のすぐ下まで接近）"],
+  nagi:["🤫","静かな初動（凪ブレイク）","凪（低ボラで動いてない）に静かな出来高増→20日高値を初突破した陽線。爆発前を狙う立花型。過去検証は2024-25年プラス・2026年は不調＝直近は逆風に注意"],
   rising:["🚀","上昇中","初動後もトレンド継続中（押しが浅い）"],
   oshime:["🎯","押し目","初動後の上昇から調整中（フィボ押しの範囲内）"],
   rebound:["⚡","短期反発候補","急騰後にフィボ38.2〜50%押しゾーンで押し目形成中"],
@@ -864,7 +865,7 @@ function viewExplore(){
   return `
     <h2>🧭 銘柄探検 <span class="muted" style="font-weight:400;font-size:12px">${EXP.data_date||""} 終値時点</span></h2>
     <h2 style="margin-top:4px">スイング狙い</h2>
-    ${["shodo","shodo_wait","rising","oshime"].map(cell).join("")}
+    ${["shodo","shodo_wait","nagi","rising","oshime"].map(cell).join("")}
     <h2 style="margin-top:14px">デイトレ・短期</h2>
     ${["rebound","stop_high"].map(cell).join("")}
     <div class="card muted" style="font-size:11.5px;line-height:1.7">${EXP.note||""} 状態は毎日引け後のバッチで更新（初動→上昇中→押し目と遷移）。</div>
@@ -883,6 +884,9 @@ function catRow(cat,r){
   }else if(cat==="shodo_wait"){
     sub=`<div class="chips"><span class="chip">⏳ 75日線まで ${r.ma_gap_pct}%</span><span class="chip">条件 ${r.conds}/3</span></div>`;
     right="";
+  }else if(cat==="nagi"){
+    sub=`<div class="chips"><span class="chip buy">🤫 凪ブレイク</span><span class="chip">出来高 ${r.volr!=null?r.volr+"倍":"—"}</span><span class="chip">凪ATR ${r.atr_pct!=null?r.atr_pct+"%":"—"}</span>${r.today?`<span class="chip">当日</span>`:""}</div>`;
+    right=`<div class="pk-ev">${r.date||""}</div>`;
   }else if(cat==="rising"||cat==="oshime"){
     sub=`<div class="chips"><span class="chip ${cat==="rising"?"buy":""}">${cat==="rising"?"🚀 押し "+r.pullback_pct+"%":"🎯 押し "+r.pullback_pct+"%"}</span><span class="chip">高値 ¥${(r.hi||0).toLocaleString()}</span></div>`;
     right=`<div class="pk-ev">初動比 <span class="${r.price>=r.shodo_price?"pos":"neg"}">${r.shodo_price?((r.price/r.shodo_price-1)*100).toFixed(1):"—"}%</span><small>${r.shodo_date||""}</small></div>`;
