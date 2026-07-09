@@ -108,6 +108,9 @@ def indicators(df: pd.DataFrame) -> dict | None:
     # 直近5営業日のモメンタム推移（簡易: 各日終点で base+power を粗く再計算せず、指数の近似履歴）
     mom_hist = _momentum_history(close, ret, vol, high, low, days=5)
     turnover = float((close.iloc[-1] * vol.tail(VOL_SLOW).mean()))
+    # 値動き%/日 = 20日平均の日中値幅(高値-安値)/終値。_edge_by_volatility.py の値動き帯BTで
+    # ✅買い候補の表示上限(pick_max_rng)と表示に使う。欠損時は None(=フロントは絞らず表示)。
+    rng20 = float(rng.tail(RANGE_WINDOW).mean() * 100)
 
     # 直近の出来高が欠損(NaN)だと vr / turnover が NaN になり、二重事故になる:
     #  ① JSON 出力に NaN が載り、ブラウザの JSON.parse が全体で落ちる（アプリ白画面）
@@ -130,6 +133,7 @@ def indicators(df: pd.DataFrame) -> dict | None:
         "r20": round(r20 * 100, 2),
         "vr": round(vr, 2),
         "turnover": turnover,
+        "rng20": round(rng20, 1) if np.isfinite(rng20) else None,
         "mom_hist": mom_hist,
     }
 

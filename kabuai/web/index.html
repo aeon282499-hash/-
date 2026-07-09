@@ -351,7 +351,12 @@ function candidates(){
   // （_edge_by_turnover.py: 厚い銘柄ほど勝率/PF高い＝小型偏重でない・「出来高少ない」を根治）。
   const pickMin=Number(DATA.pick_min_oku)||0;
   const thick=all.filter(r=>(r.turnover_oku!=null?r.turnover_oku:pickMin)>=pickMin);
-  const sorted=thick.filter(priceOK), hidden=thick.length-sorted.length;
+  // 値動き天井（_edge_by_volatility.py 2026-07-09: 1日6%以上動く宝くじ株は勝率34%・全年PF≤1.05
+  // ＝期待値ゼロなので買い候補に出さない。狙い目は3〜4%＝PF1.60）。rng20が無い旧データは絞らない。
+  const maxRng=Number(DATA.pick_max_rng)||0;
+  const calm=maxRng?thick.filter(r=>!(r.rng20!=null&&r.rng20>=maxRng)):thick;
+  const wild=thick.length-calm.length;
+  const sorted=calm.filter(priceOK), hidden=calm.length-sorted.length;
   // ソート優先度（2026-07-02 本人指示「買いで勝てる順」）:
   // ①期待値の高い順（出口込みの過去平均リターン＝BT検証済みの「勝てる」数字）
   // ②同率内は自力優先（先物に振られにくい・高連動は下げる）③RSI低い順
@@ -368,13 +373,17 @@ function candidates(){
     secCount[sec]=(secCount[sec]||0)+1; list.push(r);
   }
   const sectors=Object.keys(secCount).filter(k=>k[0]!=="_").length;
-  return {list,hidden,dropped,sectors};
+  return {list,hidden,dropped,sectors,wild};
 }
 function isCand(r){return (r.signals||[]).some(sigHasEdge);}
 
 function pctTag(r1){if(r1==null||isNaN(r1))return "";
   const c=r1>0?"var(--up)":r1<0?"#ff6b6b":"var(--mut)",s=r1>0?"+":"";
   return `<span style="color:${c};font-weight:700">${s}${r1.toFixed(1)}%</span>`;}
+// 値動き%/日（20日平均の日中値幅）。3〜4%はBTの狙い目帯（PF1.60）＝⚡で目立たせる
+function rngTag(r){const v=Number(r.rng20);
+  if(r.rng20==null||!isFinite(v)) return "";
+  return ` ・ 値動き${(v>=3&&v<4)?`<b class="pos">⚡${v.toFixed(1)}%</b>`:v.toFixed(1)+"%"}/日`;}
 function sigChips(r){
   const edge=(r.signals||[]).filter(sigHasEdge);
   if(!edge.length) return "";
@@ -504,7 +513,7 @@ function sizerBox(nCand){
 function pickRow(r,perYen){
   const st=buyStat(r)||{ev:0,win:0};
   return `<a class="pickrow" href="#/detail/${r.code}">
-    <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}</small>
+    <div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ¥${(r.price||0).toLocaleString()} ・ 前日比 ${pctTag(r.r1)||"—"}${rngTag(r)}</small>
       <div class="chips">${newChip(r.code)}${(r.signals||[]).filter(sigHasEdge).map(k=>{const e=sigEV(k);return e?`<span class="chip buy">✅ ${e.emoji}${e.label}</span>`:"";}).join("")}${ftagChip(r)}</div>
       ${whyBuy(r)?`<div class="muted" style="font-size:10.5px;margin-top:3px">💡 ${whyBuy(r)}${r.sector?` ・ ${esc(r.sector)}`:""}</div>`:""}
       ${perYen?sizeHint(r,perYen):""}</div>
@@ -776,6 +785,7 @@ function searchCard(r){
         <span>1日 <b class="${cls(r.r1)}">${fmtPct(r.r1)}</b></span>
         <span>5日 <b class="${cls(r.r5)}">${fmtPct(r.r5)}</b></span>
         <span>1ヶ月 <b class="${cls(r.r20)}">${fmtPct(r.r20)}</b></span>
+        <span>値動き/日 <b>${r.rng20!=null&&isFinite(Number(r.rng20))?Number(r.rng20).toFixed(1)+"%":"—"}</b></span>
       </div>
       ${r.illiq?`<div class="nosig">売買代金が少なく買い候補の対象外（板が薄く執行困難のため・指標は参考表示）</div>`
         :(sigChips(r)||`<div class="nosig">本日、✅買い候補ではありません</div>`)}
@@ -960,6 +970,7 @@ function viewAbout(){
       <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
       <li><b style="color:var(--tx)">📅 年別の実績</b> … 銘柄ページの「買いの目安」に、この型が<b style="color:var(--tx)">各年でプラスだったか</b>を年別に表示します。単年のまぐれでなく毎年通用してきたかの裏づけです。</li>
       <li><b style="color:var(--tx)">🌊 全面リバウンド日</b> … 市場全体が反発した日は、過去実績で買い候補全体に追い風でした。その日はホームに勝率・平均リターンを表示します。</li>
+      <li><b style="color:var(--tx)">値動き/日</b> … 1日にどれだけ動くか（20日平均の日中値幅）。検証では<b style="color:var(--tx)">3〜4%動く銘柄が最も勝てました（⚡表示）</b>。逆に<b style="color:var(--tx)">6%以上動く"宝くじ株"は勝率34%・期待値ゼロ</b>だったので、買い候補から自動で外しています。</li>
       <li>主力は<b style="color:var(--tx)">反発（反転の初動）</b>です。グレードはD（売られすぎ＝勢いスコアが低い）に出ますが、買いの根拠は勢いスコアではなく<b style="color:var(--tx)">期待値・勝率</b>です。</li>
       <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。単発では半分近く負けます（だから分散＋損切り-${ex.sl}%）。</li>
     </ul>
@@ -1061,7 +1072,7 @@ function viewMomentum(){
     return `<a class="mrow" href="#/detail/${r.code}">
       <div class="grb ${esc(r.grade||"D")}">${esc(r.grade||"-")}</div>
       <div class="m-nm"><b>${esc(r.name)}${cand?' <span class="chip buy" style="padding:0 6px">✅買い</span>':""}</b>
-        <small>${r.code} ・ 勢い${r.momentum!=null?Math.round(r.momentum):"—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku!=null?Math.round(r.turnover_oku)+"億":"—"}</small></div>
+        <small>${r.code} ・ 勢い${r.momentum!=null?Math.round(r.momentum):"—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku!=null?Math.round(r.turnover_oku)+"億":"—"} ・ 値動き${r.rng20!=null&&isFinite(Number(r.rng20))?Number(r.rng20).toFixed(1)+"%":"—"}</small></div>
       <div class="m-px">¥${(r.price||0).toLocaleString()}<br>${pctTag(r.r1)||"—"}</div></a>`;
   }).join("");
   return `
