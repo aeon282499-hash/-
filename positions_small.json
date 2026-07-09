@@ -714,9 +714,9 @@
     "limit_price": 2765,
     "entry_open": 2743.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": -0.766,
+    "unrealized_pnl": -1.495,
     "exit_type": null,
     "exit_date": null
   }
