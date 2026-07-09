@@ -534,8 +534,13 @@ function dayTypeBanner(){
     cls="broad";emoji="🌊";title="追い風の日（全面リバウンド日）";
     sub=`市場全体が反発。過去の全面リバウンド日は${rh?`<b>勝率${rh.win}%・平均+${rh.avg}%</b>（${rh.days}日で検証）`:"買い候補全体に追い風でした"}。候補${list.length}件をいつもより積極的に（分散・損切りは厳守）。`;
   }else{
-    cls="normal";emoji="✅";title="ふつうの日";
-    sub=`買い候補が${list.length}件。特別な追い風はありませんが、この型は<b>過去どの年も期待値プラス</b>。1件ずつ出口ルールを守って淡々と。`;
+    if(regimeCold()){
+      cls="none";emoji="🥶";title="待ち寄りの日（不調地合い）";
+      sub=`買い候補は${list.length}件あるが、<b style="color:#ff6b6b">最近この戦略は不調（📊参照）</b>。無理に買わず<b>小さく／見送り</b>も選択肢。買うなら分散＋損切り-12%厳守。`;
+    }else{
+      cls="normal";emoji="✅";title="ふつうの日";
+      sub=`買い候補が${list.length}件。特別な追い風はありませんが、この型は<b>過去どの年も期待値プラス</b>。1件ずつ出口ルールを守って淡々と。`;
+    }
   }
   return `<div class="dayband ${cls}">
     <div class="db-emoji">${emoji}</div>
@@ -555,9 +560,12 @@ function candHero(){
     const shown=HERO_EXPAND?list:list.slice(0,HERO_CAP);
     const rest=list.length-shown.length;
     const rows=shown.map(r=>pickRow(r,perYen)).join("");
+    // ② 冷え相場UX: 不調地合いは「小さく/見送り」を候補の直前で強調（トーンを落とす）
+    const coldNote=regimeCold()?`<div class="broadline" style="background:rgba(234,57,67,.1);border-color:rgba(234,57,67,.4);color:#ff6b6b">🥶 <b>いまは不調地合い</b>（上の📊）。買うなら<b>最小限＋分散</b>・<b>見送りも○</b>・損切り-${ex.sl}%厳守。</div>`:"";
     const expander=(list.length>HERO_CAP)
       ? `<a class="heromore" onclick="event.preventDefault();toggleHeroExpand()">${HERO_EXPAND?"上位だけ表示に戻す ▴":`残り ${rest}件をすべて見る ▾`}</a>`:"";
     body=`<div class="lead">検証済みの「買いの型」が出たのは <b>${list.length}銘柄</b>。並びは<b>勝てる順＝期待値の高い順</b>（同率内は日経連動の少ない自力を上に）。${list.length>HERO_CAP?`まずは上位${HERO_CAP}銘柄。`:""}</div>
+      ${coldNote}
       ${sizerBox(list.length)}
       <div class="picklist">${rows}</div>${expander}
       <div class="exitbox">🚪 <b>出口の規律</b>: 次の寄り付きで買う → <b>保有約${ex.t}日</b> → <b>損切り-${ex.sl}%</b>（利確なし・利は伸ばす）。1銘柄に全張りせず<b>分散</b>。</div>
@@ -591,6 +599,8 @@ function sellHero(){
     <div class="exitbox" style="background:rgba(234,57,67,.06);border-color:rgba(234,57,67,.3)">🚪 <b>出口</b>: ${esc(st.plan_sell||"当日9:00 寄り成行で空売り → 損切り+3%/利確-5%のOCO・RSI50か3日目大引けで買い戻し")}</div>
   </div>`;
 }
+// 直近の地合いが「不調(cold)」か（②冷え相場UX・調子メーター由来）
+function regimeCold(){return !!(DATA.picks_scoreboard&&DATA.picks_scoreboard.regime==="cold");}
 // ── 📊 買い候補の「最近の調子」メーター（④・picks_scoreboard.json）──
 // 直近の実成績を正直に見せ、冷えていたら見送り/小さく張るを促す（含み損の再発防止）。
 // 選定ロジックは多年BTのまま（直近で追い最適化しない）＝メーターは"警告"であって銘柄選定は変えない。

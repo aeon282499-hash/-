@@ -706,19 +706,28 @@ def build() -> dict:
         print(f"[build] 業種熱: {len(sector_heat['sectors'])}業種 "
               f"(1位 {sector_heat['sectors'][0]['sector']} 熱{sector_heat['sectors'][0]['heat']})")
 
-    # ④ 買い候補の直近の調子メーター（make_picks_scoreboard.py で月1事前計算→コミット）。
-    # 無ければ非表示（非致命・track_longterm/rebound_history と同じ運用）。
+    # ④ 買い候補の「最近の調子」メーター。CIで毎日 fresh 計算する（毎日更新＝冷え/回復を
+    # リアルタイム反映）。load_jquants_api は master でETF除外済みなので skip=None でよい。
+    # 失敗時はコミット済 picks_scoreboard.json（make_picks_scoreboard.pyの手元長期版）へフォールバック。
     picks_scoreboard = None
-    ps_path = HERE / "picks_scoreboard.json"
-    if ps_path.exists():
-        try:
-            with open(ps_path, encoding="utf-8") as f:
-                picks_scoreboard = json.load(f)
+    try:
+        import picks_scoreboard as _psb
+        picks_scoreboard = _psb.compute(data, name_map, SEC_OF, data_date)
+        if picks_scoreboard:
             rc = picks_scoreboard.get("recent", {})
-            print(f"[build] 買い候補スコアボード注入: regime={picks_scoreboard.get('regime')} "
+            print(f"[build] 調子メーター(毎日fresh計算): regime={picks_scoreboard.get('regime')} "
                   f"直近{picks_scoreboard.get('recent_weeks')}週 勝率{rc.get('win')}%/平均{rc.get('avg')}%")
-        except Exception as e:
-            print(f"[build] スコアボード読込スキップ: {e}")
+    except Exception as e:
+        print(f"[build] 調子メーターfresh計算スキップ→コミット済JSONへ: {e}")
+    if not picks_scoreboard:
+        ps_path = HERE / "picks_scoreboard.json"
+        if ps_path.exists():
+            try:
+                with open(ps_path, encoding="utf-8") as f:
+                    picks_scoreboard = json.load(f)
+                print(f"[build] 調子メーター(コミット済JSON fallback): regime={picks_scoreboard.get('regime')}")
+            except Exception as e:
+                print(f"[build] スコアボードJSON読込も失敗: {e}")
 
     top = rows[:TOP_N]
     out = {
