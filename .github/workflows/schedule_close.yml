@@ -24,6 +24,45 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run schedule_capitulation_close.yml --repo "${{ github.repository }}" --ref main
 
+  # ── 決算持ち越しシグナル（2026-07-10新設・独立ジョブ＝失敗しても大引け判定は無傷） ──
+  # JPX予定表更新→ルールA判定→Discord買いリスト配信→positions_earnings.json記帳。
+  earnings-hold:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 決算持ち越しシグナル実行
+        run: python main_earnings_hold.py
+
+      - name: 記帳コミット（positions_earnings.json / jpx_earnings_schedule.json）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add positions_earnings.json jpx_earnings_schedule.json || true
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update earnings hold positions [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done
+
   run:
     runs-on: ubuntu-latest
     permissions:
