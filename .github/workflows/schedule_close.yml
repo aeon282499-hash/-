@@ -33,6 +33,8 @@ jobs:
       contents: write
     env:
       DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      DISCORD_WEBHOOK_EARNINGS_MID_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_MID_URL }}
+      DISCORD_WEBHOOK_EARNINGS_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_SMALL_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       PYTHONIOENCODING: utf-8
     steps:
@@ -55,7 +57,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add positions_earnings.json jpx_earnings_schedule.json earnings_times.json || true
+          git add positions_earnings.json positions_earnings_mid.json positions_earnings_small.json jpx_earnings_schedule.json earnings_times.json || true
           git diff --cached --quiet && exit 0
           git commit -m "chore: update earnings hold positions [skip ci]"
           for i in 1 2 3; do
