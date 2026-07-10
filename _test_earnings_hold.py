@@ -119,6 +119,35 @@ check("結果embedに合計", "+12,000円" in er["description"])
 check("結果embedに階層ラベル", "【小資金】" in er["title"])
 check("勝敗カウント", "1勝0敗" in er["title"])
 
+print("── リマインダー ──")
+er2 = m.embed_reminder(
+    [{"ticker": "1234.T", "name": "サンプル", "shares": 200, "date": "2026-07-09"}],
+    TIER_M)
+check("リマインダーtitleに件数と階層", "1件" in er2["title"] and "【中資金】" in er2["title"])
+check("リマインダーに株数と買い日", "200株" in er2["description"] and "2026-07-09買い" in er2["description"])
+check("寄り成行の指示", "寄り成行" in er2["description"])
+
+print("── 週次 ──")
+check("金曜7/10は週最終営業日", m.is_week_last_trading_day(date(2026, 7, 10)))
+check("水曜7/8は週最終でない", not m.is_week_last_trading_day(date(2026, 7, 8)))
+check("祝前日の木曜7/16は週最終(金曜が海の日でない→7/17金は平日)",
+      not m.is_week_last_trading_day(date(2026, 7, 16)))
+check("金曜7/17は週最終(翌営業日=7/21火は別週)", m.is_week_last_trading_day(date(2026, 7, 17)))
+wstore = {"positions": [
+    {"ticker": "1.T", "name": "A", "status": "closed", "exit_date": "2026-07-08",
+     "pnl_pct": 2.0, "pnl_yen": 10000},
+    {"ticker": "2.T", "name": "B", "status": "closed", "exit_date": "2026-07-10",
+     "pnl_pct": -1.0, "pnl_yen": -5000},
+    {"ticker": "3.T", "name": "C", "status": "closed", "exit_date": "2026-07-03",
+     "pnl_pct": 3.0, "pnl_yen": 15000},  # 先週分=今週集計外・通算には入る
+    {"ticker": "4.T", "name": "D", "status": "pending", "date": "2026-07-10"},
+]}
+ew = m.embed_weekly(wstore, date(2026, 7, 10), TIER_M)
+check("週次: 今週2件のみ集計", "決済 2件" in ew["description"])
+check("週次: 週間+5,000円", "+5,000円" in ew["description"])
+check("週次: 通算3件+20,000円", "3件" in ew["description"] and "+20,000円" in ew["description"])
+check("週次: 0件週も生成", "0件" in m.embed_weekly({"positions": []}, date(2026, 7, 10), TIER_S)["description"])
+
 print(f"\n{'=' * 40}\nPASS {PASS} / FAIL {FAIL}")
 if FAIL:
     raise SystemExit(1)

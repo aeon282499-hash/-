@@ -24,6 +24,46 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run schedule_capitulation.yml --repo "${{ github.repository }}" --ref main
 
+  # ── 決算持ち越し: 朝の売り忘れ防止リマインダー（2026-07-10・独立ジョブ＝本番配信は無傷） ──
+  # 昨日大引けで買った建玉を「今日の寄り成行で売る」確認を各階層チャンネルへ。建玉ゼロなら無送信。
+  earnings-reminder:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      DISCORD_WEBHOOK_EARNINGS_MID_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_MID_URL }}
+      DISCORD_WEBHOOK_EARNINGS_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_SMALL_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 売り忘れリマインダー送信
+        run: python main_earnings_hold.py --remind
+
+      - name: リマインダー記録コミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add positions_earnings.json positions_earnings_mid.json positions_earnings_small.json || true
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update earnings reminder marker [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done
+
   run:
     runs-on: ubuntu-latest
     permissions:

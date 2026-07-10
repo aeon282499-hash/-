@@ -322,6 +322,58 @@ def embed_results(settled: list[dict], tier: dict) -> dict:
     }
 
 
+def embed_reminder(pends: list[dict], tier: dict) -> dict:
+    """朝の売り忘れ防止。昨日(以前)の大引けで買った建玉を今日の寄りで売る確認。"""
+    lines = []
+    for p in pends:
+        lines.append(f"・**{p['name']}**（{p['ticker'].replace('.T', '')}）"
+                     f" {p['shares']:,}株（{p['date']}買い）")
+    return {
+        "title": f"⏰ 決算持ち越し【{tier['label']}】｜本日寄りで売る建玉 {len(pends)}件",
+        "description": "\n".join(lines) +
+                       "\n\n**9:00の寄り成行で売却**（昨夜のうちに売り予約済みなら対応不要）",
+        "color": 0xE67E22,
+    }
+
+
+def is_week_last_trading_day(d: date) -> bool:
+    """dがその週の最終営業日か（金曜祝日なら木曜がTrue・report.pyと同じISO週比較）。"""
+    n = next_trading_day(d)
+    return (n.isocalendar()[0], n.isocalendar()[1]) != (d.isocalendar()[0], d.isocalendar()[1])
+
+
+def embed_weekly(store: dict, today: date, tier: dict) -> dict:
+    """今週(月〜当日)に決済確定した分の週次サマリー＋通算。"""
+    monday = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    today_s = today.strftime("%Y-%m-%d")
+    closed_all = [p for p in store["positions"] if p.get("status") == "closed"]
+    wk = [p for p in closed_all if monday <= p.get("exit_date", "") <= today_s]
+    total = sum(p["pnl_yen"] for p in wk)
+    md = f"{today.month}/{today.day}"
+    if not wk:
+        desc = "今週の決済 0件（シーズン外は普通です）"
+    else:
+        wins = [p for p in wk if p["pnl_yen"] > 0]
+        pos = sum(p["pnl_pct"] for p in wk if p["pnl_pct"] > 0)
+        neg = abs(sum(p["pnl_pct"] for p in wk if p["pnl_pct"] <= 0))
+        pf = (pos / neg) if neg > 0 else float("inf")
+        pf_s = "∞" if pf == float("inf") else f"{pf:.2f}"
+        best = max(wk, key=lambda p: p["pnl_yen"])
+        worst = min(wk, key=lambda p: p["pnl_yen"])
+        desc = (f"決済 {len(wk)}件 勝率{len(wins)}/{len(wk)} PF {pf_s}\n"
+                f"**週間 {total:+,}円**\n"
+                f"🏆 {best['name']} {best['pnl_yen']:+,}円 / "
+                f"🥶 {worst['name']} {worst['pnl_yen']:+,}円")
+    grand = sum(p["pnl_yen"] for p in closed_all)
+    desc += f"\n\n通算（稼働開始から）: {len(closed_all)}件 **{grand:+,}円**"
+    return {
+        "title": f"📅 決算持ち越し【{tier['label']}】｜週次サマリー（〜{md}）",
+        "description": desc,
+        "color": 0x2ECC71 if total >= 0 else 0xE74C3C,
+        "footer": {"text": "金曜買い分は月曜朝決済＝翌週の週次に計上"},
+    }
+
+
 def embed_signals(picks: list[dict], n_scheduled: int, today: date, tier: dict,
                   note: str | None = None) -> dict:
     md = today.strftime("%m/%d")
@@ -358,12 +410,51 @@ def embed_signals(picks: list[dict], n_scheduled: int, today: date, tier: dict,
 
 
 # ================================================================
+# 朝の売り忘れリマインダー（schedule.yml相乗り・8時台）
+# ================================================================
+
+def remind(force: bool = False, dry: bool = False) -> None:
+    now = datetime.now(JST)
+    today = now.date()
+    print(f"[remind] 実行: {now.strftime('%Y-%m-%d %H:%M JST')}")
+    if not force:
+        if not is_trading_day(today):
+            print("[remind] 休場日 → スキップ")
+            return
+        hm = now.hour * 60 + now.minute
+        if not (7 * 60 <= hm <= 8 * 60 + 55):
+            print(f"[remind] 時間外({now.strftime('%H:%M')}) → スキップ（7:00-8:55のみ）")
+            return
+    today_s = today.strftime("%Y-%m-%d")
+    for tier in TIERS:
+        label = tier["label"]
+        store = load_positions(tier["positions_file"])
+        if store.get("last_reminder_date") == today_s and not force:
+            print(f"[remind-{label}] 本日送信済み → スキップ")
+            continue
+        pends = [p for p in store["positions"]
+                 if p.get("status") == "pending" and p.get("date", "") < today_s]
+        if not pends:
+            print(f"[remind-{label}] 売る建玉なし → 無送信")
+            continue
+        send_discord([embed_reminder(pends, tier)],
+                     os.getenv(tier["webhook_env"], ""), label, dry=dry)
+        if not dry:
+            store["last_reminder_date"] = today_s
+            save_positions(store, tier["positions_file"])
+
+
+# ================================================================
 # main
 # ================================================================
 
 def main() -> None:
     force = "--force" in sys.argv
     dry = "--dry" in sys.argv
+
+    if "--remind" in sys.argv:
+        remind(force=force, dry=dry)
+        return
 
     if "--test" in sys.argv:
         for tier in TIERS:
@@ -450,6 +541,10 @@ def main() -> None:
                  and c["ticker"] not in pending_now][:free_slots]
         print(f"[earnings_hold-{label}] 配信{len(picks)}件（空き枠{free_slots}）")
         embeds.append(embed_signals(picks, len(todays), today, tier, note=note))
+
+        # 週の最終営業日は週次サマリーを同梱（決済は翌朝確定のため金曜買いは翌週計上）
+        if is_week_last_trading_day(today):
+            embeds.append(embed_weekly(store, today, tier))
 
         send_discord(embeds, os.getenv(tier["webhook_env"], ""), label, dry=dry)
 
