@@ -32,6 +32,7 @@ load_dotenv()
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 POSITIONS_FILE = "positions_earnings.json"
 SCHEDULE_FILE = "jpx_earnings_schedule.json"
+TIMES_FILE = "earnings_times.json"
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "")
 
 # ── ルールA（BT確定値・むやみに変えない） ──
@@ -63,6 +64,73 @@ def next_trading_day(d: date) -> date:
     while not is_trading_day(n):
         n += timedelta(days=1)
     return n
+
+
+def time_bucket(t: str | None) -> str:
+    """DiscTime('15:30:00')→時間帯。場中組は買う時点で発表済みの可能性が高い。"""
+    if not t:
+        return "履歴なし"
+    try:
+        hm = int(t[:2]) * 60 + int(t[3:5])
+    except Exception:
+        return "履歴なし"
+    if hm < 9 * 60:
+        return "寄り前"
+    if hm < 15 * 60:
+        return "場中"
+    return "引け後"
+
+
+def load_times() -> dict:
+    if os.path.exists(TIMES_FILE):
+        with open(TIMES_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def last_disc_time(times: dict, ticker: str, before: str) -> str | None:
+    """beforeより前の直近の発表時刻。時刻表示用（除外には使わない=BTで逆効果と確定）。"""
+    dm = times.get(ticker, {})
+    prev = [d for d in dm if d < before]
+    return dm[max(prev)] if prev else None
+
+
+def refresh_earnings_times(today: date, days: int = 10) -> None:
+    """直近N営業日の/fins/summaryを取得しearnings_times.jsonへマージ（時刻の鮮度維持）。"""
+    import time as _time
+
+    import urllib3
+    urllib3.disable_warnings()
+    key = os.getenv("JQUANTS_API_KEY", "").strip()
+    if not key:
+        print("[times] JQUANTS_API_KEY なし → スキップ")
+        return
+    times = load_times()
+    d = today
+    fetched = 0
+    while fetched < days:
+        d -= timedelta(days=1)
+        if not is_trading_day(d):
+            continue
+        fetched += 1
+        ds = d.strftime("%Y-%m-%d")
+        try:
+            r = requests.get("https://api.jquants.com/v2/fins/summary",
+                             headers={"x-api-key": key}, params={"date": ds},
+                             timeout=60, verify=False)
+            if r.status_code != 200:
+                continue
+            for x in r.json().get("data", []):
+                code = str(x.get("Code", ""))[:4]
+                dd, tt = x.get("DiscDate"), x.get("DiscTime")
+                if code and dd and tt:
+                    times.setdefault(code + ".T", {})[dd] = tt
+        except Exception as e:
+            print(f"[times] {ds} 取得失敗: {e}")
+        _time.sleep(1.1)
+    with open(TIMES_FILE, "w", encoding="utf-8") as f:
+        json.dump(times, f, ensure_ascii=False)
+    print(f"[times] 直近{days}営業日をマージ（銘柄{len(times)}）")
 
 
 def rule_pass(rsi: float | None, runup5: float | None,
@@ -178,11 +246,14 @@ def settle_pendings(store: dict, today: date, all_data: dict) -> list[dict]:
 # 当日シグナル
 # ================================================================
 
-def build_candidates(codes: list[dict], all_data: dict) -> list[dict]:
+def build_candidates(codes: list[dict], all_data: dict,
+                     times: dict | None = None) -> list[dict]:
     """発表予定銘柄にルールAを適用。現在値はyfinance(15分遅延≒14:40)。"""
     import yfinance as yf
     from screener import calc_rsi
 
+    times = times or {}
+    today_str = date.today().strftime("%Y-%m-%d")
     out = []
     for x in codes:
         tk = x["code"] + ".T"
@@ -208,10 +279,13 @@ def build_candidates(codes: list[dict], all_data: dict) -> list[dict]:
         if rsi is None or runup5 is None:
             continue
         if rule_pass(rsi, runup5, tov20, price):
+            lt = last_disc_time(times, tk, today_str)
             out.append({"ticker": tk, "code": x["code"], "name": x["name"],
                         "type": x.get("type", ""), "price": price,
                         "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
-                        "tov20": tov20})
+                        "tov20": tov20,
+                        "last_time": lt[:5] if lt else None,
+                        "last_bucket": time_bucket(lt)})
     return sorted(out, key=lambda r: r["rsi"])
 
 
@@ -249,10 +323,17 @@ def embed_signals(picks: list[dict], n_scheduled: int, today: date,
     for i, r in enumerate(picks, 1):
         shares = calc_shares(r["price"])
         amount = shares * r["price"] / 10000
+        lb, lt = r.get("last_bucket", "履歴なし"), r.get("last_time")
+        if lb == "場中":
+            t_note = f"⚠️ 前回発表 {lt}（場中型＝本日すでに発表済みの可能性）"
+        elif lt:
+            t_note = f"前回発表 {lt}（今夜型）"
+        else:
+            t_note = "前回発表時刻 不明"
         lines.append(
             f"**{i}. {r['name']}**（{r['code']}）{r['type']}\n"
             f"　現在値 {r['price']:,.0f}円 → **大引け成行 {shares:,}株**（約{amount:,.0f}万円）\n"
-            f"　RSI {r['rsi']} / 5日騰落 {r['runup5']:+.1f}%")
+            f"　RSI {r['rsi']} / 5日騰落 {r['runup5']:+.1f}% / {t_note}")
     return {
         "title": f"📊 決算持ち越し｜本日の買いリスト {len(picks)}件（{md}）",
         "description": "\n".join(lines) + (f"\n⚠️ {note}" if note else ""),
@@ -273,7 +354,8 @@ def main() -> None:
     if "--test" in sys.argv:
         picks = [{"ticker": "0000.T", "code": "0000", "name": "テスト銘柄",
                   "type": "第１四半期", "price": 2340.0, "rsi": 32.5,
-                  "runup5": -6.2, "tov20": 2.5e9}]
+                  "runup5": -6.2, "tov20": 2.5e9,
+                  "last_time": "15:30", "last_bucket": "引け後"}]
         e = embed_signals(picks, 42, date.today())
         e["title"] = "🧪【テスト配信】" + e["title"]
         send_discord([e], dry=dry)
@@ -314,6 +396,13 @@ def main() -> None:
     todays = sched.get("schedule", {}).get(today.strftime("%Y-%m-%d"), [])
     print(f"[earnings_hold] 予定表({fetched}取得) 本日{len(todays)}件")
 
+    # ── 1b. 発表時刻履歴の鮮度維持（表示用・失敗しても続行） ──
+    try:
+        refresh_earnings_times(today)
+    except Exception as e:
+        print(f"[earnings_hold] 時刻履歴の更新失敗: {e} → 手元データで続行")
+    times = load_times()
+
     # ── 2. J-Quants履歴（昨日まで・決済記帳と判定に共用） ──
     from screener import _jquants_id_token, batch_download_jquants
     start = (today - timedelta(days=HIST_DAYS)).strftime("%Y-%m-%d")
@@ -332,7 +421,7 @@ def main() -> None:
     # ── 4. 当日シグナル ──
     pending_now = {p["ticker"] for p in store["positions"] if p.get("status") == "pending"}
     free_slots = max(0, SLOTS - len(pending_now))
-    cands = build_candidates(todays, all_data)
+    cands = build_candidates(todays, all_data, times)
     picks = [c for c in cands if c["ticker"] not in pending_now][:free_slots]
     print(f"[earnings_hold] 候補{len(cands)}件 → 配信{len(picks)}件（空き枠{free_slots}）")
     embeds.append(embed_signals(picks, len(todays), today, note=note))

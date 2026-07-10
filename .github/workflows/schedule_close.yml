@@ -55,7 +55,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add positions_earnings.json jpx_earnings_schedule.json || true
+          git add positions_earnings.json jpx_earnings_schedule.json earnings_times.json || true
           git diff --cached --quiet && exit 0
           git commit -m "chore: update earnings hold positions [skip ci]"
           for i in 1 2 3; do

@@ -77,14 +77,28 @@ store3 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-09",
 settled3 = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df})
 check("closedは再処理しない", not settled3)
 
+print("── time_bucket / last_disc_time ──")
+check("15:30は引け後", m.time_bucket("15:30:00") == "引け後")
+check("11:30は場中", m.time_bucket("11:30:00") == "場中")
+check("08:30は寄り前", m.time_bucket("08:30:00") == "寄り前")
+check("Noneは履歴なし", m.time_bucket(None) == "履歴なし")
+tms = {"1234.T": {"2026-04-10": "11:30:00", "2026-07-10": "15:00:00"}}
+check("直近の過去時刻を返す", m.last_disc_time(tms, "1234.T", "2026-07-10") == "11:30:00")
+check("履歴なしはNone", m.last_disc_time(tms, "9999.T", "2026-07-10") is None)
+
 print("── embeds ──")
 e = m.embed_signals([], 42, date(2026, 7, 10))
 check("対象なしembed", "対象なし" in e["title"] and "42件" in e["description"])
 picks = [{"ticker": "1234.T", "code": "1234", "name": "サンプル", "type": "本決算",
-          "price": 2340.0, "rsi": 32.5, "runup5": -6.2, "tov20": 2e9}]
+          "price": 2340.0, "rsi": 32.5, "runup5": -6.2, "tov20": 2e9,
+          "last_time": "15:30", "last_bucket": "引け後"}]
 e2 = m.embed_signals(picks, 42, date(2026, 7, 10))
 check("買いリストembedに株数", "200株" in e2["description"])
 check("footerに注意書き", "STOP無効" in e2["footer"]["text"])
+check("前回発表時刻の表示", "前回発表 15:30" in e2["description"])
+picks[0].update({"last_time": "11:30", "last_bucket": "場中"})
+e3 = m.embed_signals(picks, 42, date(2026, 7, 10))
+check("場中型は⚠️つき", "⚠️ 前回発表 11:30" in e3["description"])
 er = m.embed_results([{"ticker": "1234.T", "name": "サンプル", "entry": 1020.0,
                        "exit": 1050.0, "pnl_pct": 2.94, "pnl_yen": 12000}])
 check("結果embedに合計", "+12,000円" in er["description"])
