@@ -69,7 +69,7 @@ tms = {"1234.T": {"2026-04-10": "11:30:00", "2026-07-10": "15:00:00"}}
 check("直近の過去時刻を返す", m.last_disc_time(tms, "1234.T", "2026-07-10") == "11:30:00")
 check("履歴なしはNone", m.last_disc_time(tms, "9999.T", "2026-07-10") is None)
 
-print("── settle_pendings ──")
+print("── settle_pendings（通常決済） ──")
 idx = pd.to_datetime(["2026-07-09", "2026-07-10"])
 fake_df = pd.DataFrame({"Open": [1000.0, 1050.0], "Close": [1020.0, 1040.0],
                         "Volume": [1e6, 1e6]}, index=idx)
@@ -77,24 +77,60 @@ store = {"last_signal_date": "2026-07-09", "positions": [
     {"ticker": "9999.T", "name": "テスト", "date": "2026-07-09",
      "shares": 400, "status": "pending"},
 ]}
-settled = m.settle_pendings(store, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled, ext = m.settle_pendings(store, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 p = store["positions"][0]
 check("closed化", p["status"] == "closed")
 check("entry=シグナル日終値1020", p["entry"] == 1020.0)
 check("exit=翌営業日寄り1050", p["exit"] == 1050.0)
 check("pnl_pct=+2.94", abs(p["pnl_pct"] - 2.94) < 0.01)
 check("pnl_yen=+12000(400株)", p["pnl_yen"] == 12000)
-check("settled明細1件", len(settled) == 1)
+check("settled明細1件・延長0件", len(settled) == 1 and not ext)
+check("exit_kind=翌寄り", p["exit_kind"] == "翌寄り")
+check("gap+2.9%は延長しない(閾値8%)", p["status"] == "closed")
 
 store2 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-10",
                          "shares": 100, "status": "pending"}]}
-settled2 = m.settle_pendings(store2, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled2, _ = m.settle_pendings(store2, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 check("決済日未到来はpending維持", store2["positions"][0]["status"] == "pending" and not settled2)
 
 store3 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-09",
                          "shares": 100, "status": "closed", "pnl_yen": 1}]}
-settled3 = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled3, _ = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 check("closedは再処理しない", not settled3)
+
+print("── PEAD延長 ──")
+check("nth_trading_day: 金7/10+5営業日=7/17", m.nth_trading_day(date(2026, 7, 10), 5) == date(2026, 7, 17))
+# 寄り+10% > 閾値8% → extended昇格
+fake_big = pd.DataFrame({"Open": [1000.0, 1122.0], "Close": [1020.0, 1100.0],
+                         "Volume": [1e6, 1e6]}, index=idx)
+store4 = {"positions": [{"ticker": "8888.T", "name": "爆勝ち", "date": "2026-07-09",
+                         "shares": 400, "status": "pending"}]}
+settled4, ext4 = m.settle_pendings(store4, date(2026, 7, 10), {"8888.T": fake_big}, 500_000)
+p4 = store4["positions"][0]
+check("gap+10%はextendedに昇格", p4["status"] == "extended" and len(ext4) == 1 and not settled4)
+check("gap_pct=+10.0", abs(p4["gap_pct"] - 10.0) < 0.01)
+check("ext_exit_date=7/9+5営業日=7/16", p4["ext_exit_date"] == "2026-07-16")
+
+# 延長分の決済: 売却日(7/16)の翌営業日(7/17)に終値1200で記帳
+idx2 = pd.to_datetime(["2026-07-16", "2026-07-17"])
+fake_ext = pd.DataFrame({"Open": [1150.0, 1190.0], "Close": [1200.0, 1210.0],
+                         "Volume": [1e6, 1e6]}, index=idx2)
+settled5, _ = m.settle_pendings(store4, date(2026, 7, 16), {"8888.T": fake_ext}, 500_000)
+check("売却日当日はまだ決済しない(終値未確定)", p4["status"] == "extended" and not settled5)
+settled6, _ = m.settle_pendings(store4, date(2026, 7, 17), {"8888.T": fake_ext}, 500_000)
+check("翌日に売却日終値1200で決済", p4["status"] == "closed" and p4["exit"] == 1200.0)
+check("exit_kind=PEAD延長", p4["exit_kind"] == "PEAD延長")
+check("延長pnl=+72000円(1020→1200×400株)", p4["pnl_yen"] == 72000)
+
+ee = m.embed_extended([{"ticker": "8888.T", "name": "爆勝ち", "gap_pct": 10.0,
+                        "ext_exit_date": "2026-07-16"}], TIER_M)
+check("延長embedに売却日", "2026-07-16 大引けで売却" in ee["description"])
+ex = m.embed_ext_exit_today([{"ticker": "8888.T", "name": "爆勝ち", "shares": 400,
+                              "date": "2026-07-09"}], TIER_M)
+check("売却日embedに大引け成行指示", "大引け成行" in ex["description"])
+err = m.embed_reminder([{"ticker": "8888.T", "name": "爆勝ち", "shares": 400,
+                         "date": "2026-07-09", "prev_close": 1000.0}], TIER_M)
+check("リマインダーにホールド判定ライン1,080円", "1,080円" in err["description"])
 
 print("── embeds（階層ラベル） ──")
 e = m.embed_signals([], 42, date(2026, 7, 10), TIER_M)

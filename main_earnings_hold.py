@@ -9,8 +9,9 @@
        → RSI昇順に最大8枠 → Discord配信「大引け成行買いリスト」
   3. positions_earnings*.json 保存（翌日の決済記帳用）
 
-出口は無条件で翌寄り成行売り（1晩・オーバーナイトはSTOP無効）。
-BT(4.5年・8枠): 大PF1.34/+540万・中PF1.39/+272万・小PF1.51/+159万・全階層とも年利≈15%/全5年プラス。
+出口: 原則翌寄り成行売り（1晩・オーバーナイトはSTOP無効）。
+例外=PEAD延長: 寄りがエントリー比+8%超なら5営業日目の大引けまでホールド。
+BT(4.5年・8枠・PEAD込み): 大PF1.50/+770万・中PF1.57/+384万・小PF1.76/+224万・全5年プラス。
 
 実行: python main_earnings_hold.py [--force](時間ガード無視) [--dry](配信/保存なし)
       [--test](フォーマット確認用のサンプル配信のみ)
@@ -40,6 +41,14 @@ RSI_MAX = 45.0
 RUNUP_MAX = -3.0      # 直前5営業日騰落% がこれ未満
 TOV_MIN = 1e9         # 20日中央値売買代金
 HIST_DAYS = 60        # J-Quants取得窓（暦日）
+
+# ── PEAD延長（2026-07-11採用・_bt_earnings_pead*.py） ──
+# 翌朝の寄りがエントリー比+8%超の爆勝ちギャップだけ売らず、エントリー5営業日目の
+# 大引けまでホールド（決算後ドリフト）。8枠シムで大+540→+770万/中+272→+384万/
+# 小+159→+224万・PF全階層改善・全5年プラス・閾値+4〜+12%の台地で頑健。
+# 負け玉は従来どおり翌寄り売り＝最悪テール不変。
+PEAD_EXT_GAP = 8.0    # 延長発動のギャップ閾値%
+PEAD_EXT_DAYS = 5     # エントリー日からの営業日数（この日の大引けで売却）
 
 # 3階層（2026-07-10分割・スイングと同じ価格帯構造・各8枠）
 TIERS = [
@@ -75,6 +84,14 @@ def next_trading_day(d: date) -> date:
     while not is_trading_day(n):
         n += timedelta(days=1)
     return n
+
+
+def nth_trading_day(d: date, n: int) -> date:
+    """dからn営業日後（PEAD延長の売却日=シグナル日+5営業日）。"""
+    cur = d
+    for _ in range(n):
+        cur = next_trading_day(cur)
+    return cur
 
 
 def time_bucket(t: str | None) -> str:
@@ -196,64 +213,95 @@ def send_discord(embeds: list[dict], webhook: str, label: str,
 # 決済記帳（昨日エントリー分）
 # ================================================================
 
+def _px_of(tk: str, all_data: dict, day_str: str, col: str) -> float | None:
+    """J-Quants窓→なければyfinanceで day_str の col(Open/Close) を返す。"""
+    df = all_data.get(tk)
+    if df is not None and len(df):
+        idx = df.index.strftime("%Y-%m-%d")
+        m = idx == day_str
+        if m.any():
+            v = float(df[col][m].iloc[0])
+            if v > 0:
+                return v
+    try:
+        import yfinance as yf
+        h = yf.Ticker(tk).history(period="1mo")
+        hi = h.index.strftime("%Y-%m-%d")
+        m = hi == day_str
+        if m.any():
+            v = float(h[col][m][0])
+            if v > 0:
+                return v
+    except Exception as e:
+        print(f"  [settle] {tk} yfinance失敗: {e}")
+    return None
+
+
+def _close_position(pos: dict, entry: float, exit_px: float, exit_d: date,
+                    size: int, kind: str) -> None:
+    shares = pos.get("shares") or calc_shares(entry, size)
+    pos.update({
+        "status": "closed", "entry": round(entry, 1),
+        "exit_date": exit_d.strftime("%Y-%m-%d"), "exit": round(exit_px, 1),
+        "exit_kind": kind,
+        "pnl_pct": round((exit_px - entry) / entry * 100, 2),
+        "pnl_yen": int((exit_px - entry) * shares),
+    })
+    pos.pop("note", None)
+
+
 def settle_pendings(store: dict, today: date, all_data: dict,
-                    size: int) -> list[dict]:
-    """pendingを決済記帳。entry=シグナル日の終値(J-Quants)・exit=翌営業日寄り。
-    戻り値: 今回closedにした明細（Discord表示用）。"""
-    import yfinance as yf
-    settled = []
+                    size: int) -> tuple[list[dict], list[dict]]:
+    """記帳処理。pending=翌寄りで決済（ただし寄りがエントリー比+PEAD_EXT_GAP%超なら
+    extendedに昇格＝5営業日目の大引けまでホールド）。extended=売却日の翌日以降に
+    公式終値で決済。戻り値: (今回closed明細, 今回extended昇格明細)。"""
+    settled: list[dict] = []
+    extended: list[dict] = []
     for pos in store["positions"]:
-        if pos.get("status") != "pending":
-            continue
-        tk = pos["ticker"]
-        sig_d = datetime.strptime(pos["date"], "%Y-%m-%d").date()
-        exit_d = next_trading_day(sig_d)
-        if exit_d > today:
-            continue  # まだ決済日が来ていない（通常ありえないが安全側）
-
-        entry = exit_px = None
-        df = all_data.get(tk)
-        if df is not None and len(df):
-            idx = df.index.strftime("%Y-%m-%d")
-            m_in = idx == pos["date"]
-            if m_in.any():
-                entry = float(df["Close"][m_in].iloc[0])
-            m_out = idx == exit_d.strftime("%Y-%m-%d")
-            if m_out.any():
-                v = float(df["Open"][m_out].iloc[0])
-                if v > 0:
-                    exit_px = v
-        if entry is None or exit_px is None:
-            try:
-                h = yf.Ticker(tk).history(period="1mo")
-                hi = h.index.strftime("%Y-%m-%d")
-                if entry is None:
-                    m = hi == pos["date"]
-                    if m.any():
-                        entry = float(h["Close"][m][0])
-                if exit_px is None:
-                    m = hi == exit_d.strftime("%Y-%m-%d")
-                    if m.any():
-                        exit_px = float(h["Open"][m][0])
-            except Exception as e:
-                print(f"  [settle] {tk} yfinance失敗: {e}")
-        if entry is None or exit_px is None:
-            pos["note"] = f"決済価格未取得(entry={entry}, exit={exit_px})・翌日再試行"
-            print(f"  [settle] {tk} 価格未取得 → pending維持")
-            continue
-
-        shares = pos.get("shares") or calc_shares(entry, size)
-        pos.update({
-            "status": "closed", "entry": round(entry, 1),
-            "exit_date": exit_d.strftime("%Y-%m-%d"), "exit": round(exit_px, 1),
-            "pnl_pct": round((exit_px - entry) / entry * 100, 2),
-            "pnl_yen": int((exit_px - entry) * shares),
-        })
-        pos.pop("note", None)
-        settled.append(pos)
-        print(f"  [settle] {tk} {pos['name']} {entry:,.0f}→{exit_px:,.0f} "
-              f"{pos['pnl_pct']:+.2f}% ({pos['pnl_yen']:+,}円)")
-    return settled
+        st = pos.get("status")
+        tk = pos.get("ticker")
+        if st == "pending":
+            sig_d = datetime.strptime(pos["date"], "%Y-%m-%d").date()
+            exit_d = next_trading_day(sig_d)
+            if exit_d > today:
+                continue  # まだ決済日が来ていない（安全側）
+            entry = _px_of(tk, all_data, pos["date"], "Close")
+            open_px = _px_of(tk, all_data, exit_d.strftime("%Y-%m-%d"), "Open")
+            if entry is None or open_px is None:
+                pos["note"] = f"決済価格未取得(entry={entry}, exit={open_px})・翌日再試行"
+                print(f"  [settle] {tk} 価格未取得 → pending維持")
+                continue
+            gap = (open_px - entry) / entry * 100
+            if gap > PEAD_EXT_GAP:
+                ext_d = nth_trading_day(sig_d, PEAD_EXT_DAYS)
+                pos.update({
+                    "status": "extended", "entry": round(entry, 1),
+                    "gap_pct": round(gap, 2),
+                    "ext_exit_date": ext_d.strftime("%Y-%m-%d"),
+                })
+                pos.pop("note", None)
+                extended.append(pos)
+                print(f"  [settle] {tk} {pos['name']} 寄り{gap:+.1f}% > +{PEAD_EXT_GAP:.0f}%"
+                      f" → PEAD延長（{ext_d}大引け売り）")
+                continue
+            _close_position(pos, entry, open_px, exit_d, size, "翌寄り")
+            settled.append(pos)
+            print(f"  [settle] {tk} {pos['name']} {entry:,.0f}→{open_px:,.0f} "
+                  f"{pos['pnl_pct']:+.2f}% ({pos['pnl_yen']:+,}円)")
+        elif st == "extended":
+            ext_d = datetime.strptime(pos["ext_exit_date"], "%Y-%m-%d").date()
+            if ext_d >= today:
+                continue  # 売却日の大引け値は翌営業日に確定
+            close_px = _px_of(tk, all_data, pos["ext_exit_date"], "Close")
+            entry = pos.get("entry")
+            if close_px is None or entry is None:
+                print(f"  [settle] {tk} 延長分の終値未取得 → extended維持")
+                continue
+            _close_position(pos, float(entry), close_px, ext_d, size, "PEAD延長")
+            settled.append(pos)
+            print(f"  [settle] {tk} {pos['name']} 延長決済 {entry:,.0f}→{close_px:,.0f} "
+                  f"{pos['pnl_pct']:+.2f}% ({pos['pnl_yen']:+,}円)")
+    return settled, extended
 
 
 # ================================================================
@@ -311,27 +359,61 @@ def embed_results(settled: list[dict], tier: dict) -> dict:
     total = sum(p["pnl_yen"] for p in settled)
     lines = []
     for p in settled:
+        tag = "｜🚀延長分" if p.get("exit_kind") == "PEAD延長" else ""
         lines.append(f"{'🟢' if p['pnl_yen'] > 0 else '🔴'} **{p['name']}**（{p['ticker'].replace('.T', '')}）"
                      f" 買{p['entry']:,.0f}円→売{p['exit']:,.0f}円｜"
-                     f"{p['pnl_pct']:+.2f}%｜**{p['pnl_yen']:+,}円**")
+                     f"{p['pnl_pct']:+.2f}%｜**{p['pnl_yen']:+,}円**{tag}")
     wins = sum(1 for p in settled if p["pnl_yen"] > 0)
     return {
-        "title": f"✅ 決算持ち越し【{tier['label']}】｜昨日分の決済結果（{wins}勝{len(settled) - wins}敗）",
+        "title": f"✅ 決算持ち越し【{tier['label']}】｜決済結果（{wins}勝{len(settled) - wins}敗）",
         "description": "\n".join(lines) + f"\n\n**合計 {total:+,}円**",
         "color": 0x2ECC71 if total >= 0 else 0xE74C3C,
     }
 
 
+def embed_extended(extended: list[dict], tier: dict) -> dict:
+    """PEAD延長の通知: 爆勝ちギャップ玉はまだ売らない。"""
+    lines = []
+    for p in extended:
+        lines.append(f"🚀 **{p['name']}**（{p['ticker'].replace('.T', '')}）"
+                     f" 寄り**{p['gap_pct']:+.1f}%** → 売らずホールド"
+                     f"（**{p['ext_exit_date']} 大引けで売却**）")
+    return {
+        "title": f"🚀 決算持ち越し【{tier['label']}】｜PEAD延長 {len(extended)}件",
+        "description": "\n".join(lines) +
+                       f"\n\n寄りが+{PEAD_EXT_GAP:.0f}%超の爆勝ちは決算後ドリフトを"
+                       "追加で取る（BT: 延長分は平均+3.8%上乗せ・全5年プラス）",
+        "color": 0x9B59B6,
+    }
+
+
+def embed_ext_exit_today(exits: list[dict], tier: dict) -> dict:
+    """延長玉の売却日当日: 本日の大引け成行で売る指示。"""
+    lines = []
+    for p in exits:
+        lines.append(f"・**{p['name']}**（{p['ticker'].replace('.T', '')}）"
+                     f" {p.get('shares', 0):,}株（{p['date']}買い・延長中）")
+    return {
+        "title": f"⏰ 決算持ち越し【{tier['label']}】｜延長分を本日大引けで売却 {len(exits)}件",
+        "description": "\n".join(lines) + "\n\n**15:25までに大引け成行の売り注文**を入れてください",
+        "color": 0xE67E22,
+    }
+
+
 def embed_reminder(pends: list[dict], tier: dict) -> dict:
-    """朝の売り忘れ防止。昨日(以前)の大引けで買った建玉を今日の寄りで売る確認。"""
+    """朝の売り忘れ防止。昨日(以前)の大引けで買った建玉を今日の寄りで売る確認。
+    例外=PEAD延長: 寄り気配がエントリー比+8%超なら売らずホールド。"""
     lines = []
     for p in pends:
+        base = p.get("prev_close") or p.get("signal_price")
+        hold = f"（🚀気配 {base * (1 + PEAD_EXT_GAP / 100):,.0f}円 以上なら売らずホールド）" if base else ""
         lines.append(f"・**{p['name']}**（{p['ticker'].replace('.T', '')}）"
-                     f" {p['shares']:,}株（{p['date']}買い）")
+                     f" {p['shares']:,}株（{p['date']}買い）{hold}")
     return {
         "title": f"⏰ 決算持ち越し【{tier['label']}】｜本日寄りで売る建玉 {len(pends)}件",
         "description": "\n".join(lines) +
-                       "\n\n**9:00の寄り成行で売却**（昨夜のうちに売り予約済みなら対応不要）",
+                       f"\n\n**原則9:00の寄り成行で売却**。ただし寄り気配が+{PEAD_EXT_GAP:.0f}%超の"
+                       "爆勝ちだけは売らずホールド（15時の通知が売却日を案内します）",
         "color": 0xE67E22,
     }
 
@@ -437,6 +519,17 @@ def remind(force: bool = False, dry: bool = False) -> None:
         if not pends:
             print(f"[remind-{label}] 売る建玉なし → 無送信")
             continue
+        # PEAD判定ライン用に前日終値を取得（失敗時はsignal_price近似）
+        for p in pends:
+            try:
+                import yfinance as yf
+                h = yf.Ticker(p["ticker"]).history(period="5d")
+                hi = h.index.strftime("%Y-%m-%d")
+                m = hi == p["date"]
+                if m.any():
+                    p["prev_close"] = float(h["Close"][m][0])
+            except Exception as e:
+                print(f"[remind-{label}] {p['ticker']} 終値取得失敗: {e}")
         send_discord([embed_reminder(pends, tier)],
                      os.getenv(tier["webhook_env"], ""), label, dry=dry)
         if not dry:
@@ -529,16 +622,27 @@ def main() -> None:
         store = load_positions(tier["positions_file"])
         embeds = []
 
-        settled = settle_pendings(store, today, all_data, tier["size"])
+        settled, extended = settle_pendings(store, today, all_data, tier["size"])
         if settled:
             embeds.append(embed_results(settled, tier))
+        if extended:
+            embeds.append(embed_extended(extended, tier))
 
-        pending_now = {p["ticker"] for p in store["positions"]
-                       if p.get("status") == "pending"}
-        free_slots = max(0, SLOTS - len(pending_now))
+        # 延長玉の売却日当日 → 大引け売り指示（14:55=発注にちょうど間に合う）
+        today_s = today.strftime("%Y-%m-%d")
+        ext_today = [p for p in store["positions"]
+                     if p.get("status") == "extended"
+                     and p.get("ext_exit_date") == today_s]
+        if ext_today:
+            embeds.append(embed_ext_exit_today(ext_today, tier))
+
+        # pending(今夜またぎ待ち)と extended(延長ホールド中)の両方が枠を占有
+        holding_now = {p["ticker"] for p in store["positions"]
+                       if p.get("status") in ("pending", "extended")}
+        free_slots = max(0, SLOTS - len(holding_now))
         picks = [c for c in cands_all
                  if c["price"] <= tier["price_cap"]
-                 and c["ticker"] not in pending_now][:free_slots]
+                 and c["ticker"] not in holding_now][:free_slots]
         print(f"[earnings_hold-{label}] 配信{len(picks)}件（空き枠{free_slots}）")
         embeds.append(embed_signals(picks, len(todays), today, tier, note=note))
 
