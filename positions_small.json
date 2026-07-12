@@ -713,11 +713,11 @@
     "prev_close": 2738.0,
     "limit_price": 2765,
     "entry_open": 2743.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 2.078,
     "unrealized_pnl": -1.495,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-07-10"
   }
 ]
