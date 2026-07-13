@@ -1,12 +1,4 @@
 {
-  "date": "2026-07-13",
-  "signals": [
-    {
-      "ticker": "9532.T",
-      "name": "大阪瓦斯",
-      "direction": "BUY",
-      "prev_close": 5363.0,
-      "limit_price": 5410
-    }
-  ]
+  "date": "2026-07-14",
+  "signals": []
 }
