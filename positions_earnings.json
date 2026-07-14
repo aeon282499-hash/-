@@ -10,7 +10,8 @@
    "shares": 200,
    "rsi": 32.2,
    "runup5": -10.2,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 3830.0
   },
   {
    "ticker": "464A.T",
@@ -21,7 +22,8 @@
    "shares": 500,
    "rsi": 34.7,
    "runup5": -5.2,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 1844.0
   },
   {
    "ticker": "402A.T",
@@ -32,7 +34,9 @@
    "shares": 1900,
    "rsi": 37.3,
    "runup5": -8.8,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 507.0
   }
- ]
+ ],
+ "last_reminder_date": "2026-07-15"
 }
