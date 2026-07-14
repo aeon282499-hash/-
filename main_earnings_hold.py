@@ -98,7 +98,8 @@ def nth_trading_day(d: date, n: int) -> date:
 
 
 def time_bucket(t: str | None) -> str:
-    """DiscTime('15:30:00')→時間帯。場中組は買う時点で発表済みの可能性が高い。"""
+    """DiscTime('15:30:00')→時間帯。場中組は買う時点で発表済みの可能性が高い。
+    大引けは15:30（2024-11東証延長）＝15:00〜15:29発表も場中扱い。"""
     if not t:
         return "履歴なし"
     try:
@@ -107,7 +108,7 @@ def time_bucket(t: str | None) -> str:
         return "履歴なし"
     if hm < 9 * 60:
         return "寄り前"
-    if hm < 15 * 60:
+    if hm < 15 * 60 + 30:
         return "場中"
     return "引け後"
 
@@ -232,7 +233,7 @@ def _px_of(tk: str, all_data: dict, day_str: str, col: str) -> float | None:
         hi = h.index.strftime("%Y-%m-%d")
         m = hi == day_str
         if m.any():
-            v = float(h[col][m][0])
+            v = float(h[col][m].iloc[0])  # 位置[0]はpandas3でKeyError
             if v > 0:
                 return v
     except Exception as e:
@@ -530,7 +531,7 @@ def remind(force: bool = False, dry: bool = False) -> None:
                 hi = h.index.strftime("%Y-%m-%d")
                 m = hi == p["date"]
                 if m.any():
-                    p["prev_close"] = float(h["Close"][m][0])
+                    p["prev_close"] = float(h["Close"][m].iloc[0])
             except Exception as e:
                 print(f"[remind-{label}] {p['ticker']} 終値取得失敗: {e}")
         send_discord([embed_reminder(pends, tier)],
@@ -589,6 +590,9 @@ def main() -> None:
     try:
         import fetch_jpx_earnings_schedule as fjx
         fjx.main()
+    except SystemExit as e:  # fjxはリンク0本でsys.exit(1)＝Exceptionでは捕まらない
+        print(f"[earnings_hold] JPX更新中止(exit {e.code}) → 手元のJSONで続行")
+        note = "JPX予定表の更新に失敗（前回取得分で判定）"
     except Exception as e:
         print(f"[earnings_hold] JPX更新失敗: {e} → 手元のJSONで続行")
         note = "JPX予定表の更新に失敗（前回取得分で判定）"

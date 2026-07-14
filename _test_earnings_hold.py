@@ -63,6 +63,8 @@ check("大晦日スキップ", m.next_trading_day(date(2026, 12, 30)) == date(20
 
 print("── time_bucket / last_disc_time ──")
 check("15:30は引け後", m.time_bucket("15:30:00") == "引け後")
+check("15:00は場中(大引け15:30より前=買う時点で発表済み)", m.time_bucket("15:00:00") == "場中")
+check("15:29は場中", m.time_bucket("15:29:00") == "場中")
 check("11:30は場中", m.time_bucket("11:30:00") == "場中")
 check("08:30は寄り前", m.time_bucket("08:30:00") == "寄り前")
 check("Noneは履歴なし", m.time_bucket(None) == "履歴なし")
@@ -98,6 +100,31 @@ store3 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-09",
                          "shares": 100, "status": "closed", "pnl_yen": 1}]}
 settled3, _ = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 check("closedは再処理しない", not settled3)
+
+print("── _px_of yfinanceフォールバック（pandas3位置[0]回帰） ──")
+import sys
+import types
+_fake_yf = types.ModuleType("yfinance")
+
+
+class _FakeTicker:
+    def __init__(self, tk):
+        pass
+
+    def history(self, period="1mo"):
+        return pd.DataFrame({"Open": [1090.0], "Close": [1100.0]},
+                            index=pd.to_datetime(["2026-07-10"]))
+
+
+_fake_yf.Ticker = _FakeTicker
+_real_yf = sys.modules.get("yfinance")
+sys.modules["yfinance"] = _fake_yf
+check("J-Quants窓になければyfinanceでOpen取得", m._px_of("7777.T", {}, "2026-07-10", "Open") == 1090.0)
+check("該当日なしはNone", m._px_of("7777.T", {}, "2026-07-11", "Open") is None)
+if _real_yf is not None:
+    sys.modules["yfinance"] = _real_yf
+else:
+    del sys.modules["yfinance"]
 
 print("── PEAD延長 ──")
 check("nth_trading_day: 金7/10+5営業日=7/17", m.nth_trading_day(date(2026, 7, 10), 5) == date(2026, 7, 17))
