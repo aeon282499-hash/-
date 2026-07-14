@@ -1,4 +1,27 @@
 {
- "last_signal_date": "2026-07-13",
- "positions": []
+ "last_signal_date": "2026-07-14",
+ "positions": [
+  {
+   "ticker": "464A.T",
+   "name": "ＱＰＳホールディングス",
+   "type": "本決算",
+   "date": "2026-07-14",
+   "signal_price": 1846.0,
+   "shares": 100,
+   "rsi": 34.7,
+   "runup5": -5.2,
+   "status": "pending"
+  },
+  {
+   "ticker": "402A.T",
+   "name": "アクセルスペースホールディングス",
+   "type": "本決算",
+   "date": "2026-07-14",
+   "signal_price": 510.0,
+   "shares": 500,
+   "rsi": 37.3,
+   "runup5": -8.8,
+   "status": "pending"
+  }
+ ]
 }
