@@ -1,4 +1,19 @@
 {
-  "date": "2026-07-14",
-  "signals": []
+  "date": "2026-07-15",
+  "signals": [
+    {
+      "ticker": "2768.T",
+      "name": "双日",
+      "direction": "BUY",
+      "prev_close": 5120.0,
+      "limit_price": 5170
+    },
+    {
+      "ticker": "5301.T",
+      "name": "東海カーボン",
+      "direction": "BUY",
+      "prev_close": 1636.0,
+      "limit_price": 1652
+    }
+  ]
 }
