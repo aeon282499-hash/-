@@ -176,7 +176,7 @@
 <nav>
   <a href="#/" id="nav-home" class="on"><span class="i">✅</span>今日の買い</a>
   <a href="#/momentum" id="nav-momentum"><span class="i">🐵</span>モメンタム</a>
-  <a href="#/theme" id="nav-theme"><span class="i">🔥</span>テーマ</a>
+  <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
 </nav>
@@ -991,7 +991,6 @@ function viewAbout(){
   <div class="card">
     <div style="line-height:1.95">
       <div>🐵 <b>モメンタム</b> … 「今いちばん勢いがある／過熱している」順のランキング（S〜D）。<b style="color:#ff6b6b">買い推奨ではありません</b>——過去データではS評価ほど翌10日は弱い（平均マイナス）。眺める・☆ウォッチ用です。</div>
-      <div>🔥 <b>テーマ</b> … 「上がってる勢いに乗る」攻めの居場所。走っているテーマ銘柄の継続を取る<b>バーベル型（勝率5割・当たれば大／損切り-12%必須）</b>。堅実な✅今日の買いとは別物です。</div>
       <div>🧭 <b>探検</b> … 初動・押し目・ストップ高などの探索用スクリーナー（優位性は未検証・勝率は出しません）。</div>
     </div>
   </div>
@@ -1119,10 +1118,9 @@ function viewTheme(){
 
 // ── ルーター ──
 function setNav(h){
-  // 検索は#/detail同様ホーム系（ナビは点灯させない）。5タブ=今日の買い/モメンタム/テーマ/探検/使い方
+  // 検索は#/detail同様ホーム系（ナビは点灯させない）。4タブ=今日の買い/モメンタム/探検/使い方
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-momentum").classList.toggle("on",h.startsWith("#/momentum"));
-  $("#nav-theme").classList.toggle("on",h.startsWith("#/theme"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1134,7 +1132,6 @@ function render(){
     if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
-    else if(h.startsWith("#/theme")) $("#view").innerHTML=viewTheme();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
