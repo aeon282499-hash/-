@@ -53,6 +53,10 @@ HIST_DAYS = 60        # J-Quants取得窓（暦日）
 PEAD_EXT_GAP = 8.0    # 延長発動のギャップ閾値%
 PEAD_EXT_DAYS = 5     # エントリー日からの営業日数（この日の大引けで売却）
 
+# 決済価格がこの暦日数を超えて取得不能（売買停止/上場廃止など）なら失効記帳して
+# 枠を解放する（2026-07-15追加・放置すると枠1つが永久占有＋毎朝リマインダーが鳴り続ける）
+EXPIRE_CAL_DAYS = 14
+
 # 3階層（2026-07-10分割・スイングと同じ価格帯構造・各8枠）
 TIERS = [
     {"label": "大資金", "size": 1_000_000, "price_cap": 10000,
@@ -201,6 +205,7 @@ def send_discord(embeds: list[dict], webhook: str, label: str,
     if not webhook:
         print(f"[warn-{label}] Webhook未設定 → 送信不可")
         return
+    import time as _time
     for attempt in range(3):
         try:
             r = requests.post(webhook, json={"embeds": embeds}, timeout=15)
@@ -210,6 +215,8 @@ def send_discord(embeds: list[dict], webhook: str, label: str,
             print(f"[discord-{label}] HTTP {r.status_code}: {r.text[:200]}")
         except Exception as e:
             print(f"[discord-{label}] attempt{attempt + 1} 失敗: {e}")
+        if attempt < 2:
+            _time.sleep(2 * (attempt + 1))  # 429レート制限の即時再失敗を防ぐ
     print(f"[discord-{label}] 3回失敗 → 断念")
 
 
@@ -254,13 +261,25 @@ def _close_position(pos: dict, entry: float, exit_px: float, exit_d: date,
     pos.pop("note", None)
 
 
+def _expire_position(pos: dict, today: date, tk: str) -> None:
+    """決済価格が長期間取得不能な建玉を失効記帳（売買停止/上場廃止想定・枠を解放）。"""
+    pos.update({
+        "status": "expired", "expired_date": today.strftime("%Y-%m-%d"),
+        "note": f"決済価格が{EXPIRE_CAL_DAYS}日超取得不能（売買停止/上場廃止の可能性）"
+                "→失効・実際に約定していた場合は手動で処分と記帳が必要",
+    })
+    print(f"  [settle] {tk} {pos.get('name', '')} {EXPIRE_CAL_DAYS}日超データなし → 失効記帳")
+
+
 def settle_pendings(store: dict, today: date, all_data: dict,
-                    size: int) -> tuple[list[dict], list[dict]]:
+                    size: int) -> tuple[list[dict], list[dict], list[dict]]:
     """記帳処理。pending=翌寄りで決済（ただし寄りがエントリー比+PEAD_EXT_GAP%超なら
     extendedに昇格＝5営業日目の大引けまでホールド）。extended=売却日の翌日以降に
-    公式終値で決済。戻り値: (今回closed明細, 今回extended昇格明細)。"""
+    公式終値で決済。決済価格がEXPIRE_CAL_DAYS超取得不能なら失効（枠解放）。
+    戻り値: (今回closed明細, 今回extended昇格明細, 今回expired失効明細)。"""
     settled: list[dict] = []
     extended: list[dict] = []
+    expired: list[dict] = []
     for pos in store["positions"]:
         st = pos.get("status")
         tk = pos.get("ticker")
@@ -272,6 +291,10 @@ def settle_pendings(store: dict, today: date, all_data: dict,
             entry = _px_of(tk, all_data, pos["date"], "Close")
             open_px = _px_of(tk, all_data, exit_d.strftime("%Y-%m-%d"), "Open")
             if entry is None or open_px is None:
+                if (today - exit_d).days > EXPIRE_CAL_DAYS:
+                    _expire_position(pos, today, tk)
+                    expired.append(pos)
+                    continue
                 pos["note"] = f"決済価格未取得(entry={entry}, exit={open_px})・翌日再試行"
                 print(f"  [settle] {tk} 価格未取得 → pending維持")
                 continue
@@ -299,13 +322,17 @@ def settle_pendings(store: dict, today: date, all_data: dict,
             close_px = _px_of(tk, all_data, pos["ext_exit_date"], "Close")
             entry = pos.get("entry")
             if close_px is None or entry is None:
+                if (today - ext_d).days > EXPIRE_CAL_DAYS:
+                    _expire_position(pos, today, tk)
+                    expired.append(pos)
+                    continue
                 print(f"  [settle] {tk} 延長分の終値未取得 → extended維持")
                 continue
             _close_position(pos, float(entry), close_px, ext_d, size, "PEAD延長")
             settled.append(pos)
             print(f"  [settle] {tk} {pos['name']} 延長決済 {entry:,.0f}→{close_px:,.0f} "
                   f"{pos['pnl_pct']:+.2f}% ({pos['pnl_yen']:+,}円)")
-    return settled, extended
+    return settled, extended, expired
 
 
 # ================================================================
@@ -388,6 +415,22 @@ def embed_extended(extended: list[dict], tier: dict) -> dict:
                        f"\n\n寄りが+{PEAD_EXT_GAP:.0f}%超の爆勝ちは決算後ドリフトを"
                        "追加で取る（BT: 延長分は平均+3.8%上乗せ・全5年プラス）",
         "color": 0x9B59B6,
+    }
+
+
+def embed_expired(expired: list[dict], tier: dict) -> dict:
+    """失効記帳の通知: 決済価格が長期間取れない建玉（売買停止/上場廃止想定）。"""
+    lines = []
+    for p in expired:
+        lines.append(f"・**{p['name']}**（{p['ticker'].replace('.T', '')}）"
+                     f" {p.get('shares', 0):,}株（{p['date']}買い）")
+    return {
+        "title": f"⚠️ 決算持ち越し【{tier['label']}】｜失効 {len(expired)}件（要手動確認）",
+        "description": "\n".join(lines) +
+                       f"\n\n決済価格が{EXPIRE_CAL_DAYS}日を超えて取得できないため帳簿から"
+                       "失効させました（売買停止・上場廃止などの可能性）。"
+                       "**実際に約定していた場合は口座を確認し手動で処分してください**",
+        "color": 0xE74C3C,
     }
 
 
@@ -629,11 +672,13 @@ def main() -> None:
         store = load_positions(tier["positions_file"])
         embeds = []
 
-        settled, extended = settle_pendings(store, today, all_data, tier["size"])
+        settled, extended, expired = settle_pendings(store, today, all_data, tier["size"])
         if settled:
             embeds.append(embed_results(settled, tier))
         if extended:
             embeds.append(embed_extended(extended, tier))
+        if expired:
+            embeds.append(embed_expired(expired, tier))
 
         # 延長玉の売却日当日 → 大引け売り指示（14:55=発注にちょうど間に合う）
         today_s = today.strftime("%Y-%m-%d")

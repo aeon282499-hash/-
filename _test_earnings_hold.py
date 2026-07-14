@@ -80,7 +80,7 @@ store = {"last_signal_date": "2026-07-09", "positions": [
     {"ticker": "9999.T", "name": "テスト", "date": "2026-07-09",
      "shares": 400, "status": "pending"},
 ]}
-settled, ext = m.settle_pendings(store, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled, ext, _exp = m.settle_pendings(store, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 p = store["positions"][0]
 check("closed化", p["status"] == "closed")
 check("entry=シグナル日終値1020", p["entry"] == 1020.0)
@@ -93,12 +93,12 @@ check("gap+2.9%は延長しない(閾値8%)", p["status"] == "closed")
 
 store2 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-10",
                          "shares": 100, "status": "pending"}]}
-settled2, _ = m.settle_pendings(store2, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled2, _, _ = m.settle_pendings(store2, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 check("決済日未到来はpending維持", store2["positions"][0]["status"] == "pending" and not settled2)
 
 store3 = {"positions": [{"ticker": "9999.T", "name": "t", "date": "2026-07-09",
                          "shares": 100, "status": "closed", "pnl_yen": 1}]}
-settled3, _ = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
+settled3, _, _ = m.settle_pendings(store3, date(2026, 7, 10), {"9999.T": fake_df}, 500_000)
 check("closedは再処理しない", not settled3)
 
 print("── _px_of yfinanceフォールバック（pandas3位置[0]回帰） ──")
@@ -121,6 +121,26 @@ _real_yf = sys.modules.get("yfinance")
 sys.modules["yfinance"] = _fake_yf
 check("J-Quants窓になければyfinanceでOpen取得", m._px_of("7777.T", {}, "2026-07-10", "Open") == 1090.0)
 check("該当日なしはNone", m._px_of("7777.T", {}, "2026-07-11", "Open") is None)
+
+print("── 失効ガード（売買停止/上場廃止で決済価格が取れない建玉） ──")
+# pending: 6/19(金)買い→決済日6/22(月)のデータが16日経っても取れない → 失効
+store_e = {"positions": [{"ticker": "7777.T", "name": "停止銘柄", "date": "2026-06-19",
+                          "shares": 100, "status": "pending"}]}
+_, _, exp1 = m.settle_pendings(store_e, date(2026, 7, 8), {}, 500_000)
+check("14日超データなしpendingは失効", store_e["positions"][0]["status"] == "expired" and len(exp1) == 1)
+check("失効は枠を占有しない(status変更)", store_e["positions"][0]["status"] not in ("pending", "extended"))
+store_e2 = {"positions": [{"ticker": "7777.T", "name": "t", "date": "2026-06-19",
+                           "shares": 100, "status": "pending"}]}
+_, _, exp2 = m.settle_pendings(store_e2, date(2026, 7, 4), {}, 500_000)
+check("14日以内はpending維持(翌日再試行)", store_e2["positions"][0]["status"] == "pending" and not exp2)
+store_e3 = {"positions": [{"ticker": "7777.T", "name": "t", "date": "2026-06-15",
+                           "shares": 100, "status": "extended", "entry": 1000.0,
+                           "ext_exit_date": "2026-06-22"}]}
+_, _, exp3 = m.settle_pendings(store_e3, date(2026, 7, 8), {}, 500_000)
+check("extendedも14日超で失効", store_e3["positions"][0]["status"] == "expired" and len(exp3) == 1)
+eex = m.embed_expired(exp1, m.TIERS[1])
+check("失効embedはタイトル失効+手動確認の指示", "失効" in eex["title"] and "手動" in eex["description"])
+
 if _real_yf is not None:
     sys.modules["yfinance"] = _real_yf
 else:
@@ -133,7 +153,7 @@ fake_big = pd.DataFrame({"Open": [1000.0, 1122.0], "Close": [1020.0, 1100.0],
                          "Volume": [1e6, 1e6]}, index=idx)
 store4 = {"positions": [{"ticker": "8888.T", "name": "爆勝ち", "date": "2026-07-09",
                          "shares": 400, "status": "pending"}]}
-settled4, ext4 = m.settle_pendings(store4, date(2026, 7, 10), {"8888.T": fake_big}, 500_000)
+settled4, ext4, _ = m.settle_pendings(store4, date(2026, 7, 10), {"8888.T": fake_big}, 500_000)
 p4 = store4["positions"][0]
 check("gap+10%はextendedに昇格", p4["status"] == "extended" and len(ext4) == 1 and not settled4)
 check("gap_pct=+10.0", abs(p4["gap_pct"] - 10.0) < 0.01)
@@ -143,9 +163,9 @@ check("ext_exit_date=7/9+5営業日=7/16", p4["ext_exit_date"] == "2026-07-16")
 idx2 = pd.to_datetime(["2026-07-16", "2026-07-17"])
 fake_ext = pd.DataFrame({"Open": [1150.0, 1190.0], "Close": [1200.0, 1210.0],
                          "Volume": [1e6, 1e6]}, index=idx2)
-settled5, _ = m.settle_pendings(store4, date(2026, 7, 16), {"8888.T": fake_ext}, 500_000)
+settled5, _, _ = m.settle_pendings(store4, date(2026, 7, 16), {"8888.T": fake_ext}, 500_000)
 check("売却日当日はまだ決済しない(終値未確定)", p4["status"] == "extended" and not settled5)
-settled6, _ = m.settle_pendings(store4, date(2026, 7, 17), {"8888.T": fake_ext}, 500_000)
+settled6, _, _ = m.settle_pendings(store4, date(2026, 7, 17), {"8888.T": fake_ext}, 500_000)
 check("翌日に売却日終値1200で決済", p4["status"] == "closed" and p4["exit"] == 1200.0)
 check("exit_kind=PEAD延長", p4["exit_kind"] == "PEAD延長")
 check("延長pnl=+72000円(1020→1200×400株)", p4["pnl_yen"] == 72000)
