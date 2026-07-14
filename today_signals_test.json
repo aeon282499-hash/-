@@ -1,7 +1,15 @@
 {
-  "date": "2026-07-14",
-  "breadth": 0,
+  "date": "2026-07-15",
+  "breadth": 2,
   "is_capit": false,
   "weight": 1.0,
-  "signals": []
+  "signals": [
+    {
+      "ticker": "5301.T",
+      "name": "東海カーボン",
+      "direction": "BUY",
+      "prev_close": 1636.0,
+      "limit_price": 1652
+    }
+  ]
 }
