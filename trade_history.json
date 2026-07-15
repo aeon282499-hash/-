@@ -949,6 +949,16 @@
       "close": 5299.0,
       "pnl": -1.87,
       "win": false
+    },
+    {
+      "date": "2026-07-15",
+      "ticker": "2768.T",
+      "name": "双日",
+      "direction": "BUY",
+      "open": 5154.0,
+      "close": 5220.0,
+      "pnl": 1.28,
+      "win": true
     }
   ]
 }
