@@ -1,19 +1,12 @@
 {
-  "date": "2026-07-15",
+  "date": "2026-07-16",
   "signals": [
     {
-      "ticker": "2768.T",
-      "name": "双日",
+      "ticker": "3048.T",
+      "name": "ビックカメラ",
       "direction": "BUY",
-      "prev_close": 5120.0,
-      "limit_price": 5170
-    },
-    {
-      "ticker": "5301.T",
-      "name": "東海カーボン",
-      "direction": "BUY",
-      "prev_close": 1636.0,
-      "limit_price": 1652
+      "prev_close": 1632.5,
+      "limit_price": 1648
     }
   ]
 }
