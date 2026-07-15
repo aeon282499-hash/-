@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-14",
+ "last_signal_date": "2026-07-15",
  "positions": [
   {
    "ticker": "6521.T",
@@ -10,8 +10,14 @@
    "shares": 200,
    "rsi": 32.2,
    "runup5": -10.2,
-   "status": "pending",
-   "prev_close": 3830.0
+   "status": "closed",
+   "prev_close": 3830.0,
+   "entry": 3830.0,
+   "exit_date": "2026-07-15",
+   "exit": 3850.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.52,
+   "pnl_yen": 4000
   },
   {
    "ticker": "464A.T",
@@ -22,8 +28,14 @@
    "shares": 500,
    "rsi": 34.7,
    "runup5": -5.2,
-   "status": "pending",
-   "prev_close": 1844.0
+   "status": "closed",
+   "prev_close": 1844.0,
+   "entry": 1844.0,
+   "exit_date": "2026-07-15",
+   "exit": 1845.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.05,
+   "pnl_yen": 500
   },
   {
    "ticker": "402A.T",
@@ -34,8 +46,14 @@
    "shares": 1900,
    "rsi": 37.3,
    "runup5": -8.8,
-   "status": "pending",
-   "prev_close": 507.0
+   "status": "closed",
+   "prev_close": 507.0,
+   "entry": 507.0,
+   "exit_date": "2026-07-15",
+   "exit": 502.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.99,
+   "pnl_yen": -9500
   }
  ],
  "last_reminder_date": "2026-07-15"
