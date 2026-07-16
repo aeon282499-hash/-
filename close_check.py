@@ -121,20 +121,26 @@ def _oco_fill(direction: str, entry_open: float | None,
               day_high: float | None, day_low: float | None) -> dict | None:
     """ザラ場OCO(TP +5% / STOP -3%)が当日中に約定したかを当日高安から判定。
     約定していれば {kind, pnl_pct, level, hit} を返す（STOP優先＝backtest_rangeと同順）。
-    OCOは証券会社の実注文なので、約定済み＝もう保有していない＝処分対象でも保有継続でもない。"""
+    OCOは証券会社の実注文なので、約定済み＝もう保有していない＝処分対象でも保有継続でもない。
+
+    高安はyfinance 5分足由来で公式と1円前後ズレうるため、水準をmax(2円, 0.1%)
+    以上明確に抜けた時だけ約定と断定する（境界は未約定扱い＝MAXHOLD/RSI判定に回す）。
+    未約定と誤っても処分指示が空振りするだけだが、約定と誤るとMAXHOLD日の処分指示が
+    出ず実保有と帳簿がズレる＝安全側は未約定（寄指境界バグと同族・2026-07-16）。"""
     if not entry_open or day_high is None or day_low is None:
         return None
+    eps = max(2.0, entry_open * 0.001)
     if direction == "BUY":
         stop, tp = entry_open * 0.97, entry_open * 1.05
-        if day_low <= stop:
+        if day_low <= stop - eps:
             return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_low}
-        if day_high >= tp:
+        if day_high >= tp + eps:
             return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_high}
     else:  # SELL（空売り：利確は下＝entry×0.95 / 損切は上＝entry×1.03）
         stop, tp = entry_open * 1.03, entry_open * 0.95
-        if day_high >= stop:
+        if day_high >= stop + eps:
             return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_high}
-        if day_low <= tp:
+        if day_low <= tp - eps:
             return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_low}
     return None
 

@@ -211,6 +211,31 @@ targets, checked = cc.collect_targets([fail_pos], "BUY", TODAY, {"HHHH.T": hist_
 check("close_check: 現在値取得失敗がnoteとして可視化される",
       targets == [] and len(checked) == 1 and "取得失敗" in checked[0]["note"])
 
+# --- H: _oco_fill 境界緩衝（yfinance高安の1円ズレでOCO約定を断定しない） ---
+# 約定と誤断定するとMAXHOLD/RSIの処分指示がスキップされ実保有と帳簿がズレる。
+# 水準±max(2円,0.1%)の境界は未約定扱い＝処分判定に回す（安全側・2026-07-16）。
+_e = 1650.0  # BUY: stop=1600.5/tp=1732.5・SELL: stop=1699.5/tp=1567.5・eps=2円
+check("oco: STOP水準ちょうどは未約定扱い", cc._oco_fill("BUY", _e, 1700.0, 1600.5) is None)
+check("oco: STOP-eps超えで約定断定",
+      (cc._oco_fill("BUY", _e, 1700.0, 1598.0) or {}).get("kind") == "STOP")
+check("oco: TP+1円は未約定扱い", cc._oco_fill("BUY", _e, 1733.5, 1650.0) is None)
+check("oco: TP+eps超えで約定断定",
+      (cc._oco_fill("BUY", _e, 1735.0, 1650.0) or {}).get("kind") == "TP")
+check("oco: SELLもSTOP境界は未約定", cc._oco_fill("SELL", _e, 1699.5, 1640.0) is None)
+check("oco: SELLのSTOP+eps超えで約定断定",
+      (cc._oco_fill("SELL", _e, 1702.0, 1640.0) or {}).get("kind") == "STOP")
+
+# 統合: MAXHOLD日にyf高値が水準+1円(境界)→ ✅決済済みでなくMAXHOLD処分指示が出る
+# （旧コードは1733≥1732.5で「決済済み・保有なし」と誤断定し強制処分が抜けた）
+intraday_edge_tp = pd.DataFrame({"Open": [1720.0, 1728.0], "High": [1730.0, 1733.0],
+                                 "Low": [1700.0, 1725.0], "Close": [1728.0, 1731.0]})
+_FakeTicker.plan["MMMM.T"] = intraday_edge_tp
+pos_maxhold = _mk_pending("MMMM.T", None, entry="2026-06-11")
+pos_maxhold.update(status="open", entry_open=1650.0)
+targets, checked = cc.collect_targets([pos_maxhold], "BUY", TODAY, {"MMMM.T": hist_up})
+check("oco: TP境界(高値1,733 vs 水準1,732.5)はMAXHOLD処分指示を出す",
+      len(targets) == 1 and targets[0]["reason_type"] == "MAXHOLD")
+
 # ================= 3) notifier =================
 import notifier  # noqa: E402
 
