@@ -185,6 +185,19 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 print(f"  [寄指] {ticker} 寄り値が取れず約定不明 → スキップ")
                 _checked(note="寄指の約定確認不可（要手動確認）", hold=today_hold)
                 continue
+            # エントリー当日の寄り値はyfinance 5分足由来で、J-Quants公式寄りと
+            # 1円前後ズレることがある（2026-07-15 東海カーボン: 公式1,653円>指値
+            # 1,652円のNOFILLを、yf寄り≤1,652円が「約定」と誤判定し保有継続と
+            # 誤表示）。指値との差が誤差幅以内なら約定を断定せず手動確認に回す。
+            # 過去日はJ-Quants公式寄り＝正確なので緩衝なしで確定判定する。
+            if pos["entry_date"] == today.strftime("%Y-%m-%d"):
+                eps = max(2.0, lp * 0.001)
+                if abs(day_open - lp) <= eps:
+                    print(f"  [寄指] {ticker} 境界 (寄り{day_open:,.0f}円 ≒ 指値{lp:,}円) → 約定不明扱いでスキップ")
+                    _checked(note=(f"寄指の約定が境界（寄り{day_open:,.0f}円 ≒ 指値{lp:,}円・"
+                                   f"データ誤差で断定不可）→ 口座で要確認"),
+                             hold=today_hold)
+                    continue
             if day_open > lp:
                 print(f"  [寄指] {ticker} 不成立 (寄り{day_open:,.0f}円 > 指値{lp:,}円) → 対象外")
                 _checked(note=f"寄指不成立（寄り{day_open:,.0f}円 > 指値{lp:,}円・ノーポジ）")
