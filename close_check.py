@@ -209,6 +209,13 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 _checked(note=f"寄指不成立（寄り{day_open:,.0f}円 > 指値{lp:,}円・ノーポジ）")
                 continue
             entry_open = day_open  # 実際の約定値（含み損益表示の基準を寄り値に補正）
+        elif pos.get("status") == "pending":
+            # 寄指でないpending（SELL空売り・旧形式BUY）＝寄り成行で必ず約定している。
+            # entry_openは翌朝の帳簿確定までNoneで、フォールバックのprev_closeは
+            # ギャップ分ズレる（OCO水準が%単位で狂う）ため、取れるなら実寄り値に補正。
+            day_open = _entry_day_open(pos, today, historical_data)
+            if day_open is not None:
+                entry_open = day_open
 
         # ── 当日ザラ場データ取得（OCO判定＋RSI判定に共用）──
         day_high = day_low = current_price = None

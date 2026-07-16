@@ -187,6 +187,21 @@ targets, checked = cc.collect_targets([pend_unknown], "BUY", TODAY, {"EEEE.T": h
 check("close_check: 約定不明はスキップ＆checkedに要手動確認",
       targets == [] and len(checked) == 1 and "約定確認不可" in checked[0]["note"])
 
+# --- D2: SELL当日pending（成行=必ず約定）はentry_openを実寄り値に補正 ---
+# 旧コードはentry_open=None時にprev_close(1353)へフォールバックし、ギャップ分
+# OCO水準・含み損益基準がズレていた（2026-07-16監査）。実寄り1310に補正されること
+# をRSI処分対象のentry_openで検証（旧コードなら1353が入る）。
+intraday_sell = pd.DataFrame({"Open": [1310.0, 1315.0], "High": [1340.0, 1348.0],
+                              "Low": [1300.0, 1310.0], "Close": [1315.0, 1320.0]})
+_FakeTicker.plan["LLLL.T"] = intraday_sell
+pend_sell = _mk_pending("LLLL.T", None, entry=TODAY.strftime("%Y-%m-%d"))
+pend_sell.update(direction="SELL")
+targets, checked = cc.collect_targets([pend_sell], "SELL", TODAY, {"LLLL.T": hist_dn})
+check("close_check: SELL当日pendingはRSI処分対象になる（下落トレンド=RSI≤50）",
+      len(targets) == 1 and targets[0]["reason_type"] == "RSI")
+check("close_check: SELLのentry_openが実寄り値1310に補正される（旧=prev_close1353）",
+      len(targets) == 1 and targets[0]["entry_open"] == 1310.0)
+
 # --- E: 旧形式（limit_priceなし・open状態）は従来どおり判定される ---
 old_open = _mk_pending("CCCC.T", None, entry="2026-06-12")
 old_open.update(status="open", entry_open=1348.0)
