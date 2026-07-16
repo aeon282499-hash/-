@@ -959,6 +959,16 @@
       "close": 5220.0,
       "pnl": 1.28,
       "win": true
+    },
+    {
+      "date": "2026-07-16",
+      "ticker": "3048.T",
+      "name": "ビックカメラ",
+      "direction": "BUY",
+      "open": 1640.0,
+      "close": 1648.5,
+      "pnl": 0.52,
+      "win": true
     }
   ]
 }
