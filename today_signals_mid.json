@@ -1,12 +1,4 @@
 {
-  "date": "2026-07-16",
-  "signals": [
-    {
-      "ticker": "3048.T",
-      "name": "ビックカメラ",
-      "direction": "BUY",
-      "prev_close": 1632.5,
-      "limit_price": 1648
-    }
-  ]
+  "date": "2026-07-17",
+  "signals": []
 }
