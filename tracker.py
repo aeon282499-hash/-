@@ -27,7 +27,7 @@ import json
 import os
 from datetime import date, timedelta
 
-from screener import batch_download_jquants, _jquants_id_token, calc_rsi
+from screener import batch_download_jquants, _jquants_id_token, calc_rsi, RSI_WARMUP_CAL_DAYS
 
 POSITIONS_FILE      = "positions.json"
 SELL_POSITIONS_FILE = "positions_sell.json"
@@ -115,7 +115,9 @@ def update_positions(positions: list[dict], today: date,
 
     if all_data is None:
         tickers = list({p["ticker"] for p in active})
-        start   = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+        # 30日窓だとRSI(ewm)のウォームアップ不足で±2〜4ptブレ、朝runと窓が1日ズレた
+        # だけで50境界の出口判定が割れて帳簿が遡って誤決済しうる（2026-07-17ビックカメラ）
+        start   = (today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
         end     = today.strftime("%Y-%m-%d")
 
         print(f"[tracker] {len(tickers)} 銘柄のデータ取得中（結果チェック用）...")

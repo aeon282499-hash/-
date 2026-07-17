@@ -214,6 +214,20 @@ def main() -> None:
         if send_monthly:
             print("[main] 月初営業日 → 月別・年間損益レポートを配信")
 
+        # ── 帳簿更新用の価格データ（全階層・BUY/SELLで1回だけ取得して共有）────
+        # 旧: update_positions が階層×方向ごとに30日窓を最大6回fetchしていた。
+        # RSIウォームアップのため窓を120日に広げるのに合わせ、遅延1回取得に集約
+        # （保有ゼロの日はfetchしない）。窓の根拠は screener.RSI_WARMUP_CAL_DAYS 参照。
+        from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
+        _ledger_cache: dict = {}
+
+        def _ledger_data() -> dict:
+            if "data" not in _ledger_cache:
+                start = (today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
+                _ledger_cache["data"] = batch_download_jquants(
+                    _jquants_id_token(), start=start, end=today_str)
+            return _ledger_cache["data"]
+
         # ── ② 各階層を順に処理 ──────────────────────────
         first_tier_signals = []
         first_tier_sell_signals = []
@@ -243,7 +257,8 @@ def main() -> None:
                 # update_positions は約定確認・決済・寄指不成立(NOFILL)確定の帳簿処理なので継続。
                 # 日別の決済結果レポート(send_results)はユーザー指示(2026-06-26)で廃止＝成績は
                 # 週次/月次のみ。保有/処分期限とNOFILLは15時の大引けチェックで吸収される。
-                positions, closed_today, expired_today, still_open = update_positions(positions, today)
+                positions, closed_today, expired_today, still_open = update_positions(
+                    positions, today, all_data=_ledger_data())
                 if send_monthly:
                     send_monthly_report(positions, today, tier=tier)
 
@@ -252,7 +267,8 @@ def main() -> None:
             sell_active = [p for p in sell_positions if p["status"] in ("pending", "open")]
             if sell_active:
                 # 帳簿処理は継続・日別の決済結果レポート(send_sell_results)は廃止（同上）。
-                sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(sell_positions, today)
+                sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(
+                    sell_positions, today, all_data=_ledger_data())
                 if send_monthly:
                     send_sell_monthly_report(sell_positions, today, tier=tier)
 

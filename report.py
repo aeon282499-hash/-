@@ -393,7 +393,7 @@ def _send_weekly_reports(today_jst: date) -> None:
     import copy
     from tracker import update_positions
     from notifier import send_weekly_report
-    from screener import batch_download_jquants, _jquants_id_token
+    from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
 
     # 引け後なので「明日」を基準にすると update_positions が当日バーまで処理する
     virtual_today = today_jst + timedelta(days=1)
@@ -412,10 +412,12 @@ def _send_weekly_reports(today_jst: date) -> None:
         has_active = has_active or any(p.get("status") in ("pending", "open")
                                        for p in buy_pos + sell_pos)
 
-    # 全階層で使い回す価格データを1回だけ取得（RSI計算用に30日窓・tracker と同じ）
+    # 全階層で使い回す価格データを1回だけ取得（窓は tracker と同じ120日。
+    # 旧30日窓は起点が朝runと1日ズレるだけでRSI50境界の判定が割れ、2026-07-17に
+    # 保有中のビックカメラを「RSI回復決済」と誤表示した）
     all_data = None
     if has_active:
-        start = (virtual_today - timedelta(days=30)).strftime("%Y-%m-%d")
+        start = (virtual_today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
         end   = virtual_today.strftime("%Y-%m-%d")
         print(f"[report] 週次ドライラン用の価格データ取得中（{start}〜{end}）...")
         token    = _jquants_id_token()

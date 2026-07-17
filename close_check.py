@@ -338,7 +338,7 @@ def main():
             print(f"[close_check] {LAST_RUN_FILE} 読込失敗: {_e} → 続行")
 
     # ── 全階層の保有銘柄を一覧化→J-Quants一括取得（1回だけ） ──────────
-    from screener import batch_download_jquants, _jquants_id_token
+    from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
 
     all_tickers = set()
     tier_positions = {}
@@ -355,7 +355,10 @@ def main():
     if all_tickers:
         token = _jquants_id_token()
         end_str   = (today - timedelta(days=1)).strftime("%Y-%m-%d")
-        start_str = (today - timedelta(days=45)).strftime("%Y-%m-%d")
+        # 45日窓はRSI(ewm)のウォームアップ不足で真値から±3ptズレる（2026-07-17実測:
+        # 45日窓47.0 vs 長期真値49.8）。帳簿(tracker)・BTと判定を揃えるため120日窓に統一。
+        # fetchは約30→80営業日に増えるが14:55起動→通知は15:05前後で大引け発注に間に合う。
+        start_str = (today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
         all_data = batch_download_jquants(token, start=start_str, end=end_str)
         for ticker in all_tickers:
             df = all_data.get(ticker)
