@@ -64,26 +64,24 @@ vm.createContext(sandbox);
 vm.runInContext(appScript, sandbox);
 await sandbox.load();
 
+// ── v4(2026-07-18): ホーム=🐵モメンタム・✅今日の買い撤去・🔻売りタブ新設 ──
 locationShim.hash = "#/"; sandbox.render();
 const hv = $get("#view").innerHTML;
 check("home: エラー/NaN/undefinedなし", clean(hv));
-check("home: ✅今日の買い候補＋出口規律", hv.includes("今日の買い候補") && hv.includes("損切り-12%"));
-// v3(f50b688)で反発(反転/強反転)がBUY_KEYSに復活済み=旧「反転系なし」検査は廃止(2026-07-15同期)
-const V3_KEYS = ["strong_reversal", "reversal", "strong_accum", "accum"];
+check("home: 🐵モメンタムランキングがホーム", hv.includes("強さ・過熱ランキング"));
+check("home: ✅今日の買い候補ヒーローが出ない", !hv.includes("今日の買い候補"));
+check("home: 🔻売りタブ導線", hv.includes("#/sell"));
 const cands = sandbox.candidates().list;
-check("買い候補（v3=反発+買い集め系のみ）", cands.every(r => (r.signals || []).every(k => V3_KEYS.includes(k))), `${cands.length}銘柄`);
-if (cands.some(r => r.futures_tag)) {
-  const evOf = r => (sandbox.buyStat(r) || { ev: -1e9 }).ev;
-  const evs = cands.map(evOf);
-  check("sort: 期待値の高い順（勝てる順）が最優先", evs.every((v, i) => i === 0 || v <= evs[i - 1]),
-    `ev=${evs.slice(0, 6).join(",")}`);
-  let tagOk = true;
-  for (let i = 1; i < cands.length; i++)
-    if (evOf(cands[i]) === evOf(cands[i - 1]) && sandbox.ftagRank(cands[i]) < sandbox.ftagRank(cands[i - 1])) tagOk = false;
-  check("sort: 同率期待値内は自力優先", tagOk,
-    cands.map(r => `${r.name}=${r.futures_tag || "?"}`).slice(0, 5).join(" / "));
-  check("home: 連動タグchip表示", hv.includes('class="ftag'));
-} else check("本日の候補に連動タグ（CIのyfinance成否確認）", false, "タグ付き候補が0件");
+check("internal: candidates()生存（検索/詳細/ウォッチ用）", Array.isArray(cands), `${cands.length}銘柄`);
+check("data: sell_watchがライブ配信に含まれる", !!DATA.sell_watch && Array.isArray(DATA.sell_watch.members),
+  DATA.sell_watch ? `${DATA.sell_watch.count}件検出/掲載${DATA.sell_watch.members.length}` : "なし");
+
+locationShim.hash = "#/sell"; sandbox.render();
+const swv = $get("#view").innerHTML;
+check("sell: 描画OK・エラーなし", clean(swv));
+check("sell: 空売り推奨でないの明示", swv.includes("空売りの推奨ではありません"));
+check("sell: リストまたは0件メッセージ",
+  swv.includes("高値から") || swv.includes("合致した銘柄はありません"));
 
 await sandbox.loadSearch();
 locationShim.hash = "#/search"; sandbox.render();
@@ -119,8 +117,10 @@ if (EXPJ) {
 // ── 🔥テーマ撤去の確認(2026-07-15) ──
 check("theme撤去: ライブHTMLにnav-themeなし", !html.includes('id="nav-theme"'));
 locationShim.hash = "#/theme"; sandbox.render();
-check("theme撤去: #/themeはホームへフォールバック",
-  clean($get("#view").innerHTML) && $get("#view").innerHTML.includes("今日の買い候補"));
+check("theme撤去: #/themeはホーム(モメンタム)へフォールバック",
+  clean($get("#view").innerHTML) && $get("#view").innerHTML.includes("強さ・過熱ランキング"));
+check("v4: ライブHTMLにnav-sellあり・今日の買いタブなし",
+  html.includes('id="nav-sell"') && !html.includes(">今日の買い</a>"));
 
 console.log(fail ? `\nRESULT: ${fail} FAILURE(S)` : "\nRESULT: ALL GREEN (live)");
 process.exit(fail ? 1 : 0);
