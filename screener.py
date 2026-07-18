@@ -81,6 +81,16 @@ LOOKBACK_DAYS  = 60   # 営業日数（J-Quantsから取得する日数）
 # 120暦日≈80営業日で残差(13/14)^80≈0.3%となりBT（長期パネル）と実質一致する。
 RSI_WARMUP_CAL_DAYS = 120
 
+# 買残回転日数フィルタ（2026-07-19・スタンダードプランの信用週末残高で新設・BUYのみ）:
+# 信用買残（株数）× 前日終値 ÷ 20日平均売買代金 = 「しこり玉が何日分の売り圧力か」。
+# これが大きい銘柄の押し目は戻りが鈍い。10年BT（_bt_margin_filter.py・候補10,130件）:
+#   五分位Q5(>0.8日)が 2017-21/2022-26 の両期間で最悪バケット・閾値q70〜q90で滑らかに改善
+#   選定シム: 大PF1.09→1.12 / 中1.12→1.13 / 小1.12→1.15・3階層とも陽性年7→8/10
+#   （とくに旧レジーム2017-21が0.99→1.04と底上げ＝レジーム逆戻り保険）
+# 週末残高は金曜断面→翌週火曜夕公表なので、朝の判定では「4日以上前の金曜」を使う（ラグ安全）。
+# None で無効化。スナップショット取得失敗時もフィルタ無効で通常配信（フェイルオープン）。
+MARGIN_DAYS_COVER_MAX = 0.8
+
 RSI_BUY_MAX    = 45     # RSIがこの値以下 → 買い候補（売られすぎ）
 DEV_BUY_MAX    = -1.5  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
@@ -170,6 +180,53 @@ def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def _fetch_margin_snapshot(token: str) -> dict | None:
+    """直近公表済みの信用週末残高を {code4: 買残株数} で返す。取れなければ None（フィルタ無効）。
+
+    週次データは金曜（祝日週は前営業日）キー。公表は翌週火曜夕のため、判定日の4日以上前から
+    さかのぼって最初にレコードが返る日を採用する（最大14日=2週分を探索）。"""
+    from datetime import timedelta as _td
+    try:
+        cur = _today_jst() - _td(days=4)
+        for _ in range(14):
+            if cur.weekday() < 5:  # 平日のみ照会（週次キーは金曜or祝日週の前営業日）
+                d = _jquants_get("/markets/margin-interest", token,
+                                 {"date": cur.strftime("%Y-%m-%d")})
+                rows = d.get("data", [])
+                if rows:
+                    snap = {}
+                    for r in rows:
+                        try:
+                            snap[str(r.get("Code", ""))[:4]] = float(r.get("LongVol") or 0)
+                        except (TypeError, ValueError):
+                            continue
+                    print(f"[margin] 信用週末残高 {cur} 断面: {len(snap)}銘柄")
+                    return snap
+            cur -= _td(days=1)
+        print("[margin] 信用週末残高が見つからず → 買残フィルタ無効（フェイルオープン）")
+        return None
+    except Exception as e:
+        print(f"[margin] 信用残高取得失敗: {e} → 買残フィルタ無効（フェイルオープン）")
+        return None
+
+
+def _margin_days_cover(ticker: str, df: "pd.DataFrame", snap: dict | None) -> float | None:
+    """買残回転日数 = 買残株数×前日終値 ÷ 20日平均売買代金。計算不能は None（=除外しない）。"""
+    if not snap:
+        return None
+    long_v = snap.get(ticker[:4])
+    if not long_v or long_v <= 0:
+        return None
+    try:
+        close = df["Close"].dropna()
+        adv20 = float((df["Close"] * df["Volume"]).dropna().tail(20).mean())
+        if not (adv20 > 0):
+            return None
+        return long_v * float(close.iloc[-1]) / adv20
+    except Exception:
+        return None
 
 
 def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
@@ -1046,6 +1103,9 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
     _load_earnings_calendar()
     today_str = _today_jst().strftime("%Y-%m-%d")   # JST基準（決算±3日窓の判定日）
 
+    # ── 信用週末残高スナップショット（買残回転日数フィルタ用・失敗時はフィルタ無効）──
+    margin_snap = _fetch_margin_snapshot(token) if MARGIN_DAYS_COVER_MAX else None
+
     # ── 日経225データ取得（市場フィルター用）─────────
     nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可
     try:
@@ -1075,8 +1135,13 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
         # BUY判定（決算日±3日除外フィルタ適用：BT検証済み・PF1.30）
         result = judge_signal_pre(ticker, name, df)
         if result:
+            _dc = _margin_days_cover(ticker, df, margin_snap)
             if _is_near_earnings(ticker, today_str):
                 print(f"  [SKIP EARNINGS] {ticker} 決算日±3日内のため除外")
+            elif (MARGIN_DAYS_COVER_MAX is not None and _dc is not None
+                  and _dc > MARGIN_DAYS_COVER_MAX):
+                print(f"  [SKIP MARGIN] {ticker} 買残回転{_dc:.2f}日>{MARGIN_DAYS_COVER_MAX}日"
+                      f"（しこり玉・10年BTで両期間ワースト帯）のため除外")
             else:
                 candidates.append(result)
                 print(f"  [BUY HIT] [{ticker}] {name} "
