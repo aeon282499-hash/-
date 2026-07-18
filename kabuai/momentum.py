@@ -112,6 +112,27 @@ def indicators(df: pd.DataFrame) -> dict | None:
     # ✅買い候補の表示上限(pick_max_rng)と表示に使う。欠損時は None(=フロントは絞らず表示)。
     rng20 = float(rng.tail(RANGE_WINDOW).mean() * 100)
 
+    # ── 🔻モメンタム終了（売り）判定用の素材（v4・2026-07-18） ─────────
+    # 「直近1ヶ月走った銘柄が 5MA割れ×陰線×出来高増で崩れた」をEODで検出するための
+    # 部品。判定そのものは build_data.py 側（閾値はそちらに集約）。
+    openp = df["Open"].astype(float)
+    ma5 = close.rolling(5).mean()
+    ma5_dev = float((close.iloc[-1] / ma5.iloc[-1] - 1.0) * 100) if np.isfinite(ma5.iloc[-1]) else None
+    below5 = 0
+    for back in range(1, min(10, len(close))):          # 終値<5MA の連続日数（今日から遡る・最大9）
+        m = ma5.iloc[-back]
+        if np.isfinite(m) and close.iloc[-back] < m:
+            below5 += 1
+        else:
+            break
+    down_candle = bool(np.isfinite(openp.iloc[-1]) and close.iloc[-1] < openp.iloc[-1])
+    v20prev = float(vol.iloc[-21:-1].mean()) if len(vol) > 21 else float("nan")
+    vol_x = float(vol.iloc[-1] / v20prev) if (np.isfinite(v20prev) and v20prev > 0) else None
+    peak20 = float(close.tail(R20_WINDOW).max())
+    off_peak20 = float((close.iloc[-1] / peak20 - 1.0) * 100) if peak20 > 0 else None
+    runup20 = (float((peak20 / close.iloc[-(R20_WINDOW + 1)] - 1.0) * 100)
+               if (len(close) > R20_WINDOW and close.iloc[-(R20_WINDOW + 1)] > 0) else None)
+
     # 直近の出来高が欠損(NaN)だと vr / turnover が NaN になり、二重事故になる:
     #  ① JSON 出力に NaN が載り、ブラウザの JSON.parse が全体で落ちる（アプリ白画面）
     #  ② `turnover < MIN_TURNOVER` が NaN 比較で False になり流動性フィルタをすり抜ける
@@ -135,6 +156,13 @@ def indicators(df: pd.DataFrame) -> dict | None:
         "turnover": turnover,
         "rng20": round(rng20, 1) if np.isfinite(rng20) else None,
         "mom_hist": mom_hist,
+        # 🔻売り（モメンタム終了）判定用（None安全・JSONにNaNを載せない）
+        "ma5_dev": round(ma5_dev, 2) if ma5_dev is not None and np.isfinite(ma5_dev) else None,
+        "below5": below5,
+        "down_candle": down_candle,
+        "vol_x": round(vol_x, 2) if vol_x is not None and np.isfinite(vol_x) else None,
+        "off_peak20": round(off_peak20, 1) if off_peak20 is not None and np.isfinite(off_peak20) else None,
+        "runup20": round(runup20, 1) if runup20 is not None and np.isfinite(runup20) else None,
     }
 
 

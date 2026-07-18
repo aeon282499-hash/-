@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>モメンタムチンパン — 今日の買い候補</title>
+<title>モメンタムチンパン</title>
 <style>
   /* v2（2026-07-02 いちから作り直し）: 画面は「✅検証済み買い候補＋出口＋先物連動タグ」だけに絞る。
      反発（反転）系シグナルは本人指示で非表示（ロジックはデータ側に残置・BUY_KEYSで制御）。 */
@@ -174,8 +174,10 @@
 </header>
 <main id="view"><div class="muted">読み込み中…</div></main>
 <nav>
-  <a href="#/" id="nav-home" class="on"><span class="i">✅</span>今日の買い</a>
-  <a href="#/momentum" id="nav-momentum"><span class="i">🐵</span>モメンタム</a>
+  <!-- v4(2026-07-18 本人指示): ✅今日の買い(買い候補ヒーロー)を撤去し、🐵モメンタムをホームに。
+       🔻売り=モメンタム終了検出＋セクターローテSELLの新タブ。viewHomeは残置=タブを戻せば復活。 -->
+  <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
+  <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
   <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
@@ -417,7 +419,7 @@ function watchSummaryInner(){
   const n=found.filter(isCand).length;
   return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b>
     <a style="margin-left:auto;color:var(--acc);font-weight:600;font-size:12px" href="#/search">一覧 →</a></div>
-    <div class="muted" style="font-size:12px;margin-bottom:6px">${n?`<b class="pos">${n}件が本日の買い候補</b>`:"本日の買い候補はありません"}</div>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${n?`<b class="pos">${n}件に参考シグナル点灯</b>`:"本日、参考シグナルの点灯はありません"}</div>
     <div class="chips">${chips}</div>`;
 }
 
@@ -636,6 +638,7 @@ function scoreboardCard(){
     <div class="muted" style="font-size:10.5px;margin-top:6px">月別の1件あたり平均リターン（${sb.as_of||""}時点・月1更新）。上位数銘柄でなく候補全体の平均・過去実績で将来を保証しません。</div>
   </div>`;
 }
+// ⚠️ v4(2026-07-18 本人指示)で✅今日の買いタブごと撤去済み＝どのルートからも呼ばれない（残置・復活可）。
 function viewHome(){
   if(WATCH.length||loadPos().length) loadSearch().then(()=>{
     const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
@@ -659,7 +662,7 @@ function viewHome(){
 // ── 銘柄詳細 ──
 function viewDetail(code){
   setTimeout(()=>loadStockDetail(code),0);
-  return `<a class="back" href="#/">← 今日の買い候補</a><div id="dbody"><div class="card muted">読み込み中…</div></div>`;
+  return `<a class="back" href="#/">← ホーム</a><div id="dbody"><div class="card muted">読み込み中…</div></div>`;
 }
 async function loadStockDetail(code){
   const cands=[`../data/stocks/${code}.json`,`data/stocks/${code}.json`,`./data/stocks/${code}.json`];
@@ -707,7 +710,7 @@ function renderDetail(s){
           <div class="pchip muted" style="font-size:12px">${s.code} ・ ¥${(i.price||0).toLocaleString()} ${pctTag(i.r1)}</div></div>
         <div>${ftagChip(futRow)}</div>
       </div>
-      ${sigChips({signals:s.signals,futures_tag:null})||`<div class="nosig">本日、このアプリの✅買い候補ではありません</div>`}
+      ${sigChips({signals:s.signals,futures_tag:null})||`<div class="nosig">本日、参考シグナルの点灯はありません</div>`}
       <div class="ret3">
         <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
@@ -788,7 +791,7 @@ function searchCard(r){
         <span>値動き/日 <b>${r.rng20!=null&&isFinite(Number(r.rng20))?Number(r.rng20).toFixed(1)+"%":"—"}</b></span>
       </div>
       ${r.illiq?`<div class="nosig">売買代金が少なく買い候補の対象外（板が薄く執行困難のため・指標は参考表示）</div>`
-        :(sigChips(r)||`<div class="nosig">本日、✅買い候補ではありません</div>`)}
+        :(sigChips(r)||`<div class="nosig">本日、参考シグナルの点灯はありません</div>`)}
     </a>`;
 }
 function searchResults(q){
@@ -797,7 +800,7 @@ function searchResults(q){
   if(!q){
     const prompt=`<div class="card muted" style="margin-top:10px">コード（例 7203）か銘柄名の一部を入力すると、`
       +`監視中の <b style="color:var(--tx)">${SEARCH.length.toLocaleString()}</b> 銘柄から、`
-      +`その銘柄が<b style="color:var(--tx)">✅買い候補かどうか</b>を確認できます。</div>`;
+      +`その銘柄の<b style="color:var(--tx)">参考シグナル・連動タグ</b>を確認できます。</div>`;
     const found=[],missing=[];
     WATCH.forEach(c=>{const r=SEARCH.find(s=>s.code===c);r?found.push(r):missing.push(c);});
     if(!found.length&&!missing.length)
@@ -823,7 +826,7 @@ function viewSearch(){
   if(!SEARCH)loadSearch().then(()=>{const el=document.getElementById("searchres");if(el)el.innerHTML=searchResults(SEARCH_Q);});
   setTimeout(()=>{const i=document.getElementById("searchinput");if(i&&!SEARCH_Q)i.focus();},0);
   return `
-    <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">✅買い候補か・連動タグを確認</span></h2>
+    <h2>銘柄検索 <span class="muted" style="font-weight:400;font-size:12px">参考シグナル・連動タグを確認</span></h2>
     <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off"
       placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
     <div class="muted" style="font-size:11px;margin:8px 2px 12px">✅＝過去検証で勝てた「買いの型」が出ている銘柄。<b style="color:#ffd93d">☆</b>でウォッチ保存（検索欄を空にすると一覧）。</div>
@@ -943,55 +946,13 @@ function viewAbout(){
   return `
   <h2>はじめての方へ</h2>
   <div class="card">
-    <p style="line-height:1.85;margin:0">このアプリは、東証全銘柄から<b>過去データの検証で「買って勝てた型」が出た銘柄だけ</b>を、
-      <b>出口（いつ・どこで手仕舞うか）とセット</b>で毎日表示します。むずかしい指標は出しません。</p>
+    <p style="line-height:1.85;margin:0">このアプリは、東証全銘柄の<b>モメンタム（勢い）の観察ツール</b>です。
+      「今どの銘柄が走っているか」（🐵モメンタム）と「どの銘柄の上昇が終わったか」（🔻売り）を、毎日終値ベースで表示します。</p>
     <div style="margin-top:10px;line-height:1.95">
-      <div>① ホーム最上部の<b>「今日はどんな日か」</b>を見る（🌊追い風／✅ふつう／🚫見送りの3段階）。<b>見送りの日は買わない</b></div>
-      <div>② 買うなら<b>次の寄り付き</b>で。ヒーローに<b>💴投資予定額</b>を入れると、1銘柄いくら（何株）買えばいいかの目安が出ます。1銘柄に全張りせず<b>分散</b></div>
-      <div>③ 買ったら銘柄ページで<b>📒記録</b> → ホームのコーチが毎日「持つ/売る」を指示</div>
-    </div>
-  </div>
-
-  <h2>今日はどんな日か（3タイプ）</h2>
-  <div class="card">
-    <p style="margin:0 0 8px;line-height:1.8">ホーム最上部に、今日が買いに向く日かを<b>3段階</b>で正直に表示します。「買ってもいいけど注意」という曖昧な中間は作っていません。</p>
-    <div style="line-height:1.95">
-      <div>🌊 <b style="color:var(--acc)">追い風の日（全面リバウンド日）</b> … 市場全体が反発した日。過去実績で買い候補全体に追い風（勝率・平均リターンを表示）。<b>いつもより積極的に</b>（ただし分散・損切りは厳守）。</div>
-      <div>✅ <b style="color:var(--up)">ふつうの日</b> … 追い風はないが候補は出ている日。この型は<b>過去どの年も期待値プラス</b>なので<b>買ってOK</b>。出口ルールを守って淡々と。</div>
-      <div>🚫 <b class="muted">見送りの日</b> … 検証済みの買い候補が0件の日。<b>買わない</b>。無理に張らないのも立派な戦略。</div>
-    </div>
-    <p class="muted" style="margin:8px 0 0;font-size:11.5px;line-height:1.7">※「注意」は日ではなく<b style="color:var(--tx)">銘柄</b>の方に出ます（🔴高連動タグ＝注意／🟢自力＝狙い目）。分散と損切り-12%はどの日でも守るルールです。</p>
-  </div>
-
-  <h2>✅買い候補とは</h2>
-  <div class="card">
-    <p style="margin:0;line-height:1.8"><b>反発（＝深い下げからの反発初動）</b>と<b>買い集め</b>のシグナルのうち、
-      過去数年の検証で<b>勝率と平均リターンにプラスの実績</b>があったものだけを表示します。
-      推奨は<b style="color:var(--tx)">売買代金が多い（板の厚い）銘柄</b>に絞っています（薄い株は値動きが荒く買いにくいため）。</p>
-    <p class="muted" style="margin:8px 0 0;font-size:12px;line-height:1.75">※「反発」は上がってる勢い株ではなく、<b style="color:var(--tx)">売られすぎの反転を早く拾う逆張り</b>です。ドカンと上がる株を狙う機能ではありません（それは負けやすいことが検証で分かっています）。数と分散・損切りで勝つ設計です。</p>
-    <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
-      <li><b style="color:var(--tx)">期待値</b> … 出口ルール込み（保有${ex.t}日・損切り-${ex.sl}%・利を伸ばす）の<b style="color:var(--tx)">1件あたり過去平均リターン</b>。買い候補は<b style="color:var(--tx)">この期待値が高い順（勝てる順）</b>に並びます。シグナル種類ごとの統計のため、同じシグナルの銘柄は同率＝自力優先→RSI低い順で並べます。</li>
-      <li><b style="color:var(--tx)">勝率</b> … 同じ出口ルールでの過去の勝ち割合。勝率5割前後でも、損切りで損を小さく・利を伸ばすので平均はプラスになります。</li>
-      <li><b style="color:var(--tx)">📅 年別の実績</b> … 銘柄ページの「買いの目安」に、この型が<b style="color:var(--tx)">各年でプラスだったか</b>を年別に表示します。単年のまぐれでなく毎年通用してきたかの裏づけです。</li>
-      <li><b style="color:var(--tx)">🌊 全面リバウンド日</b> … 市場全体が反発した日は、過去実績で買い候補全体に追い風でした。その日はホームに勝率・平均リターンを表示します。</li>
-      <li><b style="color:var(--tx)">値動き/日</b> … 1日にどれだけ動くか（20日平均の日中値幅）。検証では<b style="color:var(--tx)">3〜4%動く銘柄が最も勝てました（⚡表示）</b>。逆に<b style="color:var(--tx)">6%以上動く"宝くじ株"は勝率34%・期待値ゼロ</b>だったので、買い候補から自動で外しています。</li>
-      <li>主力は<b style="color:var(--tx)">反発（反転の初動）</b>です。グレードはD（売られすぎ＝勢いスコアが低い）に出ますが、買いの根拠は勢いスコアではなく<b style="color:var(--tx)">期待値・勝率</b>です。</li>
-      <li>あくまで過去の傾向で、<b style="color:var(--tx)">上がる保証ではありません</b>。単発では半分近く負けます（だから分散＋損切り-${ex.sl}%）。</li>
-    </ul>
-  </div>
-
-  <h2>📊 最近の調子とは</h2>
-  <div class="card">
-    <p style="margin:0;line-height:1.8">ホーム上部の「買い候補の最近の調子」は、<b>直近の買い候補が実際どれだけ勝てたか</b>（翌寄り→8日/-${ex.sl}%で再現）を正直に表示します。
-      <b style="color:#ff6b6b">🥶不調</b>のときは相場がこの戦略（売られすぎの反発を買う逆張り）に逆風＝<b>小さく張る／見送り</b>も立派な選択肢。<b style="color:var(--up)">🔥好調</b>なら追い風です。
-      なお<b style="color:var(--tx)">銘柄の選び方自体は変えません</b>（多年の検証に基づくため・直近数ヶ月で追い最適化はしない）。冷えているかを"隠さず見せる"のが役目です。</p>
-  </div>
-
-  <h2>ほかのタブ</h2>
-  <div class="card">
-    <div style="line-height:1.95">
-      <div>🐵 <b>モメンタム</b> … 「今いちばん勢いがある／過熱している」順のランキング（S〜D）。<b style="color:#ff6b6b">買い推奨ではありません</b>——過去データではS評価ほど翌10日は弱い（平均マイナス）。眺める・☆ウォッチ用です。</div>
+      <div>🐵 <b>モメンタム</b> … 今いちばん勢いがある／過熱している順のランキング（S〜D）。<b style="color:#ff6b6b">買い推奨ではありません</b>——過去データではS評価ほど翌10日は弱い（平均-2.65%＝高値づかみ）。</div>
+      <div>🔻 <b>売り</b> … 直近1ヶ月走った銘柄の<b>上昇が崩れたサイン</b>（5MA割れ×陰線×出来高増）。保有者の出口検討・高値づかみ回避の参考に。まれに検証済みの空売りシグナル（セクターローテSELL）も出ます。</div>
       <div>🧭 <b>探検</b> … 初動・押し目・ストップ高などの探索用スクリーナー（優位性は未検証・勝率は出しません）。</div>
+      <div>📒 買った銘柄は銘柄ページで<b>記録</b> → ホームのコーチが毎日「持つ/売る」の目安を表示。</div>
     </div>
   </div>
 
@@ -1013,11 +974,13 @@ function viewAbout(){
     </ul>
   </div>
 
-  <h2>🔻今日の売り（空売り）とは</h2>
+  <h2>🔻売りタブとは</h2>
   <div class="card">
-    <p style="margin:0;line-height:1.8"><b>出る日は稀（月に数回）</b>。最弱セクターで急騰した銘柄の反落を取る検証済みシグナルで、
+    <p style="margin:0;line-height:1.8"><b>📉 モメンタム終了</b> … 直近1ヶ月で+15%以上走った銘柄が「終値5MA割れ×陰線×出来高増（＝下げで商いが増える・資金が逃げる形）」になった日を検出します。
+      <b style="color:var(--tx)">空売りの推奨ではなく</b>、保有者の出口検討・高値づかみ回避のための情報です。</p>
+    <p style="margin:8px 0 0;line-height:1.8"><b>🔻 セクターローテSELL（空売り）</b> … <b>出る日は稀（月に数回）</b>。最弱セクターで急騰した銘柄の反落を取る検証済みシグナルで、
       過去検証は<b>PF1.37・2021〜2026の5年すべてプラス・1日1件上限</b>。
-      発火した日だけホームに🔻カードが出ます（出ない日は何も表示しません）。</p>
+      発火した当日だけ🔻売りタブの上部にカードが出ます。</p>
     <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;color:var(--mut)">
       <li>執行: <b style="color:var(--tx)">当日9:00 寄り成行で空売り → 損切り+3%／利確-5%のOCO・RSI50回復か3日目大引けで買い戻し</b>。</li>
       <li><b style="color:var(--tx)">空売りには信用口座が必要</b>です。貸株料・逆日歩は検証に含まれていません。</li>
@@ -1066,26 +1029,64 @@ function viewAbout(){
 let MOM_GRADE="all";
 function setMomGrade(g){MOM_GRADE=g;render();}
 function viewMomentum(){
+  // v4: ホーム画面を兼ねる（検索・ウォッチ・持ち株コーチは残す＝買い候補ヒーローだけ撤去）
+  if(WATCH.length||loadPos().length) loadSearch().then(()=>{
+    const el=document.getElementById("watchsum"); if(el)el.innerHTML=watchSummaryInner();
+    const pc=document.getElementById("poscoach"); if(pc)pc.innerHTML=posCoach();
+  });
   const rk=DATA.ranking||[];
   const gc=DATA.grade_counts||{};
   const chip=(g,lbl)=>`<a class="gchip ${MOM_GRADE===g?"on":""}" onclick="event.preventDefault();setMomGrade('${g}')">${lbl}</a>`;
   const list=MOM_GRADE==="all"?rk:rk.filter(r=>r.grade===MOM_GRADE);
+  const sw=DATA.sell_watch;
+  const swCodes=new Set(((sw&&sw.members)||[]).map(m=>m.code));
   const rows=list.map(r=>{
-    const cand=isCand(r);
     return `<a class="mrow" href="#/detail/${r.code}">
       <div class="grb ${esc(r.grade||"D")}">${esc(r.grade||"-")}</div>
-      <div class="m-nm"><b>${esc(r.name)}${cand?' <span class="chip buy" style="padding:0 6px">✅買い</span>':""}</b>
+      <div class="m-nm"><b>${esc(r.name)}${swCodes.has(r.code)?' <span class="chip" style="padding:0 6px;color:var(--dn);border-color:rgba(234,57,67,.5)">🔻終了サイン</span>':""}</b>
         <small>${r.code} ・ 勢い${r.momentum!=null?Math.round(r.momentum):"—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku!=null?Math.round(r.turnover_oku)+"億":"—"} ・ 値動き${r.rng20!=null&&isFinite(Number(r.rng20))?Number(r.rng20).toFixed(1)+"%":"—"}</small></div>
       <div class="m-px">¥${(r.price||0).toLocaleString()}<br>${pctTag(r.r1)||"—"}</div></a>`;
   }).join("");
   return `
+    <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
+    <div id="poscoach">${posCoach()}</div>
+    ${WATCH.length?`<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:""}
     <h2>🐵 モメンタム <span class="muted" style="font-weight:400;font-size:12px">強さ・過熱ランキング</span></h2>
     <div class="warnbar">🔥 <b>買い推奨ではありません。</b>「今いちばん勢いがある／過熱している」順です。
       過去データでは<b>S評価ほど翌10日は弱い（平均-2.65%＝高値づかみになりやすい）</b>。
-      眺める・☆ウォッチ・勉強用に。実際に買うのは <a href="#/" style="color:var(--acc);font-weight:700">✅今日の買い</a> で。</div>
+      勢いが崩れた銘柄は <a href="#/sell" style="color:var(--dn);font-weight:700">🔻売り</a> タブに出ます。</div>
     <div class="gchips">${chip("all","すべて")}${["S","A","B","C"].filter(g=>gc[g]).map(g=>chip(g,g+" "+gc[g])).join("")}</div>
     <div class="card" style="padding:4px 14px">${rows||`<div class="muted" style="padding:12px 0">この評価の銘柄はランキング上位にありません。</div>`}</div>
-    <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。✅＝この銘柄は今日の買い候補にも入っています。</div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。🔻＝本日モメンタム終了サインが出ています（売りタブ参照）。</div>
+    <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"}</p>`;
+}
+
+// ── 🔻 売り（v4新設・2026-07-18本人指示: モメンタムと売りを別タブに） ──
+// ①セクターローテSELL（唯一の検証済み売りエッジ・発火した当日だけ）
+// ②モメンタム終了検出（情報表示・空売り推奨ではない＝デイトレ化しない本人確定指示）
+function viewSell(){
+  const sw=DATA.sell_watch;
+  const members=(sw&&sw.members)||[];
+  const hero=sellHero();
+  const head=`<h2>🔻 売り <span class="muted" style="font-weight:400;font-size:12px">${(sw&&sw.date)||DATA.data_date||""} 終値時点</span></h2>
+    ${hero}
+    <div class="hh" style="margin-top:4px">📉 モメンタム終了（上昇が崩れた銘柄）</div>
+    <div class="warnbar">⚠️ <b>空売りの推奨ではありません。</b>直近1ヶ月で大きく上昇した銘柄の<b>上昇モメンタムが終わったサイン</b>の検出です。保有していれば出口検討、これから買うなら高値づかみ回避の参考に。</div>`;
+  if(!members.length){
+    return head+`<div class="card muted">本日、モメンタム終了の条件に合致した銘柄はありません。</div>
+      <div class="card muted" style="font-size:11px;line-height:1.7">${esc((sw&&sw.note)||"検出条件: 直近1ヶ月+15%以上上昇した銘柄が「終値5MA割れ×陰線×出来高増」で崩れた日。")}</div>
+      <p class="disc">${DATA.disclaimer}</p>`;
+  }
+  const rows=members.map(m=>{
+    const fresh=(m.below5==null||m.below5<=1);
+    return `<a class="pickrow" href="#/detail/${m.code}">
+      <div class="pk-nm"><b>${esc(m.name)}${fresh?' <span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.5)">本日崩れ</span>':` <span class="chip">割れ${m.below5}日目</span>`}</b>
+        <small>${m.code} ・ ¥${(m.price||0).toLocaleString()} ・ 1ヶ月で+${m.runup20!=null?Number(m.runup20).toFixed(0):"—"}%上昇していた銘柄</small>
+        <div class="chips"><span class="chip" style="color:var(--dn)">高値から ${m.off_peak20!=null?Number(m.off_peak20).toFixed(1):"—"}%</span><span class="chip">5MA乖離 ${m.ma5_dev!=null?Number(m.ma5_dev).toFixed(1):"—"}%</span><span class="chip">出来高 ${m.vol_x!=null?Number(m.vol_x).toFixed(1):"—"}倍</span>${m.sector?`<span class="chip">${esc(m.sector)}</span>`:""}</div></div>
+      <div class="m-px">${pctTag(m.r1)||"—"}</div></a>`;
+  }).join("");
+  return head+`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${rows}</div></div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">検出条件: <b style="color:var(--tx)">直近1ヶ月で+${(sw&&sw.cond&&sw.cond.runup20)||15}%以上走った銘柄</b>が「<b style="color:var(--tx)">終値で5日移動平均割れ × 陰線（または-2%超の下げ） × 出来高が平常の${(sw&&sw.cond&&sw.cond.vol_x)||1.3}倍以上</b>」＝下げで商いが増える（資金が逃げる）形になった日。1日1回の終値判定＝場中は動きません。翌日以降も下げ続ける保証はありません（あくまで過熱の終わりサイン）。</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
@@ -1118,9 +1119,9 @@ function viewTheme(){
 
 // ── ルーター ──
 function setNav(h){
-  // 検索は#/detail同様ホーム系（ナビは点灯させない）。4タブ=今日の買い/モメンタム/探検/使い方
-  $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/detail")||h.startsWith("#/search"));
-  $("#nav-momentum").classList.toggle("on",h.startsWith("#/momentum"));
+  // v4: 4タブ=モメンタム(ホーム)/売り/探検/使い方。検索・詳細はホーム系として点灯。
+  $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
+  $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1131,11 +1132,12 @@ function render(){
   try{
     if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
+    else if(h.startsWith("#/sell")) $("#view").innerHTML=viewSell();
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
     else if(h.startsWith("#/about")) $("#view").innerHTML=viewAbout();
-    else $("#view").innerHTML=viewHome();
+    else $("#view").innerHTML=viewMomentum();   // v4: ホーム=🐵モメンタム（旧#/=viewHomeは撤去・残置）
   }catch(e){
     $("#view").innerHTML=`<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${esc(e.message)}</div></div>`;
   }

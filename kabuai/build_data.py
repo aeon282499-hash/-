@@ -482,6 +482,13 @@ def build() -> dict:
             "rng20": ind["rng20"],                            # 値動き%/日。ピック天井(宝くじ株除外)に使う
             "sector": SEC_OF.get(ticker.replace(".T", "")),   # 33業種（買い候補の分散キャップ用）
             "mom_hist": ind["mom_hist"],
+            # 🔻売り（モメンタム終了）判定用（v4・2026-07-18）
+            "ma5_dev": ind["ma5_dev"],
+            "below5": ind["below5"],
+            "down_candle": ind["down_candle"],
+            "vol_x": ind["vol_x"],
+            "off_peak20": ind["off_peak20"],
+            "runup20": ind["runup20"],
         })
 
     rows.sort(key=lambda x: x["momentum"], reverse=True)
@@ -650,6 +657,45 @@ def build() -> dict:
         except Exception as e:
             print(f"[build] セクターローテ読込スキップ: {e}")
 
+    # ── v4(2026-07-18): 🔻売り・モメンタム終了検出 ──
+    # 「直近1ヶ月走った銘柄の上昇が終わった」をEODで検出する情報タブ（空売り推奨ではない・
+    # デイトレ化しない=本人確定指示）。実データ検証: 高速7504/ベクトル6058は7/16夕方時点で
+    # 検出→翌7/17も続落。条件: runup20≥+15%（モメンタム銘柄だった）× 終値5MA割れ ×
+    # （陰線 or 前日比-2%以下）× 出来高が20日平均の1.3倍以上（=下げで商い増・資金抜け）。
+    SELL_RUNUP_MIN = 15.0
+    SELL_VOLX_MIN = 1.3
+    SELL_TURNOVER_MIN_OKU = 5.0   # 売買代金5億以上（板の薄い銘柄のノイズ排除）
+    sell_members = []
+    for r in rows:
+        try:
+            if (r.get("runup20") is not None and r["runup20"] >= SELL_RUNUP_MIN
+                    and r.get("ma5_dev") is not None and r["ma5_dev"] < 0
+                    and (r.get("down_candle") or (r.get("r1") is not None and r["r1"] <= -2.0))
+                    and r.get("vol_x") is not None and r["vol_x"] >= SELL_VOLX_MIN
+                    and (r.get("turnover_oku") or 0) >= SELL_TURNOVER_MIN_OKU
+                    and (r.get("price") or 0) >= 100):
+                sell_members.append({
+                    "code": r["code"], "name": r["name"], "price": r["price"],
+                    "r1": r["r1"], "off_peak20": r["off_peak20"], "ma5_dev": r["ma5_dev"],
+                    "vol_x": r["vol_x"], "below5": r["below5"], "runup20": r["runup20"],
+                    "turnover_oku": r["turnover_oku"], "sector": r.get("sector"),
+                })
+        except Exception:
+            continue
+    # 初日(below5==1)を先頭に、次いで出来高倍率順＝「今日崩れた」が一番上
+    sell_members.sort(key=lambda m: (0 if m["below5"] <= 1 else 1, -(m["vol_x"] or 0)))
+    sell_watch = {
+        "date": data_date,
+        "members": sell_members[:30],
+        "count": len(sell_members),
+        "cond": {"runup20": SELL_RUNUP_MIN, "vol_x": SELL_VOLX_MIN,
+                 "turnover_oku": SELL_TURNOVER_MIN_OKU},
+        "note": ("直近1ヶ月で+15%以上走った銘柄が「終値5MA割れ×陰線×出来高増」で崩れた日を検出。"
+                 "上昇モメンタムの終わりサイン＝保有者の出口検討・高値づかみ回避の参考情報。"
+                 "空売りの推奨ではありません。"),
+    }
+    print(f"[build] 🔻売り(モメンタム終了): {len(sell_members)}件 (掲載{min(len(sell_members),30)})")
+
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
@@ -755,6 +801,7 @@ def build() -> dict:
         "market": market,
         "futures": futures_meta,
         "rebound": rebound,
+        "sell_watch": sell_watch,
         "picks_scoreboard": picks_scoreboard,   # ④ 直近の調子メーター
         "theme_blast": theme_blast,
         "sector_today": sector_today,
