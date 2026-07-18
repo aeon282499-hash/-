@@ -752,6 +752,20 @@ function drawCandle(ch,opts){
     g.strokeStyle=up?"#16C784":"#EA3943"; g.fillStyle=up?"#16C784":"#EA3943";
     g.beginPath();g.moveTo(x,yP(h[i]));g.lineTo(x,yP(l[i]));g.stroke();
     const yo=yP(o[i]),yc=yP(c[i]); g.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo)));}
+  // 5日移動平均線（青）: 🔻モメンタム終了判定の基準線（終値5MA割れ）を目で確認できるように
+  if(n>=6){
+    g.strokeStyle="#58a6ff"; g.lineWidth=1.6; g.beginPath();
+    let started=false;
+    for(let i=4;i<n;i++){
+      let s=0; for(let k=i-4;k<=i;k++)s+=c[k];
+      const y=yP(s/5);
+      if(!started){g.moveTo(xOf(i),y);started=true;}else{g.lineTo(xOf(i),y);}
+    }
+    g.stroke();
+    let s5=0; for(let k=n-5;k<n;k++)s5+=c[k];
+    g.fillStyle="#58a6ff"; g.textAlign="left"; g.font="10px sans-serif";
+    g.fillText("5MA",W-padR+4,yP(s5/5)+12);
+  }
   // 損切りライン（赤破線）: 直近終値から -SL% の目安。出口を目で覚えるため。
   if(stop){const y=yP(stop);
     g.strokeStyle="#EA3943"; g.lineWidth=1; if(g.setLineDash)g.setLineDash([5,4]);
@@ -1086,7 +1100,7 @@ function viewSell(){
       <div class="m-px">${pctTag(m.r1)||"—"}</div></a>`;
   }).join("");
   return head+`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${rows}</div></div>
-    <div class="card muted" style="font-size:11px;line-height:1.7">検出条件: <b style="color:var(--tx)">直近1ヶ月で+${(sw&&sw.cond&&sw.cond.runup20)||15}%以上走った銘柄</b>が「<b style="color:var(--tx)">終値で5日移動平均割れ × 陰線（または-2%超の下げ） × 出来高が平常の${(sw&&sw.cond&&sw.cond.vol_x)||1.3}倍以上</b>」＝下げで商いが増える（資金が逃げる）形になった日。1日1回の終値判定＝場中は動きません。翌日以降も下げ続ける保証はありません（あくまで過熱の終わりサイン）。<br>
+    <div class="card muted" style="font-size:11px;line-height:1.7">検出条件: <b style="color:var(--tx)">直近1ヶ月で+${(sw&&sw.cond&&sw.cond.runup20)||15}%以上走った銘柄</b>が「<b style="color:var(--tx)">終値で5日移動平均割れ × 陰線（または-2%超の下げ） × 出来高が平常の${(sw&&sw.cond&&sw.cond.vol_x)||1.3}倍以上</b>」＝下げで商いが増える（資金が逃げる）形になった日。1日1回の終値判定＝場中は動きません。翌日以降も下げ続ける保証はありません（あくまで過熱の終わりサイン）。<b style="color:var(--tx)">銘柄をタップすると日足チャート＋<span style="color:#58a6ff">5MA線（青）</span>で崩れ方を確認できます。</b><br>
     <b style="color:var(--wa)">🧨買残+N%</b>＝信用買残が約1ヶ月で3割以上増えた（＝高値で信用買いした人が多く残っている・将来の売り圧力）。<b style="color:var(--dn)">⚠️日々公表</b>＝取引所の日々公表銘柄に指定中（過熱の規制が近い/入っているサイン）。どちらもJPX公式の信用データ（週次/日次・公表ラグあり）。</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }

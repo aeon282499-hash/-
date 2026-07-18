@@ -91,7 +91,13 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
     check(`sell: モメンタム終了リスト表示(${n}件)`, sv.includes("高値から")&&sv.includes("5MA乖離")&&sv.includes("出来高"));
     check("sell: 本日崩れ/割れN日目の区別", sv.includes("本日崩れ")||sv.includes("割れ"));
     check("sell: 検出条件の明示（5MA割れ×陰線×出来高）", sv.includes("5日移動平均割れ")&&sv.includes("陰線"));
+    // 売り銘柄は詳細チャート(日足+5MA)が必ず出る=stocks/<code>.jsonがエクスポートされている
+    const m0=DATA.sell_watch.members[0];
+    const sj=stockJson(m0.code);
+    check("sell: 掲載銘柄の日足チャートJSONが存在", !!(sj&&sj.chart&&sj.chart.c&&sj.chart.c.length), m0.code);
+    if(sj&&sj.chart){ sandbox.drawCandle(sj.chart,null); check("sell: 日足+5MA描画が例外なし", true); }
   }
+  check("sell: 日足+5MAの案内文", sv.includes("5MA線"));
   // 信用バッジ（買残急増・日々公表）
   {
     const save=DATA.sell_watch;

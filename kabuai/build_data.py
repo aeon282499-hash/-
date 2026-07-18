@@ -234,7 +234,7 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     生OHLCVの一括配信ではなく『表示用に窓を限定した加工済みデータ』(SPEC §1)。"""
     sdir = DATA_DIR / "stocks"
     sdir.mkdir(exist_ok=True)
-    targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
+    targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end")]
     keep = {"price", "momentum", "grade", "sr", "power", "rsi", "stab",
             "r1", "r5", "r10", "r20", "vr"}
     written = 0
@@ -685,6 +685,12 @@ def build() -> dict:
     # 初日(below5==1)を先頭に、次いで出来高倍率順＝「今日崩れた」が一番上
     sell_members.sort(key=lambda m: (0 if m["below5"] <= 1 else 1, -(m["vol_x"] or 0)))
     sell_members = sell_members[:30]
+    # 掲載銘柄は詳細チャート(日足+5MA)を必ず見られるようにエクスポート対象へフラグ
+    # （崩れ銘柄はランキング上位でもシグナル点灯でもないことが多く、素通しだとチャートなしになる）
+    _sell_codes = {m["code"] for m in sell_members}
+    for r in rows:
+        if r["code"] in _sell_codes:
+            r["sell_end"] = True
 
     # ── 信用データバッジ（スタンダードプラン2026-07-18開通・非致命） ──
     # 買残急増=イナゴ玉滞留・日々公表指定=規制近接は、どちらもモメンタム終焉の
@@ -751,7 +757,7 @@ def build() -> dict:
             print(f"[build] 長期トラックレコード読込スキップ（短期版を使用）: {e}")
 
     # ── フェーズ6: AI要約（警戒メモ）。export対象（上位＋シグナル点灯）のみ付与 ──
-    ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals")]
+    ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end")]
     ai_meta = ai_summary.annotate(ai_targets)
 
     # ── 銘柄探検（探索用スクリーナー・2026-07-02追加） ──
