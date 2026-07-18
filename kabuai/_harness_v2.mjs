@@ -92,6 +92,23 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
     check("sell: 本日崩れ/割れN日目の区別", sv.includes("本日崩れ")||sv.includes("割れ"));
     check("sell: 検出条件の明示（5MA割れ×陰線×出来高）", sv.includes("5日移動平均割れ")&&sv.includes("陰線"));
   }
+  // 信用バッジ（買残急増・日々公表）
+  {
+    const save=DATA.sell_watch;
+    DATA.sell_watch={date:DATA.data_date,count:1,cond:{runup20:15,vol_x:1.3},note:"t",
+      members:[{code:"7504",name:"テスト高速",price:3575,r1:-4.8,off_peak20:-9.6,ma5_dev:-6.3,
+                vol_x:1.8,below5:2,runup20:20.1,turnover_oku:5.2,margin_chg:85.3,margin_alert:true}]};
+    sandbox.render(); const bv=$get("#view").innerHTML;
+    check("sell: 🧨買残急増バッジ表示", bv.includes("🧨買残+85%"));
+    check("sell: ⚠️日々公表バッジ表示", bv.includes("⚠️日々公表"));
+    check("sell: バッジの説明文", bv.includes("信用買残")&&bv.includes("日々公表銘柄"));
+    DATA.sell_watch={...DATA.sell_watch,
+      members:[{...DATA.sell_watch.members[0],margin_chg:5.0,margin_alert:false}]};
+    sandbox.render();
+    check("sell: 買残+30%未満/非指定はバッジ(chip)なし",
+      !$get("#view").innerHTML.includes("🧨買残+5%")&&!$get("#view").innerHTML.includes(">⚠️日々公表</span>"));
+    DATA.sell_watch=save; sandbox.render();
+  }
   // 空状態
   const save=DATA.sell_watch;
   DATA.sell_watch={date:DATA.data_date,members:[],count:0,cond:{runup20:15,vol_x:1.3},note:"none"};

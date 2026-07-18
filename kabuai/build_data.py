@@ -684,9 +684,38 @@ def build() -> dict:
             continue
     # 初日(below5==1)を先頭に、次いで出来高倍率順＝「今日崩れた」が一番上
     sell_members.sort(key=lambda m: (0 if m["below5"] <= 1 else 1, -(m["vol_x"] or 0)))
+    sell_members = sell_members[:30]
+
+    # ── 信用データバッジ（スタンダードプラン2026-07-18開通・非致命） ──
+    # 買残急増=イナゴ玉滞留・日々公表指定=規制近接は、どちらもモメンタム終焉の
+    # 定番サイン。掲載30銘柄だけAPIで引く(≤60コール)。失敗/プラン外は無言スキップ。
+    try:
+        _tok = _jquants_key()
+        _m_from = (datetime.now(JST) - timedelta(days=45)).strftime("%Y-%m-%d")
+        _a_from = (datetime.now(JST) - timedelta(days=10)).strftime("%Y-%m-%d")
+        for m in sell_members:
+            try:
+                mi = _jquants_get("/markets/margin-interest", _tok,
+                                  {"code": m["code"], "from": _m_from}).get("data", [])
+                if len(mi) >= 2:
+                    mi = sorted(mi, key=lambda r: r["Date"])
+                    last, prev = mi[-1], mi[0]
+                    lv, pv = float(last.get("LongVol") or 0), float(prev.get("LongVol") or 0)
+                    if pv > 0:
+                        m["margin_chg"] = round((lv / pv - 1) * 100, 1)   # 買残の約4-6週変化率%
+                al = _jquants_get("/markets/margin-alert", _tok,
+                                  {"code": m["code"], "from": _a_from}).get("data", [])
+                m["margin_alert"] = bool(al)                              # 日々公表銘柄に指定中か
+                time.sleep(0.15)
+            except Exception:
+                continue
+        n_badge = sum(1 for m in sell_members if m.get("margin_chg") is not None or m.get("margin_alert"))
+        print(f"[build] 信用バッジ: {n_badge}/{len(sell_members)}銘柄に付与")
+    except Exception as _e:
+        print(f"[build] 信用バッジはスキップ（非致命）: {_e}")
     sell_watch = {
         "date": data_date,
-        "members": sell_members[:30],
+        "members": sell_members,
         "count": len(sell_members),
         "cond": {"runup20": SELL_RUNUP_MIN, "vol_x": SELL_VOLX_MIN,
                  "turnover_oku": SELL_TURNOVER_MIN_OKU},
