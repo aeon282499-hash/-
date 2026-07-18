@@ -259,8 +259,11 @@ def main() -> None:
                 # 週次/月次のみ。保有/処分期限とNOFILLは15時の大引けチェックで吸収される。
                 positions, closed_today, expired_today, still_open = update_positions(
                     positions, today, all_data=_ledger_data())
-                if send_monthly:
-                    send_monthly_report(positions, today, tier=tier)
+            if send_monthly:
+                # 月次はポジションゼロの朝でも送る（closed履歴から集計できる）。
+                # 旧: if active の内側にあり、月初の朝にフラットな階層は月次が欠落する穴だった
+                # （2026-07-19修正・7/1は3階層とも保有があったため実害は未発生）。
+                send_monthly_report(positions, today, tier=tier)
 
             sell_closed_today = []
             sell_still_open   = []
@@ -269,8 +272,10 @@ def main() -> None:
                 # 帳簿処理は継続・日別の決済結果レポート(send_sell_results)は廃止（同上）。
                 sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(
                     sell_positions, today, all_data=_ledger_data())
-                if send_monthly:
-                    send_sell_monthly_report(sell_positions, today, tier=tier)
+            if send_monthly and sell_positions:
+                # SELLの月次は「取引履歴が1件でもあれば」送る（現状SELLは全期間0件=帳簿が
+                # 空なので送らない＝ゼロ行レポートのノイズ回避。初トレード後の月から出る）。
+                send_sell_monthly_report(sell_positions, today, tier=tier)
 
             # 階層別シグナル選定
             tier_signals, tier_sell_signals = _select_tier_signals(
