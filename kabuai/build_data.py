@@ -719,6 +719,44 @@ def build() -> dict:
         print(f"[build] 信用バッジ: {n_badge}/{len(sell_members)}銘柄に付与")
     except Exception as _e:
         print(f"[build] 信用バッジはスキップ（非致命）: {_e}")
+
+    # ── 🪶信用軽バッジ（🐵ランキング・2026-07-20・_bt_margin_momentum.py 全銘柄10年BT） ──
+    # 実証された構造は「買残が重いと悪い」ではなく「信用買残がほぼ無い(買残回転<0.25日)
+    # 銘柄だけが上昇継続しやすい」: 両期間(2017-21/2022-26)×代金3分位の全6セルで軽い側が
+    # プラス差・2019年以降は8年中7年プラス。重い側への警告は符号不安定=根拠なしなので
+    # バッジは軽い側にだけ付ける。週次残高スナップショット1本で全銘柄分を引ける・非致命。
+    DC_LIGHT_MAX = 0.25
+    try:
+        _tok = _jquants_key()
+        _snap = None
+        for _back in range(3, 16):     # 直近の週次残高(金曜キー・翌週火曜公表)を遡って探す
+            _ds = (datetime.now(JST) - timedelta(days=_back)).strftime("%Y-%m-%d")
+            _mi = _jquants_get("/markets/margin-interest", _tok, {"date": _ds}).get("data", [])
+            if _mi:
+                _snap = {str(_r.get("Code", ""))[:4]: _r for _r in _mi}
+                print(f"[build] 🪶信用軽: 週次残高 {_ds} ({len(_snap)}銘柄)")
+                break
+            time.sleep(0.2)
+        if _snap:
+            _n_light = 0
+            for r in rows[:TOP_N]:
+                if (r.get("momentum") or 0) < 60:      # BTの実証範囲=モメンタム点灯(S/A)のみ
+                    continue
+                _rec = _snap.get(r["code"])
+                if _rec is None:
+                    continue                           # 残高データなし→バッジ判定しない(fail-safe)
+                _lv = _rec.get("LongVol")
+                _adv = (r.get("turnover_oku") or 0) * 1e8
+                _px = r.get("price") or 0
+                if _lv is None or _adv <= 0 or _px <= 0:
+                    continue
+                _dc = float(_lv) * _px / _adv
+                r["days_cover"] = round(_dc, 2)
+                if _dc < DC_LIGHT_MAX:
+                    _n_light += 1
+            print(f"[build] 🪶信用軽: ランキング{TOP_N}銘柄中 {_n_light}件 (回転<{DC_LIGHT_MAX}日)")
+    except Exception as _e:
+        print(f"[build] 🪶信用軽はスキップ（非致命）: {_e}")
     sell_watch = {
         "date": data_date,
         "members": sell_members,

@@ -1057,7 +1057,7 @@ function viewMomentum(){
   const rows=list.map(r=>{
     return `<a class="mrow" href="#/detail/${r.code}">
       <div class="grb ${esc(r.grade||"D")}">${esc(r.grade||"-")}</div>
-      <div class="m-nm"><b>${esc(r.name)}${swCodes.has(r.code)?' <span class="chip" style="padding:0 6px;color:var(--dn);border-color:rgba(234,57,67,.5)">🔻終了サイン</span>':""}</b>
+      <div class="m-nm"><b>${esc(r.name)}${swCodes.has(r.code)?' <span class="chip" style="padding:0 6px;color:var(--dn);border-color:rgba(234,57,67,.5)">🔻終了サイン</span>':""}${r.days_cover!=null&&r.days_cover<0.25?' <span class="chip" style="padding:0 6px;color:var(--up);border-color:rgba(22,199,132,.5)">🪶信用軽</span>':""}</b>
         <small>${r.code} ・ 勢い${r.momentum!=null?Math.round(r.momentum):"—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku!=null?Math.round(r.turnover_oku)+"億":"—"} ・ 値動き${r.rng20!=null&&isFinite(Number(r.rng20))?Number(r.rng20).toFixed(1)+"%":"—"}</small></div>
       <div class="m-px">¥${(r.price||0).toLocaleString()}<br>${pctTag(r.r1)||"—"}</div></a>`;
   }).join("");
@@ -1071,7 +1071,7 @@ function viewMomentum(){
       勢いが崩れた銘柄は <a href="#/sell" style="color:var(--dn);font-weight:700">🔻売り</a> タブに出ます。</div>
     <div class="gchips">${chip("all","すべて")}${["S","A","B","C"].filter(g=>gc[g]).map(g=>chip(g,g+" "+gc[g])).join("")}</div>
     <div class="card" style="padding:4px 14px">${rows||`<div class="muted" style="padding:12px 0">この評価の銘柄はランキング上位にありません。</div>`}</div>
-    <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。🔻＝本日モメンタム終了サインが出ています（売りタブ参照）。</div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。🔻＝本日モメンタム終了サインが出ています（売りタブ参照）。<b style="color:var(--up)">🪶信用軽</b>＝信用買い残がほぼ残っていない銘柄（買残回転0.25日未満・JPX週次残高）。10年の実測では、勢い銘柄のうちこのタイプだけが5〜10営業日後も平均プラスでした（それ以外は平均マイナス）。これも予測や買い推奨ではなく参考情報です。</div>
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"}</p>`;
 }
 

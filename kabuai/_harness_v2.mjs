@@ -80,6 +80,22 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   }
 }
 
+// ── 1.6) 🪶信用軽chip（days_cover<0.25で表示・以上/欠損で非表示） ──
+{
+  const rk=(DATA.ranking||[])[0];
+  if(rk){
+    const save=rk.days_cover;
+    rk.days_cover=0.10;
+    locationShim.hash="#/"; sandbox.render();
+    check("home: 買残回転0.10日→🪶信用軽chip表示", $get("#view").innerHTML.includes("🪶信用軽"));
+    rk.days_cover=1.50; sandbox.render();
+    const withHeavy=$get("#view").innerHTML.split("🪶信用軽").length-1;
+    check("home: 1.50日→chip非表示(凡例1箇所のみ)", withHeavy===1);
+    if(save===undefined) delete rk.days_cover; else rk.days_cover=save;
+    sandbox.render();
+  }
+}
+
 // ── 2) 🔻売りタブ（v4新設） ──
 {
   locationShim.hash="#/sell"; sandbox.render();
