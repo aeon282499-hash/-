@@ -452,7 +452,7 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
 
     color = 0x43A047 if a["yen"] > 0 else (0xE53935 if a["yen"] < 0 else 0x757575)
     payload = {"embeds": [{
-        "title": f"🧾【デイトレv2 紙トレ】{date_str}",
+        "title": f"🩳【デイトレ売りシグナル（紙）】{date_str}",
         "description": "\n".join(lines),
         "color": color,
         "footer": {"text": "実弾ではありません。答え合わせで通算を積み上げ、実弾判断の材料にします。"},
