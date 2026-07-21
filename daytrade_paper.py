@@ -37,10 +37,11 @@ BOOK_FILE = "positions_day_paper.json"
 DAY_SIGNALS_FILE = "day_signals.json"
 CAPITAL_PER_TRADE = 1_000_000   # 紙の1建玉サイズ（円・株数と通算損益円の土台。ユーザー設定=100万）
 EXPIRE_DAYS = 14
-# 毎日1銘柄（フェード）のGO閾値。ライブ実弾screener_sell_dayは+25%のまま据え置き。
-# 検証(全市場10年・往復0.3%後): 毎日トップ株空売り=PF1.33/陽性9年。本体は前日+15%以上帯
-# (+15-20%=PF1.50 / +20%超=PF1.35)。+5-15%は薄い(PF≈1.0)→GOは+15%以上のみ。
-DAILY_PICK_GAIN_MIN = 15.0
+# フェードのGO閾値（前日上昇率）。ユーザー決定=+12%（2026-07）。
+# 10年検証(上位3・往復0.3%後): +12%が総額最良(+26.4M>+15%の+22.9M)・最良年5/11・11年全プラス。
+# +10=+25.5M(数多いが薄い) / +15=+22.9M(効率高いが取りこぼし)。+12が総額と頻度のバランス最適。
+# 代償: 取引1.5倍・PF1.45(<+15%の1.62)・弱い年(2023/24)は+15%が上。ライブ実弾screener_sell_dayは+25%据置。
+DAILY_PICK_GAIN_MIN = 12.0
 
 
 # ------------------------------------------------------------------ util
@@ -161,8 +162,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
     選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
-    判定: 前日+15%以上 → GO（撃つ／紙）。+5〜15%は薄い → NO-GO（見送り）。
-    10年検証: 張り付き除外でPF1.62・11年全プラス。上位3まで(5は非効率)。"""
+    判定: 前日+12%以上(DAILY_PICK_GAIN_MIN) → GO（撃つ／紙）。それ未満は薄い → NO-GO（見送り）。
+    10年検証: 張り付き除外+上位3で+12%が総額最良(+26.4M・11年全プラス)。"""
     if not data:
         return []
     today_str = today.strftime("%Y-%m-%d")
@@ -225,7 +226,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         go = p["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
-            p["nogo_reason"] = f"前日+{p['daily_gain']:.0f}%<15%＝薄い(コスト後トントン帯)"
+            p["nogo_reason"] = f"前日+{p['daily_gain']:.0f}%<{DAILY_PICK_GAIN_MIN:.0f}%＝薄い(コスト後トントン帯)"
     return picks
 
 
