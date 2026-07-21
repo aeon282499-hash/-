@@ -391,7 +391,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
 
     # ── 🎯 今日のデイトレ 上位N（フェード・毎営業日） ──
     if go_picks:
-        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・寄指売り→引成買戻し）**")
+        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・寄指売り→引成）**")
+        lines.append("　＝儲かる確率順（前日上昇率が高いほど翌日よく落ちる＝**1番が本命**）")
         for p in go_picks:
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
             shares = _shares_for(p["min_entry_price"])
