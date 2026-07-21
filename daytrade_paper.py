@@ -37,10 +37,10 @@ BOOK_FILE = "positions_day_paper.json"
 DAY_SIGNALS_FILE = "day_signals.json"
 CAPITAL_PER_TRADE = 4_000_000   # 紙の1建玉サイズ（円・main_dayの推奨株数と同じ土台）
 EXPIRE_DAYS = 14
-# 紙トレ専用のSELL閾値（ライブ実弾は screener_sell_day の+25%のまま据え置き）。
-# 閾値スイープ(全市場10年・往復0.3%後): +20%=年26件/PF1.83/陽性10-11年。+12%で崩壊=底。
-PAPER_SELL_GAIN_MIN = 20.0
-PAPER_SELL_MAX = 8   # 1日に紙記帳するSELL上限（daily_gain降順）
+# 毎日1銘柄（フェード）のGO閾値。ライブ実弾screener_sell_dayは+25%のまま据え置き。
+# 検証(全市場10年・往復0.3%後): 毎日トップ株空売り=PF1.33/陽性9年。本体は前日+15%以上帯
+# (+15-20%=PF1.50 / +20%超=PF1.35)。+5-15%は薄い(PF≈1.0)→GOは+15%以上のみ。
+DAILY_PICK_GAIN_MIN = 15.0
 
 
 # ------------------------------------------------------------------ util
@@ -105,7 +105,8 @@ def _fetch_all(today):
     """J-Quantsを日付ベースで一括取得（batch_downloadは全銘柄を返す）。決済＋紙SELLスキャン共用。"""
     from screener import batch_download_jquants, _jquants_id_token
     token = _jquants_id_token()
-    start = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+    # 45暦日≒31営業日。当日を除いても20日平均に足る履歴を確保（30日だと不足でスキップ）。
+    start = (today - timedelta(days=45)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
     return batch_download_jquants(token, start=start, end=end)
 
@@ -115,37 +116,64 @@ def _fetch_data(tickers, today):
     return _fetch_all(today)
 
 
-def scan_paper_sell(data: dict, today) -> list[dict]:
-    """紙トレ専用SELLスキャン（全市場・閾値をPAPER_SELL_GAIN_MINへ一時的に下げてjudgeを再利用）。"""
+FADE_CAND_MIN = 5.0        # フェード候補の最低上昇率（これ未満は「急騰なし」）
+FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
+
+
+def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
+    """毎日『その日のフェード最有力1銘柄』＝流動株の前日上昇率トップを返す（GO/NO-GO判定付き）。
+    ※BT(bt_daily_forced=PF1.33)と同一母集団: 流動性のみで前日上昇トップを選ぶ（ATR/出来高比は課さない）。
+    判定: 前日+15%以上 かつ 貸借○ → GO（撃つ／紙）。それ未満/貸借×? → NO-GO（見送り）。
+    10年検証: 本体は+15%以上帯(PF1.35-1.50)、+5-15%は薄い(PF≈1.0)。"""
     if not data:
-        return []
-    import screener_sell_day as ssd
+        return None
     today_str = today.strftime("%Y-%m-%d")
-    orig = ssd.DAILY_GAIN_MIN
-    ssd.DAILY_GAIN_MIN = PAPER_SELL_GAIN_MIN
-    hits = []
-    try:
-        for tk, df in data.items():
-            d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足で判定
-            if len(d) < 25:
-                continue
-            r = ssd.judge_sell_signal_day(tk, tk, d)
-            if r:
-                hits.append(r)
-    finally:
-        ssd.DAILY_GAIN_MIN = orig   # 必ず元に戻す（ライブ実弾の+25%を汚さない）
-    hits.sort(key=lambda x: x["daily_gain"], reverse=True)
-    hits = hits[:PAPER_SELL_MAX]
-    # 銘柄名を補完（発火時のみ・軽量）
-    if hits:
-        try:
-            from screener import fetch_tse_universe
-            nm = {t: n for t, n in fetch_tse_universe()}
-            for h in hits:
-                h["name"] = nm.get(h["ticker"], h["ticker"])
-        except Exception:
-            pass
-    return hits
+    best = None
+    for tk, df in data.items():
+        if df is None or df.empty:
+            continue
+        d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足
+        if len(d) < 21:
+            continue
+        c = d["Close"].astype(float)
+        v = d["Volume"].astype(float)
+        last_c = float(c.iloc[-1]); prev_c = float(c.iloc[-2])
+        if last_c < 300 or prev_c <= 0:
+            continue
+        vol_avg = float(v.iloc[:-1].tail(20).mean())
+        if vol_avg < 100_000:
+            continue
+        tov20 = float((c * v).tail(20).median())
+        if tov20 < FADE_TOV_MIN:
+            continue
+        gain = (last_c - prev_c) / prev_c * 100
+        if gain < FADE_CAND_MIN:
+            continue
+        if best is None or gain > best["daily_gain"]:
+            best = {
+                "ticker": tk, "name": tk, "direction": "SELL",
+                "daily_gain": round(gain, 2),
+                "prev_close": round(last_c, 1),
+                "min_entry_price": round(last_c, 1),
+                "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
+            }
+    if best is None:
+        return None
+    try:  # 銘柄名補完（1件のみ・軽量）
+        from screener import fetch_tse_universe
+        nm = {t: n for t, n in fetch_tse_universe()}
+        best["name"] = nm.get(best["ticker"], best["ticker"])
+    except Exception:
+        pass
+    sh = shortability(best["ticker"], iss_map)
+    best["short"] = sh
+    go = best["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
+    best["verdict"] = "GO" if go else "NOGO"
+    if not go:
+        best["nogo_reason"] = (f"前日+{best['daily_gain']:.0f}%<15%＝薄い(コスト後トントン帯)"
+                               if best["daily_gain"] < DAILY_PICK_GAIN_MIN
+                               else f"貸借{sh['mark']}＝空売り不可の可能性(在庫要確認)")
+    return best
 
 
 def _shares_for(limit_price: float) -> int:
@@ -301,12 +329,36 @@ def _fmt_pf(pf):
 
 
 # ------------------------------------------------------------------ Discord
-def send_report(just_closed, today_fires, stats, today, dry=False):
+def send_report(just_closed, buy_fires, pick, stats, today, dry=False):
     date_str = today.strftime("%Y年%m月%d日")
     lines = []
 
+    # ── 🎯 今日のデイトレ1番（フェード・毎営業日） ──
+    if pick:
+        sh = pick.get("short") or shortability(pick["ticker"], _LAST_ISS)
+        lines.append("**🎯 今日のデイトレ1番（フェード＝上がりすぎを空売り）**")
+        lines.append(f"🔴 **{pick.get('name', pick['ticker'])}**（{pick['ticker']}）"
+                     f"前日 **+{pick['daily_gain']:.0f}%** ／ 出来高{pick.get('vol_ratio', 0):.0f}倍 ／ 貸借**{sh['mark']}**")
+        if pick["verdict"] == "GO":
+            lines.append(f"→ ✅ **撃つ（紙）**：寄りで空売り（指値¥{pick['min_entry_price']:,.0f}以上）→ **引け成 買戻し**")
+            lines.append("　OCO例: 利確−3% / 損切+3%（当日決済必須・持ち越し禁止）")
+        else:
+            lines.append(f"→ ⏸️ **見送り**：{pick.get('nogo_reason', '')}")
+        lines.append("")
+    else:
+        lines.append("🎯 今日は急騰株ゼロ＝フェード候補なし（見送り）")
+        lines.append("")
+
+    # ── 🟢 ライブ買いシグナル（レア） ──
+    if buy_fires:
+        lines.append(f"**🟢 買いシグナル {len(buy_fires)}件（実弾基準・出来高10倍ブレイク）**")
+        for s in buy_fires:
+            lines.append(f"・{s.get('name', s['ticker'])}（{s['ticker']}）MAX指値¥{s.get('max_entry_price', 0):,.0f}で寄成買い→引け")
+        lines.append("")
+
+    # ── 📓 答え合わせ ──
     if just_closed:
-        lines.append("**📓 答え合わせ（前回発火の当日結果）**")
+        lines.append("**📓 答え合わせ（前回の当日結果）**")
         for p in just_closed:
             de = "🟢買" if p["direction"] == "BUY" else "🔴売"
             if p["exit_type"] == "SKIP":
@@ -316,20 +368,6 @@ def send_report(just_closed, today_fires, stats, today, dry=False):
                 lines.append(f"{mk}{de} {p['name']}（{p['ticker']}）"
                              f"寄{p['entry_open']:,.0f}→引{p['entry_close']:,.0f} "
                              f"**{p['pnl_pct']:+.2f}%**（{p['pnl_yen']:+,}円）")
-        lines.append("")
-
-    sell_fires = [s for s in today_fires if s.get("direction") == "SELL"]
-    buy_fires = [s for s in today_fires if s.get("direction", "BUY") == "BUY"]
-    if today_fires:
-        lines.append(f"**🔔 本日発火（寄り前）: 🟢買{len(buy_fires)}（実弾同基準） / 🔴売{len(sell_fires)}（紙+20%）**")
-        if sell_fires:
-            lines.append("**🩳 信用売り可否チェック**（○のみ空売り可・実弾は貸借○＋在庫確認が必須）")
-            for s in sell_fires:
-                sh = shortability(s["ticker"], _LAST_ISS)
-                lines.append(f"{sh['mark']} {s.get('name', s['ticker'])}（{s['ticker']}）"
-                             f"前日+{s.get('daily_gain', 0):.0f}% … {sh['note']}")
-            lines.append("・50単元以下は価格規制の成行制限を受けにくい / 逆日歩は当日実測")
-        lines.append("寄りで指値イン→引け成で処分（OCO練習可）。当日決済必須・持ち越し禁止。")
         lines.append("")
 
     a, b, se = stats["all"], stats["buy"], stats["sell"]
@@ -371,8 +409,8 @@ _LAST_ISS = {}
 
 # ------------------------------------------------------------------ orchestration
 def run(today=None, signals=None, dry=False):
-    """main_day末尾から呼ぶ想定。
-    当日発火 = ライブBUY（signals引数のBUYのみ・実弾screener_dayと同一）＋ 紙SELL（全市場+20%スキャン）。
+    """main_day末尾から呼ぶ想定。毎営業日『今日のフェード1番』＋ライブBUYを紙で回す。
+    紙記帳するのは GO（前日+15%以上×貸借○）の1番と、ライブBUY発火のみ。
     signals未指定（単体実行）なら day_signals.json のBUYを読む。"""
     global _LAST_ISS
     if today is None:
@@ -392,7 +430,7 @@ def run(today=None, signals=None, dry=False):
 
     book = load_book()
 
-    # 決済＆SELLスキャンに全銘柄を一括取得（失敗時は無取得で決済のみ試行）
+    # 決済＆1番選定に全銘柄を一括取得（失敗時は無取得で決済のみ試行）
     try:
         data = _fetch_all(today)
     except Exception as e:
@@ -401,20 +439,23 @@ def run(today=None, signals=None, dry=False):
 
     just_closed = settle(book, data, today)
 
-    sell_fires = scan_paper_sell(data, today)          # 紙専用 全市場+20%
-    fires = buy_fires + sell_fires
-    _LAST_ISS = fetch_iss_map(_jq_token()) if sell_fires else {}
-    added = record(book, fires, data, _LAST_ISS, today)
+    _LAST_ISS = fetch_iss_map(_jq_token()) if data else {}
+    pick = daily_top_fade(data, today, _LAST_ISS)         # 毎日1番（GO/NO-GO）
+
+    # 紙記帳＝GOの1番 ＋ ライブBUY発火のみ（見送りは記帳しない）
+    to_record = list(buy_fires)
+    if pick and pick["verdict"] == "GO":
+        to_record.append(pick)
+    added = record(book, to_record, data, _LAST_ISS, today)
 
     stats = cumulative_stats(book)
-    print(f"[paper] 決済{len(just_closed)}件 / 新規記帳{len(added)}件"
-          f"（ライブ買{len(buy_fires)}/紙売{len(sell_fires)}）/ "
+    verdict = pick["verdict"] if pick else "候補なし"
+    print(f"[paper] 決済{len(just_closed)}件 / 記帳{len(added)}件（買{len(buy_fires)}/1番={verdict}）/ "
           f"通算執行{stats['all']['n']}件 PF{_fmt_pf(stats['all']['pf'])} 損益{stats['all']['yen']:+,}円")
 
-    # 通知は「答え合わせ有り or 当日発火有り」かつ本日未送信のときだけ（ハートビート無し）
-    should_notify = (just_closed or fires) and book.get("last_report_date") != today_str
-    if should_notify:
-        send_report(just_closed, fires, stats, today, dry=dry)
+    # 毎営業日1回だけ配信（ユーザー希望＝毎日1銘柄を必ず出す。二重送信は日付ガード）
+    if book.get("last_report_date") != today_str:
+        send_report(just_closed, buy_fires, pick, stats, today, dry=dry)
         if not dry:
             book["last_report_date"] = today_str
 

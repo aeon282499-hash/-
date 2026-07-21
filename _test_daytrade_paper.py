@@ -186,30 +186,42 @@ def test_cumulative_stats():
     check("保有中=1", st["pending"] == 1)
 
 
-def test_paper_sell_scan_threshold():
-    """紙SELLスキャンが+20%閾値で拾い+25%では拾わない銘柄を検出し、閾値を必ず復元する。"""
+def _flat_then(last_gain_pct, base=1000):
+    """30日フラット→最終日に指定%急騰(出来高6倍)のOHLCV rowsを作る。"""
+    last = round(base * (1 + last_gain_pct / 100))
+    rows = [(f"2026-06-{d:02d}", base, base + 2, base - 2, base, 1_000_000) for d in range(1, 29)]
+    rows += [("2026-07-13", base, base + 2, base - 2, base, 1_000_000),
+             ("2026-07-14", base, last, base, last, 6_000_000)]
+    return mkdf(rows)
+
+
+def test_daily_top_fade():
+    """毎日1番=前日上昇率トップを選び、+15%以上×貸借○ならGO・それ以外はNOGO。閾値は必ず復元。"""
     import screener
     screener.fetch_tse_universe = lambda *a, **k: []   # 名前補完の実ネットを止める
     import screener_sell_day as ssd
     before = ssd.DAILY_GAIN_MIN
 
-    # 30日フラット(1000) → 最終日(07-14)に+21%急騰・出来高6倍
-    rows = [(f"2026-06-{d:02d}", 1000, 1002, 998, 1000, 1_000_000) for d in range(1, 29)]
-    rows += [("2026-07-13", 1000, 1002, 998, 1000, 1_000_000),
-             ("2026-07-14", 1000, 1210, 1000, 1210, 6_000_000)]   # +21%
-    data = {"9999.T": mkdf(rows)}
+    data = {"9999.T": _flat_then(21), "8888.T": _flat_then(8)}   # +21% と +8%
+    today = date(2026, 7, 15)
 
-    hits = dp.scan_paper_sell(data, date(2026, 7, 15))
-    check("紙SELL: +21%を拾う(閾値20)", len(hits) == 1 and hits[0]["ticker"] == "9999.T")
-    check("紙SELL: daily_gain≈21%", abs(hits[0]["daily_gain"] - 21.0) < 0.5)
-    check("紙SELL: min指値=前日終値1210", hits[0]["min_entry_price"] == 1210)
-    check("閾値を必ず復元(+25に戻る)", ssd.DAILY_GAIN_MIN == before)
+    # 貸借○ → GO・トップは9999(+21%)
+    pick = dp.daily_top_fade(data, today, {"9999": "2"})
+    check("1番=最大上昇株9999", pick and pick["ticker"] == "9999.T")
+    check("+21%×貸借○ → GO", pick["verdict"] == "GO")
+    check("min指値=前日終値", pick["min_entry_price"] == pick["prev_close"])
+    check("閾値を必ず復元", ssd.DAILY_GAIN_MIN == before)
 
-    # 参考: 実弾基準(+25%)では拾わない
-    ssd.DAILY_GAIN_MIN = 25.0
-    r = ssd.judge_sell_signal_day("9999.T", "x", data["9999.T"])
-    check("実弾+25%基準では非該当", r is None)
-    ssd.DAILY_GAIN_MIN = before
+    # 貸借不明(?) → 空売り不可でNOGO
+    pick2 = dp.daily_top_fade(data, today, {})
+    check("+21%でも貸借?ならNOGO", pick2["verdict"] == "NOGO" and "貸借" in pick2["nogo_reason"])
+
+    # トップが+8%しかない → 薄いのでNOGO
+    pick3 = dp.daily_top_fade({"8888.T": _flat_then(8)}, today, {"8888": "2"})
+    check("+8%(貸借○)でも薄いのでNOGO", pick3["verdict"] == "NOGO" and "薄い" in pick3["nogo_reason"])
+
+    # 候補ゼロ(急騰なし) → None
+    check("急騰ゼロ→候補なしNone", dp.daily_top_fade({"7777.T": _flat_then(1)}, today, {}) is None)
 
 
 def run_all():
@@ -217,7 +229,7 @@ def run_all():
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
-               test_paper_sell_scan_threshold]:
+               test_daily_top_fade]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")
