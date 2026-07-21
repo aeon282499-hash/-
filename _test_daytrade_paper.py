@@ -47,7 +47,7 @@ def test_shortability():
 # ---------------------------------------------------------------- settle BUY
 def test_settle_buy_win():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "BUY",
-            "signal_date": "2026-07-13", "basis_date": "2026-07-13",
+            "signal_date": "2026-07-14", "basis_date": "2026-07-13",
             "limit_price": 1100, "status": "pending"}]
     book = base_book(pos)
     data = {"1301.T": mkdf([("2026-07-13", 1000, 1010, 990, 1000, 1e6),
@@ -64,7 +64,7 @@ def test_settle_buy_win():
 
 def test_settle_buy_skip():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "BUY",
-            "signal_date": "2026-07-13", "basis_date": "2026-07-13",
+            "signal_date": "2026-07-14", "basis_date": "2026-07-13",
             "limit_price": 1040, "status": "pending"}]
     book = base_book(pos)
     # 寄り1050 > MAX指値1040 → 見送り
@@ -80,7 +80,7 @@ def test_settle_buy_skip():
 # ---------------------------------------------------------------- settle SELL
 def test_settle_sell_win():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "SELL",
-            "signal_date": "2026-07-13", "basis_date": "2026-07-13",
+            "signal_date": "2026-07-14", "basis_date": "2026-07-13",
             "limit_price": 1000, "status": "pending"}]
     book = base_book(pos)
     # 寄り1050 >= MIN指値1000 → 執行, 引け1000 < 寄り → 空売り利益
@@ -95,7 +95,7 @@ def test_settle_sell_win():
 
 def test_settle_sell_skip():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "SELL",
-            "signal_date": "2026-07-13", "basis_date": "2026-07-13",
+            "signal_date": "2026-07-14", "basis_date": "2026-07-13",
             "limit_price": 1000, "status": "pending"}]
     book = base_book(pos)
     # 寄り980 < MIN指値1000（ギャップダウン）→ 見送り
@@ -109,7 +109,7 @@ def test_settle_sell_skip():
 # ---------------------------------------------------------------- pending / expired
 def test_settle_pending_kept():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "BUY",
-            "signal_date": "2026-07-14", "basis_date": "2026-07-14",
+            "signal_date": "2026-07-15", "basis_date": "2026-07-14",
             "limit_price": 1100, "status": "pending"}]
     book = base_book(pos)
     # basis後の足がまだ無い（当日足も無い）→ pending維持
@@ -123,7 +123,7 @@ def test_settle_pending_kept():
 def test_settle_today_not_closed():
     """エントリーセッションが当日(=まだ引けてない)なら決済しない。"""
     pos = [{"ticker": "1301.T", "name": "A", "direction": "BUY",
-            "signal_date": "2026-07-14", "basis_date": "2026-07-14",
+            "signal_date": "2026-07-15", "basis_date": "2026-07-14",
             "limit_price": 1100, "status": "pending"}]
     book = base_book(pos)
     # 当日=07-15 の足がデータに存在しても（寄り前実行では通常無いが）確定扱いしない
@@ -131,6 +131,22 @@ def test_settle_today_not_closed():
                             ("2026-07-15", 1080, 1090, 1070, 1085, 1e6)])}
     dp.settle(book, data, date(2026, 7, 15))
     check("当日足は未確定→pending維持", book["positions"][0]["status"] == "pending")
+
+
+def test_settle_halt_skip():
+    """シグナル当日に売買停止(足なし)→翌日の足で約定扱いにせずSKIP（実弾は寄指不成立のため）。"""
+    pos = [{"ticker": "1301.T", "name": "A", "direction": "SELL",
+            "signal_date": "2026-07-15", "basis_date": "2026-07-14",
+            "limit_price": 1000, "status": "pending"}]
+    book = base_book(pos)
+    # 7/15の足が無い(停止)。7/16に再開して大幅高でも紙は約定させない
+    data = {"1301.T": mkdf([("2026-07-14", 1000, 1010, 990, 1000, 1e6),
+                            ("2026-07-16", 1300, 1350, 1250, 1280, 1e6)])}
+    dp.settle(book, data, date(2026, 7, 17))
+    p = book["positions"][0]
+    check("停止: SKIP", p["exit_type"] == "SKIP")
+    check("停止: 理由=当日約定なし", "当日約定なし" in p.get("skip_reason", ""))
+    check("停止: pnl=0", p["pnl_pct"] == 0.0)
 
 
 def test_settle_expired():
@@ -244,6 +260,13 @@ def test_daily_top_fades():
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
     check("ratio_map→borrow付与(売残少)", "◎売残少" in pr[0]["borrow"])
 
+    # 鮮度ガード: 売買停止で最終足が古い銘柄(+30%だが7/10止まり)は除外し、直近足の銘柄を選ぶ
+    stale = _flat_then(30)
+    stale.index = stale.index - pd.Timedelta(days=4)   # 最終足を7/10に後退=停止中を再現
+    mix2 = {"5550.T": stale, "6666.T": _flat_then(18)}
+    pf2 = dp.daily_top_fades(mix2, today, {"5550": "2", "6666": "2"})
+    check("停止中(古い足+30%)は除外→直近足6666", len(pf2) == 1 and pf2[0]["ticker"] == "6666.T")
+
 
 def test_borrow_grade():
     check("倍率<1→⭐売り長", "⭐売り長" in dp.borrow_grade(0.6))
@@ -255,7 +278,7 @@ def test_borrow_grade():
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
-               test_settle_today_not_closed, test_settle_expired,
+               test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_borrow_grade]:
         print(f"\n▶ {fn.__name__}")

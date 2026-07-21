@@ -167,6 +167,23 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     if not data:
         return []
     today_str = today.strftime("%Y-%m-%d")
+
+    # 直近の市場営業日（データ全体の最終足）。売買停止中の銘柄が「古い+12%」のまま
+    # 候補化して停止明けギャップに突っ込むのを防ぐ（鮮度ガード・2026-07-22実弾前監査で追加）
+    last_mkt = None
+    for df in data.values():
+        if df is None or df.empty:
+            continue
+        mx = df.index.max()
+        ds = mx.strftime("%Y-%m-%d")
+        if ds >= today_str:
+            older = df.index[df.index.strftime("%Y-%m-%d") < today_str]
+            if len(older) == 0:
+                continue
+            ds = older.max().strftime("%Y-%m-%d")
+        if last_mkt is None or ds > last_mkt:
+            last_mkt = ds
+
     cands = []
     for tk, df in data.items():
         if df is None or df.empty:
@@ -176,6 +193,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足
         if len(d) < 21:
             continue
+        if last_mkt and d.index[-1].strftime("%Y-%m-%d") != last_mkt:
+            continue                                        # 最終足が直近営業日でない=停止/古い→除外
         c = d["Close"].astype(float)
         v = d["Volume"].astype(float)
         h = d["High"].astype(float)
@@ -273,7 +292,12 @@ def settle(book: dict, data: dict, today) -> list[dict]:
         direction = p["direction"]
         limit = p.get("limit_price")
 
-        if direction == "BUY":
+        # 約定日はシグナル当日のみ有効。当日売買停止等で足が無い場合、実弾の寄指は
+        # 不成立なので紙も SKIP（翌日以降の足で約定扱いにしない・2026-07-22実弾前監査で追加）
+        if p.get("signal_date") and entry_date != p["signal_date"]:
+            exit_type, pnl = "SKIP", 0.0
+            p["skip_reason"] = "当日約定なし(売買停止/寄らず)"
+        elif direction == "BUY":
             if limit is not None and o > limit:
                 exit_type, pnl = "SKIP", 0.0
             else:
@@ -405,6 +429,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
                          f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し ／ 信用: {p.get('borrow', '')}")
         lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
+        lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"
+                     "(未決済のまま大引けだと強制決済+手数料)・在庫無し/プレミアム高は見送り")
         lines.append("")
     elif picks:   # GO無し＝薄い候補のみ
         p = picks[0]
@@ -430,7 +456,7 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
         for p in just_closed:
             de = "🟢買" if p["direction"] == "BUY" else "🔴売"
             if p["exit_type"] == "SKIP":
-                lines.append(f"⏭️{de} {p['name']}（{p['ticker']}）見送り（指値条件外）")
+                lines.append(f"⏭️{de} {p['name']}（{p['ticker']}）見送り（{p.get('skip_reason', '指値条件外')}）")
             else:
                 mk = "✅" if p["pnl_pct"] > 0 else "❌"
                 lines.append(f"{mk}{de} {p['name']}（{p['ticker']}）"
@@ -456,7 +482,7 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
         "title": f"🩳【デイトレ売りシグナル（紙）】{date_str}",
         "description": "\n".join(lines),
         "color": color,
-        "footer": {"text": "実弾ではありません。答え合わせで通算を積み上げ、実弾判断の材料にします。"},
+        "footer": {"text": "台帳は紙の理論値。実弾はSBI約定に従い、紙との差＝摩擦(在庫/プレミアム/滑り)を測る。"},
     }]}
 
     if dry:
@@ -478,7 +504,7 @@ _LAST_ISS = {}
 # ------------------------------------------------------------------ orchestration
 def run(today=None, signals=None, dry=False):
     """main_day末尾から呼ぶ想定。毎営業日『フェード上位3』＋ライブBUYを紙で回す。
-    紙記帳するのは GO（前日+15%以上×貸借○×張り付き除外）の上位3と、ライブBUY発火のみ。
+    紙記帳するのは GO（前日+12%以上×貸借○×張り付き除外）の上位3と、ライブBUY発火のみ。
     signals未指定（単体実行）なら day_signals.json のBUYを読む。"""
     global _LAST_ISS
     if today is None:
