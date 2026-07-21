@@ -1,4 +1,12 @@
 {
-  "date": "2026-07-21",
-  "signals": []
+  "date": "2026-07-22",
+  "signals": [
+    {
+      "ticker": "1721.T",
+      "name": "コムシスホールディングス",
+      "direction": "BUY",
+      "prev_close": 5197.0,
+      "limit_price": 5240
+    }
+  ]
 }

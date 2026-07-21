@@ -1,4 +1,29 @@
 {
-  "date": "2026-07-21",
-  "signals": []
+  "date": "2026-07-22",
+  "signals": [
+    {
+      "ticker": "8593.T",
+      "name": "三菱ＨＣキャピタル",
+      "direction": "SELL",
+      "prev_close": 1440.0
+    },
+    {
+      "ticker": "7867.T",
+      "name": "タカラトミー",
+      "direction": "SELL",
+      "prev_close": 3690.0
+    },
+    {
+      "ticker": "8304.T",
+      "name": "あおぞら銀行",
+      "direction": "SELL",
+      "prev_close": 2982.5
+    },
+    {
+      "ticker": "8253.T",
+      "name": "クレディセゾン",
+      "direction": "SELL",
+      "prev_close": 4728.0
+    }
+  ]
 }

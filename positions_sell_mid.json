@@ -1,1 +1,66 @@
-[]
+[
+  {
+    "signal_date": "2026-07-22",
+    "entry_date": "2026-07-22",
+    "ticker": "8593.T",
+    "name": "三菱ＨＣキャピタル",
+    "direction": "SELL",
+    "prev_close": 1440.0,
+    "limit_price": null,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-07-22",
+    "entry_date": "2026-07-22",
+    "ticker": "7867.T",
+    "name": "タカラトミー",
+    "direction": "SELL",
+    "prev_close": 3690.0,
+    "limit_price": null,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-07-22",
+    "entry_date": "2026-07-22",
+    "ticker": "8304.T",
+    "name": "あおぞら銀行",
+    "direction": "SELL",
+    "prev_close": 2982.5,
+    "limit_price": null,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-07-22",
+    "entry_date": "2026-07-22",
+    "ticker": "8253.T",
+    "name": "クレディセゾン",
+    "direction": "SELL",
+    "prev_close": 4728.0,
+    "limit_price": null,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  }
+]

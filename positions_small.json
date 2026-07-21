@@ -745,11 +745,11 @@
     "prev_close": 1632.5,
     "limit_price": 1648,
     "entry_open": 1640.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 5.0,
     "unrealized_pnl": 1.341,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "TP",
+    "exit_date": "2026-07-21"
   }
 ]
