@@ -87,6 +87,40 @@ def fetch_iss_map(token) -> dict:
     return {}
 
 
+def fetch_ratio_map(token) -> dict:
+    """{code4: 信用倍率(買残/売残)} を直近週の margin-interest から。売残0は99(=借りやすい)。取れなければ {}。"""
+    try:
+        from screener import _jquants_get
+        cur = _today_jst_date() - timedelta(days=4)
+        for _ in range(14):
+            if cur.weekday() < 5:
+                d = _jquants_get("/markets/margin-interest", token, {"date": cur.strftime("%Y-%m-%d")})
+                rows = d.get("data", [])
+                if rows:
+                    out = {}
+                    for r in rows:
+                        sv = float(r.get("ShrtVol") or 0)
+                        lv = float(r.get("LongVol") or 0)
+                        out[str(r.get("Code", ""))[:4]] = (lv / sv) if sv > 0 else 99.0
+                    return out
+            cur -= timedelta(days=1)
+    except Exception as e:
+        print(f"[paper] ratio_map取得失敗: {e}")
+    return {}
+
+
+def borrow_grade(ratio) -> str:
+    """信用倍率から借りやすさ+フェード強度グレード。10年BT: 売残少(>=10)は借り易くPF1.6-1.9・
+    売り長(<1)は最強PF4.9だが借りにくい・1-10は普通。"""
+    if ratio is None:
+        return "貸株?"
+    if ratio < 1:
+        return "⭐売り長(最強だが借りにくい・逆日歩注意)"
+    if ratio >= 10:
+        return "◎売残少(空売り楽・よく落ちる)"
+    return "○普通"
+
+
 def shortability(ticker: str, iss_map: dict) -> dict:
     """信用売り可否の判定を返す。○=貸借銘柄(空売り可) / ×=信用銘柄(制度信用売り不可) / ?=不明。"""
     it = iss_map.get(_code4(ticker))
@@ -123,7 +157,8 @@ STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終
 PAPER_MAX_PICKS = 3        # 上位N銘柄まで配信・記帳（10年検証: 5は非効率・3が実質上限）
 
 
-def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS) -> list[dict]:
+def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
+                    ratio_map: dict | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
     選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
     判定: 前日+15%以上 → GO（撃つ／紙）。+5〜15%は薄い → NO-GO（見送り）。
@@ -184,6 +219,9 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS) 
         sh = shortability(p["ticker"], iss_map)
         p["short"] = sh
         p["rank"] = i
+        rt = (ratio_map or {}).get(_code4(p["ticker"]))
+        p["ratio"] = round(rt, 1) if rt is not None else None
+        p["borrow"] = borrow_grade(rt)
         go = p["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
@@ -362,7 +400,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
                          f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
                          f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}")
             lines.append(f"　→ **寄指 売り {shares:,}株 指値¥{p['min_entry_price']:,.0f}以上**"
-                         f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し")
+                         f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し ／ 信用: {p.get('borrow', '')}")
+        lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
         lines.append("")
     elif picks:   # GO無し＝薄い候補のみ
@@ -466,8 +505,10 @@ def run(today=None, signals=None, dry=False):
 
     just_closed = settle(book, data, today)
 
-    _LAST_ISS = fetch_iss_map(_jq_token()) if data else {}
-    picks = daily_top_fades(data, today, _LAST_ISS)       # 上位3（各GO/NO-GO）
+    tok = _jq_token() if data else None
+    _LAST_ISS = fetch_iss_map(tok) if data else {}
+    ratio_map = fetch_ratio_map(tok) if data else {}
+    picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map)   # 上位3（各GO/NO-GO+借りやすさ）
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
     # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）

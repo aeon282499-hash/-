@@ -240,13 +240,24 @@ def test_daily_top_fades():
     check("値がさ株(>1万)は除外",
           dp.daily_top_fades({"4444.T": _flat_then(20, base=20000)}, today, {"4444": "2"}) == [])
 
+    # 借りやすさグレード: ratio_mapを渡すとborrowが付く
+    pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
+    check("ratio_map→borrow付与(売残少)", "◎売残少" in pr[0]["borrow"])
+
+
+def test_borrow_grade():
+    check("倍率<1→⭐売り長", "⭐売り長" in dp.borrow_grade(0.6))
+    check("倍率>=10→◎売残少", "◎売残少" in dp.borrow_grade(30))
+    check("倍率1-10→○普通", dp.borrow_grade(2.0) == "○普通")
+    check("None→貸株?", dp.borrow_grade(None) == "貸株?")
+
 
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
-               test_daily_top_fades]:
+               test_daily_top_fades, test_borrow_grade]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")
