@@ -314,7 +314,10 @@ def main() -> None:
             print(f"[main_day] {LAST_RUN_FILE} 読込失敗: {e} → 続行")
 
     from screener_day import run_screener_day
-    from screener_sell_day import run_screener_sell_day
+    # v2 SELL(screener_sell_day) は 2026-07-22 停止。デイトレ売りシグナル(daytrade_paper)へ一本化。
+    # 旧v2 SELLは貸借/流動性/張り付きを未チェックで「制度信用で売れない薄い玉」を配信する欠陥版
+    # （7/22の2354=貸借×・代金2.1億が実例）。BUY(screener_day)と紙層は無傷。
+    # from screener_sell_day import run_screener_sell_day  # 停止
 
     try:
         # ── ① 前日シグナルの結果チェック ──────────────────
@@ -327,11 +330,11 @@ def main() -> None:
             results = check_yesterday_results(prev_signals, today)
             send_day_results(results, today)
 
-        # ── ② 新規スクリーニング（BUY + SELL）─────────────
+        # ── ② 新規スクリーニング（BUYのみ・v2 SELLは停止）─────────────
         buy_signals, macro  = run_screener_day()
-        sell_signals, _     = run_screener_sell_day()
+        sell_signals        = []   # v2 SELL停止（デイトレ売りシグナルへ一本化・2026-07-22）
         signals = buy_signals + sell_signals
-        print(f"[main_day] BUY {len(buy_signals)}件 / SELL {len(sell_signals)}件")
+        print(f"[main_day] BUY {len(buy_signals)}件 / SELL {len(sell_signals)}件（v2 SELL停止）")
 
         # ── ③ シグナルを保存 ──────────────────────────────
         from datetime import timedelta as _td
