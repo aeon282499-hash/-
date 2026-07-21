@@ -432,15 +432,9 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
         lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"
                      "(未決済のまま大引けだと強制決済+手数料)・在庫無し/プレミアム高は見送り")
         lines.append("")
-    elif picks:   # GO無し＝薄い候補のみ
-        p = picks[0]
-        sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
-        lines.append("**🎯 今日のフェード候補（GO無し）**")
-        lines.append(f"🔴 {p.get('name', p['ticker'])}（{p['ticker']}）前日+{p['daily_gain']:.0f}% 貸借{sh['mark']}"
-                     f" → ⏸️ **見送り**：{p.get('nogo_reason', '薄い')}")
-        lines.append("")
     else:
-        lines.append("🎯 今日は急騰株ゼロ＝フェード候補なし（見送り）")
+        # GO無し（薄い候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）
+        lines.append("**🎯 今日は撃つ銘柄なし（見送り）**")
         lines.append("")
 
     # ── 🟢 ライブ買いシグナル（レア） ──
