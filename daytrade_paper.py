@@ -35,7 +35,7 @@ load_dotenv()
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 BOOK_FILE = "positions_day_paper.json"
 DAY_SIGNALS_FILE = "day_signals.json"
-CAPITAL_PER_TRADE = 4_000_000   # 紙の1建玉サイズ（円・main_dayの推奨株数と同じ土台）
+CAPITAL_PER_TRADE = 1_000_000   # 紙の1建玉サイズ（円・株数と通算損益円の土台。ユーザー設定=100万）
 EXPIRE_DAYS = 14
 # 毎日1銘柄（フェード）のGO閾値。ライブ実弾screener_sell_dayは+25%のまま据え置き。
 # 検証(全市場10年・往復0.3%後): 毎日トップ株空売り=PF1.33/陽性9年。本体は前日+15%以上帯
@@ -354,10 +354,13 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
         lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・寄指売り→引成買戻し）**")
         for p in go_picks:
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
+            shares = _shares_for(p["min_entry_price"])
+            amt = shares * p["min_entry_price"]
             lines.append(f"**{p.get('rank', 1)}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
                          f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
                          f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}")
-            lines.append(f"　→ **寄指 売り 指値¥{p['min_entry_price']:,.0f}以上** → 当日引成 買戻し")
+            lines.append(f"　→ **寄指 売り {shares:,}株 指値¥{p['min_entry_price']:,.0f}以上**"
+                         f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し")
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
         lines.append("")
     elif picks:   # GO無し＝薄い候補のみ
