@@ -372,6 +372,14 @@ def main() -> None:
             }, f, ensure_ascii=False, indent=2)
         print(f"[main_day] {LAST_RUN_FILE} 更新完了")
 
+        # ── ⑥ 紙トレ台帳（答え合わせ・通算成績・信用売り可否）非破壊レイヤー ──
+        # 既存の配信・保存は上で完了済み。ここが失敗しても本番は無傷（例外は握りつぶす）。
+        try:
+            from daytrade_paper import run as run_paper
+            run_paper(today=today, signals=signals)
+        except Exception as pe:
+            print(f"[main_day] 紙トレ層エラー（無視して継続）: {pe}")
+
         # ── ⑤ Twitter に投稿 ────────────────────────────────
         # TWITTER_PAUSED: 2026-05-21 ユーザー指示で一時停止（PEADフィルタB案BT中）。再開時はコメント解除。
         # from twitter_notifier import post_day_signals

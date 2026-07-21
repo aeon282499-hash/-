@@ -159,7 +159,7 @@ jobs:
             today_signals.json today_sell_signals.json \
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
-            day_signals.json last_day_run.json \
+            day_signals.json last_day_run.json positions_day_paper.json \
             today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
             today_signals_theme.json logs/theme_diag.jsonl \
             dashboard_data.json; do
