@@ -120,18 +120,18 @@ FADE_CAND_MIN = 5.0        # フェード候補の最低上昇率（これ未満
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
                            # 10年BT: 除外でPF1.44→1.62・11年全プラス。7月は-36万→+75万に逆転。
+PAPER_MAX_PICKS = 3        # 上位N銘柄まで配信・記帳（10年検証: 5は非効率・3が実質上限）
 
 
-def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
-    """毎日『その日のフェード最有力1銘柄』を返す（GO/NO-GO判定付き）。
-    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) の中で上昇率トップ。
-    ＝毎回"売れて踏み上げにくい"玉だけを候補にする（2026-07更新・踏み上げ回避が核心）。
+def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS) -> list[dict]:
+    """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
+    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
     判定: 前日+15%以上 → GO（撃つ／紙）。+5〜15%は薄い → NO-GO（見送り）。
-    10年検証: 張り付き除外でPF1.62・11年全プラス。"""
+    10年検証: 張り付き除外でPF1.62・11年全プラス。上位3まで(5は非効率)。"""
     if not data:
-        return None
+        return []
     today_str = today.strftime("%Y-%m-%d")
-    best = None
+    cands = []
     for tk, df in data.items():
         if df is None or df.empty:
             continue
@@ -159,32 +159,34 @@ def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
         rng = (float(h.iloc[-1]) - float(lo.iloc[-1])) / last_c
         if rng <= STICKY_RANGE_MIN:                         # 張り付きS高を除外
             continue
-        if best is None or gain > best["daily_gain"]:
-            best = {
-                "ticker": tk, "name": tk, "direction": "SELL",
-                "daily_gain": round(gain, 2),
-                "prev_close": round(last_c, 1),
-                "min_entry_price": round(last_c, 1),
-                "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
-                "range_pct": round(rng * 100, 1),
-            }
-    if best is None:
-        return None
-    try:  # 銘柄名補完（1件のみ・軽量）
+        cands.append({
+            "ticker": tk, "name": tk, "direction": "SELL",
+            "daily_gain": round(gain, 2),
+            "prev_close": round(last_c, 1),
+            "min_entry_price": round(last_c, 1),
+            "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
+            "range_pct": round(rng * 100, 1),
+        })
+    if not cands:
+        return []
+    cands.sort(key=lambda x: x["daily_gain"], reverse=True)
+    picks = cands[:max(1, n)]
+    try:  # 銘柄名補完（上位数件のみ・軽量）
         from screener import fetch_tse_universe
-        nm = {t: n for t, n in fetch_tse_universe()}
-        best["name"] = nm.get(best["ticker"], best["ticker"])
+        nm = {t: n2 for t, n2 in fetch_tse_universe()}
+        for p in picks:
+            p["name"] = nm.get(p["ticker"], p["ticker"])
     except Exception:
         pass
-    sh = shortability(best["ticker"], iss_map)
-    best["short"] = sh
-    go = best["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
-    best["verdict"] = "GO" if go else "NOGO"
-    if not go:
-        best["nogo_reason"] = (f"前日+{best['daily_gain']:.0f}%<15%＝薄い(コスト後トントン帯)"
-                               if best["daily_gain"] < DAILY_PICK_GAIN_MIN
-                               else f"貸借{sh['mark']}＝空売り不可の可能性(在庫要確認)")
-    return best
+    for i, p in enumerate(picks, 1):
+        sh = shortability(p["ticker"], iss_map)
+        p["short"] = sh
+        p["rank"] = i
+        go = p["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
+        p["verdict"] = "GO" if go else "NOGO"
+        if not go:
+            p["nogo_reason"] = f"前日+{p['daily_gain']:.0f}%<15%＝薄い(コスト後トントン帯)"
+    return picks
 
 
 def _shares_for(limit_price: float) -> int:
@@ -340,22 +342,30 @@ def _fmt_pf(pf):
 
 
 # ------------------------------------------------------------------ Discord
-def send_report(just_closed, buy_fires, pick, stats, today, dry=False):
+def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
     date_str = today.strftime("%Y年%m月%d日")
     lines = []
+    if picks is None:
+        picks = []
+    go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
-    # ── 🎯 今日のデイトレ1番（フェード・毎営業日） ──
-    if pick:
-        sh = pick.get("short") or shortability(pick["ticker"], _LAST_ISS)
-        lines.append("**🎯 今日のデイトレ1番（フェード＝上がりすぎを空売り）**")
-        lines.append(f"🔴 **{pick.get('name', pick['ticker'])}**（{pick['ticker']}）"
-                     f"前日 **+{pick['daily_gain']:.0f}%** ／ 出来高{pick.get('vol_ratio', 0):.0f}倍 ／ "
-                     f"レンジ{pick.get('range_pct', 0):.0f}% ／ 貸借**{sh['mark']}**（張り付き除外済）")
-        if pick["verdict"] == "GO":
-            lines.append(f"→ ✅ **撃つ（紙）**：寄りで空売り（指値¥{pick['min_entry_price']:,.0f}以上）→ **引け成 買戻し**")
-            lines.append("　OCO例: 利確−3% / 損切+3%（当日決済必須・持ち越し禁止）")
-        else:
-            lines.append(f"→ ⏸️ **見送り**：{pick.get('nogo_reason', '')}")
+    # ── 🎯 今日のデイトレ 上位N（フェード・毎営業日） ──
+    if go_picks:
+        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・寄指売り→引成買戻し）**")
+        for p in go_picks:
+            sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
+            lines.append(f"**{p.get('rank', 1)}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
+                         f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
+                         f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}")
+            lines.append(f"　→ **寄指 売り 指値¥{p['min_entry_price']:,.0f}以上** → 当日引成 買戻し")
+        lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
+        lines.append("")
+    elif picks:   # GO無し＝薄い候補のみ
+        p = picks[0]
+        sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
+        lines.append("**🎯 今日のフェード候補（GO無し）**")
+        lines.append(f"🔴 {p.get('name', p['ticker'])}（{p['ticker']}）前日+{p['daily_gain']:.0f}% 貸借{sh['mark']}"
+                     f" → ⏸️ **見送り**：{p.get('nogo_reason', '薄い')}")
         lines.append("")
     else:
         lines.append("🎯 今日は急騰株ゼロ＝フェード候補なし（見送り）")
@@ -421,8 +431,8 @@ _LAST_ISS = {}
 
 # ------------------------------------------------------------------ orchestration
 def run(today=None, signals=None, dry=False):
-    """main_day末尾から呼ぶ想定。毎営業日『今日のフェード1番』＋ライブBUYを紙で回す。
-    紙記帳するのは GO（前日+15%以上×貸借○）の1番と、ライブBUY発火のみ。
+    """main_day末尾から呼ぶ想定。毎営業日『フェード上位3』＋ライブBUYを紙で回す。
+    紙記帳するのは GO（前日+15%以上×貸借○×張り付き除外）の上位3と、ライブBUY発火のみ。
     signals未指定（単体実行）なら day_signals.json のBUYを読む。"""
     global _LAST_ISS
     if today is None:
@@ -452,22 +462,20 @@ def run(today=None, signals=None, dry=False):
     just_closed = settle(book, data, today)
 
     _LAST_ISS = fetch_iss_map(_jq_token()) if data else {}
-    pick = daily_top_fade(data, today, _LAST_ISS)         # 毎日1番（GO/NO-GO）
+    picks = daily_top_fades(data, today, _LAST_ISS)       # 上位3（各GO/NO-GO）
+    go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
-    # 紙記帳＝GOの1番 ＋ ライブBUY発火のみ（見送りは記帳しない）
-    to_record = list(buy_fires)
-    if pick and pick["verdict"] == "GO":
-        to_record.append(pick)
+    # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）
+    to_record = list(buy_fires) + go_picks
     added = record(book, to_record, data, _LAST_ISS, today)
 
     stats = cumulative_stats(book)
-    verdict = pick["verdict"] if pick else "候補なし"
-    print(f"[paper] 決済{len(just_closed)}件 / 記帳{len(added)}件（買{len(buy_fires)}/1番={verdict}）/ "
+    print(f"[paper] 決済{len(just_closed)}件 / 記帳{len(added)}件（買{len(buy_fires)}/GO売{len(go_picks)}）/ "
           f"通算執行{stats['all']['n']}件 PF{_fmt_pf(stats['all']['pf'])} 損益{stats['all']['yen']:+,}円")
 
-    # 毎営業日1回だけ配信（ユーザー希望＝毎日1銘柄を必ず出す。二重送信は日付ガード）
+    # 毎営業日1回だけ配信（上位3まで。二重送信は日付ガード）
     if book.get("last_report_date") != today_str:
-        send_report(just_closed, buy_fires, pick, stats, today, dry=dry)
+        send_report(just_closed, buy_fires, picks, stats, today, dry=dry)
         if not dry:
             book["last_report_date"] = today_str
 

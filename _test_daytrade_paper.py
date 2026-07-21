@@ -200,36 +200,41 @@ def _flat_then(last_gain_pct, base=1000, sticky=False):
     return mkdf(rows)
 
 
-def test_daily_top_fade():
-    """選定=貸借○×前日+5%以上×張り付き除外の中で上昇トップ。+15%でGO・+5〜15%はNOGO薄い。"""
+def test_daily_top_fades():
+    """選定=貸借○×前日+5%以上×張り付き除外。上位3を降順で返す・各GO/NOGO判定。"""
     import screener
     screener.fetch_tse_universe = lambda *a, **k: []   # 名前補完の実ネットを止める
 
-    data = {"9999.T": _flat_then(21), "8888.T": _flat_then(8)}   # +21% と +8%（両方レンジ大）
+    # 4銘柄: +21%,+18%,+16%,+8%（全部貸借○・レンジ大）
+    data = {"9999.T": _flat_then(21), "6666.T": _flat_then(18),
+            "7777.T": _flat_then(16), "8888.T": _flat_then(8)}
     today = date(2026, 7, 15)
+    iss = {"9999": "2", "6666": "2", "7777": "2", "8888": "2"}
 
-    # 貸借○の中でトップ=9999(+21%) → GO
-    pick = dp.daily_top_fade(data, today, {"9999": "2", "8888": "2"})
-    check("1番=貸借○の最大上昇9999", pick and pick["ticker"] == "9999.T")
-    check("+21% → GO", pick["verdict"] == "GO")
-    check("min指値=前日終値", pick["min_entry_price"] == pick["prev_close"])
-    check("range_pct記録(>5%)", pick.get("range_pct", 0) > 5)
+    picks = dp.daily_top_fades(data, today, iss)
+    check("上位3を返す", len(picks) == 3)
+    check("降順(1番=9999+21%)", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
+    check("2番=6666(+18%)", picks[1]["ticker"] == "6666.T")
+    check("3番=7777(+16%)", picks[2]["ticker"] == "7777.T")
+    check("上位3は全部+15%以上→全GO", all(p["verdict"] == "GO" for p in picks))
+    check("min指値=前日終値", picks[0]["min_entry_price"] == picks[0]["prev_close"])
+    check("range_pct記録(>5%)", picks[0].get("range_pct", 0) > 5)
 
-    # 貸借○が1つも無ければ候補なし(None) ← 売れない玉は選ばない
-    check("貸借○ゼロ→None", dp.daily_top_fade(data, today, {}) is None)
+    # 貸借○が1つも無ければ[]（売れない玉は選ばない）
+    check("貸借○ゼロ→空リスト", dp.daily_top_fades(data, today, {}) == [])
 
-    # +8%(貸借○)だけ → 薄いのでNOGO
-    pick3 = dp.daily_top_fade({"8888.T": _flat_then(8)}, today, {"8888": "2"})
-    check("+8%→NOGO薄い", pick3["verdict"] == "NOGO" and "薄い" in pick3["nogo_reason"])
+    # +8%(貸借○)だけ → 1件・NOGO薄い
+    p8 = dp.daily_top_fades({"8888.T": _flat_then(8)}, today, {"8888": "2"})
+    check("+8%→1件NOGO薄い", len(p8) == 1 and p8[0]["verdict"] == "NOGO" and "薄い" in p8[0]["nogo_reason"])
 
-    # 張り付きS高(+20%貸借○)は除外 → 候補なしNone（踏み上げ回避の核心）
-    check("張り付きS高は除外→None",
-          dp.daily_top_fade({"5555.T": _flat_then(20, sticky=True)}, today, {"5555": "2"}) is None)
+    # 張り付きS高(+20%貸借○)は除外 → 空リスト（踏み上げ回避の核心）
+    check("張り付きS高は除外→空",
+          dp.daily_top_fades({"5555.T": _flat_then(20, sticky=True)}, today, {"5555": "2"}) == [])
 
-    # 張り付き#1 と 非張り付き#2 → 非張り付きが選ばれる
+    # 張り付き#1と非張り付き#2 → 非張り付きだけ残る
     mix = {"5555.T": _flat_then(30, sticky=True), "6666.T": _flat_then(18)}
-    pick5 = dp.daily_top_fade(mix, today, {"5555": "2", "6666": "2"})
-    check("張り付き#1を飛ばし非張り付き6666を選ぶ", pick5 and pick5["ticker"] == "6666.T")
+    pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
+    check("張り付き#1を飛ばし6666だけ", len(pm) == 1 and pm[0]["ticker"] == "6666.T")
 
 
 def run_all():
@@ -237,7 +242,7 @@ def run_all():
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
-               test_daily_top_fade]:
+               test_daily_top_fades]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")
