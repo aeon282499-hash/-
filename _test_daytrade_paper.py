@@ -236,6 +236,10 @@ def test_daily_top_fades():
     pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
     check("張り付き#1を飛ばし6666だけ", len(pm) == 1 and pm[0]["ticker"] == "6666.T")
 
+    # 値がさ株(1単元>予算100万=株価>1万)は除外。base=20000で+20%→last=24000>1万→除外
+    check("値がさ株(>1万)は除外",
+          dp.daily_top_fades({"4444.T": _flat_then(20, base=20000)}, today, {"4444": "2"}) == [])
+
 
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,

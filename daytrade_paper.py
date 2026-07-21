@@ -147,6 +147,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS) 
         last_c = float(c.iloc[-1]); prev_c = float(c.iloc[-2])
         if last_c < 300 or prev_c <= 0:
             continue
+        if last_c * 100 > CAPITAL_PER_TRADE:   # 1単元(100株)が予算超=値がさで建てられない→除外
+            continue
         vol_avg = float(v.iloc[:-1].tail(20).mean())
         if vol_avg < 100_000:
             continue
