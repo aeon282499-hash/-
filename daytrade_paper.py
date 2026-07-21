@@ -118,13 +118,16 @@ def _fetch_data(tickers, today):
 
 FADE_CAND_MIN = 5.0        # フェード候補の最低上昇率（これ未満は「急騰なし」）
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
+STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
+                           # 10年BT: 除外でPF1.44→1.62・11年全プラス。7月は-36万→+75万に逆転。
 
 
 def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
-    """毎日『その日のフェード最有力1銘柄』＝流動株の前日上昇率トップを返す（GO/NO-GO判定付き）。
-    ※BT(bt_daily_forced=PF1.33)と同一母集団: 流動性のみで前日上昇トップを選ぶ（ATR/出来高比は課さない）。
-    判定: 前日+15%以上 かつ 貸借○ → GO（撃つ／紙）。それ未満/貸借×? → NO-GO（見送り）。
-    10年検証: 本体は+15%以上帯(PF1.35-1.50)、+5-15%は薄い(PF≈1.0)。"""
+    """毎日『その日のフェード最有力1銘柄』を返す（GO/NO-GO判定付き）。
+    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) の中で上昇率トップ。
+    ＝毎回"売れて踏み上げにくい"玉だけを候補にする（2026-07更新・踏み上げ回避が核心）。
+    判定: 前日+15%以上 → GO（撃つ／紙）。+5〜15%は薄い → NO-GO（見送り）。
+    10年検証: 張り付き除外でPF1.62・11年全プラス。"""
     if not data:
         return None
     today_str = today.strftime("%Y-%m-%d")
@@ -132,11 +135,15 @@ def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
     for tk, df in data.items():
         if df is None or df.empty:
             continue
+        if iss_map.get(_code4(tk)) != "2":                  # 貸借○のみ（売れる玉だけ）
+            continue
         d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足
         if len(d) < 21:
             continue
         c = d["Close"].astype(float)
         v = d["Volume"].astype(float)
+        h = d["High"].astype(float)
+        lo = d["Low"].astype(float)
         last_c = float(c.iloc[-1]); prev_c = float(c.iloc[-2])
         if last_c < 300 or prev_c <= 0:
             continue
@@ -149,6 +156,9 @@ def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
         gain = (last_c - prev_c) / prev_c * 100
         if gain < FADE_CAND_MIN:
             continue
+        rng = (float(h.iloc[-1]) - float(lo.iloc[-1])) / last_c
+        if rng <= STICKY_RANGE_MIN:                         # 張り付きS高を除外
+            continue
         if best is None or gain > best["daily_gain"]:
             best = {
                 "ticker": tk, "name": tk, "direction": "SELL",
@@ -156,6 +166,7 @@ def daily_top_fade(data: dict, today, iss_map: dict) -> dict | None:
                 "prev_close": round(last_c, 1),
                 "min_entry_price": round(last_c, 1),
                 "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
+                "range_pct": round(rng * 100, 1),
             }
     if best is None:
         return None
@@ -338,7 +349,8 @@ def send_report(just_closed, buy_fires, pick, stats, today, dry=False):
         sh = pick.get("short") or shortability(pick["ticker"], _LAST_ISS)
         lines.append("**🎯 今日のデイトレ1番（フェード＝上がりすぎを空売り）**")
         lines.append(f"🔴 **{pick.get('name', pick['ticker'])}**（{pick['ticker']}）"
-                     f"前日 **+{pick['daily_gain']:.0f}%** ／ 出来高{pick.get('vol_ratio', 0):.0f}倍 ／ 貸借**{sh['mark']}**")
+                     f"前日 **+{pick['daily_gain']:.0f}%** ／ 出来高{pick.get('vol_ratio', 0):.0f}倍 ／ "
+                     f"レンジ{pick.get('range_pct', 0):.0f}% ／ 貸借**{sh['mark']}**（張り付き除外済）")
         if pick["verdict"] == "GO":
             lines.append(f"→ ✅ **撃つ（紙）**：寄りで空売り（指値¥{pick['min_entry_price']:,.0f}以上）→ **引け成 買戻し**")
             lines.append("　OCO例: 利確−3% / 損切+3%（当日決済必須・持ち越し禁止）")

@@ -186,42 +186,50 @@ def test_cumulative_stats():
     check("保有中=1", st["pending"] == 1)
 
 
-def _flat_then(last_gain_pct, base=1000):
-    """30日フラット→最終日に指定%急騰(出来高6倍)のOHLCV rowsを作る。"""
+def _flat_then(last_gain_pct, base=1000, sticky=False):
+    """30日フラット→最終日に指定%急騰(出来高6倍)のOHLCV rowsを作る。
+    sticky=True で最終日レンジを極小(張り付きS高)にする。"""
     last = round(base * (1 + last_gain_pct / 100))
+    if sticky:                          # 張り付き: 高安が終値にほぼ張り付く
+        hi, lo = round(last * 1.002), round(last * 0.998)
+    else:
+        hi, lo = last, base             # レンジ大（安値=前日水準まで振れた）
     rows = [(f"2026-06-{d:02d}", base, base + 2, base - 2, base, 1_000_000) for d in range(1, 29)]
     rows += [("2026-07-13", base, base + 2, base - 2, base, 1_000_000),
-             ("2026-07-14", base, last, base, last, 6_000_000)]
+             ("2026-07-14", base, hi, lo, last, 6_000_000)]
     return mkdf(rows)
 
 
 def test_daily_top_fade():
-    """毎日1番=前日上昇率トップを選び、+15%以上×貸借○ならGO・それ以外はNOGO。閾値は必ず復元。"""
+    """選定=貸借○×前日+5%以上×張り付き除外の中で上昇トップ。+15%でGO・+5〜15%はNOGO薄い。"""
     import screener
     screener.fetch_tse_universe = lambda *a, **k: []   # 名前補完の実ネットを止める
-    import screener_sell_day as ssd
-    before = ssd.DAILY_GAIN_MIN
 
-    data = {"9999.T": _flat_then(21), "8888.T": _flat_then(8)}   # +21% と +8%
+    data = {"9999.T": _flat_then(21), "8888.T": _flat_then(8)}   # +21% と +8%（両方レンジ大）
     today = date(2026, 7, 15)
 
-    # 貸借○ → GO・トップは9999(+21%)
-    pick = dp.daily_top_fade(data, today, {"9999": "2"})
-    check("1番=最大上昇株9999", pick and pick["ticker"] == "9999.T")
-    check("+21%×貸借○ → GO", pick["verdict"] == "GO")
+    # 貸借○の中でトップ=9999(+21%) → GO
+    pick = dp.daily_top_fade(data, today, {"9999": "2", "8888": "2"})
+    check("1番=貸借○の最大上昇9999", pick and pick["ticker"] == "9999.T")
+    check("+21% → GO", pick["verdict"] == "GO")
     check("min指値=前日終値", pick["min_entry_price"] == pick["prev_close"])
-    check("閾値を必ず復元", ssd.DAILY_GAIN_MIN == before)
+    check("range_pct記録(>5%)", pick.get("range_pct", 0) > 5)
 
-    # 貸借不明(?) → 空売り不可でNOGO
-    pick2 = dp.daily_top_fade(data, today, {})
-    check("+21%でも貸借?ならNOGO", pick2["verdict"] == "NOGO" and "貸借" in pick2["nogo_reason"])
+    # 貸借○が1つも無ければ候補なし(None) ← 売れない玉は選ばない
+    check("貸借○ゼロ→None", dp.daily_top_fade(data, today, {}) is None)
 
-    # トップが+8%しかない → 薄いのでNOGO
+    # +8%(貸借○)だけ → 薄いのでNOGO
     pick3 = dp.daily_top_fade({"8888.T": _flat_then(8)}, today, {"8888": "2"})
-    check("+8%(貸借○)でも薄いのでNOGO", pick3["verdict"] == "NOGO" and "薄い" in pick3["nogo_reason"])
+    check("+8%→NOGO薄い", pick3["verdict"] == "NOGO" and "薄い" in pick3["nogo_reason"])
 
-    # 候補ゼロ(急騰なし) → None
-    check("急騰ゼロ→候補なしNone", dp.daily_top_fade({"7777.T": _flat_then(1)}, today, {}) is None)
+    # 張り付きS高(+20%貸借○)は除外 → 候補なしNone（踏み上げ回避の核心）
+    check("張り付きS高は除外→None",
+          dp.daily_top_fade({"5555.T": _flat_then(20, sticky=True)}, today, {"5555": "2"}) is None)
+
+    # 張り付き#1 と 非張り付き#2 → 非張り付きが選ばれる
+    mix = {"5555.T": _flat_then(30, sticky=True), "6666.T": _flat_then(18)}
+    pick5 = dp.daily_top_fade(mix, today, {"5555": "2", "6666": "2"})
+    check("張り付き#1を飛ばし非張り付き6666を選ぶ", pick5 and pick5["ticker"] == "6666.T")
 
 
 def run_all():
