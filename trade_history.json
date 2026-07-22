@@ -969,6 +969,16 @@
       "close": 1648.5,
       "pnl": 0.52,
       "win": true
+    },
+    {
+      "date": "2026-07-22",
+      "ticker": "1721.T",
+      "name": "コムシスホールディングス",
+      "direction": "BUY",
+      "open": 5166.0,
+      "close": 5229.0,
+      "pnl": 1.22,
+      "win": true
     }
   ]
 }

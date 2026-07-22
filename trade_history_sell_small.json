@@ -1,3 +1,24 @@
 {
-  "trades": []
+  "trades": [
+    {
+      "date": "2026-07-22",
+      "ticker": "8593.T",
+      "name": "三菱ＨＣキャピタル",
+      "direction": "SELL",
+      "open": 1440.0,
+      "close": 1437.0,
+      "pnl": 0.21,
+      "win": true
+    },
+    {
+      "date": "2026-07-22",
+      "ticker": "8304.T",
+      "name": "あおぞら銀行",
+      "direction": "SELL",
+      "open": 2998.0,
+      "close": 3004.0,
+      "pnl": -0.2,
+      "win": false
+    }
+  ]
 }
