@@ -107,6 +107,14 @@ def is_month_first_trading_day(d) -> bool:
 # 累積+483.8→+515.0%・MaxDD-105.6→-101.2%・件数-0.9%・弱い年(2022/2026)ほど改善・
 # 陽性年5/5維持。cap=2/1は悪化=3が山。BUYのみ適用（SELLはBT未検証・件数僅少）。
 SECTOR_CAP = 3
+
+# SELL版・業種分散キャップ（2026-07-22 sell_group_cap_bt.py・大中小3階層選定シム 2022-2026）:
+# 相関の高い同業種の空売りが同日に固まる担がれ(踏み上げ)DDを抑える。cap=2で
+# 大PF1.40→1.53/中1.40→1.58/小1.24→1.36・前期(2022-23)改善/後期(2024-26)不変/全年悪化なし・
+# 除外7件。cap=3は4.5年で一度も発火せず無効・cap=1は切り過ぎで後期/2025が悪化=2が山。
+# BUYと同一機構。※今日型の「銀行2＋その他金融2」等の跨ぎクラスタは各2枚でcap内=止めない
+# （金融束ねcapはBT無害だが証拠ゼロの後付けのため不採用・2026-07-22判断）。
+SECTOR_CAP_SELL = 2
 _SECTOR33: dict | None = None
 
 
@@ -129,8 +137,8 @@ def _select_tier_signals(all_buy_candidates: list[dict],
                          buy_positions: list[dict],
                          sell_positions: list[dict],
                          max_signals: int) -> tuple[list[dict], list[dict]]:
-    """階層の口座サイズで買える＆自分の保有中銘柄を除外し、BUYは同時保有の
-    同一業種を SECTOR_CAP 件までに制限（超過は次点繰り上げ）したtop5を返す。"""
+    """階層の口座サイズで買える＆自分の保有中銘柄を除外し、BUY/SELLとも同時保有の
+    同一業種を SECTOR_CAP / SECTOR_CAP_SELL 件までに制限（超過は次点繰り上げ）したtop5を返す。"""
     size = tier["size"]
     buy_open = {p["ticker"] for p in buy_positions if p.get("status") in ("pending", "open")}
     sell_open = {p["ticker"] for p in sell_positions if p.get("status") in ("pending", "open")}
@@ -157,12 +165,29 @@ def _select_tier_signals(all_buy_candidates: list[dict],
     if capped:
         print(f"[main-{tier['label']}] 業種キャップ(cap={SECTOR_CAP})で{capped}件を次点繰り上げ")
 
-    sell_pool = [
-        c for c in all_sell_candidates
-        if c.get("prev_close", 0) * 100 <= size
-        and c["ticker"] not in sell_open
-    ]
-    return buy_pool, sell_pool[:max_signals]
+    # SELLも同一業種を SECTOR_CAP_SELL 件までに制限（相関ショートの担がれ抑制・2026-07-22）
+    sell_sec_count: dict[str, int] = {}
+    for tkr in sell_open:
+        sec = _sector_of(tkr)
+        sell_sec_count[sec] = sell_sec_count.get(sec, 0) + 1
+
+    sell_pool = []
+    sell_capped = 0
+    for c in all_sell_candidates:
+        if len(sell_pool) >= max_signals:
+            break
+        if c.get("prev_close", 0) * 100 > size or c["ticker"] in sell_open:
+            continue
+        sec = _sector_of(c["ticker"])
+        if sell_sec_count.get(sec, 0) >= SECTOR_CAP_SELL:
+            sell_capped += 1
+            continue
+        sell_sec_count[sec] = sell_sec_count.get(sec, 0) + 1
+        sell_pool.append(c)
+    if sell_capped:
+        print(f"[main-{tier['label']}] SELL業種キャップ(cap={SECTOR_CAP_SELL})で{sell_capped}件を次点繰り上げ")
+
+    return buy_pool, sell_pool
 
 
 def main() -> None:

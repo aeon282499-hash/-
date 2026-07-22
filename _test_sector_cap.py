@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""_test_sector_cap.py — 業種分散キャップ(main.SECTOR_CAP=3)の回帰テスト。
+"""_test_sector_cap.py — 業種分散キャップの回帰テスト。
+BUY=main.SECTOR_CAP(=3) / SELL=main.SECTOR_CAP_SELL(=2・2026-07-22〜)。
 実行: python _test_sector_cap.py
 """
 import sys
@@ -75,10 +76,25 @@ buys_px = [cand("6146.T", pc=20000)] + [cand(t) for t in ("6857.T", "8306.T")]
 got, _ = select(buys_px, pos=[{"ticker": "6857.T", "status": "open"}])
 check("価格カット＋保有中除外は従来どおり", got == ["8306.T"])
 
-# ⑦ SELLはキャップ対象外（同一業種5件そのまま）
+# ⑦ SELLは同一業種cap=2まで（2026-07-22〜・同一業種5件→上位2件のみ）
 sells = [cand(t) for t in ("6146.T", "6857.T", "6920.T", "6723.T", "8035.T")]
 _, gots = select([], sells=sells)
-check("SELLは業種キャップ非適用", gots == ["6146.T", "6857.T", "6920.T", "6723.T", "8035.T"])
+check("SELL同一業種はcap=2まで", gots == ["6146.T", "6857.T"])
+
+# ⑧ SELLキャップは保有中ショートの業種もカウント（電気機器1保有→新規1件のみ）
+sspos = [{"ticker": "6501.T", "status": "open"}]  # 6501.T=電気機器(②で注入済)
+_, gots = select([], sells=sells, spos=sspos)
+check("SELLは保有中ショートの業種を含めてcap=2", gots == ["6146.T"])
+
+# ⑨ SELLも超過分は次点(別業種)が繰り上がる
+sells_mix = [cand(t) for t in ("6146.T", "6857.T", "6920.T", "8306.T")]  # 電気機器3+銀行1
+_, gots = select([], sells=sells_mix)
+check("SELL超過は次点繰り上げ（電気機器2＋銀行1）", gots == ["6146.T", "6857.T", "8306.T"])
+
+# ⑩ SELL業種不明は相互キャップしない
+sells_unk = [cand(t) for t in ("9991.T", "9992.T", "9993.T", "9994.T")]
+_, gots = select([], sells=sells_unk)
+check("SELL業種不明は相互キャップなし", gots == ["9991.T", "9992.T", "9993.T", "9994.T"])
 
 print(f"\nRESULT: {PASS} PASS / {FAIL} FAIL")
 sys.exit(1 if FAIL else 0)
