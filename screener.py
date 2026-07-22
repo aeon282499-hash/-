@@ -1184,8 +1184,22 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
         turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0
         return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
     candidates.sort(key=_winprob_score, reverse=True)
-    # SELLは流動性降順
-    sell_candidates.sort(key=lambda x: x["turnover"], reverse=True)
+
+    # ── SELLも「儲かりやすさスコア」降順（2026-07-22）── 旧: 流動性(turnover)降順のみ
+    # BUYの鏡像。過熱が緩い側ほど高評価（激しく過熱した玉ほど踏み上げ＝担がれやすい）＋流動性ボーナス。
+    # RSI60/乖離+4%（＝最も過熱の緩い当選玉）でスコア最大、過熱が強まるほど減衰。
+    # 選定シム(2022-2026・大中小3階層/sell_sort_diag)で現行の代金順を全年で下回らず総合改善:
+    #   大 PF1.36→1.40 / 中 1.35→1.40 / 小 1.18→1.24（差は候補が6件超えた2023の数日のみ。
+    #   SELLは月2.7件と希少でtop5キャップが縛るのは4.5年で3日=大半の日は並び順に依らず全件採用）。
+    def _sell_winprob_score(c: dict) -> float:
+        rsi  = c["rsi"]
+        dev  = c["deviation"]
+        turn = c["turnover"]
+        rsi_score  = 1.0 / (1.0 + ((rsi - 60.0) / 8.0) ** 2)   # RSI60で最大（過熱が緩いほど良い）
+        dev_score  = 1.0 / (1.0 + ((dev -  4.0) / 2.0) ** 2)   # 乖離+4%で最大（伸びきってないほど良い）
+        turn_score = math.log10(max(turn, 1) / 1e9 + 1.0) / 3.0
+        return rsi_score * 0.30 + dev_score * 0.30 + turn_score * 0.40
+    sell_candidates.sort(key=_sell_winprob_score, reverse=True)
 
     # 大資金（=既定）はここで positions.json を読んで除外＆top5切り出し（後方互換）
     import json as _json
