@@ -62,7 +62,7 @@ def main():
     #    (新チャンネル用に更新すること)。JSONコミット/アプリ表示・SELL1日1件上限は従来どおり維持。
     SELL_ONLY = False
     MAX_SELL_PER_DAY = 1
-    DISCORD_NOTIFY = True   # 2026-07-04 セクターローテ専用Discordへ配信再開（False で再びアプリ集約に戻せる）
+    DISCORD_NOTIFY = False  # 2026-07-22 ユーザー指示で配信停止（毎日0件通知が不要）。判定/JSON保存は継続=Trueで再開可
 
     try:
         signals, sell_signals, all_pass, macro, diag = run_sector_theme_screener()
