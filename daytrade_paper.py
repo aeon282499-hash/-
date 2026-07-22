@@ -110,6 +110,39 @@ def fetch_ratio_map(token) -> dict:
     return {}
 
 
+def fetch_alert_map(token) -> dict:
+    """{code4: {"jsf_stop","jsf_warn","tse_reg","daily_pub"}} を /markets/margin-alert（日々公表・
+    規制銘柄情報）の直近公表日から。**jsf_stop=RestrictedByJSF=日証金の貸借取引申込停止＝売り禁**
+    （制度信用の新規売り不可）。jsf_warn=注意喚起（売れるが逆日歩警戒）・tse_reg=取引所規制（増担保等）・
+    daily_pub=日々公表。夕方公表なので朝runの最新は前営業日分（当日朝指定の新規売り禁は
+    拾えないことがある→配信の「最終確認はSBI」注記でカバー）。取れなければ {}＝フェイルオープン。"""
+    try:
+        from screener import _jquants_get
+        cur = _today_jst_date()
+        for _ in range(8):
+            if cur.weekday() < 5:
+                d = _jquants_get("/markets/margin-alert", token,
+                                 {"date": cur.strftime("%Y-%m-%d")})
+                rows = d.get("data", [])
+                if rows:
+                    out = {}
+                    for r in rows:
+                        pr = r.get("PubReason") or {}
+                        out[str(r.get("Code", ""))[:4]] = {
+                            "jsf_stop":  pr.get("RestrictedByJSF") == "1",
+                            "jsf_warn":  pr.get("PrecautionByJSF") == "1",
+                            "tse_reg":   pr.get("Restricted") == "1",
+                            "daily_pub": pr.get("DailyPublication") == "1",
+                        }
+                    print(f"[paper] alert_map: {cur} 公表分 {len(out)}銘柄"
+                          f"（売り禁{sum(1 for v in out.values() if v['jsf_stop'])}）")
+                    return out
+            cur -= timedelta(days=1)
+    except Exception as e:
+        print(f"[paper] alert_map取得失敗: {e}")
+    return {}
+
+
 def borrow_grade(ratio) -> str:
     """信用倍率から借りやすさ+フェード強度グレード。10年BT: 売残少(>=10)は借り易くPF1.6-1.9・
     売り長(<1)は最強PF4.9だが借りにくい・1-10は普通。"""
@@ -159,10 +192,13 @@ PAPER_MAX_PICKS = 3        # 上位N銘柄まで配信・記帳（10年検証: 5
 
 
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
-                    ratio_map: dict | None = None) -> list[dict]:
+                    ratio_map: dict | None = None, alert_map: dict | None = None,
+                    excluded_out: list | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
-    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
+    選定＝貸借○ × **売り禁除外(日証金申込停止・alert_map)** × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
     判定: 前日+12%以上(DAILY_PICK_GAIN_MIN) → GO（撃つ／紙）。それ未満は薄い → NO-GO（見送り）。
+    売り禁で除外した銘柄は excluded_out(list)に追記（配信で可視化）。alert_map無し=従来どおり。
+    注意喚起/増担保/日々公表は売れるので除外せず reg_note ⚠️注記のみ（2026-07-22・本人要望）。
     10年検証: 張り付き除外+上位3で+12%が総額最良(+26.4M・11年全プラス)。"""
     if not data:
         return []
@@ -189,6 +225,11 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         if df is None or df.empty:
             continue
         if iss_map.get(_code4(tk)) != "2":                  # 貸借○のみ（売れる玉だけ）
+            continue
+        al = (alert_map or {}).get(_code4(tk)) or {}
+        if al.get("jsf_stop"):                              # 売り禁(日証金申込停止)=新規売り不可
+            if excluded_out is not None:
+                excluded_out.append(tk)
             continue
         d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足
         if len(d) < 21:
@@ -242,6 +283,16 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         rt = (ratio_map or {}).get(_code4(p["ticker"]))
         p["ratio"] = round(rt, 1) if rt is not None else None
         p["borrow"] = borrow_grade(rt)
+        # 規制注記（売れるが要警戒の状態を可視化・売り禁は候補段階で除外済み）
+        al = (alert_map or {}).get(_code4(p["ticker"])) or {}
+        regs = []
+        if al.get("jsf_warn"):
+            regs.append("⚠️日証金注意喚起(逆日歩警戒)")
+        if al.get("tse_reg"):
+            regs.append("⚠️増担保等規制中")
+        elif al.get("daily_pub"):
+            regs.append("📢日々公表(規制近接)")
+        p["reg_note"] = "・".join(regs)
         go = p["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
@@ -407,7 +458,7 @@ def _fmt_pf(pf):
 
 
 # ------------------------------------------------------------------ Discord
-def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
+def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None):
     date_str = today.strftime("%Y年%m月%d日")
     lines = []
     if picks is None:
@@ -422,9 +473,10 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
             shares = _shares_for(p["min_entry_price"])
             amt = shares * p["min_entry_price"]
+            reg = f" ／ {p['reg_note']}" if p.get("reg_note") else ""
             lines.append(f"**{p.get('rank', 1)}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
                          f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
-                         f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}")
+                         f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}{reg}")
             lines.append(f"　→ **寄指 売り {shares:,}株 指値¥{p['min_entry_price']:,.0f}以上**"
                          f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し ／ 信用: {p.get('borrow', '')}")
         lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
@@ -435,6 +487,12 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False):
     else:
         # GO無し（薄い候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）
         lines.append("**🎯 今日は撃つ銘柄なし（見送り）**")
+        lines.append("")
+    if banned:
+        # 売り禁で候補から外した銘柄を可視化（「急騰してるのに出ない」の説明・次点繰り上げ済み）
+        lines.append(f"　🚫売り禁(日証金申込停止)で除外: {len(banned)}銘柄"
+                     f"（{'、'.join(t.replace('.T', '') for t in banned[:5])}"
+                     f"{'…' if len(banned) > 5 else ''}）＝新規売り不可・次点を繰り上げ表示")
         lines.append("")
 
     # ── 🟢 ライブ買いシグナル（レア） ──
@@ -530,7 +588,10 @@ def run(today=None, signals=None, dry=False):
     tok = _jq_token() if data else None
     _LAST_ISS = fetch_iss_map(tok) if data else {}
     ratio_map = fetch_ratio_map(tok) if data else {}
-    picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map)   # 上位3（各GO/NO-GO+借りやすさ）
+    alert_map = fetch_alert_map(tok) if data else {}
+    banned: list = []   # 売り禁(日証金申込停止)で除外した銘柄（配信で可視化）
+    picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map,
+                            alert_map=alert_map, excluded_out=banned)   # 上位3（各GO/NO-GO+借りやすさ）
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
     # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）
@@ -543,7 +604,7 @@ def run(today=None, signals=None, dry=False):
 
     # 毎営業日1回だけ配信（上位3まで。二重送信は日付ガード）
     if book.get("last_report_date") != today_str:
-        send_report(just_closed, buy_fires, picks, stats, today, dry=dry)
+        send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned)
         if not dry:
             book["last_report_date"] = today_str
 
