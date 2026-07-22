@@ -226,11 +226,6 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             continue
         if iss_map.get(_code4(tk)) != "2":                  # 貸借○のみ（売れる玉だけ）
             continue
-        al = (alert_map or {}).get(_code4(tk)) or {}
-        if al.get("jsf_stop"):                              # 売り禁(日証金申込停止)=新規売り不可
-            if excluded_out is not None:
-                excluded_out.append(tk)
-            continue
         d = df[df.index.strftime("%Y-%m-%d") < today_str]   # 前日までの確定足
         if len(d) < 21:
             continue
@@ -256,6 +251,11 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             continue
         rng = (float(h.iloc[-1]) - float(lo.iloc[-1])) / last_c
         if rng <= STICKY_RANGE_MIN:                         # 張り付きS高を除外
+            continue
+        al = (alert_map or {}).get(_code4(tk)) or {}
+        if al.get("jsf_stop"):                              # 売り禁(日証金申込停止)=新規売り不可
+            if excluded_out is not None:                    # 全フィルタ通過後に判定=「急騰候補
+                excluded_out.append(tk)                     # なのに売り禁で出せない」だけを記録
             continue
         cands.append({
             "ticker": tk, "name": tk, "direction": "SELL",
