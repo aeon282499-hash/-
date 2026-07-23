@@ -217,8 +217,8 @@ def _flat_then(last_gain_pct, base=1000, sticky=False):
 
 
 def test_alert_map_exclusion():
-    """売り禁(jsf_stop)は候補から除外＋次点繰り上げ＋excluded_out記録。
-    注意喚起(jsf_warn)/増担保(tse_reg)は残して⚠️reg_note注記のみ。alert_map無し=従来通り。"""
+    """売り禁(jsf_stop)は**除外せず**🚫バッジ+jsf_stopフラグで表示（2026-07-23本人指示=ハイカラで売れる）。
+    GO判定は不変。注意喚起(jsf_warn)/増担保(tse_reg)は⚠️reg_note注記のみ。alert_map無し=従来通り。"""
     import screener
     screener.fetch_tse_universe = lambda *a, **k: []
     data = {"9999.T": _flat_then(21), "6666.T": _flat_then(18),
@@ -226,19 +226,25 @@ def test_alert_map_exclusion():
     today = date(2026, 7, 15)
     iss = {"9999": "2", "6666": "2", "7777": "2", "8888": "2"}
 
-    # 1位の9999が売り禁 → 除外され6666が1番に繰り上げ・8888が3番に入る
+    # 1位の9999が売り禁 → 除外されず1番のまま・🚫バッジ+jsf_stop=True・GO維持
     am = {"9999": {"jsf_stop": True}}
     banned = []
     picks = dp.daily_top_fades(data, today, iss, alert_map=am, excluded_out=banned)
-    check("売り禁は候補から除外", all(p["ticker"] != "9999.T" for p in picks))
-    check("次点繰り上げ(1番=6666)", picks[0]["ticker"] == "6666.T" and picks[0]["rank"] == 1)
-    check("3枠は埋まる(8888繰り上げ)", len(picks) == 3 and picks[2]["ticker"] == "8888.T")
-    check("excluded_outに記録", banned == ["9999.T"])
+    check("売り禁でも1番のまま表示", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
+    check("🚫売り禁バッジ", "🚫売り禁" in picks[0]["reg_note"] and "ハイカラ" in picks[0]["reg_note"])
+    check("jsf_stopフラグ付与", picks[0]["jsf_stop"] is True)
+    check("GO判定は不変(+21%はGO)", picks[0]["verdict"] == "GO")
+    check("非売り禁はフラグFalse・バッジなし", picks[1]["jsf_stop"] is False and "🚫" not in picks[1]["reg_note"])
+    check("excluded_outは常に空(旧互換)", banned == [])
 
-    # 注意喚起は除外されず⚠️注記
+    # 紙記帳にjsf_stopが乗る（在庫依存分の分離分析用）
+    book = {"positions": [], "expired": []}
+    dp.record(book, [picks[0]], data, iss, today)
+    check("紙記帳にjsf_stop記録", book["positions"][0].get("jsf_stop") is True)
+
+    # 注意喚起/増担保は⚠️注記のみ
     am2 = {"9999": {"jsf_warn": True}, "6666": {"tse_reg": True}}
     picks2 = dp.daily_top_fades(data, today, iss, alert_map=am2)
-    check("注意喚起は残る(1番=9999)", picks2[0]["ticker"] == "9999.T")
     check("注意喚起の⚠️注記", "注意喚起" in picks2[0]["reg_note"])
     check("増担保の⚠️注記", "増担保" in picks2[1]["reg_note"])
     check("規制なしはreg_note空", picks2[2]["reg_note"] == "")

@@ -135,21 +135,23 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   {
     const save=DATA.sell_watch;
     const base={date:"2026-07-23",count:0,cond:{runup20:15,vol_x:1.3},note:"t",members:[]};
-    // GO日: 1GO+1見送り+売り禁2件除外
-    DATA.sell_watch={...base,fade:{date:"2026-07-23",go:1,banned:2,go_min:12,
+    // GO日: 売り禁GO1件+見送り1件（2026-07-23: 売り禁は除外せず🚫バッジ表示に変更）
+    DATA.sell_watch={...base,fade:{date:"2026-07-23",go:1,banned:0,go_min:12,
       stats:{n:632,win:54.3,avg:0.71,pf:1.35,period:"2022-2026/07",y2026_avg:1.59},
       picks:[{code:"7014",name:"名村造船所",gain:18.2,vol_ratio:6.1,range_pct:9.0,min_entry:4160,
-              short_mark:"○",borrow:"◎売残少(空売り楽・よく落ちる)",reg_note:"⚠️日証金注意喚起(逆日歩警戒)",verdict:"GO",nogo_reason:""},
+              short_mark:"○",borrow:"◎売残少(空売り楽・よく落ちる)",jsf_stop:true,
+              reg_note:"🚫売り禁(制度✕・ハイカラ/一般信用の在庫があれば可)・⚠️日証金注意喚起(逆日歩警戒)",verdict:"GO",nogo_reason:""},
              {code:"3104",name:"富士紡HD",gain:9.2,vol_ratio:1.7,range_pct:8.2,min_entry:4085,
-              short_mark:"○",borrow:"○普通",reg_note:"",verdict:"NOGO",nogo_reason:"前日+9%<12%＝薄い(コスト後トントン帯)"}]}};
+              short_mark:"○",borrow:"○普通",jsf_stop:false,reg_note:"",verdict:"NOGO",nogo_reason:"前日+9%<12%＝薄い(コスト後トントン帯)"}]}};
     sandbox.render(); const fv=$get("#view").innerHTML;
     check("fade: セクション表示", fv.includes("🩳 デイトレ売り"));
     check("fade: GO行（寄指ライン+引け買い戻し）", fv.includes("🔴 GO")&&fv.includes("¥4,160以上")&&fv.includes("引けで買い戻し"));
     check("fade: 見送り行（理由つき）", fv.includes("見送り")&&fv.includes("薄い"));
-    check("fade: 売り禁除外の明示", fv.includes("売り禁")&&fv.includes("2銘柄"));
+    check("fade: 売り禁は除外せず🚫バッジ表示", fv.includes("🚫売り禁")&&fv.includes("ハイカラ"));
+    check("fade: 売り禁chipは赤系(jsf_stop)", fv.includes("rgba(234,57,67,.6)")&&fv.includes("🚫売り禁"));
     check("fade: 規制注記chip", fv.includes("注意喚起"));
     check("fade: BT成績の明示", fv.includes("PF1.35")&&fv.includes("勝率54.3%"));
-    check("fade: 上級者向け警告", fv.includes("自己責任")&&fv.includes("一日信用"));
+    check("fade: 上級者向け警告（在庫は発注画面で最終確認）", fv.includes("自己責任")&&fv.includes("一日信用")&&fv.includes("最終確認"));
     // NOGOのみの日=「撃つ日じゃない」リード
     DATA.sell_watch={...base,fade:{...DATA.sell_watch.fade,go:0,banned:0,
       picks:DATA.sell_watch.fade.picks.filter(p=>p.verdict!=="GO")}};

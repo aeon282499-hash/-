@@ -771,9 +771,10 @@ def build() -> dict:
 
     # ── 🩳 デイトレ売り（フェード）・2026-07-23 本人指示でアプリ掲載 ──
     # Discord配信(daytrade_paper.daily_top_fades)と同一ロジックを直接import＝判定のズレなし。
-    # 貸借○ × 売り禁除外(margin-alert) × 張り付き除外 × 前日+5%↑、GO=+12%↑（BT: 2022-2026
-    # 632件 勝率54.3% 平均+0.71%/件 PF1.35・寄指不成立/年別貸借まで再現・fade_ladder_bt.py）。
-    # 翌営業日「寄りで売り→引けで買い戻し」の当日完結。失敗しても非致命（セクション非表示）。
+    # 貸借○ × 張り付き除外 × 前日+5%↑、GO=+12%↑（BT: 2022-2026 632件 勝率54.3%
+    # 平均+0.71%/件 PF1.35・寄指不成立/年別貸借まで再現・fade_ladder_bt.py）。
+    # 売り禁(margin-alert)は除外せず🚫バッジ=同日本人指示「ハイカラで売れた」(制度✕でも
+    # SBI一日信用HYPER/一般信用は別枠在庫)。翌営業日「寄り売り→引け買戻し」の当日完結。非致命。
     fade: dict = {"date": data_date, "picks": [], "banned": 0, "go": 0}
     try:
         if str(PARENT) not in sys.path:
@@ -797,6 +798,7 @@ def build() -> dict:
                 "min_entry": p.get("min_entry_price"),
                 "short_mark": (p.get("short") or {}).get("mark", "?"),
                 "borrow": p.get("borrow", ""), "reg_note": p.get("reg_note", ""),
+                "jsf_stop": bool(p.get("jsf_stop")),
                 "verdict": p.get("verdict"), "nogo_reason": p.get("nogo_reason", ""),
             })
             for r in rows:                      # 詳細チャートを必ず出せるよう export 対象化
@@ -809,7 +811,7 @@ def build() -> dict:
         fade["stats"] = {"n": 632, "win": 54.3, "avg": 0.71, "pf": 1.35,
                          "period": "2022-2026/07", "y2026_avg": 1.59}
         print(f"[build] 🩳デイトレ売り(フェード): picks{len(fade['picks'])} "
-              f"GO{fade['go']} 売り禁除外{fade['banned']}")
+              f"GO{fade['go']} 売り禁🚫{sum(1 for p in fade['picks'] if p.get('jsf_stop'))}")
     except Exception as _e:
         print(f"[build] 🩳フェードはスキップ（非致命）: {_e}")
         fade = {"date": data_date, "picks": [], "banned": 0, "go": 0, "error": True}

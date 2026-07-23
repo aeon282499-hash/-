@@ -195,10 +195,12 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None, alert_map: dict | None = None,
                     excluded_out: list | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
-    選定＝貸借○ × **売り禁除外(日証金申込停止・alert_map)** × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
+    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
     判定: 前日+12%以上(DAILY_PICK_GAIN_MIN) → GO（撃つ／紙）。それ未満は薄い → NO-GO（見送り）。
-    売り禁で除外した銘柄は excluded_out(list)に追記（配信で可視化）。alert_map無し=従来どおり。
-    注意喚起/増担保/日々公表は売れるので除外せず reg_note ⚠️注記のみ（2026-07-22・本人要望）。
+    売り禁(日証金申込停止)は**除外せず🚫バッジ表示**（2026-07-23本人指示「ハイカラで売れた」＝
+    制度信用✕でもSBI一日信用HYPER/一般信用は自社在庫の別枠で売れることがある。jsf_stopフラグ付与・
+    紙台帳にも記録し在庫依存分を後で分離分析できるようにする）。7/22の完全除外仕様は1日で廃止。
+    注意喚起/増担保/日々公表も reg_note ⚠️注記のみ。excluded_out は旧互換で常に空。
     10年検証: 張り付き除外+上位3で+12%が総額最良(+26.4M・11年全プラス)。"""
     if not data:
         return []
@@ -252,11 +254,6 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         rng = (float(h.iloc[-1]) - float(lo.iloc[-1])) / last_c
         if rng <= STICKY_RANGE_MIN:                         # 張り付きS高を除外
             continue
-        al = (alert_map or {}).get(_code4(tk)) or {}
-        if al.get("jsf_stop"):                              # 売り禁(日証金申込停止)=新規売り不可
-            if excluded_out is not None:                    # 全フィルタ通過後に判定=「急騰候補
-                excluded_out.append(tk)                     # なのに売り禁で出せない」だけを記録
-            continue
         cands.append({
             "ticker": tk, "name": tk, "direction": "SELL",
             "daily_gain": round(gain, 2),
@@ -283,9 +280,13 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         rt = (ratio_map or {}).get(_code4(p["ticker"]))
         p["ratio"] = round(rt, 1) if rt is not None else None
         p["borrow"] = borrow_grade(rt)
-        # 規制注記（売れるが要警戒の状態を可視化・売り禁は候補段階で除外済み）
+        # 規制注記（売り禁も表示する=2026-07-23本人指示「ハイカラで売れた」。
+        # 制度信用の新規売りは不可だがSBI一日信用HYPER/一般信用は自社在庫の別枠で売れることがある）
         al = (alert_map or {}).get(_code4(p["ticker"])) or {}
+        p["jsf_stop"] = bool(al.get("jsf_stop"))
         regs = []
+        if p["jsf_stop"]:
+            regs.append("🚫売り禁(制度✕・ハイカラ/一般信用の在庫があれば可)")
         if al.get("jsf_warn"):
             regs.append("⚠️日証金注意喚起(逆日歩警戒)")
         if al.get("tse_reg"):
@@ -420,6 +421,7 @@ def record(book: dict, signals: list[dict], data: dict, iss_map: dict, today) ->
         else:
             rec["daily_gain"] = s.get("daily_gain")
             rec["short"] = shortability(tk, iss_map)
+            rec["jsf_stop"] = bool(s.get("jsf_stop"))   # 売り禁=ハイカラ在庫依存の紙。後で分離分析用
         book["positions"].append(rec)
         added.append(rec)
 
@@ -483,17 +485,14 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
         lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"
                      "(未決済のまま大引けだと強制決済+手数料)・在庫無し/プレミアム高は見送り")
+        lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用の在庫があれば売れる**"
+                     "＝発注画面で在庫とプレミアム料を確認してから")
         lines.append("")
     else:
         # GO無し（薄い候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）
         lines.append("**🎯 今日は撃つ銘柄なし（見送り）**")
         lines.append("")
-    if banned:
-        # 売り禁で候補から外した銘柄を可視化（「急騰してるのに出ない」の説明・次点繰り上げ済み）
-        lines.append(f"　🚫売り禁(日証金申込停止)で除外: {len(banned)}銘柄"
-                     f"（{'、'.join(t.replace('.T', '') for t in banned[:5])}"
-                     f"{'…' if len(banned) > 5 else ''}）＝新規売り不可・次点を繰り上げ表示")
-        lines.append("")
+    # (旧)売り禁除外の可視化行は廃止=2026-07-23から売り禁も🚫バッジ付きで銘柄行に表示
 
     # ── 🟢 ライブ買いシグナル（レア） ──
     if buy_fires:
