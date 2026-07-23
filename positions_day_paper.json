@@ -1,5 +1,24 @@
 {
-  "positions": [],
+  "positions": [
+    {
+      "ticker": "429A.T",
+      "name": "テクセンドフォトマスク",
+      "direction": "SELL",
+      "signal_date": "2026-07-24",
+      "basis_date": "2026-07-23",
+      "prev_close": 4285.0,
+      "limit_price": 4285.0,
+      "status": "pending",
+      "daily_gain": 13.96,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1
+    }
+  ],
   "expired": [],
-  "last_report_date": "2026-07-23"
+  "last_report_date": "2026-07-24"
 }
