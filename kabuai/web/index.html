@@ -1076,14 +1076,44 @@ function viewMomentum(){
 }
 
 // ── 🔻 売り（v4新設・2026-07-18本人指示: モメンタムと売りを別タブに） ──
-// ①セクターローテSELL（唯一の検証済み売りエッジ・発火した当日だけ）
-// ②モメンタム終了検出（情報表示・空売り推奨ではない＝デイトレ化しない本人確定指示）
+// ①セクターローテSELL（検証済み売りエッジ・発火した当日だけ）
+// ②🩳デイトレ売り(フェード)（2026-07-23本人指示で追加。旧「デイトレ化しない」指示は
+//   モメンタム銘柄の寄買い引売り(BT負け確定)の話で、これは別系統の検証済みエッジ=
+//   daytrade_paper.daily_top_fadesと同一ロジック・貸借○×売り禁除外済み）
+// ③モメンタム終了検出（情報表示・空売り推奨ではない）
+function fadeSection(){
+  const fd=(DATA.sell_watch||{}).fade;
+  if(!fd||fd.error) return "";
+  const picks=fd.picks||[];
+  const goMin=fd.go_min!=null?fd.go_min:12;
+  const st=fd.stats||{};
+  const chipReg=p=>`${p.reg_note?` <span class="chip" style="color:var(--wa);border-color:rgba(255,159,67,.5)">${esc(p.reg_note)}</span>`:""}`;
+  const row=(p,go)=>`<a class="pickrow" href="#/detail/${p.code}">
+    <div class="pk-nm"><b>${esc(p.name)}${go?' <span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.6);font-weight:700">🔴 GO</span>':' <span class="chip">見送り</span>'}</b>
+      <small>${p.code} ・ 前日<b style="color:var(--up)">+${p.gain!=null?Number(p.gain).toFixed(1):"—"}%</b> ・ 出来高${p.vol_ratio!=null?Number(p.vol_ratio).toFixed(1)+"倍":"—"} ・ 貸借${esc(p.short_mark||"?")}${p.borrow?" ・ "+esc(p.borrow):""}</small>
+      <div class="chips">${go?`<span class="chip" style="color:var(--dn)">寄指 売り ¥${(p.min_entry||0).toLocaleString()}以上 → 引けで買い戻し</span>`:`<span class="chip muted">${esc(p.nogo_reason||"GO基準未満")}</span>`}${chipReg(p)}</div></div></a>`;
+  let body;
+  if(!picks.length){
+    body=`<div class="card muted">本日は候補なし（前日+5%以上で売れる銘柄がゼロ）。</div>`;
+  }else{
+    const gos=picks.filter(p=>p.verdict==="GO"), nos=picks.filter(p=>p.verdict!=="GO");
+    const maxg=Math.max(...picks.map(p=>Number(p.gain)||0));
+    const lead=gos.length?`<div class="warnbar" style="border-color:rgba(234,57,67,.5)">🔴 <b>本日GO ${gos.length}件</b>：翌営業日（朝ビルドなら今日）の寄りで空売り→<b>当日の引けで必ず買い戻し</b>（持ち越し禁止・損切りなし）。</div>`
+      :`<div class="card"><b>今日は撃つ日じゃない（見送り）</b><br><small class="muted">売れる銘柄の最大が前日+${maxg.toFixed(1)}% ＜ GO基準+${goMin}%。この帯はコスト後ほぼトントンと実証済み＝撃たないのが正解の日。</small></div>`;
+    body=lead+`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${gos.map(p=>row(p,true)).join("")}${nos.map(p=>row(p,false)).join("")}</div></div>`;
+  }
+  return `<div class="hh" style="margin-top:4px">🩳 デイトレ売り（フェード＝急騰しすぎを空売り）</div>
+    <div class="warnbar">⚠️ <b>空売りは上級者向け・自己責任。</b>信用取引（一日信用売り等）が必要です。<b>貸借○＝制度信用で売れる銘柄だけ表示・売り禁${fd.banned?`（本日${fd.banned}銘柄）`:""}は除外済み</b>。在庫切れ・当日朝の新規売り禁・逆日歩は証券会社の発注画面が最終確認。</div>
+    ${body}
+    <div class="card muted" style="font-size:11px;line-height:1.7">ルール: <b style="color:var(--tx)">前日+${goMin}%以上の急騰（貸借○・売り禁除外・ストップ高張り付き除外）だけ</b>を翌営業日に「寄り成行/寄指で空売り→その日の引けで買い戻し」の当日完結。検証${esc(st.period||"2022-2026")}: <b style="color:var(--tx)">${st.n||"—"}件・勝率${st.win||"—"}%・平均+${st.avg||"—"}%/件・PF${st.pf||"—"}</b>（2026年は平均+${st.y2026_avg||"—"}%/件）。1日1回の終値判定＝場中は動きません。GO以外の日に撃つと期待値ゼロ帯＝見送りが正解。</div>`;
+}
 function viewSell(){
   const sw=DATA.sell_watch;
   const members=(sw&&sw.members)||[];
   const hero=sellHero();
   const head=`<h2>🔻 売り <span class="muted" style="font-weight:400;font-size:12px">${(sw&&sw.date)||DATA.data_date||""} 終値時点</span></h2>
     ${hero}
+    ${fadeSection()}
     <div class="hh" style="margin-top:4px">📉 モメンタム終了（上昇が崩れた銘柄）</div>
     <div class="warnbar">⚠️ <b>空売りの推奨ではありません。</b>直近1ヶ月で大きく上昇した銘柄の<b>上昇モメンタムが終わったサイン</b>の検出です。保有していれば出口検討、これから買うなら高値づかみ回避の参考に。</div>`;
   if(!members.length){

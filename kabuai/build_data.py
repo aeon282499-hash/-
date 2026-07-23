@@ -234,7 +234,7 @@ def export_stocks(data: dict, rows: list[dict], data_date: str, disclaimer: str)
     生OHLCVの一括配信ではなく『表示用に窓を限定した加工済みデータ』(SPEC §1)。"""
     sdir = DATA_DIR / "stocks"
     sdir.mkdir(exist_ok=True)
-    targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end")]
+    targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end") or r.get("fade_pick")]
     keep = {"price", "momentum", "grade", "sr", "power", "rsi", "stab",
             "r1", "r5", "r10", "r20", "vr"}
     written = 0
@@ -769,6 +769,52 @@ def build() -> dict:
     }
     print(f"[build] 🔻売り(モメンタム終了): {len(sell_members)}件 (掲載{min(len(sell_members),30)})")
 
+    # ── 🩳 デイトレ売り（フェード）・2026-07-23 本人指示でアプリ掲載 ──
+    # Discord配信(daytrade_paper.daily_top_fades)と同一ロジックを直接import＝判定のズレなし。
+    # 貸借○ × 売り禁除外(margin-alert) × 張り付き除外 × 前日+5%↑、GO=+12%↑（BT: 2022-2026
+    # 632件 勝率54.3% 平均+0.71%/件 PF1.35・寄指不成立/年別貸借まで再現・fade_ladder_bt.py）。
+    # 翌営業日「寄りで売り→引けで買い戻し」の当日完結。失敗しても非致命（セクション非表示）。
+    fade: dict = {"date": data_date, "picks": [], "banned": 0, "go": 0}
+    try:
+        if str(PARENT) not in sys.path:
+            sys.path.insert(0, str(PARENT))
+        import daytrade_paper as _dp
+        _tok2 = _jquants_key()
+        _iss = _dp.fetch_iss_map(_tok2)
+        _ratio = _dp.fetch_ratio_map(_tok2)
+        _alert = _dp.fetch_alert_map(_tok2)
+        _banned: list = []
+        # data_date終値を「信号日」にする（<比較なので+1日。朝build=今日の寄り用/夜build=翌営業日用）
+        _fade_today = (datetime.strptime(data_date, "%Y-%m-%d") + timedelta(days=1)).date()
+        _picks = (_dp.daily_top_fades(data, _fade_today, _iss, ratio_map=_ratio,
+                                      alert_map=_alert, excluded_out=_banned) if _iss else [])
+        for p in _picks:
+            _c4 = str(p["ticker"]).replace(".T", "")[:4]
+            _nm = name_map.get(p["ticker"]) or name_map.get(_c4) or p.get("name") or _c4
+            fade["picks"].append({
+                "code": _c4, "name": _nm, "gain": p.get("daily_gain"),
+                "vol_ratio": p.get("vol_ratio"), "range_pct": p.get("range_pct"),
+                "min_entry": p.get("min_entry_price"),
+                "short_mark": (p.get("short") or {}).get("mark", "?"),
+                "borrow": p.get("borrow", ""), "reg_note": p.get("reg_note", ""),
+                "verdict": p.get("verdict"), "nogo_reason": p.get("nogo_reason", ""),
+            })
+            for r in rows:                      # 詳細チャートを必ず出せるよう export 対象化
+                if r["code"] == _c4:
+                    r["fade_pick"] = True
+                    break
+        fade["banned"] = len(_banned)
+        fade["go"] = sum(1 for p in fade["picks"] if p.get("verdict") == "GO")
+        fade["go_min"] = _dp.DAILY_PICK_GAIN_MIN
+        fade["stats"] = {"n": 632, "win": 54.3, "avg": 0.71, "pf": 1.35,
+                         "period": "2022-2026/07", "y2026_avg": 1.59}
+        print(f"[build] 🩳デイトレ売り(フェード): picks{len(fade['picks'])} "
+              f"GO{fade['go']} 売り禁除外{fade['banned']}")
+    except Exception as _e:
+        print(f"[build] 🩳フェードはスキップ（非致命）: {_e}")
+        fade = {"date": data_date, "picks": [], "banned": 0, "go": 0, "error": True}
+    sell_watch["fade"] = fade
+
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
 
@@ -795,7 +841,7 @@ def build() -> dict:
             print(f"[build] 長期トラックレコード読込スキップ（短期版を使用）: {e}")
 
     # ── フェーズ6: AI要約（警戒メモ）。export対象（上位＋シグナル点灯）のみ付与 ──
-    ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end")]
+    ai_targets = [r for r in rows if r["rank"] <= EXPORT_TOP or r.get("signals") or r.get("sell_end") or r.get("fade_pick")]
     ai_meta = ai_summary.annotate(ai_targets)
 
     # ── 銘柄探検（探索用スクリーナー・2026-07-02追加） ──
