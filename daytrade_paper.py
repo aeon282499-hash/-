@@ -35,7 +35,9 @@ load_dotenv()
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 BOOK_FILE = "positions_day_paper.json"
 DAY_SIGNALS_FILE = "day_signals.json"
-CAPITAL_PER_TRADE = 1_000_000   # 紙の1建玉サイズ（円・株数と通算損益円の土台。ユーザー設定=100万）
+CAPITAL_PER_TRADE = 500_000     # 紙の1建玉サイズ（円・株数と通算損益円の土台。2026-07-23本人指示で100万→50万。
+                                # 値がさカットも連動(1単元≤50万=株価5,000円以下)。50万ユニバースBT=
+                                # 新+0.733%/PF1.37・旧+1.062%/PF1.52と100万比で1件質は微改善(fade_rank_bt検証)
 EXPIRE_DAYS = 14
 # フェードのGO閾値（前日上昇率）。ユーザー決定=+12%（2026-07）。
 # 10年検証(上位3・往復0.3%後): +12%が総額最良(+26.4M>+15%の+22.9M)・最良年5/11・11年全プラス。
