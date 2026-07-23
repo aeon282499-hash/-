@@ -190,7 +190,10 @@ FADE_CAND_MIN = 5.0        # フェード候補の最低上昇率（これ未満
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
                            # 10年BT: 除外でPF1.44→1.62・11年全プラス。7月は-36万→+75万に逆転。
-PAPER_MAX_PICKS = 3        # 上位N銘柄まで配信・記帳（10年検証: 5は非効率・3が実質上限）
+PAPER_MAX_PICKS = 8        # 上位N銘柄まで配信・記帳（2026-07-23 3→8・本人指示=寄指NOFILL+ハイカラ
+                           # 売り切れの執行減耗に備えた予備。fade_rank_bt両期間: 上位8は上位3を
+                           # 下回らない(旧+479→+486万/新+447→+531万)・9位以下は旧期間で明確な毒
+                           # (∞で+431万に減る)＝8が上限。1-3番=本命/4番以降=予備表示・rank記帳で分離分析可）
 
 
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
@@ -424,6 +427,7 @@ def record(book: dict, signals: list[dict], data: dict, iss_map: dict, today) ->
             rec["daily_gain"] = s.get("daily_gain")
             rec["short"] = shortability(tk, iss_map)
             rec["jsf_stop"] = bool(s.get("jsf_stop"))   # 売り禁=ハイカラ在庫依存の紙。後で分離分析用
+            rec["rank"] = s.get("rank")                 # 1-3=本命/4-8=予備。帯別成績の分離分析用
         book["positions"].append(rec)
         added.append(rec)
 
@@ -478,11 +482,16 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             shares = _shares_for(p["min_entry_price"])
             amt = shares * p["min_entry_price"]
             reg = f" ／ {p['reg_note']}" if p.get("reg_note") else ""
-            lines.append(f"**{p.get('rank', 1)}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
+            rk = p.get("rank", 1)
+            tag = "" if rk <= 3 else "（予備）"
+            lines.append(f"**{rk}番{tag}** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
                          f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
                          f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}{reg}")
             lines.append(f"　→ **寄指 売り {shares:,}株 指値¥{p['min_entry_price']:,.0f}以上**"
                          f"（約{amt/1e4:.0f}万円）→ 当日 引成 買戻し ／ 信用: {p.get('borrow', '')}")
+        if any(p.get("rank", 1) >= 4 for p in go_picks):
+            lines.append("　※4番以降＝**予備**: 本命(1〜3番)の在庫切れ・寄指不成立に備えた追加候補。"
+                         "期待値は本命より薄い＝資金と在庫が余る時だけ")
         lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
         lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"

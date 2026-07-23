@@ -249,9 +249,9 @@ def test_alert_map_exclusion():
     check("増担保の⚠️注記", "増担保" in picks2[1]["reg_note"])
     check("規制なしはreg_note空", picks2[2]["reg_note"] == "")
 
-    # alert_map None → 従来と同一
+    # alert_map None → 従来と同一（上限8なので該当4件全部）
     picks3 = dp.daily_top_fades(data, today, iss)
-    check("alert_map無し=従来通り", picks3[0]["ticker"] == "9999.T" and len(picks3) == 3)
+    check("alert_map無し=従来通り", picks3[0]["ticker"] == "9999.T" and len(picks3) == 4)
 
 
 def test_daily_top_fades():
@@ -266,11 +266,13 @@ def test_daily_top_fades():
     iss = {"9999": "2", "6666": "2", "7777": "2", "8888": "2"}
 
     picks = dp.daily_top_fades(data, today, iss)
-    check("上位3を返す", len(picks) == 3)
+    check("該当4件全部返す(上限8・2026-07-23拡大)", len(picks) == 4)
     check("降順(1番=9999+21%)", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
     check("2番=6666(+18%)", picks[1]["ticker"] == "6666.T")
     check("3番=7777(+16%)", picks[2]["ticker"] == "7777.T")
-    check("上位3は全部+15%以上→全GO", all(p["verdict"] == "GO" for p in picks))
+    check("+15%以上の上位3は全GO・4番(+8%)はNOGO",
+          all(p["verdict"] == "GO" for p in picks[:3]) and picks[3]["verdict"] == "NOGO")
+    check("n=3指定なら3件(後方互換)", len(dp.daily_top_fades(data, today, iss, n=3)) == 3)
     check("min指値=前日終値", picks[0]["min_entry_price"] == picks[0]["prev_close"])
     check("range_pct記録(>5%)", picks[0].get("range_pct", 0) > 5)
 
@@ -290,9 +292,11 @@ def test_daily_top_fades():
     pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
     check("張り付き#1を飛ばし6666だけ", len(pm) == 1 and pm[0]["ticker"] == "6666.T")
 
-    # 値がさ株(1単元>予算100万=株価>1万)は除外。base=20000で+20%→last=24000>1万→除外
-    check("値がさ株(>1万)は除外",
+    # 値がさ株(1単元>予算50万=株価>5千円)は除外（2026-07-23 100万→50万に変更）
+    check("値がさ株(>5千円)は除外",
           dp.daily_top_fades({"4444.T": _flat_then(20, base=20000)}, today, {"4444": "2"}) == [])
+    check("50万境界: 株価6,600円も除外",
+          dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"}) == [])
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
