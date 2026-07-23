@@ -4,6 +4,7 @@ on:
   workflow_dispatch:           # メイン: cron-job.org → Cloudflare Worker(close-signal-trigger) から 14:55 JST にdispatch
   schedule:
     - cron: '0 5 * * 1-5'      # バックアップ: 14:00 JST想定（GitHub cronは1-2h遅延するため大引け15:00に間に合うよう前倒し）
+    - cron: '45 6 * * 1-5'     # 確定チェック用: 15:45 JST想定→遅延で16-17時台着弾（送信済み+15:40以降の再実行は場中OCO約定の確定通知に転用・2026-07-23）
 
 concurrency:
   group: ${{ github.workflow }}

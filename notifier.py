@@ -465,6 +465,42 @@ def send_sell_signals(signals: list[dict], today: date, entry_date=None,
     print(f"[notifier-{tier['label']}] SELL {len(signals)}件 配信")
 
 
+def send_close_final_fills(fills: list[dict], today: date, *,
+                           tier: dict | None = None, sell: bool = False) -> None:
+    """大引け後の確定チェック（close_check.final_check）: 場中OCO約定の確定通知。
+    14:55チェックがyfinance配信遅延（約20分）で拾えなかった約定を公式四本値で確定。
+    帳簿記帳は翌朝update_positionsのまま＝これは情報確定のみ。"""
+    tier = _tier(tier)
+    date_str = today.strftime("%Y年%m月%d日")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+    side = "空売り" if sell else "買い"
+    lines = []
+    header = _tier_header_line(tier)
+    if header:
+        lines.append(header)
+        lines.append("")
+    for f_ in fills:
+        emoji = "✅" if f_["pnl_pct"] > 0 else "🛑"
+        kind = "利確(TP)" if f_["exit_type"] == "TP" else "損切(STOP)"
+        lines.append(f"{emoji} **{f_['name']}**（{f_['ticker']}）{side} → "
+                     f"**{kind} {f_['pnl_pct']:+.0f}%**")
+        lines.append(f"　水準¥{f_['level']:,.0f} に当日{'高値' if (sell == (f_['exit_type']=='STOP')) else '安値'}"
+                     f"¥{f_['extreme']:,.0f} 到達＝場中にOCO約定済み")
+    lines.append("")
+    lines.append("※15時チェック時点はデータ配信遅延（約20分）で未反映だった可能性があります。"
+                 "OCO注文を入れていれば口座では当日中に決済済みのはずです（口座で要確認）。"
+                 "帳簿への記帳は明朝に行われます。")
+    payload = {"embeds": [{
+        "title": f"{_tier_title_prefix(tier)}📋【OCO約定 確定】{date_str} 大引け後確認",
+        "description": "\n".join(lines),
+        "color": COLOR_WIN if all(f_["pnl_pct"] > 0 for f_ in fills) else COLOR_BUY,
+        "footer": {"text": f"確定時刻: {time_str}（当日公式四本値ベース）"},
+    }]}
+    _dispatch(payload, tier=tier, side="SELL" if sell else "BUY",
+              public_url=PUBLIC_SELL if sell else PUBLIC_BUY)
+    print(f"[notifier-{tier['label']}] OCO約定確定 {len(fills)}件 配信（{side}）")
+
+
 # ── SELL決済結果 ────────────────────────────────────────────
 def _build_sell_results_embed(closed: list[dict], still_open: list[dict], today: date,
                               tier: dict) -> dict:

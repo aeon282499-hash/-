@@ -344,6 +344,48 @@ check("report: 旧形式(prev_closeのみ)でも除外が機能", res == [])
 if os.path.exists(TEST_HIST):
     os.remove(TEST_HIST)
 
+# ================= 確定チェック _final_fills（2026-07-23） =================
+print("\n== 大引け後の確定チェック（場中OCO約定の公式値判定） ==")
+import close_check as _cc  # noqa: E402
+
+_today = "2026-07-23"
+# SELL: entry 3576 → TP線3397.2。当日安3372≤TP → TP+5%（7/23タカラトミー実例）
+_pos = [{"ticker": "7867.T", "name": "タカラトミー", "direction": "SELL",
+         "entry_date": "2026-07-22", "entry_open": 3576.0, "status": "open"}]
+_bars = {"7867": {"o": 3450.0, "h": 3469.0, "l": 3372.0, "c": 3441.0}}
+_f = _cc._final_fills(_pos, "SELL", _bars, _today)
+check("final: SELLのTP到達を検出(タカラトミー実例)", len(_f) == 1 and _f[0]["exit_type"] == "TP" and _f[0]["pnl_pct"] == 5.0)
+
+# SELL: STOP到達（高値が entry×1.03 以上）
+_bars2 = {"7867": {"o": 3600.0, "h": 3700.0, "l": 3580.0, "c": 3650.0}}
+_f2 = _cc._final_fills(_pos, "SELL", _bars2, _today)
+check("final: SELLのSTOP到達を検出", len(_f2) == 1 and _f2[0]["exit_type"] == "STOP" and _f2[0]["pnl_pct"] == -3.0)
+
+# 両方触れた日はSTOP優先（帳簿リプレイと同一）
+_bars3 = {"7867": {"o": 3600.0, "h": 3700.0, "l": 3300.0, "c": 3500.0}}
+_f3 = _cc._final_fills(_pos, "SELL", _bars3, _today)
+check("final: 両方触れた日はSTOP優先", _f3[0]["exit_type"] == "STOP")
+
+# OCO未到達 → 空
+_bars4 = {"7867": {"o": 3580.0, "h": 3600.0, "l": 3500.0, "c": 3550.0}}
+check("final: 未到達なら空", _cc._final_fills(_pos, "SELL", _bars4, _today) == [])
+
+# BUY: 当日エントリーの寄指不成立（公式寄り>指値）は対象外
+_posb = [{"ticker": "1721.T", "name": "コシダカ", "direction": "BUY",
+          "entry_date": _today, "limit_price": 5240, "status": "pending"}]
+_bars5 = {"1721": {"o": 5300.0, "h": 5300.0, "l": 4800.0, "c": 4900.0}}  # 安値はSTOP圏だがNOFILL
+check("final: 当日寄指不成立は対象外", _cc._final_fills(_posb, "BUY", _bars5, _today) == [])
+
+# BUY: 当日寄指成立→STOP到達
+_bars6 = {"1721": {"o": 5200.0, "h": 5250.0, "l": 5000.0, "c": 5050.0}}  # 5200×0.97=5044≥5000
+_f6 = _cc._final_fills(_posb, "BUY", _bars6, _today)
+check("final: 当日寄指成立→STOP検出", len(_f6) == 1 and _f6[0]["exit_type"] == "STOP")
+
+# バー無し銘柄・entry_open欠落はスキップ（フェイルセーフ）
+_posx = [{"ticker": "9999.T", "direction": "SELL", "entry_date": "2026-07-22", "status": "open"}]
+check("final: entry_open欠落はスキップ", _cc._final_fills(_posx, "SELL", {"9999": {"o": 1, "h": 1, "l": 1, "c": 1}}, _today) == [])
+check("final: バー無しはスキップ", _cc._final_fills(_pos, "SELL", {}, _today) == [])
+
 # ================= まとめ =================
 ng = [l for l, ok in results if not ok]
 print("\n==== 結果: {}/{} OK ====".format(len(results) - len(ng), len(results)))

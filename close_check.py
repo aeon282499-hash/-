@@ -313,6 +313,126 @@ def _load_active(path: str, direction: str) -> list[dict]:
                 and p.get("direction") == direction]
 
 
+# ── 大引け後の確定チェック（2026-07-23追加） ──────────────────────
+# 14:55チェックはyfinanceの約20分配信遅延で「14:35頃〜大引け」のOCO約定が構造的に
+# 見えない（実例: 7/23タカラトミーがTP-5%到達済みなのに保有継続と表示）。大引け後は
+# 当日の公式四本値がJ-Quantsで取れる（16:20実測）ので、GitHub保険cronの再実行
+# （送信済みスキップで空振りしていた枠）を転用して場中OCO約定を同日中に確定通知する。
+# 【不変条件】帳簿には一切書かない=記帳は翌朝update_positionsの単一経路のまま。
+# 約定ゼロなら無送信（ノイズゼロ）。判定は帳簿リプレイと同一式（STOP優先・緩衝なし=公式値）。
+def _final_fills(positions: list[dict], direction: str, bars: dict,
+                 today_str: str) -> list[dict]:
+    """公式当日バーで場中OCO約定を確定判定する純粋関数。
+    bars: {code4: {"o","h","l","c"}}。戻り値: 約定リスト（無ければ[]）。"""
+    fills = []
+    for p in positions:
+        bar = bars.get(str(p.get("ticker", ""))[:4])
+        if not bar:
+            continue
+        o, h, l = bar.get("o"), bar.get("h"), bar.get("l")
+        if not all(isinstance(v, (int, float)) and v > 0 for v in (o, h, l)):
+            continue
+        # エントリー値: 当日建ては公式寄り値（BUY寄指は指値超えNOFILL=対象外）・既存建ては記帳済みentry_open
+        if p.get("entry_date") == today_str:
+            lp = p.get("limit_price")
+            if direction == "BUY" and lp and o > float(lp):
+                continue                      # 寄指不成立（公式値の厳密判定）
+            entry = o
+        else:
+            entry = p.get("entry_open")
+            if not entry:
+                continue
+        entry = float(entry)
+        if direction == "BUY":                # STOP -3% / TP +5%（_oco_fill・帳簿リプレイと同一水準）
+            stop_lv, tp_lv = entry * 0.97, entry * 1.05
+            hit_stop, hit_tp = l <= stop_lv, h >= tp_lv
+        else:                                 # SELL: STOP=上+3% / TP=下-5%
+            stop_lv, tp_lv = entry * 1.03, entry * 0.95
+            hit_stop, hit_tp = h >= stop_lv, l <= tp_lv
+        if not (hit_stop or hit_tp):
+            continue
+        et = "STOP" if hit_stop else "TP"     # 両方触れた日はSTOP優先（帳簿リプレイと同一）
+        fills.append({
+            "ticker": p["ticker"], "name": p.get("name", p["ticker"]),
+            "exit_type": et,
+            "level": round(stop_lv if et == "STOP" else tp_lv, 1),
+            "extreme": h if ((direction == "SELL") == (et == "STOP")) else l,
+            "pnl_pct": -3.0 if et == "STOP" else +5.0,
+        })
+    return fills
+
+
+def _fetch_today_bars(today_str: str, tickers: set) -> dict:
+    """当日の公式四本値 {code4: {o,h,l,c}}。J-Quants日付一括→無ければyfinanceフォールバック。"""
+    bars: dict = {}
+    try:
+        from screener import _jquants_get, _jquants_id_token
+        token = _jquants_id_token()
+        rows = _jquants_get("/equities/bars/daily", token, {"date": today_str}).get("data", [])
+        for r in rows:
+            c4 = str(r.get("Code", ""))[:4]
+            bars[c4] = {"o": r.get("AdjO"), "h": r.get("AdjH"), "l": r.get("AdjL"), "c": r.get("AdjC")}
+        if bars:
+            print(f"[final_check] J-Quants当日バー {len(bars)}銘柄")
+            return bars
+    except Exception as e:
+        print(f"[final_check] J-Quants当日バー取得失敗: {e}")
+    try:                                       # フォールバック（大引け後はyfinanceも全足確定済み）
+        import yfinance as yf
+        for t in tickers:
+            try:
+                hist = yf.Ticker(t).history(period="2d", interval="1d")
+                if hist.empty:
+                    continue
+                last = hist.iloc[-1]
+                if hist.index[-1].strftime("%Y-%m-%d") != today_str:
+                    continue
+                bars[str(t)[:4]] = {"o": float(last["Open"]), "h": float(last["High"]),
+                                    "l": float(last["Low"]), "c": float(last["Close"])}
+            except Exception:
+                continue
+        print(f"[final_check] yfinanceフォールバック {len(bars)}銘柄")
+    except Exception as e:
+        print(f"[final_check] yfinanceフォールバック失敗: {e}")
+    return bars
+
+
+def final_check(today, now, last_marker: dict):
+    today_str = today.strftime("%Y-%m-%d")
+    all_tickers = set()
+    tier_positions = {}
+    for tier in TIERS:
+        if not tier["buy_webhook"] and tier["key"] != "main":
+            continue
+        buy_open  = _load_active(tier["buy_pos_file"],  "BUY")
+        sell_open = _load_active(tier["sell_pos_file"], "SELL")
+        tier_positions[tier["key"]] = {"buy": buy_open, "sell": sell_open}
+        all_tickers.update(p["ticker"] for p in buy_open + sell_open)
+    if not all_tickers:
+        print("[final_check] 保有なし → 何もしない")
+        return
+    bars = _fetch_today_bars(today_str, all_tickers)
+    if not bars:
+        print("[final_check] 当日バー未取得 → 見送り（翌朝の帳簿記帳で確定）")
+        return
+    n_sent = 0
+    for tier in TIERS:
+        key = tier["key"]
+        if key not in tier_positions:
+            continue
+        for direction, side_sell in (("BUY", False), ("SELL", True)):
+            fills = _final_fills(tier_positions[key]["buy" if direction == "BUY" else "sell"],
+                                 direction, bars, today_str)
+            if fills:
+                from notifier import send_close_final_fills
+                send_close_final_fills(fills, today, tier=tier, sell=side_sell)
+                n_sent += 1
+    print(f"[final_check] 確定通知 {n_sent}件送信" if n_sent else "[final_check] 場中OCO約定なし → 無送信")
+    last_marker["final_done"] = today_str
+    with open(LAST_RUN_FILE, "w", encoding="utf-8") as f:
+        json.dump(last_marker, f, ensure_ascii=False, indent=2)
+
+
 def main():
     now = datetime.now(JST)
     today = now.date()
@@ -332,7 +452,13 @@ def main():
             with open(LAST_RUN_FILE, encoding="utf-8") as _f:
                 _last = json.load(_f)
             if _last.get("date") == today_str:
-                print(f"[close_check] 本日分({today_str})は送信済みです → スキップ")
+                # 15:40以降の再実行（GitHub保険cron等）は「確定チェック」に転用（2026-07-23）:
+                # 当日公式四本値で場中OCO約定を確定通知（14:55はyfinance遅延で見えない分）
+                if (now.hour, now.minute) >= (15, 40) and _last.get("final_done") != today_str:
+                    print(f"[close_check] 送信済み＋大引け後 → 確定チェックを実行")
+                    final_check(today, now, _last)
+                else:
+                    print(f"[close_check] 本日分({today_str})は送信済みです → スキップ")
                 return
         except Exception as _e:
             print(f"[close_check] {LAST_RUN_FILE} 読込失敗: {_e} → 続行")
