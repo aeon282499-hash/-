@@ -1176,6 +1176,17 @@ function viewDaytrade(){
     <div class="card" style="border-color:rgba(88,166,255,.4)"><b>使い方（重要）</b><br>
       <small class="muted">前日±${dw.move_min||4}%動いた銘柄を<b style="color:var(--tx)">その方向に</b>、翌営業日の<b style="color:var(--tx)">15分足でMA5の押し目(買い)/戻り(売り)×VWAP側</b>で入る裁量トレードの候補。
       <b style="color:var(--tx)">自動売買でも「この値段で買え」でもない</b>＝チャートを見て条件が来た時だけ。9:00〜11:00に集中・毎日撃たない。</small></div>
+    <div class="card"><b>🎯 損切り・利確イメージ</b>
+      <div style="font-size:12.5px;line-height:1.75;margin-top:6px">
+        <b style="color:var(--dn)">🛑 損切り＝固定・即</b>：入った<b>タッチ足の逆側の外</b>（買い=そのバーの安値の少し下／売り=高値の少し上）。だいたい-0.3〜-1%。<b style="color:var(--tx)">割れたら「押し目/戻りが失敗した証拠」＝即逃げる。ズラさない。</b><br>
+        <b style="color:var(--up)">✅ 利確＝ラインを置かない</b>：<b style="color:var(--tx)">MA5を割って15分足が確定するまで持つ</b>（トレール）。上げてる間はMA5が線路。VWAPも割ったら即降りる。<br>
+        <span class="muted">検証: 利確ライン決め打ち(2R)=PF1.95 vs MA5トレール=PF2.40。<b style="color:var(--tx)">早く利確する方が負ける</b>。損は-1で頭打ち・利は青天井にするのがこの戦略の心臓。</span></div>
+      <div class="muted" style="font-size:11px;margin-top:6px">ひとこと：<b style="color:var(--tx)">「損は即・利は待て。MA5が線路、割れたら降りるだけ」</b></div>
+      <div style="font-family:monospace;font-size:11px;background:rgba(88,166,255,.08);border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.6">
+        例) 買い ¥1,000（MA5タッチ反発の足の終値）<br>
+        🛑 損切 ¥988（タッチ足の安値の外・-1.2%）<br>
+        ✅ 手仕舞い ＝ 15分足がMA5を割って確定した所（利確ラインは置かない）
+      </div></div>
     ${sec(`🟢 買いウォッチ（前日+${dw.move_min||4}%↑の強い株・押し目買い）`,"--up",buy,"buy",
       `上向きMA5に<b>押した所を買い</b>（VWAP上のみ）。損切り=直近安値の外／利=MA5割れまで伸ばす。<span class="muted">検証PF${st.buy_pf||"—"}・売り禁の問題なし=気楽</span>`)}
     ${sec(`🔴 売りウォッチ（前日-${dw.move_min||4}%↓の弱い株・戻り売り）`,"--dn",sell,"sell",
