@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-23",
+ "last_signal_date": "2026-07-24",
  "positions": [
   {
    "ticker": "6521.T",
@@ -54,6 +54,17 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -0.99,
    "pnl_yen": -9500
+  },
+  {
+   "ticker": "4063.T",
+   "name": "信越化学工業",
+   "type": "第１四半期",
+   "date": "2026-07-24",
+   "signal_price": 6645.0,
+   "shares": 100,
+   "rsi": 38.8,
+   "runup5": -9.7,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-07-15"
