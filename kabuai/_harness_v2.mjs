@@ -321,6 +321,7 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   check("daytrade: 自動売買でない明示", dv.includes("自動売買でも"));
   check("daytrade: 損切利確カード", dv.includes("損切り・利確イメージ")&&dv.includes("MA5を割って")&&dv.includes("ラインを置かない"));
   check("daytrade: トレール優位の根拠", dv.includes("PF1.95")&&dv.includes("PF2.40"));
+  check("daytrade: 損切利確の図解SVG", dv.includes("<svg")&&dv.includes("MA5（線路）")&&dv.includes("①押し目で買い")&&dv.includes("③MA5割れで手仕舞い"));
   check("daytrade: 上位5のみ本命表示", dv.includes("買い0")&&dv.includes("買い4")&&dv.split("📂 全部見る")[0].indexOf("買い5")===-1);
   check("daytrade: 📂全部見るdetailsで残り表示", dv.includes("📂 全部見る（残り3銘柄")&&dv.includes("買い7")&&dv.includes("売り6"));
   // 空・error後方互換

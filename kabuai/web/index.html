@@ -1136,6 +1136,34 @@ function viewSell(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ⚡損切り/利確の図解（買いの例・15分足MA5トレール）。SVGインライン=軽量・オフライン可。
+function dtDiagram(){
+  return `<svg viewBox="0 0 320 176" width="100%" style="margin-top:8px;background:rgba(88,166,255,.06);border-radius:8px" role="img" aria-label="損切り利確の図解">
+    <!-- VWAP（薄い基準線） -->
+    <line x1="8" y1="150" x2="312" y2="96" stroke="#8b949e" stroke-width="1" stroke-dasharray="2 3" opacity=".5"/>
+    <text x="10" y="146" fill="#8b949e" font-size="8">VWAP</text>
+    <!-- MA5（青い線路） -->
+    <polyline points="10,140 60,124 100,116 132,116 175,96 215,78 250,72 285,82 312,104" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+    <text x="176" y="90" fill="#58a6ff" font-size="9" font-weight="700">MA5（線路）</text>
+    <!-- 価格（緑・押し目→トレール→MA5割れ） -->
+    <polyline points="10,132 45,116 80,106 118,120 158,88 198,66 236,56 268,64 292,92 312,110" fill="none" stroke="#16c784" stroke-width="2"/>
+    <!-- ①押し目タッチ＝買い -->
+    <circle cx="118" cy="120" r="4" fill="#16c784"/>
+    <path d="M118,101 l-5,-9 l10,0 z" fill="#16c784"/>
+    <text x="90" y="90" fill="#16c784" font-size="9" font-weight="700">①押し目で買い</text>
+    <!-- 🛑 損切りライン（タッチ足の安値の外） -->
+    <line x1="90" y1="132" x2="180" y2="132" stroke="#ea3943" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="182" y="136" fill="#ea3943" font-size="8.5" font-weight="700">🛑損切り(直近安値の外)</text>
+    <!-- ②トレール中 -->
+    <text x="196" y="48" fill="#8b949e" font-size="8.5">②MA5の上にいる間は持つ</text>
+    <!-- ③MA5割れ＝手仕舞い -->
+    <circle cx="292" cy="92" r="4" fill="#ea3943"/>
+    <path d="M292,105 l-5,9 l10,0 z" fill="#ea3943"/>
+    <text x="214" y="126" fill="#ea3943" font-size="9" font-weight="700">③MA5割れで手仕舞い(利確ラインなし)</text>
+  </svg>
+  <div class="muted" style="font-size:10.5px;margin-top:4px;text-align:center">買いの図（売りは上下すべて逆＝戻り売り→MA5を上に抜けたら手仕舞い）</div>`;
+}
+
 // ── ⚡ 裁量デイトレ・ウォッチ（15分足MA5継続・2026-07-24） ──
 // フェード(日足・寄り売り)とは別。前日±4%動いた銘柄を「その方向」に15分足で
 // 押し目/戻り×VWAPについていく裁量トレードの「見る5銘柄」。予測でも自動売買でもない。
@@ -1182,11 +1210,7 @@ function viewDaytrade(){
         <b style="color:var(--up)">✅ 利確＝ラインを置かない</b>：<b style="color:var(--tx)">MA5を割って15分足が確定するまで持つ</b>（トレール）。上げてる間はMA5が線路。VWAPも割ったら即降りる。<br>
         <span class="muted">検証: 利確ライン決め打ち(2R)=PF1.95 vs MA5トレール=PF2.40。<b style="color:var(--tx)">早く利確する方が負ける</b>。損は-1で頭打ち・利は青天井にするのがこの戦略の心臓。</span></div>
       <div class="muted" style="font-size:11px;margin-top:6px">ひとこと：<b style="color:var(--tx)">「損は即・利は待て。MA5が線路、割れたら降りるだけ」</b></div>
-      <div style="font-family:monospace;font-size:11px;background:rgba(88,166,255,.08);border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.6">
-        例) 買い ¥1,000（MA5タッチ反発の足の終値）<br>
-        🛑 損切 ¥988（タッチ足の安値の外・-1.2%）<br>
-        ✅ 手仕舞い ＝ 15分足がMA5を割って確定した所（利確ラインは置かない）
-      </div></div>
+      ${dtDiagram()}</div>
     ${sec(`🟢 買いウォッチ（前日+${dw.move_min||4}%↑の強い株・押し目買い）`,"--up",buy,"buy",
       `上向きMA5に<b>押した所を買い</b>（VWAP上のみ）。損切り=直近安値の外／利=MA5割れまで伸ばす。<span class="muted">検証PF${st.buy_pf||"—"}・売り禁の問題なし=気楽</span>`)}
     ${sec(`🔴 売りウォッチ（前日-${dw.move_min||4}%↓の弱い株・戻り売り）`,"--dn",sell,"sell",
