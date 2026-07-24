@@ -295,11 +295,38 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   locationShim.hash="#/theme"; sandbox.render();
   const tv=$get("#view").innerHTML;
   check("theme撤去: #/themeはホーム(モメンタム)へフォールバック", clean(tv)&&tv.includes("強さ・過熱ランキング"));
-  check("nav: v4の4タブ（モメンタム=home/売り/探検/使い方）",
-    html.includes('id="nav-home"')&&html.includes('id="nav-sell"')&&
+  check("nav: 5タブ（モメンタム/売り/デイトレ/探検/使い方）",
+    html.includes('id="nav-home"')&&html.includes('id="nav-sell"')&&html.includes('id="nav-daytrade"')&&
     html.includes('id="nav-explore"')&&html.includes('id="nav-about"')&&
     !html.includes('id="nav-momentum"')&&!html.includes('id="nav-search"'));
   check("nav: 今日の買いタブが無い", !html.match(/<a[^>]*>[^<]*<span class="i">✅<\/span>今日の買い<\/a>/));
+}
+
+// ── 7.5) ⚡ 裁量デイトレ・ウォッチ（2026-07-24） ──
+{
+  const save=DATA.daytrade_watch;
+  DATA.daytrade_watch={date:"2026-07-24",move_min:4,stats:{buy_pf:1.84,sell_pf:4.20,tf:"15分足",ma:5},
+    buy:[{code:"4424",name:"テスト買い1",r1:8.2,price:421,turnover_oku:35,sector:"情報･通信業"},
+         {code:"6146",name:"テスト買い2",r1:5.1,price:4285,turnover_oku:120,sector:"電気機器"}],
+    sell:[{code:"7203",name:"テスト売り貸借",r1:-6.4,price:2900,turnover_oku:200,sector:"輸送用機器",short_mark:"○",jsf_stop:false},
+          {code:"8306",name:"テスト売り禁",r1:-4.5,price:1500,turnover_oku:80,sector:"銀行業",short_mark:"×",jsf_stop:true}]};
+  locationShim.hash="#/daytrade"; sandbox.render();
+  const dv=$get("#view").innerHTML;
+  check("daytrade: 描画OK・エラーなし", clean(dv));
+  check("daytrade: 買いウォッチ表示", dv.includes("買いウォッチ")&&dv.includes("テスト買い1")&&dv.includes("+8.2%"));
+  check("daytrade: 売りウォッチ表示", dv.includes("売りウォッチ")&&dv.includes("-6.4%"));
+  check("daytrade: 貸借バッジ", dv.includes("貸借○"));
+  check("daytrade: 🚫売り禁バッジ", dv.includes("🚫売り禁"));
+  check("daytrade: フェードと別物の明示", dv.includes("別戦略"));
+  check("daytrade: BT PF表示", dv.includes("PF4.2")&&dv.includes("PF1.84"));
+  check("daytrade: 自動売買でない明示", dv.includes("自動売買でも"));
+  // 空・error後方互換
+  DATA.daytrade_watch={date:"2026-07-24",move_min:4,buy:[],sell:[],stats:{}};
+  sandbox.render();
+  check("daytrade: 該当なし日の表示", $get("#view").innerHTML.includes("様子見日"));
+  DATA.daytrade_watch={error:true}; sandbox.render();
+  check("daytrade: error時も落ちない", clean($get("#view").innerHTML));
+  DATA.daytrade_watch=save;
 }
 
 // ── 8) 使い方（about） ──

@@ -178,6 +178,7 @@
        🔻売り=モメンタム終了検出＋セクターローテSELLの新タブ。viewHomeは残置=タブを戻せば復活。 -->
   <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
   <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
+  <a href="#/daytrade" id="nav-daytrade"><span class="i">⚡</span>デイトレ</a>
   <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
@@ -1135,6 +1136,47 @@ function viewSell(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── ⚡ 裁量デイトレ・ウォッチ（15分足MA5継続・2026-07-24） ──
+// フェード(日足・寄り売り)とは別。前日±4%動いた銘柄を「その方向」に15分足で
+// 押し目/戻り×VWAPについていく裁量トレードの「見る5銘柄」。予測でも自動売買でもない。
+function viewDaytrade(){
+  const dw=DATA.daytrade_watch;
+  if(!dw||dw.error){
+    return `<h2>⚡ デイトレ <span class="muted" style="font-weight:400;font-size:12px">15分足・裁量</span></h2>
+      <div class="card muted">本日のウォッチは準備中です。</div><p class="disc">${DATA.disclaimer}</p>`;
+  }
+  const st=dw.stats||{};
+  const buy=dw.buy||[], sell=dw.sell||[];
+  const row=(m,side)=>{
+    const rt=m.r1!=null?Number(m.r1):null;
+    const badge = side==="sell"
+      ? `${m.short_mark==="○"?'<span class="chip" style="color:var(--up)">貸借○</span>':(m.short_mark==="×"?'<span class="chip" style="color:var(--dn)">制度✕</span>':'<span class="chip muted">貸借?</span>')}${m.jsf_stop?' <span class="chip" style="color:var(--dn);border-color:rgba(234,57,67,.6)">🚫売り禁(ハイカラ可)</span>':""}`
+      : "";
+    return `<a class="pickrow" href="#/detail/${m.code}">
+      <div class="pk-nm"><b>${esc(m.name)}</b>
+        <small>${m.code} ・ ¥${(m.price||0).toLocaleString()} ・ 代金${m.turnover_oku!=null?Math.round(m.turnover_oku)+"億":"—"}${m.sector?" ・ "+esc(m.sector):""}</small>
+        <div class="chips">${badge}</div></div>
+      <div class="m-px" style="color:var(${side==="buy"?"--up":"--dn"})">${rt!=null?(rt>0?"+":"")+rt.toFixed(1)+"%":"—"}<br><small class="muted">前日</small></div></a>`;
+  };
+  const sec=(title,color,arr,side,rule)=>`
+    <div class="hh" style="margin-top:4px;color:var(${color})">${title}</div>
+    <div class="warnbar">${rule}</div>
+    ${arr.length?`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${arr.map(m=>row(m,side)).join("")}</div></div>`
+      :`<div class="card muted">本日は前日±${dw.move_min||4}%の該当銘柄なし（この流動性帯では珍しい＝様子見日）。</div>`}`;
+  return `
+    <h2>⚡ デイトレ <span class="muted" style="font-weight:400;font-size:12px">${dw.date||""} 終値時点・15分足裁量</span></h2>
+    <div class="card" style="border-color:rgba(88,166,255,.4)"><b>使い方（重要）</b><br>
+      <small class="muted">前日±${dw.move_min||4}%動いた銘柄を<b style="color:var(--tx)">その方向に</b>、翌営業日の<b style="color:var(--tx)">15分足でMA5の押し目(買い)/戻り(売り)×VWAP側</b>で入る裁量トレードの候補。
+      <b style="color:var(--tx)">自動売買でも「この値段で買え」でもない</b>＝チャートを見て条件が来た時だけ。9:00〜11:00に集中・毎日撃たない。</small></div>
+    ${sec(`🟢 買いウォッチ（前日+${dw.move_min||4}%↑の強い株・押し目買い）`,"--up",buy,"buy",
+      `上向きMA5に<b>押した所を買い</b>（VWAP上のみ）。損切り=直近安値の外／利=MA5割れまで伸ばす。<span class="muted">検証PF${st.buy_pf||"—"}・売り禁の問題なし=気楽</span>`)}
+    ${sec(`🔴 売りウォッチ（前日-${dw.move_min||4}%↓の弱い株・戻り売り）`,"--dn",sell,"sell",
+      `下向きMA5に<b>戻した所を売り</b>（VWAP下のみ）。損切り=直近高値の外／利=MA5戻りまで。<span class="muted">検証PF${st.sell_pf||"—"}・🚫売り禁は在庫確認必須</span>`)}
+    <div class="card muted" style="font-size:11px;line-height:1.7">検証: yahoo15分足60日・前後半どちらもプラス（過学習を排除）。ただし<b style="color:var(--tx)">サンプルは小さく利益は数日に集中＝毎日勝てるルールではない</b>。強弱がトレンドした日に取るもの。まず少額・紙で。銘柄は前日変動率トップ5（代金10億以上）。<b style="color:var(--tx)">これは⚡フェード（前日急騰を寄りで空売り→引け買戻し=日足）とは別戦略です。</b><br>
+    <b>15分足とVWAPの見方</b>: 証券会社アプリかTradingViewで表示。5分足より15分足の方がノイズが少なく勝率が高いと検証で出ています。</div>
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 // ── 🔥 テーマ（勢いに乗る・攻め）＝継続型モメンタム。バーベルを正直に ──
 // 「上がってる勢いに乗る」欲求の正しい居場所。bt_exit（2026-06-01）で blast>=70 ×翌寄り→8日・
 // 損切り-12%・利確なし = +2.36%/件・PF1.62・勝率53.7%（バーベル）。下げ相場では自然に沈黙。
@@ -1167,6 +1209,7 @@ function setNav(h){
   // v4: 4タブ=モメンタム(ホーム)/売り/探検/使い方。検索・詳細はホーム系として点灯。
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
+  $("#nav-daytrade").classList.toggle("on",h.startsWith("#/daytrade"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1178,6 +1221,7 @@ function render(){
     if(h.startsWith("#/search")) $("#view").innerHTML=viewSearch();
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/sell")) $("#view").innerHTML=viewSell();
+    else if(h.startsWith("#/daytrade")) $("#view").innerHTML=viewDaytrade();
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();

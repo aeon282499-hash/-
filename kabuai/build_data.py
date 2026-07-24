@@ -776,6 +776,7 @@ def build() -> dict:
     # 売り禁(margin-alert)は除外せず🚫バッジ=同日本人指示「ハイカラで売れた」(制度✕でも
     # SBI一日信用HYPER/一般信用は別枠在庫)。翌営業日「寄り売り→引け買戻し」の当日完結。非致命。
     fade: dict = {"date": data_date, "picks": [], "banned": 0, "go": 0}
+    _iss, _alert = {}, {}          # 裁量デイトレ・ウォッチでも再利用
     try:
         if str(PARENT) not in sys.path:
             sys.path.insert(0, str(PARENT))
@@ -816,6 +817,43 @@ def build() -> dict:
         print(f"[build] 🩳フェードはスキップ（非致命）: {_e}")
         fade = {"date": data_date, "picks": [], "banned": 0, "go": 0, "error": True}
     sell_watch["fade"] = fade
+
+    # ── ⚡ 裁量デイトレ・ウォッチ（15分足MA5継続・2026-07-24 本人指示） ──
+    # フェード（前日+12%を寄り売り=日足）とは別物。前日±4%動いた銘柄を「その方向」に
+    # 15分足MA5の押し目/戻り×VWAPでついていく裁量トレードの毎朝ウォッチ（各トップ5）。
+    # BT(yahoo 60日15分足・過学習前後半突破): 売り=前日-4%以下 PF4.20 / 買い=前日+4%以上 PF1.84。
+    # 予測でなく「見る5銘柄」の提示＝銘柄探しの手間をゼロにする。非致命。
+    DT_MOVE_MIN = 4.0
+    DT_TOV_OKU = 10.0        # 代金10億以上（デイトレ向き流動性）
+    def _dt_row(r, sell):
+        c4 = r["code"]
+        e = {"code": c4, "name": r.get("name", c4), "r1": r.get("r1"),
+             "price": r.get("price"), "turnover_oku": r.get("turnover_oku"),
+             "sector": r.get("sector")}
+        if sell:                                  # 売りは信用売り可否バッジ
+            al = (_alert or {}).get(c4) or {}
+            it = (_iss or {}).get(c4)
+            e["short_mark"] = "○" if it == "2" else ("×" if it else "?")
+            e["jsf_stop"] = bool(al.get("jsf_stop"))
+        return e
+    try:
+        _liq = [r for r in rows if (r.get("turnover_oku") or 0) >= DT_TOV_OKU
+                and (r.get("price") or 0) >= 300 and r.get("r1") is not None]
+        _buy = sorted([r for r in _liq if r["r1"] >= DT_MOVE_MIN], key=lambda r: -r["r1"])[:5]
+        _sell = sorted([r for r in _liq if r["r1"] <= -DT_MOVE_MIN], key=lambda r: r["r1"])[:5]
+        daytrade_watch = {
+            "date": data_date, "move_min": DT_MOVE_MIN,
+            "buy": [_dt_row(r, False) for r in _buy],
+            "sell": [_dt_row(r, True) for r in _sell],
+            "stats": {"buy_pf": 1.84, "sell_pf": 4.20, "tf": "15分足", "ma": 5},
+        }
+        for r in rows:                            # 掲載銘柄は詳細チャートを出せるようにexport対象化
+            if r in _buy or r in _sell:
+                r["fade_pick"] = True
+        print(f"[build] ⚡裁量デイトレ・ウォッチ: 買い{len(_buy)}/売り{len(_sell)} (前日±{DT_MOVE_MIN}%)")
+    except Exception as _e:
+        print(f"[build] ⚡裁量デイトレ・ウォッチはスキップ（非致命）: {_e}")
+        daytrade_watch = {"date": data_date, "buy": [], "sell": [], "error": True}
 
     # ── フェーズ3/9: 地合い（全体＋区分別プロキシ） ──
     market = build_market(data, scored_tickers, rows, seg_map)
@@ -923,6 +961,7 @@ def build() -> dict:
         "futures": futures_meta,
         "rebound": rebound,
         "sell_watch": sell_watch,
+        "daytrade_watch": daytrade_watch,
         "picks_scoreboard": picks_scoreboard,   # ④ 直近の調子メーター
         "theme_blast": theme_blast,
         "sector_today": sector_today,
