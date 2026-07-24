@@ -305,21 +305,22 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
 // ── 7.5) ⚡ 裁量デイトレ・ウォッチ（2026-07-24） ──
 {
   const save=DATA.daytrade_watch;
-  DATA.daytrade_watch={date:"2026-07-24",move_min:4,stats:{buy_pf:1.84,sell_pf:4.20,tf:"15分足",ma:5},
-    buy:[{code:"4424",name:"テスト買い1",r1:8.2,price:421,turnover_oku:35,sector:"情報･通信業"},
-         {code:"6146",name:"テスト買い2",r1:5.1,price:4285,turnover_oku:120,sector:"電気機器"}],
-    sell:[{code:"7203",name:"テスト売り貸借",r1:-6.4,price:2900,turnover_oku:200,sector:"輸送用機器",short_mark:"○",jsf_stop:false},
-          {code:"8306",name:"テスト売り禁",r1:-4.5,price:1500,turnover_oku:80,sector:"銀行業",short_mark:"×",jsf_stop:true}]};
+  const _mkbuy=n=>Array.from({length:n},(_,i)=>({code:"B"+i,name:"買い"+i,r1:9-i*0.5,price:1000,turnover_oku:30,sector:"電気機器"}));
+  const _mksell=n=>Array.from({length:n},(_,i)=>({code:"S"+i,name:"売り"+i,r1:-9+i*0.5,price:1000,turnover_oku:30,sector:"銀行業",short_mark:i===0?"○":"×",jsf_stop:i===1}));
+  DATA.daytrade_watch={date:"2026-07-24",move_min:4,top:5,stats:{buy_pf:1.84,sell_pf:4.20,tf:"15分足",ma:5},
+    buy:_mkbuy(8), sell:_mksell(7), buy_total:8, sell_total:7};
   locationShim.hash="#/daytrade"; sandbox.render();
   const dv=$get("#view").innerHTML;
   check("daytrade: 描画OK・エラーなし", clean(dv));
-  check("daytrade: 買いウォッチ表示", dv.includes("買いウォッチ")&&dv.includes("テスト買い1")&&dv.includes("+8.2%"));
-  check("daytrade: 売りウォッチ表示", dv.includes("売りウォッチ")&&dv.includes("-6.4%"));
+  check("daytrade: 買いウォッチ表示", dv.includes("買いウォッチ")&&dv.includes("買い0")&&dv.includes("+9.0%"));
+  check("daytrade: 売りウォッチ表示", dv.includes("売りウォッチ")&&dv.includes("-9.0%"));
   check("daytrade: 貸借バッジ", dv.includes("貸借○"));
   check("daytrade: 🚫売り禁バッジ", dv.includes("🚫売り禁"));
   check("daytrade: フェードと別物の明示", dv.includes("別戦略"));
   check("daytrade: BT PF表示", dv.includes("PF4.2")&&dv.includes("PF1.84"));
   check("daytrade: 自動売買でない明示", dv.includes("自動売買でも"));
+  check("daytrade: 上位5のみ本命表示", dv.includes("買い0")&&dv.includes("買い4")&&dv.split("📂 全部見る")[0].indexOf("買い5")===-1);
+  check("daytrade: 📂全部見るdetailsで残り表示", dv.includes("📂 全部見る（残り3銘柄")&&dv.includes("買い7")&&dv.includes("売り6"));
   // 空・error後方互換
   DATA.daytrade_watch={date:"2026-07-24",move_min:4,buy:[],sell:[],stats:{}};
   sandbox.render();

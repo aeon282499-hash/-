@@ -1158,11 +1158,19 @@ function viewDaytrade(){
         <div class="chips">${badge}</div></div>
       <div class="m-px" style="color:var(${side==="buy"?"--up":"--dn"})">${rt!=null?(rt>0?"+":"")+rt.toFixed(1)+"%":"—"}<br><small class="muted">前日</small></div></a>`;
   };
-  const sec=(title,color,arr,side,rule)=>`
-    <div class="hh" style="margin-top:4px;color:var(${color})">${title}</div>
-    <div class="warnbar">${rule}</div>
-    ${arr.length?`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${arr.map(m=>row(m,side)).join("")}</div></div>`
-      :`<div class="card muted">本日は前日±${dw.move_min||4}%の該当銘柄なし（この流動性帯では珍しい＝様子見日）。</div>`}`;
+  const TOP=dw.top||5;
+  const sec=(title,color,arr,side,rule)=>{
+    if(!arr.length) return `<div class="hh" style="margin-top:4px;color:var(${color})">${title}</div>
+      <div class="warnbar">${rule}</div>
+      <div class="card muted">本日は前日±${dw.move_min||4}%の該当銘柄なし（この流動性帯では珍しい＝様子見日）。</div>`;
+    const head=arr.slice(0,TOP), rest=arr.slice(TOP);
+    return `<div class="hh" style="margin-top:4px;color:var(${color})">${title}</div>
+      <div class="warnbar">${rule}</div>
+      <div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${head.map(m=>row(m,side)).join("")}</div></div>
+      ${rest.length?`<details class="card" style="padding:0"><summary style="padding:12px 14px;cursor:pointer;color:var(--mut);font-size:13px">📂 全部見る（残り${rest.length}銘柄・前日±${dw.move_min||4}%全部）</summary>
+        <div style="padding:4px 14px 8px"><div class="picklist" style="border-top:0">${rest.map(m=>row(m,side)).join("")}</div>
+        <div class="muted" style="font-size:11px;padding:6px 0">※6番以降は変動が小さめ＝上位ほど値幅が出やすい。全部を撃つ意味ではなく、上位が売り禁/在庫切れ等で撃てない時の代替候補。</div></div></details>`:""}`;
+  };
   return `
     <h2>⚡ デイトレ <span class="muted" style="font-weight:400;font-size:12px">${dw.date||""} 終値時点・15分足裁量</span></h2>
     <div class="card" style="border-color:rgba(88,166,255,.4)"><b>使い方（重要）</b><br>

@@ -836,21 +836,22 @@ def build() -> dict:
             e["short_mark"] = "○" if it == "2" else ("×" if it else "?")
             e["jsf_stop"] = bool(al.get("jsf_stop"))
         return e
+    DT_LIST_CAP = 40         # 「全部見る」の上限（±4%は1日最大数十件・払い過ぎ防止）
     try:
         _liq = [r for r in rows if (r.get("turnover_oku") or 0) >= DT_TOV_OKU
                 and (r.get("price") or 0) >= 300 and r.get("r1") is not None]
-        _buy = sorted([r for r in _liq if r["r1"] >= DT_MOVE_MIN], key=lambda r: -r["r1"])[:5]
-        _sell = sorted([r for r in _liq if r["r1"] <= -DT_MOVE_MIN], key=lambda r: r["r1"])[:5]
+        _buy = sorted([r for r in _liq if r["r1"] >= DT_MOVE_MIN], key=lambda r: -r["r1"])[:DT_LIST_CAP]
+        _sell = sorted([r for r in _liq if r["r1"] <= -DT_MOVE_MIN], key=lambda r: r["r1"])[:DT_LIST_CAP]
         daytrade_watch = {
-            "date": data_date, "move_min": DT_MOVE_MIN,
+            "date": data_date, "move_min": DT_MOVE_MIN, "top": 5,   # top5=本命/残りは「全部見る」
             "buy": [_dt_row(r, False) for r in _buy],
             "sell": [_dt_row(r, True) for r in _sell],
+            "buy_total": len(_buy), "sell_total": len(_sell),
             "stats": {"buy_pf": 1.84, "sell_pf": 4.20, "tf": "15分足", "ma": 5},
         }
-        for r in rows:                            # 掲載銘柄は詳細チャートを出せるようにexport対象化
-            if r in _buy or r in _sell:
-                r["fade_pick"] = True
-        print(f"[build] ⚡裁量デイトレ・ウォッチ: 買い{len(_buy)}/売り{len(_sell)} (前日±{DT_MOVE_MIN}%)")
+        for r in (_buy[:12] + _sell[:12]):        # 上位12銘柄は詳細チャートを出せるようにexport対象化
+            r["fade_pick"] = True
+        print(f"[build] ⚡裁量デイトレ・ウォッチ: 買い{len(_buy)}/売り{len(_sell)} (前日±{DT_MOVE_MIN}%・top5+全部見る)")
     except Exception as _e:
         print(f"[build] ⚡裁量デイトレ・ウォッチはスキップ（非致命）: {_e}")
         daytrade_watch = {"date": data_date, "buy": [], "sell": [], "error": True}
