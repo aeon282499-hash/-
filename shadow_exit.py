@@ -227,6 +227,12 @@ def run_shadow(tiers, today: date, get_data) -> None:
         a = record_signals(k, today, all_data)
         print(f"[shadow-{TIER_FILES[k][3]}] 新規{a}件 / 影決済{c}件 / 影失効{e}件")
 
+    # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
+    try:
+        send_discord(today)
+    except Exception as e:
+        print(f"[shadow] Discord配信スキップ（台帳は保存済み・本番に影響なし）: {e}")
+
 
 # ────────────────────────────── レポート ──────────────────────────────
 def _live_closed(key: str) -> dict:
@@ -240,6 +246,23 @@ def _live_closed(key: str) -> dict:
             if p.get("direction", "BUY") == "BUY" and p["status"] in ("closed", "expired")}
 
 
+def _pairs(key: str) -> list[tuple]:
+    """影と本番の両方で決着した玉を突き合わせて [(影row, 本番row, 本番%, 影%)] を返す。"""
+    rows = load_ledger(key)
+    if not rows:
+        return []
+    live = _live_closed(key)
+    out = []
+    for r in rows:
+        lp = live.get((r["ticker"], r["signal_date"]))
+        if lp is None or r["status"] not in ("closed", "expired"):
+            continue
+        lv = 0.0 if lp["status"] == "expired" else (lp.get("pnl_pct") or 0.0)
+        sv = 0.0 if r["status"] == "expired" else (r.get("pnl_pct") or 0.0)
+        out.append((r, lp, lv, sv))
+    return out
+
+
 def report() -> None:
     print("=" * 96)
     print("出口ボラ正規化 紙並走レポート  ─ 本番(一律-3%) vs 影(ATR%×2.0・下限2.0%)")
@@ -250,16 +273,7 @@ def report() -> None:
         rows = load_ledger(key)
         if not rows:
             continue
-        live = _live_closed(key)
-        pairs = []
-        for r in rows:
-            k = (r["ticker"], r["signal_date"])
-            lp = live.get(k)
-            if lp is None or r["status"] not in ("closed", "expired"):
-                continue
-            lv = 0.0 if lp["status"] == "expired" else (lp.get("pnl_pct") or 0.0)
-            sv = 0.0 if r["status"] == "expired" else (r.get("pnl_pct") or 0.0)
-            pairs.append((r, lp, lv, sv))
+        pairs = _pairs(key)
         openn = sum(1 for r in rows if r["status"] in ("pending", "open"))
         if not pairs:
             print(f"\n  ---- {label} ---- 突き合わせ可能な決済 0件 / 影で保有中 {openn}件")
@@ -284,6 +298,126 @@ def report() -> None:
                       f"差{(sv-lv)/100*size/10_000:+.2f}万")
     print(f"\n  === 3階層合計の差: {grand/10_000:+.2f}万 ===")
     print("  ※判断は数ヶ月ぶん貯めてから。10年BTの根拠は memory/project_trading_signal.md 参照")
+
+
+# ────────────────────────── Discord配信（専用チャンネル）──────────────────────────
+# 本番チャンネルとは別のwebhookにだけ送る。ここが落ちても本番配信には一切影響しない
+# （run_shadow 内で try/except、さらに main.py 側でも try/except に包まれている）。
+SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"
+_COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
+
+
+def _shadow_post(embeds: list[dict]) -> bool:
+    """影チャンネルへ送信。未設定/失敗でも例外を投げない（戻り値で成否だけ返す）。"""
+    import requests
+
+    url = os.getenv(SHADOW_WEBHOOK_ENV, "").strip()
+    if not url:
+        print(f"[shadow] {SHADOW_WEBHOOK_ENV} 未設定 → 配信スキップ（台帳の記録は継続）")
+        return False
+    verify = os.getenv("DISCORD_VERIFY_SSL", "true").lower() != "false"
+    for attempt, wait in enumerate((0, 2, 4)):
+        if wait:
+            import time
+            time.sleep(wait)
+        try:
+            r = requests.post(url, json={"embeds": embeds}, timeout=10, verify=verify)
+            if r.status_code in (200, 204):
+                return True
+            print(f"[shadow] Discord HTTP {r.status_code} {r.text[:150]}（試行{attempt + 1}）")
+        except Exception as e:
+            print(f"[shadow] Discord送信失敗: {e}（試行{attempt + 1}）")
+    return False
+
+
+def _price_str(v: float | None) -> str:
+    return f"{v:,.1f}".rstrip("0").rstrip(".") if v else "—"
+
+
+def send_discord(today: date) -> bool:
+    """今朝の影シグナル・影の決済・通算スコアを専用チャンネルへ1通で送る。
+    送るものが何も無い日は送信しない（ハートビートは本番チャンネル側にあるため不要）。"""
+    today_str = today.strftime("%Y-%m-%d")
+    embeds: list[dict] = []
+
+    # ① 今朝の影シグナル（銘柄は本番と同一・違うのは損切り価格だけ）
+    lines = []
+    for key, (_, _, size, label) in TIER_FILES.items():
+        for r in load_ledger(key):
+            if r["signal_date"] != today_str:
+                continue
+            pc = r.get("prev_close") or 0
+            stop_pct = r["stop_pct"]
+            atr = r.get("atr_pct")
+            ref = r.get("limit_price") or pc          # 寄指の指値を基準に損切り価格の目安を出す
+            atr_s = "—" if atr is None else f"{atr:.2f}%"
+            lines.append(
+                f"**{label}｜{r['name']}**（{r['ticker'][:4]}）\n"
+                f"　ATR {atr_s} → **損切り -{stop_pct:.1f}%**（本番 -{LIVE_STOP:.0f}%）\n"
+                f"　寄指 {_price_str(r.get('limit_price'))} 以下で約定なら "
+                f"損切り目安 **{_price_str(ref * (1 - stop_pct / 100))}** / 利確 "
+                f"{_price_str(ref * (1 + TAKE_PROFIT / 100))}（+{TAKE_PROFIT:.0f}%・本番と同じ）"
+            )
+    if lines:
+        embeds.append({
+            "title": f"🧪 影の損切り設定 — {today_str}",
+            "description": "\n\n".join(lines[:10]),
+            "color": _COLOR_BUY,
+            "footer": {"text": "銘柄・寄指・利確は本番と完全に同一。違うのは損切り幅だけ"},
+        })
+
+    # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
+    settled = []
+    for key, (_, _, size, label) in TIER_FILES.items():
+        live = _live_closed(key)
+        for r in load_ledger(key):
+            if r.get("exit_date") != today_str or r["status"] not in ("closed", "expired"):
+                continue
+            lp = live.get((r["ticker"], r["signal_date"]))
+            sv = 0.0 if r["status"] == "expired" else (r.get("pnl_pct") or 0.0)
+            if lp is None:
+                settled.append(f"{label}｜{r['name']} 影 {sv:+.2f}%（{r['exit_type']}）※本番は未決済")
+                continue
+            lv = 0.0 if lp["status"] == "expired" else (lp.get("pnl_pct") or 0.0)
+            mark = "⚠️割れた" if abs(sv - lv) > 0.01 else "一致"
+            settled.append(
+                f"{label}｜**{r['name']}** {mark}\n"
+                f"　本番 {lv:+.2f}%（{lp.get('exit_type')}） → 影 {sv:+.2f}%（{r['exit_type']}）"
+                f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
+    if settled:
+        embeds.append({
+            "title": "📕 影の決済",
+            "description": "\n".join(settled[:12]),
+            "color": _COLOR_INFO,
+        })
+
+    # ③ 通算スコアボード
+    grand, board = 0.0, []
+    for key, (_, _, size, label) in TIER_FILES.items():
+        pairs = _pairs(key)
+        if not pairs:
+            continue
+        dl = sum(p[2] for p in pairs) / 100 * size
+        dsh = sum(p[3] for p in pairs) / 100 * size
+        grand += dsh - dl
+        split = sum(1 for p in pairs if abs(p[3] - p[2]) > 0.01)
+        board.append(
+            f"**{label}**（{len(pairs)}件・うち判定が割れた玉{split}件）\n"
+            f"　本番 {dl / 10_000:+.2f}万 ／ 影 {dsh / 10_000:+.2f}万 ／ "
+            f"差 **{(dsh - dl) / 10_000:+.2f}万**")
+    if board:
+        embeds.append({
+            "title": f"📊 通算 本番 vs 影　合計差 {grand / 10_000:+.2f}万",
+            "description": "\n".join(board),
+            "color": _COLOR_WIN if grand >= 0 else _COLOR_LOSE,
+            "footer": {"text": "10年BTでは大100万で+234.5万→+345.3万・最悪3年-116.2→-78.1万。"
+                               "ただし差が出るのは損切りに触った玉だけ＝数ヶ月貯めないと判断不能"},
+        })
+
+    if not embeds:
+        print("[shadow] 配信対象なし（新規0・決済0・突合0）→ 送信しない")
+        return False
+    return _shadow_post(embeds)
 
 
 def backfill(days: int = 120) -> None:
@@ -340,4 +474,9 @@ if __name__ == "__main__":
             if a.startswith("--days="):
                 n = int(a.split("=")[1])
         backfill(n)
+    if "--send" in sys.argv:          # 影チャンネルへ実配信（疎通確認・手動レポート用）
+        ok = send_discord(date.today())
+        print(f"[shadow] Discord配信: {'成功' if ok else '未送信'}")
+        if "--report" not in sys.argv:
+            sys.exit(0)
     report()
