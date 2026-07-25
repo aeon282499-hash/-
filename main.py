@@ -362,6 +362,18 @@ def main() -> None:
         #     post_monthly_summary(today)
         print("[main] Twitter配信は一時停止中（TWITTER_PAUSED）")
 
+        # ── ⑤ 出口ボラ正規化の紙並走（2026-07-25・本人指示=案2）────────────
+        # 本番の損切りは一律-3%のまま一切変えない。その横で「損切りをATR%×2.0に
+        # していたら各玉はどうなったか」だけを shadow_exit_*.json に記録し続ける。
+        # 数ヶ月ぶん貯めてから実績と突き合わせて採否を決める（根拠BT: _bt_atr_exit_*.py）。
+        # 完全非破壊: 影台帳しか書かない・配信/発注/実帳簿には触れない・例外は握り潰す
+        # （デイトレ紙台帳 daytrade_paper.run_paper と同じパターン）。
+        try:
+            from shadow_exit import run_shadow
+            run_shadow(TIERS, today, _ledger_data)
+        except Exception as _shadow_err:
+            print(f"[shadow] スキップ（配信には影響なし）: {_shadow_err}")
+
         print("[main] 正常終了")
 
     except Exception as e:
