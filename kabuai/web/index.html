@@ -1201,21 +1201,28 @@ function viewDaytrade(){
   };
   return `
     <h2>⚡ デイトレ <span class="muted" style="font-weight:400;font-size:12px">${dw.date||""} 終値時点・15分足裁量</span></h2>
-    <div class="card" style="border-color:rgba(88,166,255,.4)"><b>使い方（重要）</b><br>
-      <small class="muted">前日±${dw.move_min||4}%動いた銘柄を<b style="color:var(--tx)">その方向に</b>、翌営業日の<b style="color:var(--tx)">15分足でMA5の押し目(買い)/戻り(売り)×VWAP側</b>で入る裁量トレードの候補。
-      <b style="color:var(--tx)">自動売買でも「この値段で買え」でもない</b>＝チャートを見て条件が来た時だけ。9:00〜11:00に集中・毎日撃たない。</small></div>
+    <div class="card" style="border-color:rgba(234,57,67,.55)"><b style="color:var(--dn)">⚠️ 2026-07-26 検証やり直しの結果</b><br>
+      <small style="line-height:1.75">このタブの元になっていた「15分足MA5継続」ルールは、<b style="color:var(--tx)">検証コードに未来情報の混入（当日の騰落率で当日の銘柄を選んでいた）</b>が見つかり失効しました。
+      銘柄を39→1,165に拡大して正しく測り直した実測値：<br>
+      ・<b style="color:var(--dn)">買い＝PF0.50・1回あたり-0.95%（明確に負け）</b>。株価フロアを入れてもPF0.66〜0.78でマイナス<br>
+      ・<b style="color:var(--wa)">売り＝PF1.14（前半0.87／後半1.37）</b>＝前半マイナスでウォークフォワード不合格<br>
+      <b style="color:var(--tx)">つまり下のリストは「検証済みの売買ルール」ではなく、前日に大きく動いた銘柄の一覧（ウォッチ）です。</b>撃つなら最小単元で、サイズを上げないこと。</small></div>
+    <div class="card" style="border-color:rgba(255,159,67,.45)"><b>🩳 唯一まだ息がある型（売り側・紙トレ中）</b>
+      <div style="font-size:12.5px;line-height:1.75;margin-top:6px">
+        <b style="color:var(--tx)">前日-4%以上下げた株（株価1,000〜5,000円・貸借○）が、日中にVWAPから+3%以上 上へ跳ねたら空売り → VWAPまで戻したら買い戻し（戻らなければ引け）</b><br>
+        <span class="muted">＝下げた株の日中の反発を叩く。実測 n=38 / PF2.16 / 勝率68.4%（コスト0.10%込）。ただし<b style="color:var(--tx)">後半PF1.19＝ほぼトントン</b>・約80パターン試して1つ通過・60日しか見ていない。<b style="color:var(--tx)">紙トレで3ヶ月貯めてから判断</b>。</span></div></div>
     <div class="card"><b>🎯 損切り・利確イメージ</b>
       <div style="font-size:12.5px;line-height:1.75;margin-top:6px">
         <b style="color:var(--dn)">🛑 損切り＝固定・即</b>：入った<b>タッチ足の逆側の外</b>（買い=そのバーの安値の少し下／売り=高値の少し上）。だいたい-0.3〜-1%。<b style="color:var(--tx)">割れたら「押し目/戻りが失敗した証拠」＝即逃げる。ズラさない。</b><br>
         <b style="color:var(--up)">✅ 利確＝ラインを置かない</b>：<b style="color:var(--tx)">MA5を割って15分足が確定するまで持つ</b>（トレール）。上げてる間はMA5が線路。VWAPも割ったら即降りる。<br>
-        <span class="muted">検証: 利確ライン決め打ち(2R)=PF1.95 vs MA5トレール=PF2.40。<b style="color:var(--tx)">早く利確する方が負ける</b>。損は-1で頭打ち・利は青天井にするのがこの戦略の心臓。</span></div>
+        <span class="muted">※この出口の作法（損は即・利はトレール）自体は一般論として妥当ですが、<b style="color:var(--tx)">以前ここに載せていた成績の裏付けは2026-07-26に失効しました</b>（未来情報の混入）。数字を根拠にしないでください。</span></div>
       <div class="muted" style="font-size:11px;margin-top:6px">ひとこと：<b style="color:var(--tx)">「損は即・利は待て。MA5が線路、割れたら降りるだけ」</b></div>
       ${dtDiagram()}</div>
-    ${sec(`🟢 買いウォッチ（前日+${dw.move_min||4}%↑の強い株・押し目買い）`,"--up",buy,"buy",
-      `上向きMA5に<b>押した所を買い</b>（VWAP上のみ）。損切り=直近安値の外／利=MA5割れまで伸ばす。<span class="muted">検証PF${st.buy_pf||"—"}・売り禁の問題なし=気楽</span>`)}
-    ${sec(`🔴 売りウォッチ（前日-${dw.move_min||4}%↓の弱い株・戻り売り）`,"--dn",sell,"sell",
-      `下向きMA5に<b>戻した所を売り</b>（VWAP下のみ）。損切り=直近高値の外／利=MA5戻りまで。<span class="muted">検証PF${st.sell_pf||"—"}・🚫売り禁は在庫確認必須</span>`)}
-    <div class="card muted" style="font-size:11px;line-height:1.7">検証: yahoo15分足60日・前後半どちらもプラス（過学習を排除）。ただし<b style="color:var(--tx)">サンプルは小さく利益は数日に集中＝毎日勝てるルールではない</b>。強弱がトレンドした日に取るもの。まず少額・紙で。銘柄は前日変動率トップ5（代金10億以上）。<b style="color:var(--tx)">これは⚡フェード（前日急騰を寄りで空売り→引け買戻し=日足）とは別戦略です。</b><br>
+    ${sec(`🟢 買い候補（前日+${dw.move_min||4}%↑の強い株）`,"--up",buy,"buy",
+      `<b style="color:var(--dn)">⚠️ 買い方向は検証で負け（PF${st.buy_pf!=null?st.buy_pf:0.50}・1回${st.buy_avg!=null?st.buy_avg:-0.95}%）</b>。日中の買いは構造的に不利（上げは夜に起きる）。<span class="muted">押し目買いをやるなら最小単元・練習用。数字の裏付けは無い。</span>`)}
+    ${sec(`🔴 売り候補（前日-${dw.move_min||4}%↓の弱い株）`,"--dn",sell,"sell",
+      `売り方向は<b>PF${st.sell_pf!=null?st.sell_pf:1.14}（前半${st.sell_h1!=null?st.sell_h1:0.87}／後半${st.sell_h2!=null?st.sell_h2:1.37}）</b>＝前半マイナスで合格せず。<span class="muted">狙うなら上の🩳VWAPバウンス叩きの形だけ。🚫売り禁は在庫確認必須。</span>`)}
+    <div class="card muted" style="font-size:11px;line-height:1.7">検証: yahoo15分足・1,165銘柄×60営業日（157万本）。<b style="color:var(--tx)">同じ場所を掘って3回とも消えた（①未来情報の混入 ②10円株の幻＝1銘柄で利益の125% ③前半だけの現象）</b>。この60日には「条件を緩めても壊れない日中エッジ」は入っていませんでした。銘柄は前日変動率トップ5（代金10億以上・株価300円以上）。<b style="color:var(--tx)">これは⚡フェード（前日急騰を寄りで空売り→引け買戻し=日足・10年検証済・実弾稼働中）とは別物です。本気の資金はそちらへ。</b><br>
     <b>15分足とVWAPの見方</b>: 証券会社アプリかTradingViewで表示。5分足より15分足の方がノイズが少なく勝率が高いと検証で出ています。</div>
     <p class="disc">${DATA.disclaimer}</p>`;
 }

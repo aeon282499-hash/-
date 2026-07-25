@@ -307,20 +307,28 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   const save=DATA.daytrade_watch;
   const _mkbuy=n=>Array.from({length:n},(_,i)=>({code:"B"+i,name:"買い"+i,r1:9-i*0.5,price:1000,turnover_oku:30,sector:"電気機器"}));
   const _mksell=n=>Array.from({length:n},(_,i)=>({code:"S"+i,name:"売り"+i,r1:-9+i*0.5,price:1000,turnover_oku:30,sector:"銀行業",short_mark:i===0?"○":"×",jsf_stop:i===1}));
-  DATA.daytrade_watch={date:"2026-07-24",move_min:4,top:5,stats:{buy_pf:1.84,sell_pf:4.20,tf:"15分足",ma:5},
+  // 2026-07-26: 15分足MA5ルールは look-ahead バグで失効。タブは「検証済みルール」でなく
+  // 「前日に大きく動いた銘柄の一覧＋失効の明示」に変更。stats も訂正後の実測値に差替え。
+  DATA.daytrade_watch={date:"2026-07-24",move_min:4,top:5,
+    stats:{buy_pf:0.50,sell_pf:1.14,buy_avg:-0.95,sell_h1:0.87,sell_h2:1.37,verdict:"invalidated",tf:"15分足",ma:5},
     buy:_mkbuy(8), sell:_mksell(7), buy_total:8, sell_total:7};
   locationShim.hash="#/daytrade"; sandbox.render();
   const dv=$get("#view").innerHTML;
   check("daytrade: 描画OK・エラーなし", clean(dv));
-  check("daytrade: 買いウォッチ表示", dv.includes("買いウォッチ")&&dv.includes("買い0")&&dv.includes("+9.0%"));
-  check("daytrade: 売りウォッチ表示", dv.includes("売りウォッチ")&&dv.includes("-9.0%"));
+  check("daytrade: 買い候補表示", dv.includes("買い候補")&&dv.includes("買い0")&&dv.includes("+9.0%"));
+  check("daytrade: 売り候補表示", dv.includes("売り候補")&&dv.includes("-9.0%"));
   check("daytrade: 貸借バッジ", dv.includes("貸借○"));
   check("daytrade: 🚫売り禁バッジ", dv.includes("🚫売り禁"));
-  check("daytrade: フェードと別物の明示", dv.includes("別戦略"));
-  check("daytrade: BT PF表示", dv.includes("PF4.2")&&dv.includes("PF1.84"));
-  check("daytrade: 自動売買でない明示", dv.includes("自動売買でも"));
+  check("daytrade: フェードと別物の明示", dv.includes("別物"));
+  check("daytrade: 失効の明示（未来情報の混入）", dv.includes("未来情報の混入")&&dv.includes("失効"));
+  check("daytrade: 訂正後PFを表示", dv.includes("PF0.5")&&dv.includes("PF1.14"));
+  check("daytrade: 買いは負けと明示", dv.includes("買い方向は検証で負け")&&dv.includes("-0.95"));
+  check("daytrade: 売りはWF不合格と明示", dv.includes("前半0.87")&&dv.includes("合格せず"));
+  check("daytrade: 唯一息のある型(VWAPバウンス)を提示", dv.includes("VWAPから+3%")&&dv.includes("後半PF1.19"));
+  check("daytrade: 3回消えた経緯の明示", dv.includes("3回とも消えた"));
+  check("daytrade: 本気の資金はフェードへ誘導", dv.includes("本気の資金はそちら"));
   check("daytrade: 損切利確カード", dv.includes("損切り・利確イメージ")&&dv.includes("MA5を割って")&&dv.includes("ラインを置かない"));
-  check("daytrade: トレール優位の根拠", dv.includes("PF1.95")&&dv.includes("PF2.40"));
+  check("daytrade: 旧PF主張が残っていない", !dv.includes("PF2.40")&&!dv.includes("PF1.95")&&!dv.includes("前後半どちらもプラス"));
   check("daytrade: 損切利確の図解SVG", dv.includes("<svg")&&dv.includes("MA5（線路）")&&dv.includes("①押し目で買い")&&dv.includes("③MA5割れで手仕舞い"));
   check("daytrade: 上位5のみ本命表示", dv.includes("買い0")&&dv.includes("買い4")&&dv.split("📂 全部見る")[0].indexOf("買い5")===-1);
   check("daytrade: 📂全部見るdetailsで残り表示", dv.includes("📂 全部見る（残り3銘柄")&&dv.includes("買い7")&&dv.includes("売り6"));

@@ -847,7 +847,12 @@ def build() -> dict:
             "buy": [_dt_row(r, False) for r in _buy],
             "sell": [_dt_row(r, True) for r in _sell],
             "buy_total": len(_buy), "sell_total": len(_sell),
-            "stats": {"buy_pf": 1.84, "sell_pf": 4.20, "tf": "15分足", "ma": 5},
+            # 【2026-07-26 訂正】旧 buy_pf1.84 / sell_pf4.20 は look-ahead バグ（当日の騰落率で
+            # 当日の銘柄を選んでいた）の産物。銘柄を39→1,165に拡大し shift(1) で直した実測値に差替。
+            # 詳細: _bt_intraday_wide.py / memory: project_discretionary_daytrade.md
+            "stats": {"buy_pf": 0.50, "sell_pf": 1.14, "tf": "15分足", "ma": 5,
+                      "buy_avg": -0.95, "sell_h1": 0.87, "sell_h2": 1.37,
+                      "verdict": "invalidated"},
         }
         for r in (_buy[:12] + _sell[:12]):        # 上位12銘柄は詳細チャートを出せるようにexport対象化
             r["fade_pick"] = True
