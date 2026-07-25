@@ -1211,11 +1211,12 @@ function viewDaytrade(){
       <div style="font-size:12.5px;line-height:1.75;margin-top:6px">
         <b style="color:var(--tx)">前日-4%以上下げた株（株価1,000〜5,000円・貸借○）が、日中にVWAPから+3%以上 上へ跳ねたら空売り → VWAPまで戻したら買い戻し（戻らなければ引け）</b><br>
         <span class="muted">＝下げた株の日中の反発を叩く。実測 n=38 / PF2.16 / 勝率68.4%（コスト0.10%込）。ただし<b style="color:var(--tx)">後半PF1.19＝ほぼトントン</b>・約80パターン試して1つ通過・60日しか見ていない。<b style="color:var(--tx)">紙トレで3ヶ月貯めてから判断</b>。</span></div></div>
-    <div class="card"><b>🎯 損切り・利確イメージ</b>
+    <div class="card"><b>🎯 出口：15分足5MAとVWAPの役割（2026-07-26 実測で訂正）</b>
       <div style="font-size:12.5px;line-height:1.75;margin-top:6px">
-        <b style="color:var(--dn)">🛑 損切り＝固定・即</b>：入った<b>タッチ足の逆側の外</b>（買い=そのバーの安値の少し下／売り=高値の少し上）。だいたい-0.3〜-1%。<b style="color:var(--tx)">割れたら「押し目/戻りが失敗した証拠」＝即逃げる。ズラさない。</b><br>
-        <b style="color:var(--up)">✅ 利確＝ラインを置かない</b>：<b style="color:var(--tx)">MA5を割って15分足が確定するまで持つ</b>（トレール）。上げてる間はMA5が線路。VWAPも割ったら即降りる。<br>
-        <span class="muted">※この出口の作法（損は即・利はトレール）自体は一般論として妥当ですが、<b style="color:var(--tx)">以前ここに載せていた成績の裏付けは2026-07-26に失効しました</b>（未来情報の混入）。数字を根拠にしないでください。</span></div>
+        以前ここには「MA5が線路。割れるまで持てば利は青天井」と書いていましたが、<b style="color:var(--tx)">失効したBTからの文言でした</b>。正しく測り直すと役割は逆です。<br>
+        <b style="color:var(--dn)">🛑 5MA＝ブレーキ（守りの道具）</b>：5MAを逆に抜けたら降りる出口にすると、<b style="color:var(--tx)">最悪の1回が-8.3%→-2.7%と1/3</b>になります。ただし<b style="color:var(--tx)">1回の利益も+1.06%→+0.11%と1/10</b>。安全になるが、残る期待値はほぼ手数料と同じ。<br>
+        <b style="color:var(--up)">🎯 VWAP＝ターゲット（攻めの道具）</b>：VWAPまで戻すのを待つ出口が最も期待値が高い（PF2.24・1回+1.06%）。代わりに外した時の傷は深い（最悪-8.3%）。<br>
+        <span class="muted">＝<b style="color:var(--tx)">5MAは「利を伸ばす線路」ではなく「早く降りるブレーキ」</b>。傷を浅くしたいなら5MA、期待値を取りにいくならVWAP。両取りはできません。</span></div>
       <div class="muted" style="font-size:11px;margin-top:6px">ひとこと：<b style="color:var(--tx)">「損は即・利は待て。MA5が線路、割れたら降りるだけ」</b></div>
       ${dtDiagram()}</div>
     ${sec(`🟢 買い候補（前日+${dw.move_min||4}%↑の強い株）`,"--up",buy,"buy",

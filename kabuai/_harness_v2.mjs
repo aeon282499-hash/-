@@ -327,7 +327,7 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   check("daytrade: 唯一息のある型(VWAPバウンス)を提示", dv.includes("VWAPから+3%")&&dv.includes("後半PF1.19"));
   check("daytrade: 3回消えた経緯の明示", dv.includes("3回とも消えた"));
   check("daytrade: 本気の資金はフェードへ誘導", dv.includes("本気の資金はそちら"));
-  check("daytrade: 損切利確カード", dv.includes("損切り・利確イメージ")&&dv.includes("MA5を割って")&&dv.includes("ラインを置かない"));
+  check("daytrade: 出口カード(5MA=ブレーキ/VWAP=ターゲット)", dv.includes("5MAとVWAPの役割")&&dv.includes("ブレーキ")&&dv.includes("ターゲット")&&dv.includes("1/3"));
   check("daytrade: 旧PF主張が残っていない", !dv.includes("PF2.40")&&!dv.includes("PF1.95")&&!dv.includes("前後半どちらもプラス"));
   check("daytrade: 損切利確の図解SVG", dv.includes("<svg")&&dv.includes("MA5（線路）")&&dv.includes("①押し目で買い")&&dv.includes("③MA5割れで手仕舞い"));
   check("daytrade: 上位5のみ本命表示", dv.includes("買い0")&&dv.includes("買い4")&&dv.split("📂 全部見る")[0].indexOf("買い5")===-1);
