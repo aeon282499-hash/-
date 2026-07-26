@@ -10,19 +10,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # ── 投げ売りブースター(A/B検証)を同じ確実経路(cron-job.org→Worker→ここ)で発火 ──
-  # 本体(run)とは独立ジョブ＝ここが失敗しても本番配信は無傷。
-  # capitulation.py側に同日ガードがあるため、保険cron(8:15)との二重発火はスキップされ無害。
-  trigger-capit:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      actions: write
-    steps:
-      - name: 投げ売りブースター配信をdispatch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run schedule_capitulation.yml --repo "${{ github.repository }}" --ref main
+  # ── 投げ売りブースター(A/B検証)は2026-07-26に停止（本人指示）──
+  # 18日で確定1件・投げ売り日0件＝A/Bの母数が集まらず、配信も金曜に多重発火していた。
+  # 再開する場合はこの trigger-capit ジョブと schedule_capitulation*.yml の cron を戻す。
 
   # ── 決算持ち越し: 朝の売り忘れ防止リマインダー（2026-07-10・独立ジョブ＝本番配信は無傷） ──
   # 昨日大引けで買った建玉を「今日の寄り成行で売る」確認を各階層チャンネルへ。建玉ゼロなら無送信。

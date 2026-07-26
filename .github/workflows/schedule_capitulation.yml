@@ -6,8 +6,8 @@ name: 投げ売りブースター配信（A/Bテスト）
 # （cron-job.org→Cloudflare Worker経路に相乗り）。下のcronはGitHub側の保険。
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '15 23 * * 0-4'   # 8:15 JST（本番8:05の後・保険）
+  # schedule: 2026-07-26に停止（本人指示）。再開は下のcronを戻す
+  #  - cron: '15 23 * * 0-4'
 
 concurrency:
   group: capitulation-morning

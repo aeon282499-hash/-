@@ -6,8 +6,8 @@ name: 投げ売りブースター大引けチェック（A/Bテスト）
 # （cron-job.org→Cloudflare Worker経路に相乗り）。下のcronはGitHub側の保険。
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '58 5 * * 1-5'   # 14:58 JST（本番14:55の後・保険）
+  # schedule: 2026-07-26に停止（本人指示）。再開は下のcronを戻す
+  #  - cron: '58 5 * * 1-5'
 
 concurrency:
   group: capitulation-close
@@ -40,17 +40,9 @@ jobs:
       - name: 大引けチェック実行
         run: python capitulation.py close
 
-      - name: A/B比較レポート（金曜のみ）
-        continue-on-error: true
-        run: |
-          dow=$(TZ=Asia/Tokyo date +%u)   # 5=金曜
-          if [ "$dow" = "5" ]; then
-            echo "金曜 → A/B比較レポート配信"
-            python capitulation.py report
-          else
-            echo "金曜ではないのでレポートはスキップ"
-          fi
-
+      # A/B比較レポートの配信は2026-07-26に停止（本人指示）。
+      # 同日ガードが close にしか無く、3経路(自前cron/schedule_closeのdispatch/保険)から
+      # 起動されるため金曜に最大4連投していた。再開時はガードも一緒に入れること。
       - name: テスト用ポジション保存
         run: |
           git config user.name  "github-actions[bot]"
