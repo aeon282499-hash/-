@@ -125,12 +125,13 @@ jobs:
             echo "JST $day日: 月初ではないのでスキップ"
           fi
 
-      # ── セクターローテ: 2026-07-04 買い＋売りとも専用Discordへ配信ON ──
-      # (main_sector_theme.py: SELL_ONLY=False / MAX_SELL_PER_DAY=1 / DISCORD_NOTIFY=True。
-      #  買い=DISCORD_WEBHOOK_URL_SECTOR_THEME / 売り=DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL
-      #  （売り用が未設定なら買い用へフォールバック＝1チャンネルにまとまる）。
-      #  完全停止に戻すには下3行をコメントアウト、アプリ集約に戻すなら DISCORD_NOTIFY=False)
-      - name: スイングセクターローテ配信実行（買い＋売り・相乗りで確実発火）
+      # ── セクターローテ: Discord配信は停止中（2026-07-22 本人指示・main_sector_theme.py
+      #    の DISCORD_NOTIFY=False。毎日0件通知が不要なため）。判定とJSON保存だけ継続する。
+      #    2026-07-26 本人指示「セクターローテはいらない」を再確認＝配信は停止のまま維持し、
+      #    空いた買いチャンネルは出口ボラ正規化の紙並走（shadow_exit.py）が使う。
+      #    再開するなら main_sector_theme.py の DISCORD_NOTIFY=True（配信先が影と衝突する点に注意）。
+      #    計算ごと止めるなら下3行をコメントアウト。
+      - name: スイングセクターローテ判定実行（JSON保存のみ・Discord配信は停止中）
         continue-on-error: true
         run: python main_sector_theme.py
 

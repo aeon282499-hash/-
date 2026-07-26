@@ -304,6 +304,9 @@ def report() -> None:
 # 本番チャンネルとは別のwebhookにだけ送る。ここが落ちても本番配信には一切影響しない
 # （run_shadow 内で try/except、さらに main.py 側でも try/except に包まれている）。
 SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"
+# 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
+# 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
+NOTIFY_KEYS = ("main",)
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
 
 
@@ -342,7 +345,8 @@ def send_discord(today: date) -> bool:
 
     # ① 今朝の影シグナル（銘柄は本番と同一・違うのは損切り価格だけ）
     lines = []
-    for key, (_, _, size, label) in TIER_FILES.items():
+    for key in NOTIFY_KEYS:
+        _, _, size, label = TIER_FILES[key]
         for r in load_ledger(key):
             if r["signal_date"] != today_str:
                 continue
@@ -360,15 +364,18 @@ def send_discord(today: date) -> bool:
             )
     if lines:
         embeds.append({
-            "title": f"🧪 影の損切り設定 — {today_str}",
-            "description": "\n\n".join(lines[:10]),
+            "title": f"🧪【検証用・張らない】影の損切り設定 — {today_str}",
+            "description": ("⚠️ これは**発注しない**紙上の比較です（同じチャンネルのセクターローテは実弾用）。\n"
+                            "銘柄・寄指・利確は本番スイングと完全に同一で、**損切り幅だけ**が違います。\n\n"
+                            + "\n\n".join(lines[:10])),
             "color": _COLOR_BUY,
-            "footer": {"text": "銘柄・寄指・利確は本番と完全に同一。違うのは損切り幅だけ"},
+            "footer": {"text": "実際の発注は本番スイングの配信（損切り一律-3%）に従うこと"},
         })
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
     settled = []
-    for key, (_, _, size, label) in TIER_FILES.items():
+    for key in NOTIFY_KEYS:
+        _, _, size, label = TIER_FILES[key]
         live = _live_closed(key)
         for r in load_ledger(key):
             if r.get("exit_date") != today_str or r["status"] not in ("closed", "expired"):
@@ -386,14 +393,15 @@ def send_discord(today: date) -> bool:
                 f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
     if settled:
         embeds.append({
-            "title": "📕 影の決済",
+            "title": "📕【検証用】影の決済（本番の帳簿とは別物）",
             "description": "\n".join(settled[:12]),
             "color": _COLOR_INFO,
         })
 
     # ③ 通算スコアボード
     grand, board = 0.0, []
-    for key, (_, _, size, label) in TIER_FILES.items():
+    for key in NOTIFY_KEYS:
+        _, _, size, label = TIER_FILES[key]
         pairs = _pairs(key)
         if not pairs:
             continue
@@ -407,7 +415,7 @@ def send_discord(today: date) -> bool:
             f"差 **{(dsh - dl) / 10_000:+.2f}万**")
     if board:
         embeds.append({
-            "title": f"📊 通算 本番 vs 影　合計差 {grand / 10_000:+.2f}万",
+            "title": f"📊【検証用】通算 本番 vs 影　合計差 {grand / 10_000:+.2f}万",
             "description": "\n".join(board),
             "color": _COLOR_WIN if grand >= 0 else _COLOR_LOSE,
             "footer": {"text": "10年BTでは大100万で+234.5万→+345.3万・最悪3年-116.2→-78.1万。"
