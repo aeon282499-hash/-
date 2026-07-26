@@ -57,17 +57,20 @@ PEAD_EXT_DAYS = 5     # エントリー日からの営業日数（この日の�
 # 枠を解放する（2026-07-15追加・放置すると枠1つが永久占有＋毎朝リマインダーが鳴り続ける）
 EXPIRE_CAL_DAYS = 14
 
-# 3階層（2026-07-10分割・スイングと同じ価格帯構造・各8枠）
+# 【2026-07-26】本人指示「決算も大だけでいい」→ 大資金1階層のみに縮小。
+# 切替時点で中/小はともに未決済ゼロ＝管理されない建玉を残さずに外せることを確認済み
+# （大は 4063.T 信越化学工業 が pending で残るが、これは継続する側）。
+# 中/小の positions_earnings_{mid,small}.json は削除せず残置＝下の2行を戻すだけで復活できる。
 TIERS = [
     {"label": "大資金", "size": 1_000_000, "price_cap": 10000,
      "webhook_env": "DISCORD_WEBHOOK_EARNINGS_URL",
      "positions_file": "positions_earnings.json"},
-    {"label": "中資金", "size": 500_000, "price_cap": 5000,
-     "webhook_env": "DISCORD_WEBHOOK_EARNINGS_MID_URL",
-     "positions_file": "positions_earnings_mid.json"},
-    {"label": "小資金", "size": 300_000, "price_cap": 3000,
-     "webhook_env": "DISCORD_WEBHOOK_EARNINGS_SMALL_URL",
-     "positions_file": "positions_earnings_small.json"},
+    # {"label": "中資金", "size": 500_000, "price_cap": 5000,
+    #  "webhook_env": "DISCORD_WEBHOOK_EARNINGS_MID_URL",
+    #  "positions_file": "positions_earnings_mid.json"},
+    # {"label": "小資金", "size": 300_000, "price_cap": 3000,
+    #  "webhook_env": "DISCORD_WEBHOOK_EARNINGS_SMALL_URL",
+    #  "positions_file": "positions_earnings_small.json"},
 ]
 MAX_PRICE_CAP = max(t["price_cap"] for t in TIERS)
 

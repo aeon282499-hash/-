@@ -13,9 +13,15 @@ import main_earnings_hold as m
 PASS = 0
 FAIL = 0
 
-TIER_L = m.TIERS[0]  # 大100万
-TIER_M = m.TIERS[1]  # 中50万
-TIER_S = m.TIERS[2]  # 小30万
+# 2026-07-26に本番は大資金1階層のみへ縮小（本人指示）。ただし**階層機構はコードに残っている**ので、
+# 中/小は合成tierで回して回帰カバレッジを維持する（復活時にそのまま効く）。
+TIER_L = m.TIERS[0]  # 大100万（本番で稼働中）
+TIER_M = {"label": "中資金", "size": 500_000, "price_cap": 5000,
+          "webhook_env": "DISCORD_WEBHOOK_EARNINGS_MID_URL",
+          "positions_file": "positions_earnings_mid.json"}
+TIER_S = {"label": "小資金", "size": 300_000, "price_cap": 3000,
+          "webhook_env": "DISCORD_WEBHOOK_EARNINGS_SMALL_URL",
+          "positions_file": "positions_earnings_small.json"}
 
 
 def check(label, cond):
@@ -28,13 +34,17 @@ def check(label, cond):
         print(f"  NG  {label}")
 
 
-print("── TIERS構成 ──")
-check("3階層", len(m.TIERS) == 3)
+print("── TIERS構成（2026-07-26〜 大資金1階層のみ・本人指示）──")
+check("稼働は1階層だけ", len(m.TIERS) == 1)
+check("稼働階層は大資金", m.TIERS[0]["label"] == "大資金")
+check("中/小は配信されない", not any(t["label"] in ("中資金", "小資金") for t in m.TIERS))
 check("大=100万/1万円", TIER_L["size"] == 1_000_000 and TIER_L["price_cap"] == 10000)
-check("中=50万/5千円", TIER_M["size"] == 500_000 and TIER_M["price_cap"] == 5000)
-check("小=30万/3千円", TIER_S["size"] == 300_000 and TIER_S["price_cap"] == 3000)
-check("webhook環境変数が階層別", len({t["webhook_env"] for t in m.TIERS}) == 3)
-check("positionsファイルが階層別", len({t["positions_file"] for t in m.TIERS}) == 3)
+check("中=50万/5千円（合成・復活時の仕様）", TIER_M["size"] == 500_000 and TIER_M["price_cap"] == 5000)
+check("小=30万/3千円（合成・復活時の仕様）", TIER_S["size"] == 300_000 and TIER_S["price_cap"] == 3000)
+check("webhook/positionsは階層ごとに別（機構は維持）",
+      len({t["webhook_env"] for t in (TIER_L, TIER_M, TIER_S)}) == 3
+      and len({t["positions_file"] for t in (TIER_L, TIER_M, TIER_S)}) == 3)
+check("候補抽出の価格上限は大の1万円のまま", m.MAX_PRICE_CAP == 10000)
 
 print("── rule_pass 境界 ──")
 check("基準ケース通過(中)", m.rule_pass(45.0, -3.1, 1e9, 5000, 5000))
@@ -138,7 +148,7 @@ store_e3 = {"positions": [{"ticker": "7777.T", "name": "t", "date": "2026-06-15"
                            "ext_exit_date": "2026-06-22"}]}
 _, _, exp3 = m.settle_pendings(store_e3, date(2026, 7, 8), {}, 500_000)
 check("extendedも14日超で失効", store_e3["positions"][0]["status"] == "expired" and len(exp3) == 1)
-eex = m.embed_expired(exp1, m.TIERS[1])
+eex = m.embed_expired(exp1, TIER_M)
 check("失効embedはタイトル失効+手動確認の指示", "失効" in eex["title"] and "手動" in eex["description"])
 
 if _real_yf is not None:
