@@ -112,6 +112,10 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
 
     rows = load_ledger(key)
     seen = {(r["ticker"], r["signal_date"]) for r in rows}
+    # 極みは損切りが広い分だけ通常版より長く持つことがある。通常版が先に決済して同じ銘柄に
+    # 再シグナルを出しても、極みがまだ保有中なら二重に建ててはいけない（実弾で回す以上、
+    # 同一銘柄の重複建ては通常版と同じく禁止・2026-07-26）。
+    still_open = {r["ticker"] for r in rows if r.get("status") in ("pending", "open")}
     added = 0
     for s in payload.get("signals", []):
         if s.get("direction") != "BUY":           # SELLは対象外（年26件で検出力なし）
@@ -119,6 +123,9 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         tk = s["ticker"]
         sig_date = today.strftime("%Y-%m-%d")
         if (tk, sig_date) in seen:
+            continue
+        if tk in still_open:
+            print(f"[shadow-{key}] {tk} は極みで保有中 → 重複エントリーを回避")
             continue
         df = all_data.get(tk)
         atr = atr_pct_at(df, sig_date) if df is not None else None

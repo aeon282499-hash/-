@@ -78,6 +78,7 @@ jobs:
       DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
       DISCORD_WEBHOOK_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_SMALL_URL }}
       DISCORD_WEBHOOK_CLOSE_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_CLOSE_URL_PUBLIC }}
+      DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       PYTHONIOENCODING: utf-8
 
@@ -96,12 +97,19 @@ jobs:
       - name: 大引け前チェック実行
         run: python close_check.py
 
+      # ── 「売買シグナル極み」の大引けチェック（2026-07-26）──
+      # 極みは損切りが銘柄ごと（ATR連動）なので通常版の一律-3%判定では足りず、専用に実行する。
+      # continue-on-error: ここが落ちても上の通常版の配信・マーカー保存は完了済みで無傷。
+      - name: 極みの大引けチェック実行
+        continue-on-error: true
+        run: python kiwami_close.py
+
       - name: マーカー保存（last_close_check.json をコミット）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add last_close_check.json || true
+          git add last_close_check.json kiwami_close_last_run.json || true
           git diff --cached --quiet || git commit -m "chore: update last_close_check [skip ci]"
           git pull --rebase origin main
           git push origin main

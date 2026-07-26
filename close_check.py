@@ -118,7 +118,8 @@ def _entry_day_open(pos: dict, today: date, historical_data: dict) -> float | No
 
 
 def _oco_fill(direction: str, entry_open: float | None,
-              day_high: float | None, day_low: float | None) -> dict | None:
+              day_high: float | None, day_low: float | None,
+              stop_pct: float = 3.0) -> dict | None:
     """ザラ場OCO(TP +5% / STOP -3%)が当日中に約定したかを当日高安から判定。
     約定していれば {kind, pnl_pct, level, hit} を返す（STOP優先＝backtest_rangeと同順）。
     OCOは証券会社の実注文なので、約定済み＝もう保有していない＝処分対象でも保有継続でもない。
@@ -126,20 +127,24 @@ def _oco_fill(direction: str, entry_open: float | None,
     高安はyfinance 5分足由来で公式と1円前後ズレうるため、水準をmax(2円, 0.1%)
     以上明確に抜けた時だけ約定と断定する（境界は未約定扱い＝MAXHOLD/RSI判定に回す）。
     未約定と誤っても処分指示が空振りするだけだが、約定と誤るとMAXHOLD日の処分指示が
-    出ず実保有と帳簿がズレる＝安全側は未約定（寄指境界バグと同族・2026-07-16）。"""
+    出ず実保有と帳簿がズレる＝安全側は未約定（寄指境界バグと同族・2026-07-16）。
+
+    stop_pct は損切り幅%。既定3.0＝通常版の一律損切りで、従来の挙動と完全に同じ。
+    「売買シグナル極み」は銘柄ごとのATR連動損切りを持つのでその値を渡す（2026-07-26）。"""
     if not entry_open or day_high is None or day_low is None:
         return None
     eps = max(2.0, entry_open * 0.001)
+    s = stop_pct / 100
     if direction == "BUY":
-        stop, tp = entry_open * 0.97, entry_open * 1.05
+        stop, tp = entry_open * (1 - s), entry_open * 1.05
         if day_low <= stop - eps:
-            return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_low}
+            return {"kind": "STOP", "pnl_pct": -stop_pct, "level": stop, "hit": day_low}
         if day_high >= tp + eps:
             return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_high}
-    else:  # SELL（空売り：利確は下＝entry×0.95 / 損切は上＝entry×1.03）
-        stop, tp = entry_open * 1.03, entry_open * 0.95
+    else:  # SELL（空売り：利確は下＝entry×0.95 / 損切は上＝entry×(1+s)）
+        stop, tp = entry_open * (1 + s), entry_open * 0.95
         if day_high >= stop + eps:
-            return {"kind": "STOP", "pnl_pct": -3.0, "level": stop, "hit": day_high}
+            return {"kind": "STOP", "pnl_pct": -stop_pct, "level": stop, "hit": day_high}
         if day_low <= tp - eps:
             return {"kind": "TP", "pnl_pct": +5.0, "level": tp, "hit": day_low}
     return None
@@ -231,7 +236,9 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
         # ── 最優先: ザラ場OCO(+5%/-3%)約定チェック ──
         # 当日高安がTP/STOPに触れていれば証券会社のOCOで既に決済済み＝
         # 「処分対象」でも「保有継続」でもない。その旨だけ通知して以降の判定はしない。
-        fill = _oco_fill(direction, entry_open, day_high, day_low)
+        # stop_pct は極みの玉だけが持つ（通常版のpositionsには無い→既定3.0＝従来どおり）
+        fill = _oco_fill(direction, entry_open, day_high, day_low,
+                         stop_pct=float(pos.get("stop_pct") or 3.0))
         if fill:
             verb = "利確" if fill["kind"] == "TP" else "損切"
             act  = "買戻し" if direction == "SELL" else "決済"
