@@ -1,0 +1,41 @@
+name: ギャップフェード 朝の候補配信
+
+# 当日GU+3〜8%を12:30に空売り→大引け買戻し（_bt_intraday_grand.py で発見・2026-07-26）。
+# 寄り値が要るので EOD ビルドでは出せず、寄り後に専用で取得する。
+# 9:15に最初の15分足が確定 → 9:25起動で寄り値が取れる。エントリーは12:30なので
+# GitHub cron が1〜2時間遅延しても間に合う（遅延耐性が高い設計）。
+on:
+  schedule:
+    - cron: '25 0 * * 1-5'      # 00:25 UTC = 9:25 JST（平日）
+  workflow_dispatch:
+
+permissions:
+  contents: write               # gapfade_ledger.json のコミットに必要
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: 依存関係
+        run: pip install -q pandas numpy requests python-dotenv
+      - name: 候補生成＋前日分の答え合わせ＋配信
+        env:
+          DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
+          DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
+        run: python -X utf8 gapfade.py
+      - name: 台帳を保存
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          [ -f gapfade_ledger.json ] && git add gapfade_ledger.json
+          git diff --cached --quiet || git commit -m "chore(gapfade): update ledger [skip ci]"
+          git pull --rebase --autostash origin main
+          git push origin main
