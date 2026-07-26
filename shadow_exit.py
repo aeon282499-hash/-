@@ -251,6 +251,12 @@ def run_shadow(tiers, today: date, get_data) -> None:
         send_discord_sell(today)     # 極み・売り（中身は通常版と同一）
     except Exception as e:
         print(f"[shadow] 極み売りの配信スキップ（通常版に影響なし）: {e}")
+    try:
+        from main import is_month_first_trading_day
+        if is_month_first_trading_day(today):    # 月初営業日だけ（通常版と同じタイミング）
+            monthly_report(today)
+    except Exception as e:
+        print(f"[shadow] 極み月次の配信スキップ（通常版に影響なし）: {e}")
 
 
 # ────────────────────────────── レポート ──────────────────────────────
@@ -582,6 +588,66 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "description": "\n".join(lines),
         "color": _COLOR_WIN if total >= 0 else _COLOR_LOSE,
         "footer": {"text": f"1件{size // 10000}万・買いは損切りATR%×2.0(下限2.0%)／利確+5%は通常版と同じ"},
+    }])
+
+
+def monthly_report(today: date) -> bool:
+    """月初営業日に出す極みの月別・年間損益（通常版 notifier._build_monthly_embed と同じ算式）。
+
+    通常版と数字を並べて比べられるよう、資金枠の扱いも合わせる＝5枠(満枠は見送り)を再現し、
+    月利は Σpnl% ÷ 5、資本は size×5 とする。極みは買いのみ（売りは通常版と中身が同一）。
+    """
+    from collections import defaultdict
+    from notifier import _slot_funded
+
+    size = TIER_FILES["main"][2]
+    capital, weight = size * 5, 1 / 5
+    rows = load_ledger("main")
+    funded = _slot_funded(rows, 5)
+
+    monthly, live = defaultdict(list), defaultdict(list)
+    for r in rows:
+        if r.get("status") != "closed" or r.get("pnl_pct") is None or id(r) not in funded:
+            continue
+        ym = (r.get("exit_date") or "")[:7]
+        if not ym:
+            continue
+        monthly[ym].append(r["pnl_pct"])
+        live[ym].append(-r.get("live_stop", LIVE_STOP)
+                        if r.get("exit_type") == "STOP" and r["pnl_pct"] < 0 else None)
+
+    year = str(today.year)
+    ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
+    if not ym_year:
+        print("[shadow] 月次: 今年の確定分なし → 送信しない")
+        return False
+
+    lines = []
+    for ym in sorted(ym_year):
+        p = ym_year[ym]
+        mr = sum(p) * weight
+        wins = sum(1 for x in p if x > 0)
+        lines.append(f"`{ym}` {len(p)}件 勝率{wins}/{len(p)} "
+                     f"**月利{mr:+.1f}%**（{mr / 100 * capital / 10000:+.1f}万円）")
+    allp = [x for v in ym_year.values() for x in v]
+    ann = sum(allp) * weight
+    desc = "\n".join(lines)
+    desc += f"\n\n**{year}年合計: {ann:+.1f}%（{ann / 100 * capital / 10000:+.1f}万円）**"
+
+    # 極みの意味＝損切りの違いがどれだけ効いたか。通常版(一律-3%)との差を併記する。
+    pairs = _pairs("main")
+    if pairs:
+        dl = sum(p[2] for p in pairs) / 100 * size
+        dsh = sum(p[3] for p in pairs) / 100 * size
+        desc += (f"\n\n📊 通算 通常{dl / 10000:+.1f}万 / 極み{dsh / 10000:+.1f}万 "
+                 f"＝ **差 {(dsh - dl) / 10000:+.1f}万**（突合{len(pairs)}件）")
+
+    return _shadow_post([{
+        "title": f"📈 {year}年 月別・年間損益（売買シグナル極み・買い）",
+        "description": desc,
+        "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
+        "footer": {"text": f"資金{capital // 10000}万・5枠(1件{size // 10000}万)・"
+                           "資金枠に収まる分のみ集計／損切りはATR%×2.0(下限2.0%)"},
     }])
 
 
