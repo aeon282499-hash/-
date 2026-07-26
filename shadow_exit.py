@@ -153,11 +153,20 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
 
 
 def update_ledger(key: str, today: date, all_data: dict) -> tuple[int, int]:
-    """影台帳の未決済を前日までのデータで進める。tracker.update_positions と同じ判定順・同じ約定前提で、
-    損切り幅だけ銘柄ごとの stop_pct を使う。戻り値=(決済数, 失効数)。"""
+    """極み台帳の未決済を前日までのデータで進めて保存する。戻り値=(決済数, 失効数)。"""
+    rows = load_ledger(key)
+    closed, expired = advance(rows, today, all_data)
+    save_ledger(key, rows)
+    return closed, expired
+
+
+def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
+    """渡された台帳リストをその場で進める（保存はしない）。tracker.update_positions と
+    同じ判定順・同じ約定前提で、損切り幅だけ銘柄ごとの stop_pct を使う。
+    週次レポートは deepcopy に対してこれを呼ぶ＝帳簿を汚さずに当日引けまで反映できる
+    （report._send_weekly_reports のドライランと同じ手口）。"""
     from screener import calc_rsi
 
-    rows = load_ledger(key)
     today_str = today.strftime("%Y-%m-%d")
     closed = expired = 0
 
@@ -214,7 +223,6 @@ def update_ledger(key: str, today: date, all_data: dict) -> tuple[int, int]:
                 closed += 1
                 break
 
-    save_ledger(key, rows)
     return closed, expired
 
 
@@ -439,8 +447,16 @@ def send_discord(today: date) -> bool:
                                "ただし差が出るのは損切りに触った玉だけ＝数ヶ月貯めないと判断不能"},
         })
 
+    if not lines:
+        # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
+        embeds.insert(0, {
+            "title": f"⚡ 売買シグナル極み（買い）— {today_str}",
+            "description": "**本日の買いシグナルはありません。**\n"
+                           "（極みは通常版と同じ銘柄を選び、損切りだけATR連動にした版）",
+            "color": _COLOR_INFO,
+        })
     if not embeds:
-        print("[shadow] 配信対象なし（新規0・決済0・突合0）→ 送信しない")
+        print("[shadow] 配信対象なし → 送信しない")
         return False
     return _shadow_post(embeds)
 
@@ -463,8 +479,12 @@ def send_discord_sell(today: date) -> bool:
         return False
     sigs = [s for s in payload.get("signals", []) if s.get("direction") == "SELL"]
     if not sigs:
-        print("[shadow] 極みの売り: 本日0件 → 送信しない")
-        return False
+        return _shadow_post([{
+            "title": f"⚡ 売買シグナル極み（売り）— {today_str}",
+            "description": ("**本日の空売りシグナルはありません。**\n"
+                            "売りは日経25MA以下のときだけ出る設計で、年26件程度の希少シグナル。"),
+            "color": _COLOR_INFO,
+        }], env=SHADOW_SELL_WEBHOOK_ENV)
 
     lines = []
     for s in sigs:
@@ -482,6 +502,87 @@ def send_discord_sell(today: date) -> bool:
         "color": _COLOR_LOSE,
         "footer": {"text": "貸借区分・在庫はSBIの発注画面で最終確認すること"},
     }], env=SHADOW_SELL_WEBHOOK_ENV)
+
+
+_EXIT_LABEL = {"TP": "利確", "STOP": "損切", "RSI": "RSI回復", "MAXHOLD": "期限", "NOFILL": "寄指不成立"}
+
+
+def _md(d: str | None) -> str:
+    return f"{d[5:7]}/{d[8:10]}" if d and len(d) >= 10 else "?"
+
+
+def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict] | None = None) -> bool:
+    """金曜引け後の極み週次（通常版 notifier.send_weekly_report と同じ体裁）。
+
+    帳簿は翌朝 run_shadow が確定するため、金曜15:40時点では当日決済分が open のまま。
+    通常版と同じくコピーに対して当日引けまでドライランしてから集計する（保存はしない）。
+    売りは極みでも通常版と中身が同一なので、渡された通常版のポジションをそのまま使う。
+    """
+    import copy
+    from datetime import timedelta
+
+    size = TIER_FILES["main"][2]
+    rows = copy.deepcopy(load_ledger("main"))
+    if all_data:
+        advance(rows, today + timedelta(days=1), all_data)   # 当日引けまで反映（非破壊）
+
+    ws = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    ts = today.strftime("%Y-%m-%d")
+    week = [r for r in rows if r.get("status") == "closed" and r.get("pnl_pct") is not None
+            and ws <= (r.get("exit_date") or "") <= ts]
+    holds = [r for r in rows if r.get("status") in ("pending", "open")]
+
+    def _shares(r):
+        base = r.get("prev_close") or r.get("entry_open") or 0
+        return max(100, int(size / base / 100) * 100) if base > 0 else 100
+
+    lines, total = [], 0
+    if week:
+        lines.append(f"📈 **買い 確定 {len(week)}件**")
+        for r in sorted(week, key=lambda x: x.get("exit_date") or ""):
+            sh = _shares(r)
+            ep = r.get("entry_open") or r.get("prev_close") or 0
+            yen = int(r["pnl_pct"] / 100 * sh * ep)
+            total += yen
+            mark = "✅" if r["pnl_pct"] > 0 else "❌"
+            lines.append(
+                f"{mark} {r['name']} {_md(r.get('entry_date'))}→{_md(r.get('exit_date'))} "
+                f"{sh:,}株｜**{yen:+,}円**（{r['pnl_pct']:+.1f}% "
+                f"{_EXIT_LABEL.get(r.get('exit_type') or '', r.get('exit_type') or '?')}"
+                f"・損切り-{r.get('stop_pct', 3.0):.1f}%）")
+        pnls = [r["pnl_pct"] for r in week]
+        win = sum(1 for p in pnls if p > 0)
+        g = sum(p for p in pnls if p > 0); l = -sum(p for p in pnls if p < 0)
+        pf = "∞" if (l <= 0 and g > 0) else ("—" if l <= 0 else f"{g / l:.2f}")
+        lines.append(f"💰 週間 **{total:+,}円**｜勝率 {win}/{len(week)}｜PF {pf}")
+    else:
+        lines.append("📈 **買い 確定 0件**（今週は決済なし）")
+
+    # 売り＝通常版と同一（ATR連動は10年検証で効果ゼロと確定したため極みでも変えていない）
+    if sell_positions:
+        sw = [p for p in sell_positions if p.get("status") == "closed"
+              and p.get("pnl_pct") is not None and p.get("direction") == "SELL"
+              and ws <= (p.get("exit_date") or "") <= ts]
+        if sw:
+            lines.append(f"\n📉 **空売り 確定 {len(sw)}件**（通常版と同一ルール）")
+            for p in sw:
+                mark = "✅" if p["pnl_pct"] > 0 else "❌"
+                lines.append(f"{mark} {p['name']} {_md(p.get('exit_date'))} {p['pnl_pct']:+.1f}%")
+
+    if holds:
+        names = "、".join(f"{r['name']}（損切り-{r.get('stop_pct', 3.0):.1f}%）" for r in holds[:5])
+        more = f" ほか{len(holds) - 5}件" if len(holds) > 5 else ""
+        lines.append(f"\n💼 持ち越し {len(holds)}件 — {names}{more}")
+    else:
+        lines.append("\n💼 持ち越し: なし")
+
+    rng = f"{(today - timedelta(days=today.weekday())).strftime('%m/%d')}–{today.strftime('%m/%d')}"
+    return _shadow_post([{
+        "title": f"📅【週次】売買シグナル極み｜{rng}",
+        "description": "\n".join(lines),
+        "color": _COLOR_WIN if total >= 0 else _COLOR_LOSE,
+        "footer": {"text": f"1件{size // 10000}万・買いは損切りATR%×2.0(下限2.0%)／利確+5%は通常版と同じ"},
+    }])
 
 
 def backfill(days: int = 120) -> None:

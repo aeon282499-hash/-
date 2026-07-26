@@ -423,10 +423,21 @@ def _send_weekly_reports(today_jst: date) -> None:
         token    = _jquants_id_token()
         all_data = batch_download_jquants(token, start=start, end=end)
 
+    main_sim_sell = None
     for tier, buy_pos, sell_pos in tier_pos:
         sim_buy  = update_positions(copy.deepcopy(buy_pos),  virtual_today, all_data=all_data)[0]
         sim_sell = update_positions(copy.deepcopy(sell_pos), virtual_today, all_data=all_data)[0]
+        if tier["key"] == "main":
+            main_sim_sell = sim_sell
         send_weekly_report(sim_buy, sim_sell, today_jst, tier=tier)
+
+    # ── 「売買シグナル極み」の週次（2026-07-27・本人が実弾で回すため通常版と同じ体裁に）──
+    # 完全に独立: ここが落ちても上の通常版3階層は送信済みで無傷（例外は握り潰す）。
+    try:
+        from shadow_exit import weekly_report as kiwami_weekly
+        kiwami_weekly(today_jst, all_data, main_sim_sell)
+    except Exception as e:
+        print(f"[report] 極みの週次スキップ（通常版に影響なし）: {e}")
 
 
 if __name__ == "__main__":
