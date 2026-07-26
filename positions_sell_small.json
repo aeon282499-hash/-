@@ -8,12 +8,12 @@
     "prev_close": 1440.0,
     "limit_price": null,
     "entry_open": 1440.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 0.069,
     "unrealized_pnl": 0.035,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-07-24"
   },
   {
     "signal_date": "2026-07-22",
@@ -24,11 +24,11 @@
     "prev_close": 2982.5,
     "limit_price": null,
     "entry_open": 2998.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -1.201,
     "unrealized_pnl": -1.001,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-07-24"
   }
 ]

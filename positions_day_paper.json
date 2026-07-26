@@ -8,7 +8,7 @@
       "basis_date": "2026-07-23",
       "prev_close": 4285.0,
       "limit_price": 4285.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 13.96,
       "short": {
         "mark": "○",
@@ -16,9 +16,34 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
+      "rank": 1,
+      "entry_session": "2026-07-24",
+      "entry_open": 4215.0,
+      "entry_close": 4105.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "4424.T",
+      "name": "Ａｍａｚｉａ",
+      "direction": "SELL",
+      "signal_date": "2026-07-27",
+      "basis_date": "2026-07-24",
+      "prev_close": 379.0,
+      "limit_price": 379.0,
+      "status": "pending",
+      "daily_gain": 15.55,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
       "rank": 1
     }
   ],
   "expired": [],
-  "last_report_date": "2026-07-24"
+  "last_report_date": "2026-07-27"
 }
