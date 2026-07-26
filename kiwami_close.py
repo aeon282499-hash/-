@@ -32,9 +32,11 @@ from zoneinfo import ZoneInfo
 
 JST = ZoneInfo("Asia/Tokyo")
 LEDGER = "shadow_exit_main.json"
+SELL_LEDGER = "positions_sell.json"      # 売りは通常版と同一ルール＝帳簿も通常版が真
 MARKER = "kiwami_close_last_run.json"
 SIZE = 1_000_000
 WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"
+SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL"
 _COLOR_ACT, _COLOR_OK, _COLOR_DONE = 0xE67E22, 0x95A5A6, 0x2ECC71
 
 
@@ -61,12 +63,26 @@ def load_open() -> list[dict]:
     return out
 
 
-def _post(embeds: list[dict]) -> bool:
+def load_open_sell() -> list[dict]:
+    """極みの売りは通常版と中身が同一（ATR連動は10年検証で効果ゼロと確定）なので、
+    帳簿も通常版の positions_sell.json をそのまま真とする。読むだけ・書かない。
+    ここで拾うのは「極みチャンネルにも処分指示を出す」ためだけ（2026-07-27）。
+    本人は極みしか見ない運用なので、これが無いと売りの決済指示を取りこぼす。"""
+    if not os.path.exists(SELL_LEDGER):
+        return []
+    with open(SELL_LEDGER, encoding="utf-8") as f:
+        rows = json.load(f)
+    rows = rows if isinstance(rows, list) else rows.get("positions", [])
+    return [r for r in rows
+            if r.get("status") in ("pending", "open") and r.get("direction", "SELL") == "SELL"]
+
+
+def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
     import requests
 
-    url = os.getenv(WEBHOOK_ENV, "").strip()
+    url = os.getenv(env, "").strip()
     if not url:
-        print(f"[kiwami_close] {WEBHOOK_ENV} 未設定 → 無送信")
+        print(f"[kiwami_close] {env} 未設定 → 無送信")
         return False
     verify = os.getenv("DISCORD_VERIFY_SSL", "true").lower() != "false"
     for i, wait in enumerate((0, 2, 4)):
@@ -84,8 +100,8 @@ def _post(embeds: list[dict]) -> bool:
 
 
 def build_embeds(targets: list[dict], checked: list[dict], today: date,
-                 positions: list[dict]) -> list[dict]:
-    stop_of = {p["ticker"]: p["stop_pct"] for p in positions}
+                 positions: list[dict], sell: bool = False) -> list[dict]:
+    stop_of = {p["ticker"]: p.get("stop_pct") or 3.0 for p in positions}
     atr_of = {p["ticker"]: p.get("atr_pct") for p in positions}
     d = today.strftime("%Y-%m-%d")
     embeds = []
@@ -101,9 +117,11 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                 f"**{t.get('name', tk)}**（{tk[:4]}）{reason}\n"
                 f"　現在値 {px:,.1f} / 含み {pnl:+.2f}%".replace("None", "—")
                 if px is not None else f"**{t.get('name', tk)}**（{tk[:4]}）{reason}")
+        act = "買い戻す" if sell else "決済する"
         embeds.append({
-            "title": f"🔔 極み｜大引けで処分 — {d}",
-            "description": ("**15:00〜15:30に成行で決済**（極みの玉）。\n\n" + "\n".join(lines)),
+            "title": f"🔔 極み｜大引けで{'買戻し' if sell else '処分'} — {d}",
+            "description": (f"**15:00〜15:30に成行で{act}**"
+                            f"（極みの{'空売り' if sell else '買い'}玉）。\n\n" + "\n".join(lines)),
             "color": _COLOR_ACT,
         })
 
@@ -111,7 +129,7 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
     holds = [c for c in checked if c not in settled]
     if settled:
         embeds.append({
-            "title": "✅ 極み｜本日OCO約定済み",
+            "title": f"✅ 極み｜本日OCO約定済み{'（空売り）' if sell else ''}",
             "description": "\n".join(
                 f"**{c.get('name', c['ticker'])}**（{c['ticker'][:4]}）{c['note']}"
                 for c in settled),
@@ -135,10 +153,11 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                 + (f" / 残り{3 - c['today_hold']}日" if c.get("today_hold") else "")
                 + note)
         embeds.append({
-            "title": "🔍 極み｜保有継続（処分なし）",
+            "title": f"🔍 極み｜{'空売り ' if sell else ''}保有継続（処分なし）",
             "description": "\n".join(lines),
             "color": _COLOR_OK,
-            "footer": {"text": "損切りは銘柄ごとに違う＝OCOの数字を通常版と取り違えないこと"},
+            "footer": {"text": ("売りは通常版と同一ルール（損切り+3%固定）"
+                                if sell else "損切りは銘柄ごとに違う＝OCOの数字を通常版と取り違えないこと")},
         })
     return embeds
 
@@ -167,12 +186,18 @@ def main() -> None:
             except Exception as e:
                 print(f"[kiwami_close] マーカー読込失敗: {e} → 続行")
 
+    # 買いと売りは独立に判定する。片方が0件でももう片方は必ず処理する
+    # （旧: 買いが0件だと return していて、売りだけ保有している日に処分指示が消えていた）
     positions = load_open()
-    if not positions:
-        print("[kiwami_close] 極みの保有玉なし → 無送信")
+    sells = load_open_sell()
+    if not positions and not sells:
+        print("[kiwami_close] 極みの保有玉なし（買い0/売り0）→ 無送信")
         return
-    print(f"[kiwami_close] 保有 {len(positions)}件: "
-          + ", ".join(f"{p['name']}(損切り-{p['stop_pct']:.1f}%)" for p in positions))
+    print(f"[kiwami_close] 保有 買い{len(positions)}件 / 売り{len(sells)}件")
+    if positions:
+        print("  買い: " + ", ".join(f"{p['name']}(損切り-{p['stop_pct']:.1f}%)" for p in positions))
+    if sells:
+        print("  売り: " + ", ".join(p.get("name", p["ticker"]) for p in sells))
 
     # 通常版と同じ判定エンジンを共有（stop_pct だけが玉ごとに違う）
     from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
@@ -180,20 +205,33 @@ def main() -> None:
     start = (today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
     data = batch_download_jquants(_jquants_id_token(), start=start,
                                   end=today.strftime("%Y-%m-%d"))
-    targets, checked = CC.collect_targets(positions, "BUY", today, data)
-    print(f"[kiwami_close] 処分対象 {len(targets)}件 / 判定済み {len(checked)}件")
 
-    embeds = build_embeds(targets, checked, today, positions)
-    if not embeds:
-        print("[kiwami_close] 送るものなし")
-        return
-    if dry:
-        print(json.dumps(embeds, ensure_ascii=False, indent=1)[:2500])
-        return
-    if _post(embeds):
+    sent = False
+    for label, pos, direction, env, is_sell in (
+            ("買い", positions, "BUY", WEBHOOK_ENV, False),
+            ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True)):
+        if not pos:
+            continue
+        try:
+            tg, ck = CC.collect_targets(pos, direction, today, data)
+            print(f"[kiwami_close] {label}: 処分対象 {len(tg)}件 / 判定済み {len(ck)}件")
+            emb = build_embeds(tg, ck, today, pos, sell=is_sell)
+            if not emb:
+                continue
+            if dry:
+                print(f"--- {label} ---")
+                print(json.dumps(emb, ensure_ascii=False, indent=1)[:1800])
+                continue
+            if _post(emb, env=env):
+                sent = True
+                print(f"[kiwami_close] {label}の送信OK")
+        except Exception as e:
+            # 片方がコケてももう片方は出す（実弾の決済指示なので落とさない）
+            print(f"[kiwami_close] {label}の処分通知スキップ: {e}")
+
+    if sent and not dry:
         with open(MARKER, "w", encoding="utf-8") as f:
             json.dump({"date": today.isoformat()}, f)
-        print("[kiwami_close] 送信OK")
 
 
 if __name__ == "__main__":
