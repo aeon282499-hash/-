@@ -27,6 +27,7 @@ jobs:
         run: pip install -q pandas numpy requests python-dotenv
       - name: 候補生成＋前日分の答え合わせ＋配信
         env:
+          DISCORD_WEBHOOK_GAPFADE_URL: ${{ secrets.DISCORD_WEBHOOK_GAPFADE_URL }}
           DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
           DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
         run: python -X utf8 gapfade.py

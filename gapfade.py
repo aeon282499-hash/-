@@ -164,7 +164,10 @@ def settle(frames: dict, ledger: list[dict]) -> int:
 
 
 def notify(day: str, cand: list[dict], stats: str, dry: bool) -> None:
-    hook = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY") or "").strip()
+    # 専用チャンネル（2026-07-26 本人指定）。未設定なら🔻フェードと同じDAY chへフォールバック。
+    hook = (os.getenv("DISCORD_WEBHOOK_GAPFADE_URL")
+            or os.getenv("DISCORD_WEBHOOK_DAY_URL")
+            or os.getenv("DISCORD_WEBHOOK_URL_DAY") or "").strip()
     if not cand:
         body = f"本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なし。**撃つ日ではありません。**"
     else:
