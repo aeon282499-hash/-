@@ -56,8 +56,13 @@ TOP_N = 4
 # 実測(59営業日): 12:45成行 PF1.70(前半1.51/後半1.97) > 12:30後場寄り成行 PF1.50(1.34/1.72)
 #                > 13:00 PF1.52 > 13:15 PF1.38。前場は9:00がPF1.15(前半0.85)で不合格。
 # ＝後場が始まって15分待つのが最良。12:30成行でも合格ラインは通る（差は3ヶ月で約8万円）。
-ENTRY_HM = "12:30"          # 足のラベル（＝12:30〜12:45の足）
-ENTRY_LABEL = "12:45"       # 実際に発注する時刻（その足の終値）
+# エントリー＝後場寄り成行（12:30）。昼休み(11:30-12:30)中に成行を仕込めば必ず約定する。
+# 2026-07-26に12:45の足終値から変更＝12:45ちょうどに板に張り付く運用は現実的でないため。
+# 実測(トップ4・58営業日)では劣化しない: 後場寄り 平均+0.435%/PF1.71/+362,161円 vs
+# 12:45 平均+0.398%/PF1.92/+334,346円。PFは下がるが平均と総額は上、しかも月別が
+# 1.29/2.32/1.17と均等（12:45は5.32＝7月偏重）＝むしろ頑健。
+ENTRY_HM = "12:30"          # 後場寄りの足
+ENTRY_LABEL = "後場寄り(12:30)"
 COST = 0.10
 CAPITAL = 500_000
 LEDGER = "gapfade_ledger.json"
@@ -153,8 +158,9 @@ def candidates(frames: dict, day: str, iss: dict) -> list[dict]:
 
 
 def price_at(sub: pd.DataFrame, hm: str) -> float | None:
-    idx = np.where(sub["hm"].to_numpy() <= hm)[0]
-    return float(sub["c"].iloc[idx[-1]]) if len(idx) else None
+    """後場寄りの約定価格＝12:30足の【始値】。終値(=12:45)ではない点に注意。"""
+    idx = np.where(sub["hm"].to_numpy() >= hm)[0]
+    return float(sub["o"].iloc[idx[0]]) if len(idx) else None
 
 
 def settle(frames: dict, ledger: list[dict]) -> int:
@@ -196,7 +202,7 @@ def notify(day: str, cand: list[dict], stats: str, dry: bool) -> None:
                            "description": body + f"\n\n{stats}",
                            "color": 0xE4405F,
                            "footer": {"text": "GU+3〜8%・貸借○・1,000〜5,000円・代金10億+ / "
-                                              "検証60日 n=466 PF1.75（1相場のみ＝小さく始める）"}}]}
+                                              "検証58日 上位4本 平均+0.435%（1相場のみ＝小さく始める）"}}]}
     if dry or not hook:
         print("[notify] 送信スキップ（--dry またはwebhook未設定）\n" + body)
         return
