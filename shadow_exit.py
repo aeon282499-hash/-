@@ -229,9 +229,13 @@ def run_shadow(tiers, today: date, get_data) -> None:
 
     # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
     try:
-        send_discord(today)
+        send_discord(today)          # 極み・買い（ATR連動の損切り）
     except Exception as e:
-        print(f"[shadow] Discord配信スキップ（台帳は保存済み・本番に影響なし）: {e}")
+        print(f"[shadow] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
+    try:
+        send_discord_sell(today)     # 極み・売り（中身は通常版と同一）
+    except Exception as e:
+        print(f"[shadow] 極み売りの配信スキップ（通常版に影響なし）: {e}")
 
 
 # ────────────────────────────── レポート ──────────────────────────────
@@ -303,20 +307,25 @@ def report() -> None:
 # ────────────────────────── Discord配信（専用チャンネル）──────────────────────────
 # 本番チャンネルとは別のwebhookにだけ送る。ここが落ちても本番配信には一切影響しない
 # （run_shadow 内で try/except、さらに main.py 側でも try/except に包まれている）。
-SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"
+# ── 「売買シグナル極み」＝本人専用の改善先行版（2026-07-26 命名）─────────────
+#  極み  : 検証を通った改善を先に入れる本人専用版。買い=ATR連動の損切り／売り=通常と同一
+#          （SELLのATR連動は2026-07-26に10年検証でt=-0.19＝効果ゼロと確定したため入れない）。
+#  通常  : 友達用の安定版。従来のチャンネルへ従来のまま配信（この配信は一切変更しない）。
+SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"           # 極み・買い
+SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り
 # 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
 # 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
 NOTIFY_KEYS = ("main",)
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
 
 
-def _shadow_post(embeds: list[dict]) -> bool:
-    """影チャンネルへ送信。未設定/失敗でも例外を投げない（戻り値で成否だけ返す）。"""
+def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
+    """極みチャンネルへ送信。未設定/失敗でも例外を投げない（戻り値で成否だけ返す）。"""
     import requests
 
-    url = os.getenv(SHADOW_WEBHOOK_ENV, "").strip()
+    url = os.getenv(env, "").strip()
     if not url:
-        print(f"[shadow] {SHADOW_WEBHOOK_ENV} 未設定 → 配信スキップ（台帳の記録は継続）")
+        print(f"[shadow] {env} 未設定 → 配信スキップ（台帳の記録は継続）")
         return False
     verify = os.getenv("DISCORD_VERIFY_SSL", "true").lower() != "false"
     for attempt, wait in enumerate((0, 2, 4)):
@@ -364,12 +373,13 @@ def send_discord(today: date) -> bool:
             )
     if lines:
         embeds.append({
-            "title": f"🧪【検証用・張らない】影の損切り設定 — {today_str}",
-            "description": ("⚠️ これは**発注しない**紙上の比較です（同じチャンネルのセクターローテは実弾用）。\n"
-                            "銘柄・寄指・利確は本番スイングと完全に同一で、**損切り幅だけ**が違います。\n\n"
+            "title": f"⚡ 売買シグナル極み（買い）— {today_str}",
+            "description": ("**俺専用版**。銘柄・寄指・利確は通常版と同一で、**損切りだけ**が銘柄ごとに変わる。\n"
+                            "⚠️ 15時の処分チェックは通常ルール(-3%)基準で動くので、"
+                            "**極みの損切りは自分でOCOに入れること**。\n\n"
                             + "\n\n".join(lines[:10])),
             "color": _COLOR_BUY,
-            "footer": {"text": "実際の発注は本番スイングの配信（損切り一律-3%）に従うこと"},
+            "footer": {"text": "根拠=10年BTで大100万+234.5万→+345.3万・最悪3年-116.2→-78.1万（_bt_atr_exit_*.py）"},
         })
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
@@ -393,7 +403,7 @@ def send_discord(today: date) -> bool:
                 f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
     if settled:
         embeds.append({
-            "title": "📕【検証用】影の決済（本番の帳簿とは別物）",
+            "title": "📕 極みの決済（紙の再現・通常版の帳簿とは別)",
             "description": "\n".join(settled[:12]),
             "color": _COLOR_INFO,
         })
@@ -411,11 +421,11 @@ def send_discord(today: date) -> bool:
         split = sum(1 for p in pairs if abs(p[3] - p[2]) > 0.01)
         board.append(
             f"**{label}**（{len(pairs)}件・うち判定が割れた玉{split}件）\n"
-            f"　本番 {dl / 10_000:+.2f}万 ／ 影 {dsh / 10_000:+.2f}万 ／ "
+            f"　通常 {dl / 10_000:+.2f}万 ／ 極み {dsh / 10_000:+.2f}万 ／ "
             f"差 **{(dsh - dl) / 10_000:+.2f}万**")
     if board:
         embeds.append({
-            "title": f"📊【検証用】通算 本番 vs 影　合計差 {grand / 10_000:+.2f}万",
+            "title": f"📊 通算 通常 vs 極み　合計差 {grand / 10_000:+.2f}万",
             "description": "\n".join(board),
             "color": _COLOR_WIN if grand >= 0 else _COLOR_LOSE,
             "footer": {"text": "10年BTでは大100万で+234.5万→+345.3万・最悪3年-116.2→-78.1万。"
@@ -426,6 +436,45 @@ def send_discord(today: date) -> bool:
         print("[shadow] 配信対象なし（新規0・決済0・突合0）→ 送信しない")
         return False
     return _shadow_post(embeds)
+
+
+def send_discord_sell(today: date) -> bool:
+    """極みの売りを専用チャンネルへ。**中身は通常版と完全に同一**。
+
+    SELLのATR連動は2026-07-26の10年検証で棄却（同一232件のreplayで t=-0.19＝効果ゼロ。
+    真因はSELL候補のATR%が1.48〜2.50に均質＝入口の急騰条件とATRキャップで散らばりが無く、
+    正規化する余地がそもそも無い）。よって極みの売りは通常版のミラーで、改善が見つかった時に
+    ここへ先に入れる枠として用意しておく。台帳も持たない（通常版の帳簿がそのまま真）。
+    """
+    today_str = today.strftime("%Y-%m-%d")
+    sig_file = "today_sell_signals.json"          # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
+    if not os.path.exists(sig_file):
+        return False
+    with open(sig_file, encoding="utf-8") as f:
+        payload = json.load(f)
+    if payload.get("date") != today_str:
+        return False
+    sigs = [s for s in payload.get("signals", []) if s.get("direction") == "SELL"]
+    if not sigs:
+        print("[shadow] 極みの売り: 本日0件 → 送信しない")
+        return False
+
+    lines = []
+    for s in sigs:
+        pc = s.get("prev_close") or 0
+        lines.append(
+            f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}\n"
+            f"　翌寄り成行で空売り → 損切り **+3.0%**（{_price_str(pc * 1.03)}）/ "
+            f"利確 **-5.0%**（{_price_str(pc * 0.95)}）/ RSI50以下 or 最大3日")
+    return _shadow_post([{
+        "title": f"⚡ 売買シグナル極み（売り）— {today_str}",
+        "description": ("**俺専用版**。売りは現時点で**通常版と中身が同一**。\n"
+                        "ATR連動の損切りは10年検証で効果ゼロ（t=-0.19）と判明したため入れていない"
+                        "＝売り候補はATR%が1.48〜2.50に均質で、正規化する余地が無い。\n"
+                        "改善が見つかったらここへ先に入れる。\n\n" + "\n\n".join(lines[:10])),
+        "color": _COLOR_LOSE,
+        "footer": {"text": "貸借区分・在庫はSBIの発注画面で最終確認すること"},
+    }], env=SHADOW_SELL_WEBHOOK_ENV)
 
 
 def backfill(days: int = 120) -> None:
