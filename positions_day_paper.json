@@ -33,7 +33,7 @@
       "basis_date": "2026-07-24",
       "prev_close": 379.0,
       "limit_price": 379.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 15.55,
       "short": {
         "mark": "○",
@@ -41,9 +41,124 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": true,
+      "rank": 1,
+      "entry_session": "2026-07-27",
+      "entry_open": 387.0,
+      "entry_close": 409.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -5.685,
+      "pnl_yen": -57200,
+      "win": false
+    },
+    {
+      "ticker": "4424.T",
+      "name": "Ａｍａｚｉａ",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 409.0,
+      "limit_price": 409.0,
+      "status": "pending",
+      "daily_gain": 7.92,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
       "rank": 1
+    },
+    {
+      "ticker": "4722.T",
+      "name": "フューチャー",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 2368.0,
+      "limit_price": 2368.0,
+      "status": "pending",
+      "daily_gain": 7.15,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2
+    },
+    {
+      "ticker": "3697.T",
+      "name": "ＳＨＩＦＴ",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 882.2,
+      "limit_price": 883.0,
+      "status": "pending",
+      "daily_gain": 9.32,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 3
+    },
+    {
+      "ticker": "7803.T",
+      "name": "ブシロード",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 394.0,
+      "limit_price": 394.0,
+      "status": "pending",
+      "daily_gain": 7.36,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 4
+    },
+    {
+      "ticker": "4478.T",
+      "name": "フリー",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 2550.0,
+      "limit_price": 2550.0,
+      "status": "pending",
+      "daily_gain": 6.03,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 7
+    },
+    {
+      "ticker": "5253.T",
+      "name": "カバー",
+      "direction": "SELL",
+      "signal_date": "2026-07-28",
+      "basis_date": "2026-07-27",
+      "prev_close": 1650.0,
+      "limit_price": 1650.0,
+      "status": "pending",
+      "daily_gain": 22.22,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 8
     }
   ],
   "expired": [],
-  "last_report_date": "2026-07-27"
+  "last_report_date": "2026-07-28"
 }
