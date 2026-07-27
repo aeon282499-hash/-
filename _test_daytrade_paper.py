@@ -247,11 +247,13 @@ def test_alert_map_exclusion():
     picks2 = dp.daily_top_fades(data, today, iss, alert_map=am2)
     check("注意喚起の⚠️注記", "注意喚起" in picks2[0]["reg_note"])
     check("増担保の⚠️注記", "増担保" in picks2[1]["reg_note"])
-    check("規制なしはreg_note空", picks2[2]["reg_note"] == "")
+    # 上限2なので3番目は返らない。規制なしのreg_note空はn=4指定で確認する
+    picks2b = dp.daily_top_fades(data, today, iss, n=4, alert_map=am2)
+    check("規制なしはreg_note空", picks2b[2]["reg_note"] == "")
 
-    # alert_map None → 従来と同一（上限8なので該当4件全部）
+    # alert_map None → 従来と同一（上限2）
     picks3 = dp.daily_top_fades(data, today, iss)
-    check("alert_map無し=従来通り", picks3[0]["ticker"] == "9999.T" and len(picks3) == 4)
+    check("alert_map無し=従来通り", picks3[0]["ticker"] == "9999.T" and len(picks3) == 2)
 
 
 def test_daily_top_fades():
@@ -266,12 +268,13 @@ def test_daily_top_fades():
     iss = {"9999": "2", "6666": "2", "7777": "2", "8888": "2"}
 
     picks = dp.daily_top_fades(data, today, iss)
-    check("該当4件全部返す(上限8・2026-07-23拡大)", len(picks) == 4)
-    check("降順(1番=9999+21%)", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
-    check("2番=6666(+18%)", picks[1]["ticker"] == "6666.T")
-    check("3番=7777(+16%)", picks[2]["ticker"] == "7777.T")
-    # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）。+8%もGOになる
-    check("GO閾値+6%: 4件とも全部GO",
+    # 2026-07-28: 上限8→2。エッジは1番に集中し3番以降はPF0.99＝撃つと損のため表示ごと落とした
+    check("上限2に絞る", len(picks) == 2)
+    check("1番にrankが付く", picks[0]["rank"] == 1)
+    check("2番にrankが付く", picks[1]["rank"] == 2)
+    check("PAPER_MAX_PICKSは2", dp.PAPER_MAX_PICKS == 2)
+    # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）
+    check("GO閾値+6%: 返る2件とも全部GO",
           all(p["verdict"] == "GO" for p in picks))
     check("n=3指定なら3件(後方互換)", len(dp.daily_top_fades(data, today, iss, n=3)) == 3)
     # 2026-07-28: GU下限は撤回（上位1〜3本の実運用条件では最悪年が2〜5倍悪化した）。
