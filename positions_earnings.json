@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-24",
+ "last_signal_date": "2026-07-27",
  "positions": [
   {
    "ticker": "6521.T",
@@ -64,8 +64,14 @@
    "shares": 100,
    "rsi": 38.8,
    "runup5": -9.7,
-   "status": "pending",
-   "prev_close": 6702.0
+   "status": "closed",
+   "prev_close": 6702.0,
+   "entry": 6702.0,
+   "exit_date": "2026-07-27",
+   "exit": 6473.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -3.42,
+   "pnl_yen": -22900
   }
  ],
  "last_reminder_date": "2026-07-27"
