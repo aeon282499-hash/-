@@ -308,7 +308,12 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     _rank_atr = {id(x): i for i, x in enumerate(sorted(cands, key=lambda z: -z["atr_pct"]))}
     for x in cands:
         x["pick_score"] = round((_rank_dev[id(x)] + _rank_atr[id(x)]) / 2 / max(_n, 1), 4)
-    cands.sort(key=lambda x: x["pick_score"])          # 小さいほど上位
+    # GO基準(上昇率≥DAILY_PICK_GAIN_MIN)を満たす玉を必ず先に並べ、その中を pick_score 順にする。
+    # BTは「上昇率≥閾値に絞ってから乖離+ATRで並べた上位1本」を撃つ想定なので、閾値未満を
+    # 混ぜて並べると画面の「1番」がBTの1番と食い違う（2026-07-28: 上昇率5.6%のインフォマートが
+    # 乖離20.9%で5番に入り、GO対象のフリー(7番)/カバー(8番)より上に表示されていた）。
+    # 閾値未満は候補として残すが必ず後ろ＝「1番＝撃つ玉」が常に成立する。
+    cands.sort(key=lambda x: (x["daily_gain"] < DAILY_PICK_GAIN_MIN, x["pick_score"]))
     picks = cands[:max(1, n)]
     try:  # 銘柄名補完（上位数件のみ・軽量）
         from screener import fetch_tse_universe
