@@ -273,7 +273,12 @@ def test_daily_top_fades():
     check("+15%以上の上位3は全GO・4番(+8%)はNOGO",
           all(p["verdict"] == "GO" for p in picks[:3]) and picks[3]["verdict"] == "NOGO")
     check("n=3指定なら3件(後方互換)", len(dp.daily_top_fades(data, today, iss, n=3)) == 3)
-    check("min指値=前日終値", picks[0]["min_entry_price"] == picks[0]["prev_close"])
+    # 2026-07-27: 寄指MINを「前日終値」→「前日終値×1.01を呼値切り上げ」に変更。
+    # フラット寄り(GU 0〜1%)は10年両期間ともPF1未満の負け筋だったため（前半0.80/後半0.87）。
+    _mp, _pc = picks[0]["min_entry_price"], picks[0]["prev_close"]
+    check("min指値=前日終値の+1%以上", _mp > _pc and (_mp / _pc - 1) * 100 >= dp.FADE_MIN_GAP_UP_PCT - 1e-9)
+    check("min指値は呼値の倍数", _mp % (1 if _mp <= 3000 else (5 if _mp <= 5000 else 10)) == 0)
+    check("フラット寄りは約定させない", dp.fade_min_entry_price(379.0) == 383.0)
     check("range_pct記録(>5%)", picks[0].get("range_pct", 0) > 5)
 
     # 貸借○が1つも無ければ[]（売れない玉は選ばない）
