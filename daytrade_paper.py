@@ -28,6 +28,7 @@ from datetime import datetime, timedelta, timezone
 import zoneinfo
 
 import jpholiday
+import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,15 +36,20 @@ load_dotenv()
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 BOOK_FILE = "positions_day_paper.json"
 DAY_SIGNALS_FILE = "day_signals.json"
-CAPITAL_PER_TRADE = 500_000     # 紙の1建玉サイズ（円・株数と通算損益円の土台。2026-07-23本人指示で100万→50万。
-                                # 値がさカットも連動(1単元≤50万=株価5,000円以下)。50万ユニバースBT=
-                                # 新+0.733%/PF1.37・旧+1.062%/PF1.52と100万比で1件質は微改善(fade_rank_bt検証)
+# 1建玉サイズ（株数・通算損益円・値がさカット(1単元≤この額)が連動）。
+# 2026-07-23に100万→50万、2026-07-28に100万へ戻した。本人目標「年100万」に対し、
+# 10年検証(乖離+ATR順・上位1本)で 50万=年+41.5万 / 100万=年+94.0万 / 150万=年+146.9万。
+# 100万は10年すべて勝ち年（最悪年 +29.7万）で、日中100万しか使わない＝夜またぎゼロ。
+# 代償: 1件の最悪が -21.8万 → -43.8万 に倍増する。
+CAPITAL_PER_TRADE = 1_000_000
 EXPIRE_DAYS = 14
-# フェードのGO閾値（前日上昇率）。ユーザー決定=+12%（2026-07）。
-# 10年検証(上位3・往復0.3%後): +12%が総額最良(+26.4M>+15%の+22.9M)・最良年5/11・11年全プラス。
-# +10=+25.5M(数多いが薄い) / +15=+22.9M(効率高いが取りこぼし)。+12が総額と頻度のバランス最適。
-# 代償: 取引1.5倍・PF1.45(<+15%の1.62)・弱い年(2023/24)は+15%が上。ライブ実弾screener_sell_dayは+25%据置。
-DAILY_PICK_GAIN_MIN = 12.0
+# フェードのGO閾値（前日上昇率）。2026-07-28に +12% → +6% へ。
+# 「ほぼ毎日撃ちたい」という本人要望に対し、10年検証で約定日率 50%→92% に上がり、
+# かつ並び順を乖離+ATRにしたことで年+73.5万→+94.0万・勝ち11/11年と質も落ちない。
+# （旧コメントの「+12%が総額最良」は _iss_type_by_year.pkl に2019/2024/2025が無く
+#  その3年を落として測った値だった＝2026-07-28に欠年を補完して再測定し訂正）
+# ライブ実弾の screener_sell_day は別系統で +25% 据置。
+DAILY_PICK_GAIN_MIN = 6.0
 
 
 # ------------------------------------------------------------------ util
@@ -186,7 +192,7 @@ def _fetch_data(tickers, today):
     return _fetch_all(today)
 
 
-FADE_CAND_MIN = 5.0        # フェード候補の最低上昇率（これ未満は「急騰なし」）
+FADE_CAND_MIN = 5.0        # 候補プールの下限（GO閾値 DAILY_PICK_GAIN_MIN より緩く取り、表示用に残す）
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
 
@@ -197,7 +203,11 @@ STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終
 # 下限1%にすると 10年 PF1.45→1.72・+347万→+376万・前半PF1.46→1.72・後半1.45→1.71 と
 # 両期間で改善し、総額のピークもここ（0.5%:+368万 / 1.5%:+362万 / 2%:+342万）。
 # スイング買いの寄指（前日終値×1.01）と同じ形。無効化は FADE_MIN_GAP_UP_PCT = 0.0。
-FADE_MIN_GAP_UP_PCT = 1.0
+# 2026-07-28 撤回して 0.0 に戻した。前日 GU≥1% を入れたが、上位8本・10年でしか
+# 良く見えておらず、実運用の上位1〜3本・5年で測ると総額が下がり最悪年が2〜5倍悪化した
+# （+12%×上位1: 最悪年 -5.9万 → -16.9万 / +8%×上位1: -9.3万 → -32.6万）。
+# 件数が減って集中度が上がる分テールが太る。寄指は「下寄りは見送る」(GU≥0)のみが正しい。
+FADE_MIN_GAP_UP_PCT = 0.0
                            # 10年BT: 除外でPF1.44→1.62・11年全プラス。7月は-36万→+75万に逆転。
 PAPER_MAX_PICKS = 8        # 上位N銘柄まで配信・記帳（2026-07-23 3→8・本人指示=寄指NOFILL+ハイカラ
                            # 売り切れの執行減耗に備えた予備。fade_rank_bt両期間: 上位8は上位3を
@@ -268,6 +278,14 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         rng = (float(h.iloc[-1]) - float(lo.iloc[-1])) / last_c
         if rng <= STICKY_RANGE_MIN:                         # 張り付きS高を除外
             continue
+        # ── 選定に使う2軸（2026-07-28・10年検証で並び順を上昇率→この2軸に変更）──
+        # 25MA乖離: どれだけ伸びきっているか / ATR%: どれだけ荒い銘柄か。
+        # 両方とも「大きいほど翌日よく落ちる」で、前半後半の両期間で強さが一致した。
+        ma25 = float(c.tail(25).mean()) if len(c) >= 25 else 0.0
+        dev = (last_c / ma25 - 1) * 100 if ma25 > 0 else 0.0
+        pc_s = c.shift(1)
+        tr = pd.concat([h - lo, (h - pc_s).abs(), (lo - pc_s).abs()], axis=1).max(axis=1)
+        atr_pct = float(tr.tail(14).mean()) / last_c * 100 if last_c > 0 else 0.0
         cands.append({
             "ticker": tk, "name": tk, "direction": "SELL",
             "daily_gain": round(gain, 2),
@@ -275,10 +293,22 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             "min_entry_price": fade_min_entry_price(last_c),
             "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
             "range_pct": round(rng * 100, 1),
+            "dev25": round(dev, 1),
+            "atr_pct": round(atr_pct, 2),
         })
     if not cands:
         return []
-    cands.sort(key=lambda x: x["daily_gain"], reverse=True)
+    # 25MA乖離とATR%の「順位の平均」で並べる（どちらも降順＝大きいほど上位）。
+    # 単位の違う2軸を足すため生値でなく順位で正規化する。10年検証:
+    #   上昇率降順(旧) 前半PF1.15/後半1.15・10年+293万・最悪年-8.6万・勝ち8/11年
+    #   乖離+ATR(新)   前半PF1.20/後半1.25・10年+415万・最悪年+11.9万・**勝ち11/11年**
+    # 配合を乖離0%〜100%のどこに振っても年+89〜97万/勝ち11年で崩れない＝針でなく高原。
+    _n = len(cands)
+    _rank_dev = {id(x): i for i, x in enumerate(sorted(cands, key=lambda z: -z["dev25"]))}
+    _rank_atr = {id(x): i for i, x in enumerate(sorted(cands, key=lambda z: -z["atr_pct"]))}
+    for x in cands:
+        x["pick_score"] = round((_rank_dev[id(x)] + _rank_atr[id(x)]) / 2 / max(_n, 1), 4)
+    cands.sort(key=lambda x: x["pick_score"])          # 小さいほど上位
     picks = cands[:max(1, n)]
     try:  # 銘柄名補完（上位数件のみ・軽量）
         from screener import fetch_tse_universe

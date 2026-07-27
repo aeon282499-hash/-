@@ -270,15 +270,15 @@ def test_daily_top_fades():
     check("降順(1番=9999+21%)", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
     check("2番=6666(+18%)", picks[1]["ticker"] == "6666.T")
     check("3番=7777(+16%)", picks[2]["ticker"] == "7777.T")
-    check("+15%以上の上位3は全GO・4番(+8%)はNOGO",
-          all(p["verdict"] == "GO" for p in picks[:3]) and picks[3]["verdict"] == "NOGO")
+    # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）。+8%もGOになる
+    check("GO閾値+6%: 4件とも全部GO",
+          all(p["verdict"] == "GO" for p in picks))
     check("n=3指定なら3件(後方互換)", len(dp.daily_top_fades(data, today, iss, n=3)) == 3)
-    # 2026-07-27: 寄指MINを「前日終値」→「前日終値×1.01を呼値切り上げ」に変更。
-    # フラット寄り(GU 0〜1%)は10年両期間ともPF1未満の負け筋だったため（前半0.80/後半0.87）。
+    # 2026-07-28: GU下限は撤回（上位1〜3本の実運用条件では最悪年が2〜5倍悪化した）。
+    # 寄指MINは前日終値＝「下寄りだけ見送る」に戻した。
     _mp, _pc = picks[0]["min_entry_price"], picks[0]["prev_close"]
-    check("min指値=前日終値の+1%以上", _mp > _pc and (_mp / _pc - 1) * 100 >= dp.FADE_MIN_GAP_UP_PCT - 1e-9)
-    check("min指値は呼値の倍数", _mp % (1 if _mp <= 3000 else (5 if _mp <= 5000 else 10)) == 0)
-    check("フラット寄りは約定させない", dp.fade_min_entry_price(379.0) == 383.0)
+    check("min指値=前日終値（GU下限なし）", abs(_mp - _pc) < 1.0)
+    check("FADE_MIN_GAP_UP_PCTは0", dp.FADE_MIN_GAP_UP_PCT == 0.0)
     check("range_pct記録(>5%)", picks[0].get("range_pct", 0) > 5)
 
     # 貸借○が1つも無ければ[]（売れない玉は選ばない）
@@ -286,7 +286,10 @@ def test_daily_top_fades():
 
     # +8%(貸借○)だけ → 1件・NOGO薄い
     p8 = dp.daily_top_fades({"8888.T": _flat_then(8)}, today, {"8888": "2"})
-    check("+8%→1件NOGO薄い", len(p8) == 1 and p8[0]["verdict"] == "NOGO" and "薄い" in p8[0]["nogo_reason"])
+    check("+8%→GO（閾値+6%に緩和済）", len(p8) == 1 and p8[0]["verdict"] == "GO")
+    p5 = dp.daily_top_fades({"8888.T": _flat_then(5.5)}, today, {"8888": "2"})
+    check("+5.5%→NOGO薄い（閾値未満）",
+          len(p5) == 1 and p5[0]["verdict"] == "NOGO" and "薄い" in p5[0]["nogo_reason"])
 
     # 張り付きS高(+20%貸借○)は除外 → 空リスト（踏み上げ回避の核心）
     check("張り付きS高は除外→空",
@@ -297,11 +300,11 @@ def test_daily_top_fades():
     pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
     check("張り付き#1を飛ばし6666だけ", len(pm) == 1 and pm[0]["ticker"] == "6666.T")
 
-    # 値がさ株(1単元>予算50万=株価>5千円)は除外（2026-07-23 100万→50万に変更）
-    check("値がさ株(>5千円)は除外",
+    # 値がさ株(1単元>予算100万=株価>1万円)は除外（2026-07-28 50万→100万に戻した）
+    check("値がさ株(>1万円)は除外",
           dp.daily_top_fades({"4444.T": _flat_then(20, base=20000)}, today, {"4444": "2"}) == [])
-    check("50万境界: 株価6,600円も除外",
-          dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"}) == [])
+    check("100万境界: 株価6,600円は対象内",
+          len(dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"})) == 1)
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
