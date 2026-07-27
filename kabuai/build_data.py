@@ -771,8 +771,10 @@ def build() -> dict:
 
     # ── 🩳 デイトレ売り（フェード）・2026-07-23 本人指示でアプリ掲載 ──
     # Discord配信(daytrade_paper.daily_top_fades)と同一ロジックを直接import＝判定のズレなし。
-    # 貸借○ × 張り付き除外 × 前日+5%↑、GO=+12%↑（BT: 2022-2026 632件 勝率54.3%
-    # 平均+0.71%/件 PF1.35・寄指不成立/年別貸借まで再現・fade_ladder_bt.py）。
+    # 貸借○ × 張り付き除外 × 前日+5%↑、GO=DAILY_PICK_GAIN_MIN↑。
+    # 2026-07-28 全面改修: 並び順を「上昇率降順」→「25MA乖離の順位とATR%の順位の平均」に変更し、
+    # GO閾値を+12%→+6%、建玉を50万→100万に。10年検証(上位1本)で
+    # 前半PF1.20/後半1.25・年+94.0万・**勝ち11/11年**（旧は前半1.15/後半1.15・年+34万・勝ち8/11年）。
     # 売り禁(margin-alert)は除外せず🚫バッジ=同日本人指示「ハイカラで売れた」(制度✕でも
     # SBI一日信用HYPER/一般信用は別枠在庫)。翌営業日「寄り売り→引け買戻し」の当日完結。非致命。
     fade: dict = {"date": data_date, "picks": [], "banned": 0, "go": 0}
@@ -796,6 +798,8 @@ def build() -> dict:
             fade["picks"].append({
                 "code": _c4, "name": _nm, "gain": p.get("daily_gain"),
                 "vol_ratio": p.get("vol_ratio"), "range_pct": p.get("range_pct"),
+                # 選定に使う2軸（なぜこの銘柄が1番なのかを画面で見せるため）
+                "dev25": p.get("dev25"), "atr_pct": p.get("atr_pct"),
                 "min_entry": p.get("min_entry_price"),
                 "short_mark": (p.get("short") or {}).get("mark", "?"),
                 "borrow": p.get("borrow", ""), "reg_note": p.get("reg_note", ""),
@@ -809,8 +813,10 @@ def build() -> dict:
         fade["banned"] = len(_banned)
         fade["go"] = sum(1 for p in fade["picks"] if p.get("verdict") == "GO")
         fade["go_min"] = _dp.DAILY_PICK_GAIN_MIN
-        fade["stats"] = {"n": 632, "win": 54.3, "avg": 0.71, "pf": 1.35,
-                         "period": "2022-2026/07", "y2026_avg": 1.59}
+        # 10年検証（乖離+ATR順・上位1本・建玉100万・_bt_fade_deep.py）
+        fade["stats"] = {"n": 2230, "win": 57.0, "avg": 0.94, "pf": 1.22,
+                         "period": "2016-2026/07", "y2026_avg": 1.60,
+                         "yearly": "10年すべて勝ち年（最悪年+29.7万）", "annual": 94.0}
         print(f"[build] 🩳デイトレ売り(フェード): picks{len(fade['picks'])} "
               f"GO{fade['go']} 売り禁🚫{sum(1 for p in fade['picks'] if p.get('jsf_stop'))}")
     except Exception as _e:
