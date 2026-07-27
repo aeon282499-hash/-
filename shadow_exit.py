@@ -43,6 +43,13 @@ MAX_HOLD      = 3
 ATR_PERIOD    = 14
 LIVE_STOP     = 3.0     # 比較対象＝本番の一律損切り
 
+# 同時保有の上限（2026-07-27 本人決定・_bt_kiwami_size.py の10年検証）:
+# 3枠が山。100万×3枠(300万)で10年+270万＝資本比+90%・年利+18.0%・勝ち9/10年・DD-93万。
+# 通常版の5枠(500万)は資本比+53%・年利+11.2%・勝ち8/10年なので、同じ資金なら3枠が上。
+# 2枠に絞ると勝ち7/10年・DD-40%台に劣化＝絞りすぎは崖。4枠以上は資本効率が落ちる。
+# 枠が埋まっている日のシグナルは見送る（＝通常版には出るが極みには入らない）。
+MAX_SLOTS     = 3
+
 TIER_FILES = {
     "main":  ("today_signals.json",        "positions.json",        1_000_000, "大資金"),
     "mid":   ("today_signals_mid.json",    "positions_mid.json",      500_000, "中資金"),
@@ -116,7 +123,9 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
     # 再シグナルを出しても、極みがまだ保有中なら二重に建ててはいけない（実弾で回す以上、
     # 同一銘柄の重複建ては通常版と同じく禁止・2026-07-26）。
     still_open = {r["ticker"] for r in rows if r.get("status") in ("pending", "open")}
+    slots_used = len(still_open)
     added = 0
+    skipped: list[str] = []
     for s in payload.get("signals", []):
         if s.get("direction") != "BUY":           # SELLは対象外（年26件で検出力なし）
             continue
@@ -127,6 +136,12 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         if tk in still_open:
             print(f"[shadow-{key}] {tk} は極みで保有中 → 重複エントリーを回避")
             continue
+        if slots_used >= MAX_SLOTS:
+            # 枠が埋まっている＝通常版には出るが極みでは建てない。見送った事実は配信に出す
+            skipped.append(s.get("name", tk))
+            print(f"[shadow-{key}] {tk} は枠満杯({MAX_SLOTS})のため見送り")
+            continue
+        slots_used += 1
         df = all_data.get(tk)
         atr = atr_pct_at(df, sig_date) if df is not None else None
         rows.append({
@@ -149,6 +164,10 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         added += 1
     if added:
         save_ledger(key, rows)
+    if skipped:
+        with open(f"_shadow_skipped_{key}.json", "w", encoding="utf-8") as f:
+            json.dump({"date": today.strftime("%Y-%m-%d"), "names": skipped},
+                      f, ensure_ascii=False)
     return added
 
 
@@ -453,12 +472,30 @@ def send_discord(today: date) -> bool:
                                "ただし差が出るのは損切りに触った玉だけ＝数ヶ月貯めないと判断不能"},
         })
 
+    # 枠満杯で見送った銘柄（通常版には出るが極みには入らない理由を明示）
+    skip_note = ""
+    sp = f"_shadow_skipped_main.json"
+    if os.path.exists(sp):
+        try:
+            with open(sp, encoding="utf-8") as f:
+                d = json.load(f)
+            if d.get("date") == today_str and d.get("names"):
+                skip_note = (f"\n\n⏭️ **枠満杯（{MAX_SLOTS}枠）で見送り**: "
+                             + "、".join(d["names"])
+                             + f"\n　通常版には出ているが極みでは建てない"
+                               f"（同時保有は{MAX_SLOTS}枠まで）")
+        except Exception:
+            pass
+    if skip_note and embeds:
+        embeds[0]["description"] += skip_note
+
     if not lines:
         # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
         embeds.insert(0, {
             "title": f"⚡ 売買シグナル極み（買い）— {today_str}",
-            "description": "**本日の買いシグナルはありません。**\n"
-                           "（極みは通常版と同じ銘柄を選び、損切りだけATR連動にした版）",
+            "description": ("**本日の買いシグナルはありません。**\n"
+                            "（極みは通常版と同じ銘柄を選び、損切りだけATR連動にした版）"
+                            + skip_note),
             "color": _COLOR_INFO,
         })
     if not embeds:
