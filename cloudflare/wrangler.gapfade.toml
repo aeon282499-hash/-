@@ -1,0 +1,10 @@
+name = "gapfade-signal-trigger"
+main = "gapfade-signal-trigger.js"
+compatibility_date = "2025-04-30"
+workers_dev = true
+
+[vars]
+GITHUB_OWNER = "aeon282499-hash"
+GITHUB_REPO = "-"
+WORKFLOW_FILE = "gapfade.yml"
+GIT_REF = "main"

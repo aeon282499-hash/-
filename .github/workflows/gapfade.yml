@@ -1,12 +1,22 @@
 name: ギャップフェード 朝の候補配信
 
-# 当日GU+3〜8%を12:30に空売り→大引け買戻し（_bt_intraday_grand.py で発見・2026-07-26）。
+# 当日GU+3〜8%を12:30（後場寄り）に空売り→大引け買戻し（_bt_intraday_grand.py で発見・2026-07-26）。
 # 寄り値が要るので EOD ビルドでは出せず、寄り後に専用で取得する。
-# 9:15に最初の15分足が確定 → 9:25起動で寄り値が取れる。エントリーは12:30なので
-# GitHub cron が1〜2時間遅延しても間に合う（遅延耐性が高い設計）。
+# 9:15に最初の15分足が確定 → 9:25起動で寄り値が取れる。
+#
+# 【2026-07-28 多重化】初日7/27は9:25設計に対し **実際の起動が13:10 JST（3時間45分遅延）**＝
+# 後場寄り12:30の発注に完全に間に合わなかった（本人「ひるの13時じゃ間に合わん・12時には必ず出して」）。
+# 同リポジトリの実測で GitHub cron は常時40〜50分遅れ（8:20設計→9:08〜9:13着弾）、
+# 一方 cron-job.org→Cloudflare Worker の workflow_dispatch は毎日8:05きっかり。
+# よって (1) 保険cronを4本に増やし (2) 外部トリガー(cron-job.org 11:00 JST)を本命にする。
+# gapfade.py 側に同日配信ガード（gapfade_last_send.json）があるので、最初に届いた1本だけが
+# 配信し、以降は「配信済み→スキップ」で流れる＝何本叩いても連投しない。
 on:
   schedule:
-    - cron: '25 0 * * 1-5'      # 00:25 UTC = 9:25 JST（平日）
+    - cron: '25 0 * * 1-5'      # 00:25 UTC = 9:25 JST（本命・寄り後すぐ）
+    - cron: '10 1 * * 1-5'      # 01:10 UTC = 10:10 JST（保険1）
+    - cron: '50 1 * * 1-5'      # 01:50 UTC = 10:50 JST（保険2）
+    - cron: '20 2 * * 1-5'      # 02:20 UTC = 11:20 JST（最終便・50分遅延でも12:10着＝昼休み中）
   workflow_dispatch:
 
 permissions:
@@ -36,7 +46,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          [ -f gapfade_ledger.json ] && git add gapfade_ledger.json
+          for f in gapfade_ledger.json gapfade_last_send.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
           git diff --cached --quiet || git commit -m "chore(gapfade): update ledger [skip ci]"
           git pull --rebase --autostash origin main
           git push origin main

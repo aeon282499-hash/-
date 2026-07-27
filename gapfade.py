@@ -67,6 +67,10 @@ COST = 0.10
 CAPITAL = 500_000
 LEDGER = "gapfade_ledger.json"
 UNIV = "_intraday_targets.json"
+# 同日の二重配信ガード（2026-07-28）。後場寄り12:30の発注に間に合わせるため
+# GitHub cron を複数本＋外部トリガーの多重化にしたので、最初に届いた1本だけ配信して
+# 以降はスキップする。投げ売りブースターが同じガード漏れで4連投した前例あり。
+SEND_MARKER = "gapfade_last_send.json"
 
 
 def _load_iss() -> dict:
@@ -184,7 +188,24 @@ def settle(frames: dict, ledger: list[dict]) -> int:
     return n
 
 
-def notify(day: str, cand: list[dict], stats: str, dry: bool) -> None:
+def already_sent(day: str) -> bool:
+    """当日分を配信済みか（多重トリガーの2本目以降を弾く）。"""
+    try:
+        with open(SEND_MARKER, encoding="utf-8") as f:
+            return json.load(f).get("date") == day
+    except Exception:
+        return False
+
+
+def mark_sent(day: str) -> None:
+    with open(SEND_MARKER, "w", encoding="utf-8") as f:
+        json.dump({"date": day,
+                   "sent_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")},
+                  f, ensure_ascii=False, indent=2)
+
+
+def notify(day: str, cand: list[dict], stats: str, dry: bool) -> bool:
+    """Discordへ配信。実際に送信できたら True（マーカーを書く条件）。"""
     # 専用チャンネル（2026-07-26 本人指定）。未設定なら🔻フェードと同じDAY chへフォールバック。
     hook = (os.getenv("DISCORD_WEBHOOK_GAPFADE_URL")
             or os.getenv("DISCORD_WEBHOOK_DAY_URL")
@@ -205,10 +226,13 @@ def notify(day: str, cand: list[dict], stats: str, dry: bool) -> None:
                                               "検証58日 上位4本 平均+0.435%（1相場のみ＝小さく始める）"}}]}
     if dry or not hook:
         print("[notify] 送信スキップ（--dry またはwebhook未設定）\n" + body)
-        return
+        return False
     import requests
     r = requests.post(hook, json=payload, timeout=20, verify=False)
     print(f"[notify] Discord HTTP {r.status_code}")
+    # 送信できた時だけ「配信済み」とみなす（webhook失効やタイムアウトで無配信のまま
+    # マーカーを立てると、後続の保険トリガーまで黙って死ぬ）。
+    return 200 <= r.status_code < 300
 
 
 def report(ledger: list[dict]) -> str:
@@ -241,6 +265,7 @@ if __name__ == "__main__":
     iss = _load_iss()
     today = datetime.now(JST).strftime("%Y-%m-%d")
 
+    # 答え合わせ・台帳更新は毎回やる（冪等）。配信だけ1日1回に絞る。
     n = settle(frames, led)
     print(f"[settle] {n}件を確定")
 
@@ -253,4 +278,7 @@ if __name__ == "__main__":
     json.dump(led, open(LEDGER, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     print(f"[cand] {today} の候補 {len(cand)}件 / 台帳{len(led)}件")
 
-    notify(today, cand, report(led), dry)
+    if already_sent(today) and not dry:
+        print(f"[notify] 本日({today})は配信済み → スキップ（多重トリガーの2本目）")
+    elif notify(today, cand, report(led), dry):
+        mark_sent(today)
