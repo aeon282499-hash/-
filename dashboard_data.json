@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-07-28 08:35:51",
+  "generated_at": "2026-07-28 09:17:17",
   "date": "2026-07-28",
   "tier_summary": {
     "S": 0,
     "A": 10,
-    "B": 80,
+    "B": 79,
     "C": 33
   },
   "driver_returns": {
-    "AMAT": -8.16,
-    "AMD": -8.29,
+    "AMAT": -3.61,
+    "AMD": -5.17,
     "AMZN": -0.97,
-    "ASML": -8.19,
+    "ASML": -5.8,
     "AVGO": -2.36,
-    "CRWD": -1.8,
-    "GEV": -3.36,
-    "GOOGL": 2.79,
-    "IONQ": 5.43,
-    "KLAC": -7.03,
-    "LRCX": -8.81,
-    "META": -2.02,
-    "MSFT": 1.97,
-    "MU": -9.09,
-    "NRG": -4.54,
-    "NVDA": -5.87,
-    "ON": -1.21,
-    "PANW": -2.55,
-    "PLTR": 6.61,
-    "PLUG": -5.94,
-    "QBTS": 14.09,
-    "RGTI": 5.32,
-    "S": 4.37,
-    "SOX": -6.39,
-    "TSLA": -3.28,
-    "TSM": -3.97,
-    "VRT": -5.41,
-    "VST": -7.04,
-    "ZS": 5.44
+    "CRWD": -1.73,
+    "GEV": -1.79,
+    "GOOGL": 2.13,
+    "IONQ": 9.38,
+    "KLAC": -3.4,
+    "LRCX": -4.46,
+    "META": -0.22,
+    "MSFT": 1.94,
+    "MU": -2.25,
+    "NRG": -3.21,
+    "NVDA": -4.99,
+    "ON": 2.57,
+    "PANW": -2.0,
+    "PLTR": 7.0,
+    "PLUG": -1.44,
+    "QBTS": 20.36,
+    "RGTI": 10.53,
+    "S": 0.0,
+    "SOX": -2.23,
+    "TSLA": -1.22,
+    "TSM": -1.07,
+    "VRT": -0.95,
+    "VST": -3.86,
+    "ZS": 3.5
   },
   "themes": [
     {
@@ -126,7 +126,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": -5.09
+      "us_tailwind": -2.45
     },
     {
       "theme": "証券_取引所",
@@ -159,7 +159,7 @@
         "GOOGL"
       ],
       "policy": "",
-      "us_tailwind": 1.38
+      "us_tailwind": 1.52
     },
     {
       "theme": "商社_資源",
@@ -203,7 +203,7 @@
         "PLUG"
       ],
       "policy": "",
-      "us_tailwind": -5.94
+      "us_tailwind": -1.44
     },
     {
       "theme": "フィジカルAI_自動運転_車載",
@@ -220,7 +220,7 @@
         "NVDA"
       ],
       "policy": "改正道交法でレベル4(特定条件下完全自動運転)解禁・自動運転実装に向けた国の実証/補助",
-      "us_tailwind": -4.58
+      "us_tailwind": -3.1
     },
     {
       "theme": "医療機器_ヘルスケア",
@@ -267,7 +267,7 @@
         "S"
       ],
       "policy": "",
-      "us_tailwind": 1.37
+      "us_tailwind": -0.06
     },
     {
       "theme": "インバウンド_観光",
@@ -340,7 +340,7 @@
         "NVDA"
       ],
       "policy": "ムーンショット目標(2050身体能力拡張ロボ)・新ロボット戦略・省人化政策で国産ヒューマノイド/部品育成",
-      "us_tailwind": -4.58
+      "us_tailwind": -3.1
     },
     {
       "theme": "フィジカルAI_産業ロボFA",
@@ -358,7 +358,7 @@
         "ABBN"
       ],
       "policy": "省人化・設備投資減税(賃上げ促進/DX投資)・国内回帰(リショアリング)補助で設備投資が構造的に増加",
-      "us_tailwind": -4.58
+      "us_tailwind": -3.1
     },
     {
       "theme": "量子コンピューティング",
@@ -376,7 +376,7 @@
         "QBTS"
       ],
       "policy": "",
-      "us_tailwind": 8.28
+      "us_tailwind": 13.42
     },
     {
       "theme": "半導体_検査_計測",
@@ -394,7 +394,7 @@
         "ASML"
       ],
       "policy": "経済安保・先端半導体の国内検査体制",
-      "us_tailwind": -6.82
+      "us_tailwind": -4.34
     },
     {
       "theme": "半導体_後工程_先端パッケージ",
@@ -413,7 +413,7 @@
         "AMD"
       ],
       "policy": "後工程拠点の国内回帰・補助",
-      "us_tailwind": -5.12
+      "us_tailwind": -3.4
     },
     {
       "theme": "創薬_バイオ",
@@ -445,7 +445,7 @@
         "NVDA"
       ],
       "policy": "SiCパワー半導体の国内増産補助・GX(グリーントランスフォーメーション)・電動化/EV政策で構造的需要増",
-      "us_tailwind": -3.45
+      "us_tailwind": -1.21
     },
     {
       "theme": "半導体_ウエハー_材料",
@@ -464,7 +464,7 @@
         "AMD"
       ],
       "policy": "半導体材料の国産化・サプライチェーン強靭化補助",
-      "us_tailwind": -5.12
+      "us_tailwind": -3.4
     },
     {
       "theme": "半導体_ロジック_メモリ",
@@ -483,7 +483,7 @@
         "AVGO"
       ],
       "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_tailwind": -6.4
+      "us_tailwind": -3.69
     },
     {
       "theme": "EV_二次電池",
@@ -499,7 +499,7 @@
         "TSLA"
       ],
       "policy": "",
-      "us_tailwind": -3.28
+      "us_tailwind": -1.22
     },
     {
       "theme": "宇宙",
@@ -533,7 +533,7 @@
         "NVDA"
       ],
       "policy": "",
-      "us_tailwind": -0.82
+      "us_tailwind": -0.42
     },
     {
       "theme": "半導体_前工程装置",
@@ -555,7 +555,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": -6.92
+      "us_tailwind": -3.65
     },
     {
       "theme": "コンデンサ_電子部品",
@@ -589,7 +589,7 @@
         "AMZN"
       ],
       "policy": "",
-      "us_tailwind": -0.89
+      "us_tailwind": -0.85
     }
   ],
   "stocks": [
@@ -606,7 +606,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 82.1,
       "tier": "A",
       "init_stars": 3,
@@ -648,7 +648,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 81.1,
       "tier": "A",
       "init_stars": 2,
@@ -727,7 +727,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 77.1,
       "tier": "A",
       "init_stars": 3,
@@ -842,7 +842,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": 8.28,
+      "us_tailwind": 13.42,
       "score": 74.4,
       "tier": "A",
       "init_stars": 3,
@@ -1179,7 +1179,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 67.8,
       "tier": "B",
       "init_stars": 3,
@@ -1256,7 +1256,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 66.7,
       "tier": "B",
       "init_stars": 3,
@@ -1483,7 +1483,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 65.1,
       "tier": "B",
       "init_stars": 3,
@@ -1820,7 +1820,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": 8.28,
+      "us_tailwind": 13.42,
       "score": 63.4,
       "tier": "B",
       "init_stars": 3,
@@ -2008,7 +2008,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 61.7,
       "tier": "B",
       "init_stars": 3,
@@ -2146,90 +2146,6 @@
         "heat_pts": 12.7,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "4704.T",
-      "name": "トレンドマイクロ",
-      "role": "セキュリティ本命(大型)",
-      "theme": "サイバーセキュリティ",
-      "theme_heat": 23.0,
-      "policy": "",
-      "us_drivers": [
-        "CRWD",
-        "PANW",
-        "ZS",
-        "S"
-      ],
-      "us_tailwind": 1.37,
-      "score": 60.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 39.8,
-      "blast": 31.7,
-      "laggard": 35.9,
-      "mom_pts": 43.0,
-      "ctx_pts": 17.2,
-      "vr": 0.99,
-      "dev": 5.65,
-      "rsi": 60.53,
-      "r1": 0.03525283139256663,
-      "r5": 0.0015432098765431057,
-      "r20": 0.1610017889087656,
-      "close": 6490.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 3,
-        "r1_pts": 10,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 9.2,
-        "policy_pts": 0.0,
-        "us_pts": 8.0
-      }
-    },
-    {
-      "ticker": "4493.T",
-      "name": "サイバーセキュリティクラウド",
-      "role": "WAF(小型)",
-      "theme": "サイバーセキュリティ",
-      "theme_heat": 23.0,
-      "policy": "",
-      "us_drivers": [
-        "CRWD",
-        "PANW",
-        "ZS",
-        "S"
-      ],
-      "us_tailwind": 1.37,
-      "score": 60.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 15.0,
-      "blast": 9.5,
-      "laggard": 42.2,
-      "mom_pts": 43.0,
-      "ctx_pts": 17.2,
-      "vr": 0.42,
-      "dev": 0.48,
-      "rsi": 50.76,
-      "r1": 0.03240477544059117,
-      "r5": 0.006651884700665134,
-      "r20": 0.0841791044776119,
-      "close": 1816.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 3,
-        "r1_pts": 10,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 9.2,
-        "policy_pts": 0.0,
-        "us_pts": 8.0
       }
     },
     {
@@ -2393,7 +2309,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -5.09,
+      "us_tailwind": -2.45,
       "score": 58.8,
       "tier": "B",
       "init_stars": 3,
@@ -2731,7 +2647,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -5.09,
+      "us_tailwind": -2.45,
       "score": 56.8,
       "tier": "B",
       "init_stars": 2,
@@ -2773,7 +2689,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -5.09,
+      "us_tailwind": -2.45,
       "score": 56.8,
       "tier": "B",
       "init_stars": 3,
@@ -2840,48 +2756,6 @@
       }
     },
     {
-      "ticker": "2326.T",
-      "name": "デジタルアーツ",
-      "role": "Webフィルタリング",
-      "theme": "サイバーセキュリティ",
-      "theme_heat": 23.0,
-      "policy": "",
-      "us_drivers": [
-        "CRWD",
-        "PANW",
-        "ZS",
-        "S"
-      ],
-      "us_tailwind": 1.37,
-      "score": 56.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 39.8,
-      "blast": 25.9,
-      "laggard": 42.2,
-      "mom_pts": 39.0,
-      "ctx_pts": 17.2,
-      "vr": 0.64,
-      "dev": 5.17,
-      "rsi": 58.29,
-      "r1": 0.029224904701397714,
-      "r5": 0.013767209011264159,
-      "r20": 0.11724137931034484,
-      "close": 4050.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 3,
-        "r1_pts": 6,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 9.2,
-        "policy_pts": 0.0,
-        "us_pts": 8.0
-      }
-    },
-    {
       "ticker": "4661.T",
       "name": "オリエンタルランド",
       "role": "TDR(観光レジャー)",
@@ -2931,7 +2805,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -5.09,
+      "us_tailwind": -2.45,
       "score": 55.8,
       "tier": "B",
       "init_stars": 3,
@@ -3121,7 +2995,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -5.12,
+      "us_tailwind": -3.4,
       "score": 54.1,
       "tier": "B",
       "init_stars": 3,
@@ -3272,7 +3146,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 53.7,
       "tier": "B",
       "init_stars": 2,
@@ -3424,7 +3298,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 51.8,
       "tier": "B",
       "init_stars": 3,
@@ -3463,7 +3337,7 @@
       "us_drivers": [
         "PLUG"
       ],
-      "us_tailwind": -5.94,
+      "us_tailwind": -1.44,
       "score": 51.6,
       "tier": "B",
       "init_stars": 3,
@@ -3502,7 +3376,7 @@
       "us_drivers": [
         "PLUG"
       ],
-      "us_tailwind": -5.94,
+      "us_tailwind": -1.44,
       "score": 51.6,
       "tier": "B",
       "init_stars": 3,
@@ -3728,7 +3602,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": -6.82,
+      "us_tailwind": -4.34,
       "score": 49.9,
       "tier": "B",
       "init_stars": 3,
@@ -3869,6 +3743,90 @@
       }
     },
     {
+      "ticker": "4704.T",
+      "name": "トレンドマイクロ",
+      "role": "セキュリティ本命(大型)",
+      "theme": "サイバーセキュリティ",
+      "theme_heat": 23.0,
+      "policy": "",
+      "us_drivers": [
+        "CRWD",
+        "PANW",
+        "ZS",
+        "S"
+      ],
+      "us_tailwind": -0.06,
+      "score": 47.2,
+      "tier": "B",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 39.8,
+      "blast": 31.7,
+      "laggard": 29.1,
+      "mom_pts": 43.0,
+      "ctx_pts": 4.2,
+      "vr": 0.99,
+      "dev": 5.65,
+      "rsi": 60.53,
+      "r1": 0.03525283139256663,
+      "r5": 0.0015432098765431057,
+      "r20": 0.1610017889087656,
+      "close": 6490.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 3,
+        "r1_pts": 10,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 9.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
+      "ticker": "4493.T",
+      "name": "サイバーセキュリティクラウド",
+      "role": "WAF(小型)",
+      "theme": "サイバーセキュリティ",
+      "theme_heat": 23.0,
+      "policy": "",
+      "us_drivers": [
+        "CRWD",
+        "PANW",
+        "ZS",
+        "S"
+      ],
+      "us_tailwind": -0.06,
+      "score": 47.2,
+      "tier": "B",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 15.0,
+      "blast": 9.5,
+      "laggard": 34.2,
+      "mom_pts": 43.0,
+      "ctx_pts": 4.2,
+      "vr": 0.42,
+      "dev": 0.48,
+      "rsi": 50.76,
+      "r1": 0.03240477544059117,
+      "r5": 0.006651884700665134,
+      "r20": 0.0841791044776119,
+      "close": 1816.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 3,
+        "r1_pts": 10,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 9.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
       "ticker": "4011.T",
       "name": "ヘッドウォータース",
       "role": "生成AI受託(小型・急騰実績)",
@@ -3881,7 +3839,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 47.1,
       "tier": "B",
       "init_stars": 3,
@@ -4059,6 +4017,48 @@
       }
     },
     {
+      "ticker": "2326.T",
+      "name": "デジタルアーツ",
+      "role": "Webフィルタリング",
+      "theme": "サイバーセキュリティ",
+      "theme_heat": 23.0,
+      "policy": "",
+      "us_drivers": [
+        "CRWD",
+        "PANW",
+        "ZS",
+        "S"
+      ],
+      "us_tailwind": -0.06,
+      "score": 43.2,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 39.8,
+      "blast": 25.9,
+      "laggard": 34.2,
+      "mom_pts": 39.0,
+      "ctx_pts": 4.2,
+      "vr": 0.64,
+      "dev": 5.17,
+      "rsi": 58.29,
+      "r1": 0.029224904701397714,
+      "r5": 0.013767209011264159,
+      "r20": 0.11724137931034484,
+      "close": 4050.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 3,
+        "r1_pts": 6,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 9.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
       "ticker": "7980.T",
       "name": "重松製作所",
       "role": "防護マスク(小型)",
@@ -4108,7 +4108,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 42.1,
       "tier": "C",
       "init_stars": 3,
@@ -4186,7 +4186,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 41.8,
       "tier": "C",
       "init_stars": 3,
@@ -4374,7 +4374,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 33.8,
       "tier": "C",
       "init_stars": 2,
@@ -4414,7 +4414,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 30.8,
       "tier": "C",
       "init_stars": 2,
@@ -4454,7 +4454,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 30.8,
       "tier": "C",
       "init_stars": 3,
@@ -4532,7 +4532,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 29.8,
       "tier": "C",
       "init_stars": 3,
@@ -4573,7 +4573,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": 8.28,
+      "us_tailwind": 13.42,
       "score": 29.4,
       "tier": "C",
       "init_stars": 2,
@@ -4600,48 +4600,6 @@
         "heat_pts": 3.4,
         "policy_pts": 0.0,
         "us_pts": 12.0
-      }
-    },
-    {
-      "ticker": "3692.T",
-      "name": "FFRIセキュリティ",
-      "role": "国産EDR(小型・急騰株)",
-      "theme": "サイバーセキュリティ",
-      "theme_heat": 23.0,
-      "policy": "",
-      "us_drivers": [
-        "CRWD",
-        "PANW",
-        "ZS",
-        "S"
-      ],
-      "us_tailwind": 1.37,
-      "score": 29.2,
-      "tier": "C",
-      "init_stars": 2,
-      "overextended": false,
-      "potential": 15.0,
-      "blast": 9.5,
-      "laggard": 29.2,
-      "mom_pts": 12.0,
-      "ctx_pts": 17.2,
-      "vr": 0.73,
-      "dev": -3.99,
-      "rsi": 42.94,
-      "r1": -0.02400000000000002,
-      "r5": -0.04125736738703345,
-      "r20": 0.0990990990990992,
-      "close": 4880.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 0,
-        "trend_pts": 8,
-        "pos_pts": 4,
-        "heat_pts": 9.2,
-        "policy_pts": 0.0,
-        "us_pts": 8.0
       }
     },
     {
@@ -4694,7 +4652,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -5.12,
+      "us_tailwind": -3.4,
       "score": 27.0,
       "tier": "C",
       "init_stars": 3,
@@ -4772,7 +4730,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 25.8,
       "tier": "C",
       "init_stars": 2,
@@ -4850,7 +4808,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -3.45,
+      "us_tailwind": -1.21,
       "score": 24.0,
       "tier": "C",
       "init_stars": 3,
@@ -4891,7 +4849,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -3.45,
+      "us_tailwind": -1.21,
       "score": 24.0,
       "tier": "C",
       "init_stars": 3,
@@ -4932,7 +4890,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": -6.82,
+      "us_tailwind": -4.34,
       "score": 23.9,
       "tier": "C",
       "init_stars": 2,
@@ -5011,7 +4969,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -5.12,
+      "us_tailwind": -3.4,
       "score": 23.0,
       "tier": "C",
       "init_stars": 1,
@@ -5053,7 +5011,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -5.12,
+      "us_tailwind": -3.4,
       "score": 22.0,
       "tier": "C",
       "init_stars": 2,
@@ -5130,7 +5088,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 21.8,
       "tier": "C",
       "init_stars": 1,
@@ -5171,7 +5129,7 @@
         "TSLA",
         "ABBN"
       ],
-      "us_tailwind": -4.58,
+      "us_tailwind": -3.1,
       "score": 21.8,
       "tier": "C",
       "init_stars": 2,
@@ -5213,7 +5171,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": 1.38,
+      "us_tailwind": 1.52,
       "score": 21.1,
       "tier": "C",
       "init_stars": 1,
@@ -5292,7 +5250,7 @@
         "AMD",
         "AVGO"
       ],
-      "us_tailwind": -6.4,
+      "us_tailwind": -3.69,
       "score": 20.0,
       "tier": "C",
       "init_stars": 2,
