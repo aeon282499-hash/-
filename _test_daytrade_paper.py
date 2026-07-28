@@ -202,9 +202,11 @@ def test_cumulative_stats():
     check("保有中=1", st["pending"] == 1)
 
 
-def _flat_then(last_gain_pct, base=1000, sticky=False):
-    """30日フラット→最終日に指定%急騰(出来高6倍)のOHLCV rowsを作る。
-    sticky=True で最終日レンジを極小(張り付きS高)にする。"""
+def _flat_then(last_gain_pct, base=1000, sticky=False, vol_x=3.0):
+    """30日フラット→最終日に指定%急騰のOHLCV rowsを作る。
+    sticky=True で最終日レンジを極小(張り付きS高)にする。
+    vol_x=出来高倍率。2026-07-28にFADE_VOL_RATIO_MAX=6を入れたため既定を6→3に下げた
+    （6倍だと候補から除外されてテストが成立しない）。"""
     last = round(base * (1 + last_gain_pct / 100))
     if sticky:                          # 張り付き: 高安が終値にほぼ張り付く
         hi, lo = round(last * 1.002), round(last * 0.998)
@@ -212,7 +214,7 @@ def _flat_then(last_gain_pct, base=1000, sticky=False):
         hi, lo = last, base             # レンジ大（安値=前日水準まで振れた）
     rows = [(f"2026-06-{d:02d}", base, base + 2, base - 2, base, 1_000_000) for d in range(1, 29)]
     rows += [("2026-07-13", base, base + 2, base - 2, base, 1_000_000),
-             ("2026-07-14", base, hi, lo, last, 6_000_000)]
+             ("2026-07-14", base, hi, lo, last, int(1_000_000 * vol_x))]
     return mkdf(rows)
 
 
@@ -273,6 +275,12 @@ def test_daily_top_fades():
     check("1番にrankが付く", picks[0]["rank"] == 1)
     check("2番にrankが付く", picks[1]["rank"] == 2)
     check("PAPER_MAX_PICKSは2", dp.PAPER_MAX_PICKS == 2)
+    # 2026-07-28: 出来高が20日平均の6倍以上=本物の材料で翌日も買われる（帯別PF0.81）→候補外
+    check("出来高6倍以上は候補から除外",
+          dp.daily_top_fades({"9999.T": _flat_then(21, vol_x=8.0)}, today, {"9999": "2"}) == [])
+    check("出来高5倍は候補に残る",
+          len(dp.daily_top_fades({"9999.T": _flat_then(21, vol_x=5.0)}, today, {"9999": "2"})) == 1)
+    check("FADE_VOL_RATIO_MAXは6.0", dp.FADE_VOL_RATIO_MAX == 6.0)
     # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）
     check("GO閾値+6%: 返る2件とも全部GO",
           all(p["verdict"] == "GO" for p in picks))
