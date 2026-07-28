@@ -298,6 +298,15 @@ def test_daily_top_fades():
     check("出来高5倍は候補に残る",
           len(dp.daily_top_fades({"9999.T": _flat_then(21, vol_x=5.0)}, today, {"9999": "2"})) == 1)
     check("FADE_VOL_RATIO_MAXは6.0", dp.FADE_VOL_RATIO_MAX == 6.0)
+    # 2026-07-28: 25MA乖離80%超=仕手化して踏み上げが止まらない領域→候補外
+    # （2026-03のJDIが乖離+105%/+152%で-43.8万/-28.6万。除外で最悪月DD-91.1万→-57.7万）
+    _hi = _flat_then(20, base=1000)
+    _hi.iloc[-1, _hi.columns.get_loc("Close")] = 2400      # 25MA比+約140%
+    _hi.iloc[-1, _hi.columns.get_loc("High")] = 2500
+    _hi.iloc[-1, _hi.columns.get_loc("Low")] = 2200
+    check("乖離80%超は候補から除外",
+          dp.daily_top_fades({"9999.T": _hi}, today, {"9999": "2"}) == [])
+    check("FADE_DEV25_MAXは80.0", dp.FADE_DEV25_MAX == 80.0)
     # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）
     check("GO閾値+6%: 返る2件とも全部GO",
           all(p["verdict"] == "GO" for p in picks))
