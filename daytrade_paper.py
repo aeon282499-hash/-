@@ -204,6 +204,19 @@ STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終
 # 無効化は None。
 FADE_VOL_RATIO_MAX = 6.0
 
+# プレミアム料（SBI一日信用/HYPERの空売り・円/株/日）の損益分岐。10年の gross 取り分から算出:
+#   上寄りの日に約定した玉（＝寄指で通る本体）: 平均 +0.509% ＝ 100万建玉で 5,091円
+#   下寄りの日に追加される玉                : 平均 +0.254% ＝ 100万建玉で 2,537円
+# プレミアム料がこれを食い切ると期待値が消えるので、発注画面の総額と見比べる線として配信に出す。
+#   総額 〜2,500円     → 下寄りでも撃ってよい
+#   総額 2,500〜5,000円 → 上寄り（寄指が通る日）だけ
+#   総額 5,000円超      → その銘柄は撃たない
+# 貸借銘柄を制度信用で売る場合はプレミアム料が無く、貸株料 年1.15%＝1日0.003% だけなので
+# 実質ゼロ＝この判定は不要（売り禁でHYPER/一般信用を使う時だけ効く）。
+FADE_ENTRY_MARKET = True       # True=寄付成行で撃つ（下寄りも建てる）/ False=寄指（下寄りは見送り）
+FADE_EDGE_PCT_MAIN = 0.509     # 上寄りの玉の gross 期待値%
+FADE_EDGE_PCT_GAPDN = 0.254    # 下寄りの玉の gross 期待値%
+
 # 寄りのギャップアップ下限（2026-07-27検証・_bt_fade_size.py系の10年分析で発見）:
 # 旧ルールは「寄り≥前日終値」＝ギャップ0%以上なら何でも建てていたが、**ほぼフラットで寄る玉は
 # 両期間ともPF1未満の負け筋**（GU 0〜1%: 前半PF0.80 / 後半PF0.87・n=295）。前日+12%も上げた
@@ -306,6 +319,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             "ticker": tk, "name": tk, "direction": "SELL",
             "daily_gain": round(gain, 2),
             "prev_close": round(last_c, 1),
+            # 2026-07-28: 成売りに変更したので約定判定には使わない。
+            # プレミアム料が高い日に寄指へ切り替えるための「参考価格」として残す。
             "min_entry_price": fade_min_entry_price(last_c),
             "vol_ratio": round(float(v.iloc[-1]) / vol_avg if vol_avg > 0 else 0, 1),
             "range_pct": round(rng * 100, 1),
@@ -435,7 +450,11 @@ def settle(book: dict, data: dict, today) -> list[dict]:
             else:
                 exit_type, pnl = "CLOSE", (c - o) / o * 100
         else:  # SELL
-            if limit is not None and o < limit:
+            # 2026-07-28: 寄指→成売りに変更。下寄りでも撃つので指値による見送りをしない。
+            # 下寄りの玉も10年両期間でPF1超（前1.08/後1.21・平均+0.254%）で、成行の方が
+            # 年+4.4万・最悪年-2.0万→+28.2万・勝ち10/11→11/11年。
+            # 旧挙動に戻すなら FADE_ENTRY_MARKET=False（limitで見送り判定に戻る）。
+            if (not FADE_ENTRY_MARKET) and limit is not None and o < limit:
                 exit_type, pnl = "SKIP", 0.0
             else:
                 exit_type, pnl = "CLOSE", (o - c) / o * 100
@@ -550,8 +569,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
 
     # ── 🎯 今日のデイトレ 上位N（フェード・毎営業日） ──
     if go_picks:
-        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・寄指売り→引成）**")
-        lines.append("　＝儲かる確率順（前日上昇率が高いほど翌日よく落ちる＝**1番が本命**）")
+        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・成行→引成）**")
+        lines.append("　＝25MA乖離とATR%の順位平均で並べた順（伸びきって荒い銘柄ほど翌日よく落ちる）")
         for p in go_picks:
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
             shares = _shares_for(p["min_entry_price"])
@@ -562,15 +581,21 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             lines.append(f"**{rk}番{tag}** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
                          f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
                          f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}{reg}")
-            lines.append(f"　→ **寄指 売り {shares:,}株 指値¥{p['min_entry_price']:,.0f}以上**"
-                         f"（前日終値¥{p['prev_close']:,.0f}の+{FADE_MIN_GAP_UP_PCT:.0f}%以上・"
-                         f"約{amt/1e4:.0f}万円）→ 当日 引成 買戻し ／ 信用: {p.get('borrow', '')}")
+            _cap_all = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE)
+            _cap_up = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE)
+            lines.append(f"　→ **寄付 成行で売り {shares:,}株**（約{amt/1e4:.0f}万円）"
+                         f"→ 当日 **引成 買戻し** ／ 信用: {p.get('borrow', '')}")
+            lines.append(f"　　💰プレミアム料の上限（発注画面の総額と見比べる）: "
+                         f"**〜{_cap_all:,}円なら成行でOK** ／ {_cap_all:,}〜{_cap_up:,}円なら"
+                         f"**寄指¥{p['prev_close']:,.0f}以上**に切替（下寄りなら見送り）／ "
+                         f"{_cap_up:,}円超は**撃たない**")
         if len(go_picks) >= 2:
             lines.append("　※**撃つのは1番だけ**。2番は1番が売り禁/在庫なし/寄指不成立の時の代替"
                          "（期待値は1番の39%）。3番以降は10年でPF0.99＝撃つと損なので出していません")
         lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
-        lines.append(f"　※**寄りが前日終値+{FADE_MIN_GAP_UP_PCT:.0f}%未満なら建てない**"
-                     "（フラット寄り＝熱が冷めた玉は10年両期間ともPF1未満の負け筋・2026-07-27追加）")
+        lines.append("　※**下寄りでも撃つ**（2026-07-28変更）。下寄りの玉も10年両期間でPF1超"
+                     "（前1.08/後1.21・平均+0.254%）＝成行の方が年+4.4万・最悪年-2.0万→+28.2万・"
+                     "勝ち10/11→**11/11年**。ただしプレミアム料が上記を超える日は寄指に切替")
         lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
         lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"
                      "(未決済のまま大引けだと強制決済+手数料)・在庫無し/プレミアム高は見送り")

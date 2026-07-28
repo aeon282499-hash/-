@@ -94,16 +94,33 @@ def test_settle_sell_win():
 
 
 def test_settle_sell_skip():
+    """2026-07-28: 寄指→成売りに変更。下寄りでも建てるので SKIP しなくなった。
+    下寄りの玉も10年両期間でPF1超（前1.08/後1.21）で、成行の方が年+4.4万・
+    最悪年-2.0万→+28.2万・勝ち10/11→11/11年。旧挙動は FADE_ENTRY_MARKET=False で復活。"""
     pos = [{"ticker": "1301.T", "name": "A", "direction": "SELL",
             "signal_date": "2026-07-14", "basis_date": "2026-07-13",
             "limit_price": 1000, "status": "pending"}]
     book = base_book(pos)
-    # 寄り980 < MIN指値1000（ギャップダウン）→ 見送り
+    # 寄り980（前日終値1000より下寄り）→ 成売りなので約定し、引け970まで下げて利益
     data = {"1301.T": mkdf([("2026-07-13", 1000, 1010, 990, 1000, 1e6),
                             ("2026-07-14", 980, 1000, 950, 970, 1e6)])}
     dp.settle(book, data, date(2026, 7, 15))
     p = book["positions"][0]
-    check("SELL見送り: SKIP", p["exit_type"] == "SKIP")
+    check("下寄りでも約定(成売り)", p["exit_type"] == "CLOSE")
+    check("下寄りの損益は寄→引", abs(p["pnl_pct"] - (980 - 970) / 980 * 100) < 0.01)
+    check("FADE_ENTRY_MARKETはTrue", dp.FADE_ENTRY_MARKET is True)
+
+    # 旧挙動（寄指）に戻せることも確認
+    dp.FADE_ENTRY_MARKET = False
+    try:
+        book2 = base_book([{"ticker": "1301.T", "name": "A", "direction": "SELL",
+                            "signal_date": "2026-07-14", "basis_date": "2026-07-13",
+                            "limit_price": 1000, "status": "pending"}])
+        dp.settle(book2, data, date(2026, 7, 15))
+        check("FADE_ENTRY_MARKET=Falseなら従来通りSKIP",
+              book2["positions"][0]["exit_type"] == "SKIP")
+    finally:
+        dp.FADE_ENTRY_MARKET = True
 
 
 # ---------------------------------------------------------------- pending / expired
