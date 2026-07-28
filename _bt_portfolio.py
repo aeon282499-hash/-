@@ -28,6 +28,16 @@ SW["sector"] = SW["ticker"].map(SEC).fillna("")
 SW["day"] = SW["entry"].dt.strftime("%Y-%m-%d")
 SW = SW[SW["day"] >= SINCE].sort_values(["day", "score"], ascending=[True, False])
 
+# ── デイトレ売り(フェード)候補 ── 当日決済なので夜またぎゼロ。日中だけ枠を食う。
+FD = pd.read_pickle("_fade_deep.pkl")
+FD = FD[(FD.gain >= 6) & (FD.vr < 6) & (FD.dev < 80)].copy()
+for _k in ("dev", "atr"):
+    FD["r_" + _k] = FD.groupby("sig")[_k].rank(ascending=False, pct=True)
+FD["mix"] = (FD["r_dev"] + FD["r_atr"]) / 2
+FD = FD.sort_values(["sig", "mix"], ascending=[True, True]).groupby("sig").head(1)
+FD = FD[FD["sig"] >= SINCE]
+FD["entry_day"] = FD["sig"]     # sig日の翌営業日に建てるが、資金拘束は「その1日」だけ
+
 # ── 決算持ち越し候補 ──
 EA = pd.read_csv("_earnings_events_rich2.csv")
 EA = EA[(EA.rsi <= 45) & (EA.runup5 < -3) & (EA.tov20 >= 7.5e8) & (EA.d0 >= SINCE)]
