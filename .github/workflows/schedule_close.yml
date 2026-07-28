@@ -46,7 +46,12 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add positions_earnings.json positions_earnings_mid.json positions_earnings_small.json jpx_earnings_schedule.json earnings_times.json || true
+          # 存在するファイルだけ add（同上）
+          for f in positions_earnings.json positions_earnings_mid.json \
+                   positions_earnings_small.json jpx_earnings_schedule.json \
+                   earnings_times.json; do
+            [ -f "$f" ] && git add "$f"
+          done
           git diff --cached --quiet && exit 0
           git commit -m "chore: update earnings hold positions [skip ci]"
           for i in 1 2 3; do
@@ -97,7 +102,19 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add last_close_check.json kiwami_close_last_run.json || true
-          git diff --cached --quiet || git commit -m "chore: update last_close_check [skip ci]"
-          git pull --rebase origin main
-          git push origin main
+          # 存在するファイルだけ add する。2026-07-28: kiwami_close_last_run.json を
+          # まとめて指定したところ、極みの保有玉がゼロの日はこのファイルが生成されず
+          # `fatal: pathspec ... did not match any files` で git add 全体が失敗し、
+          # last_close_check.json すら未ステージのまま git pull --rebase が
+          # 「You have unstaged changes」で落ちてジョブが exit 128 になっていた
+          # （schedule.yml 側は元からこのループ方式で回避していた）。
+          for f in last_close_check.json kiwami_close_last_run.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update last_close_check [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          exit 1

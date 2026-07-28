@@ -52,7 +52,10 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl || true
+          # 存在するファイルだけ add（同上）
+          for f in today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl; do
+            [ -f "$f" ] && git add "$f"
+          done
           git diff --cached --quiet || git commit -m "chore: daily update (signals/sector_map/diag_log) [skip ci]"
           git pull --rebase origin main
           git push origin main
