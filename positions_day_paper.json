@@ -58,7 +58,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 409.0,
       "limit_price": 409.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.92,
       "short": {
         "mark": "○",
@@ -66,7 +66,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": true,
-      "rank": 1
+      "rank": 1,
+      "entry_session": "2026-07-28",
+      "entry_open": 400.0,
+      "entry_close": 360.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 10.0,
+      "pnl_yen": 48000,
+      "win": true
     },
     {
       "ticker": "4722.T",
@@ -76,7 +83,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 2368.0,
       "limit_price": 2368.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.15,
       "short": {
         "mark": "○",
@@ -84,7 +91,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 2
+      "rank": 2,
+      "entry_session": "2026-07-28",
+      "entry_open": 2391.0,
+      "entry_close": 2340.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 2.133,
+      "pnl_yen": 10200,
+      "win": true
     },
     {
       "ticker": "3697.T",
@@ -94,7 +108,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 882.2,
       "limit_price": 883.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.32,
       "short": {
         "mark": "○",
@@ -102,7 +116,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 3
+      "rank": 3,
+      "entry_session": "2026-07-28",
+      "entry_open": 908.8,
+      "entry_close": 950.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -4.533,
+      "pnl_yen": -20600,
+      "win": false
     },
     {
       "ticker": "7803.T",
@@ -112,7 +133,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 394.0,
       "limit_price": 394.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.36,
       "short": {
         "mark": "○",
@@ -120,7 +141,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 4
+      "rank": 4,
+      "entry_session": "2026-07-28",
+      "entry_open": 401.0,
+      "entry_close": 404.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.748,
+      "pnl_yen": -3600,
+      "win": false
     },
     {
       "ticker": "4478.T",
@@ -130,7 +158,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 2550.0,
       "limit_price": 2550.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 6.03,
       "short": {
         "mark": "○",
@@ -138,7 +166,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 7
+      "rank": 7,
+      "entry_session": "2026-07-28",
+      "entry_open": 2555.0,
+      "entry_close": 2563.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.313,
+      "pnl_yen": -800,
+      "win": false
     },
     {
       "ticker": "5253.T",
@@ -148,7 +183,7 @@
       "basis_date": "2026-07-27",
       "prev_close": 1650.0,
       "limit_price": 1650.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 22.22,
       "short": {
         "mark": "○",
@@ -156,9 +191,52 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 8
+      "rank": 8,
+      "entry_session": "2026-07-28",
+      "entry_open": 1649.0,
+      "entry_close": 1608.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 2.486,
+      "pnl_yen": 12300,
+      "win": true
+    },
+    {
+      "ticker": "3697.T",
+      "name": "ＳＨＩＦＴ",
+      "direction": "SELL",
+      "signal_date": "2026-07-29",
+      "basis_date": "2026-07-28",
+      "prev_close": 950.0,
+      "limit_price": 950.0,
+      "status": "pending",
+      "daily_gain": 7.69,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1
+    },
+    {
+      "ticker": "6702.T",
+      "name": "富士通",
+      "direction": "SELL",
+      "signal_date": "2026-07-29",
+      "basis_date": "2026-07-28",
+      "prev_close": 3700.0,
+      "limit_price": 3700.0,
+      "status": "pending",
+      "daily_gain": 6.26,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2
     }
   ],
   "expired": [],
-  "last_report_date": "2026-07-28"
+  "last_report_date": "2026-07-29"
 }
