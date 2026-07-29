@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-28",
+ "last_signal_date": "2026-07-29",
  "positions": [
   {
    "ticker": "6521.T",
@@ -72,6 +72,61 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -3.42,
    "pnl_yen": -22900
+  },
+  {
+   "ticker": "4043.T",
+   "name": "トクヤマ",
+   "type": "第１四半期",
+   "date": "2026-07-29",
+   "signal_price": 3897.0,
+   "shares": 200,
+   "rsi": 28.6,
+   "runup5": -16.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "6526.T",
+   "name": "ソシオネクスト",
+   "type": "第１四半期",
+   "date": "2026-07-29",
+   "signal_price": 2003.5,
+   "shares": 400,
+   "rsi": 30.6,
+   "runup5": -19.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "4461.T",
+   "name": "第一工業製薬",
+   "type": "第１四半期",
+   "date": "2026-07-29",
+   "signal_price": 8860.0,
+   "shares": 100,
+   "rsi": 34.6,
+   "runup5": -19.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "9502.T",
+   "name": "中部電力",
+   "type": "第１四半期",
+   "date": "2026-07-29",
+   "signal_price": 2805.5,
+   "shares": 300,
+   "rsi": 37.8,
+   "runup5": -5.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "8366.T",
+   "name": "滋賀銀行",
+   "type": "第１四半期",
+   "date": "2026-07-29",
+   "signal_price": 2491.0,
+   "shares": 400,
+   "rsi": 44.0,
+   "runup5": -8.1,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-07-27"
