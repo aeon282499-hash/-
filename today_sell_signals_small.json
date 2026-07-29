@@ -1,4 +1,11 @@
 {
-  "date": "2026-07-29",
-  "signals": []
+  "date": "2026-07-30",
+  "signals": [
+    {
+      "ticker": "3003.T",
+      "name": "ヒューリック",
+      "direction": "SELL",
+      "prev_close": 1907.0
+    }
+  ]
 }
