@@ -435,7 +435,14 @@ def _send_weekly_reports(today_jst: date) -> None:
     # 完全に独立: ここが落ちても上の通常版3階層は送信済みで無傷（例外は握り潰す）。
     try:
         from shadow_exit import weekly_report as kiwami_weekly
-        kiwami_weekly(today_jst, all_data, main_sim_sell)
+        from shadow_exit import advance_sell, load_sell_ledger
+        # 極みの売りは専用台帳（損切り+2.5%・3枠）。通常版のsimではなくこちらを使う。
+        # deepcopyに対して当日引けまでドライラン＝帳簿は汚さない（買い側と同じ手口）。
+        import copy
+        k_sell = copy.deepcopy(load_sell_ledger())
+        if k_sell:
+            advance_sell(k_sell, today_jst, all_data)
+        kiwami_weekly(today_jst, all_data, k_sell or main_sim_sell)
     except Exception as e:
         print(f"[report] 極みの週次スキップ（通常版に影響なし）: {e}")
 

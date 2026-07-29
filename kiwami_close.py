@@ -32,7 +32,11 @@ from zoneinfo import ZoneInfo
 
 JST = ZoneInfo("Asia/Tokyo")
 LEDGER = "shadow_exit_main.json"
-SELL_LEDGER = "positions_sell.json"      # 売りは通常版と同一ルール＝帳簿も通常版が真
+# 2026-07-29: 極みの売りは踏み上げ損切りが+2.5%（通常版は+3.0%）になったので、
+# 通常版の positions_sell.json では判定がズレる。専用台帳へ切り替えた。
+# 旧台帳が残っていて新台帳が空のうちは、通常版を読んで従来どおり通知する（移行期の取りこぼし防止）。
+SELL_LEDGER = "kiwami_sell.json"
+SELL_LEDGER_FALLBACK = "positions_sell.json"
 MARKER = "kiwami_close_last_run.json"
 SIZE = 1_000_000
 WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"
@@ -64,17 +68,32 @@ def load_open() -> list[dict]:
 
 
 def load_open_sell() -> list[dict]:
-    """極みの売りは通常版と中身が同一（ATR連動は10年検証で効果ゼロと確定）なので、
-    帳簿も通常版の positions_sell.json をそのまま真とする。読むだけ・書かない。
-    ここで拾うのは「極みチャンネルにも処分指示を出す」ためだけ（2026-07-27）。
-    本人は極みしか見ない運用なので、これが無いと売りの決済指示を取りこぼす。"""
-    if not os.path.exists(SELL_LEDGER):
-        return []
-    with open(SELL_LEDGER, encoding="utf-8") as f:
-        rows = json.load(f)
-    rows = rows if isinstance(rows, list) else rows.get("positions", [])
-    return [r for r in rows
-            if r.get("status") in ("pending", "open") and r.get("direction", "SELL") == "SELL"]
+    """極みの売り玉（保有中）を返す。読むだけ・書かない。
+
+    2026-07-29: 極み専用台帳 kiwami_sell.json（踏み上げ損切り+2.5%・3枠）へ切替。
+    移行期に新台帳がまだ無い/空の間だけ通常版 positions_sell.json を読む（取りこぼし防止）。
+    その場合は通常版の玉なので stop_pct は既定3.0のまま＝従来と同じ判定になる。"""
+    def _read(path: str) -> list[dict]:
+        if not os.path.exists(path):
+            return []
+        try:
+            with open(path, encoding="utf-8") as f:
+                rows = json.load(f)
+        except Exception as e:
+            print(f"[kiwami_close] {path} 読込失敗: {e}")
+            return []
+        rows = rows if isinstance(rows, list) else rows.get("positions", [])
+        return [r for r in rows
+                if r.get("status") in ("pending", "open")
+                and r.get("direction", "SELL") == "SELL"]
+
+    rows = _read(SELL_LEDGER)
+    if rows:
+        return rows
+    fb = _read(SELL_LEDGER_FALLBACK)
+    if fb:
+        print(f"[kiwami_close] {SELL_LEDGER} が空 → 移行期のため通常版台帳を参照({len(fb)}件)")
+    return fb
 
 
 def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:

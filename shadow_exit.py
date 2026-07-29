@@ -50,6 +50,19 @@ LIVE_STOP     = 3.0     # 比較対象＝本番の一律損切り
 # 枠が埋まっている日のシグナルは見送る（＝通常版には出るが極みには入らない）。
 MAX_SLOTS     = 3
 
+# ── 極みの売り（2026-07-29 実装・_bt_sell_improve.py の8軸グリッド）─────────────
+# 踏み上げ損切りを通常版の+3.0%から+2.5%へ。10年・150万×3枠・業種cap2・スコア降順の
+# 円シムで PF1.54→1.60・10年+109.5万→+116.9万・勝ち年5/10→7/10、**両期間とも改善**
+# （前半+42.9→+46.5万 / 後半+66.6→+70.5万）。
+# ただし面は滑らかでない（+3.5%が谷で+2.5%と+4.0%が両方良い）＝効果は年+0.7万と小さく、
+# 「採ってよいが期待しすぎない」水準。他7軸（利確TP×保有日数/前日比/RSI/乖離/ATR上限/
+# 売買代金/地合いゲート強度）はすべて棄却＝現行がピンポイントで正しい位置にある。
+# 特にATR上限2.5→3.0でPF0.91に転落、ゲート撤廃でPF0.97＝この2つは崖。
+SELL_STOP_PCT  = 2.5    # 極みだけ。通常版は tracker.STOP_LOSS=3.0 のまま（触らない）
+SELL_MAX_SLOTS = 3      # 買いと独立の3枠（BT測定と同じ構成・150万×3枠=450万）
+KIWAMI_SELL_LEDGER = "kiwami_sell.json"
+SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
+
 TIER_FILES = {
     "main":  ("today_signals.json",        "positions.json",        1_000_000, "大資金"),
     "mid":   ("today_signals_mid.json",    "positions_mid.json",      500_000, "中資金"),
@@ -171,6 +184,155 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
     return added
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  極みの売り台帳（2026-07-29新設）
+#  通常版と入口は完全に同一（同じ today_sell_signals.json を読む）。違うのは
+#    ①踏み上げ損切りが +2.5%（通常版+3.0%）
+#    ②同時保有3枠まで（通常版は上限なし）
+#  の2点だけ。通常版の positions_sell.json は読まないし書かない＝完全に独立。
+# ══════════════════════════════════════════════════════════════════════════
+def load_sell_ledger() -> list[dict]:
+    if not os.path.exists(KIWAMI_SELL_LEDGER):
+        return []
+    try:
+        with open(KIWAMI_SELL_LEDGER, encoding="utf-8") as f:
+            rows = json.load(f)
+        return rows if isinstance(rows, list) else []
+    except Exception as e:
+        print(f"[shadow-sell] 台帳読込失敗: {e} → 空で継続")
+        return []
+
+
+def save_sell_ledger(rows: list[dict]) -> None:
+    with open(KIWAMI_SELL_LEDGER, "w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=2)
+
+
+def record_sell_signals(today: date) -> int:
+    """本番が今朝出したSELLシグナルを極みの売り台帳へ取り込む。
+    SELLは寄指を使わない（tracker側もBUYのみNOFILL判定）ので翌寄り成行エントリー。"""
+    if not os.path.exists(SELL_SIG_FILE):
+        return 0
+    with open(SELL_SIG_FILE, encoding="utf-8") as f:
+        payload = json.load(f)
+    today_str = today.strftime("%Y-%m-%d")
+    if payload.get("date") != today_str:
+        return 0
+
+    rows = load_sell_ledger()
+    seen = {(r["ticker"], r["signal_date"]) for r in rows}
+    still_open = {r["ticker"] for r in rows if r.get("status") in ("pending", "open")}
+    slots_used = len(still_open)
+    added = 0
+    skipped: list[str] = []
+    for s in payload.get("signals", []):
+        if s.get("direction") != "SELL":
+            continue
+        tk = s["ticker"]
+        if (tk, today_str) in seen:
+            continue
+        if tk in still_open:
+            print(f"[shadow-sell] {tk} は極みで保有中 → 重複エントリーを回避")
+            continue
+        if slots_used >= SELL_MAX_SLOTS:
+            skipped.append(s.get("name", tk))
+            print(f"[shadow-sell] {tk} は枠満杯({SELL_MAX_SLOTS})のため見送り")
+            continue
+        slots_used += 1
+        rows.append({
+            "signal_date": today_str,
+            "entry_date":  today_str,          # 当日寄り付きエントリー（本番と同じ）
+            "ticker":      tk,
+            "name":        s.get("name", tk),
+            "direction":   "SELL",
+            "prev_close":  s.get("prev_close", 0),
+            "stop_pct":    SELL_STOP_PCT,
+            "live_stop":   LIVE_STOP,
+            "entry_open":  None,
+            "status":      "pending",
+            "hold_days":   0,
+            "pnl_pct":     None,
+            "exit_type":   None,
+            "exit_date":   None,
+        })
+        added += 1
+    if added:
+        save_sell_ledger(rows)
+    if skipped:
+        with open("_shadow_skipped_sell.json", "w", encoding="utf-8") as f:
+            json.dump({"date": today_str, "names": skipped}, f, ensure_ascii=False)
+    return added
+
+
+def advance_sell(rows: list[dict], today: date, all_data: dict) -> int:
+    """極みの売り台帳をその場で進める（保存はしない）。tracker.update_positions の
+    SELL分岐と同じ判定順・同じ約定前提で、踏み上げ損切り幅だけ stop_pct を使う。
+    週次はdeepcopyに対してこれを呼ぶ＝帳簿を汚さずに当日引けまで反映できる。"""
+    from screener import calc_rsi
+
+    today_str = today.strftime("%Y-%m-%d")
+    closed = 0
+    for pos in rows:
+        if pos.get("status") in ("closed", "expired"):
+            continue
+        df = all_data.get(pos["ticker"])
+        if df is None or df.empty:
+            continue
+        entry_date_str = pos["entry_date"]
+
+        if pos["status"] == "pending":
+            # エントリー日が未来なら建てない。all_data に将来の足が混ざっていても
+            # 「まだ約定していない玉」を勝手に建玉化しないための防御
+            # （entry_date == today は正常＝当日寄りエントリー。週次のドライランで通る）。
+            if entry_date_str > today_str:
+                continue
+            er = df[df.index.strftime("%Y-%m-%d") == entry_date_str]
+            if er.empty:
+                continue                       # まだエントリー日が来ていない
+            # SELLは寄指を使わない＝NOFILL判定は無し（tracker側もBUYのみ）
+            pos.update(entry_open=float(er["Open"].iloc[0]), status="open", hold_days=0)
+
+        eo = pos.get("entry_open")
+        if not eo or eo <= 0:
+            continue
+        stop_price = eo * (1 + pos["stop_pct"] / 100)      # 空売りなので上が損切り
+        tp_price   = eo * (1 - TAKE_PROFIT / 100)
+
+        post = df[(df.index.strftime("%Y-%m-%d") >= entry_date_str) &
+                  (df.index.strftime("%Y-%m-%d") < today_str)]
+        pos["hold_days"] = 0
+        for dt_idx, row in post.iterrows():
+            pos["hold_days"] += 1
+            d_str = dt_idx.strftime("%Y-%m-%d")
+            hi, lo, cl = float(row["High"]), float(row["Low"]), float(row["Close"])
+            if hi >= stop_price:                                  # STOP優先（本番と同順）
+                pos.update(pnl_pct=-pos["stop_pct"], exit_type="STOP",
+                           exit_date=d_str, status="closed")
+                closed += 1
+                break
+            if lo <= tp_price:
+                pos.update(pnl_pct=+TAKE_PROFIT, exit_type="TP",
+                           exit_date=d_str, status="closed")
+                closed += 1
+                break
+            rsi_now = calc_rsi(df[df.index <= dt_idx]["Close"].dropna())
+            rsi_exit = rsi_now is not None and rsi_now <= 50      # SELLは50以下で手仕舞い
+            if rsi_exit or pos["hold_days"] >= MAX_HOLD:
+                pos.update(pnl_pct=round((eo - cl) / eo * 100, 3),
+                           exit_type="RSI" if rsi_exit else "MAXHOLD",
+                           exit_date=d_str, status="closed")
+                closed += 1
+                break
+    return closed
+
+
+def update_sell_ledger(today: date, all_data: dict) -> int:
+    rows = load_sell_ledger()
+    closed = advance_sell(rows, today, all_data)
+    save_sell_ledger(rows)
+    return closed
+
+
 def update_ledger(key: str, today: date, all_data: dict) -> tuple[int, int]:
     """極み台帳の未決済を前日までのデータで進めて保存する。戻り値=(決済数, 失効数)。"""
     rows = load_ledger(key)
@@ -260,6 +422,15 @@ def run_shadow(tiers, today: date, get_data) -> None:
         c, e = update_ledger(k, today, all_data)
         a = record_signals(k, today, all_data)
         print(f"[shadow-{TIER_FILES[k][3]}] 新規{a}件 / 影決済{c}件 / 影失効{e}件")
+
+    # 極みの売り台帳（2026-07-29新設・損切り+2.5%／3枠）。買いと同じく更新→記帳の順。
+    # ここが落ちても買いの台帳は上で保存済み＝独立。
+    try:
+        sc = update_sell_ledger(today, all_data)
+        sa = record_sell_signals(today)
+        print(f"[shadow-売り] 新規{sa}件 / 決済{sc}件")
+    except Exception as e:
+        print(f"[shadow] 極み売り台帳の更新スキップ（買いと通常版に影響なし）: {e}")
 
     # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
     try:
@@ -505,12 +676,15 @@ def send_discord(today: date) -> bool:
 
 
 def send_discord_sell(today: date) -> bool:
-    """極みの売りを専用チャンネルへ。**中身は通常版と完全に同一**。
+    """極みの売りを専用チャンネルへ。銘柄選定は通常版と同一、**出口だけ違う**。
 
-    SELLのATR連動は2026-07-26の10年検証で棄却（同一232件のreplayで t=-0.19＝効果ゼロ。
-    真因はSELL候補のATR%が1.48〜2.50に均質＝入口の急騰条件とATRキャップで散らばりが無く、
-    正規化する余地がそもそも無い）。よって極みの売りは通常版のミラーで、改善が見つかった時に
-    ここへ先に入れる枠として用意しておく。台帳も持たない（通常版の帳簿がそのまま真）。
+    2026-07-29: 踏み上げ損切りを +3.0% → **+2.5%** に変更（極みのみ）。
+    _bt_sell_improve.py の8軸グリッド（10年・150万×3枠・業種cap2）で
+    PF1.54→1.60 / 10年+109.5万→+116.9万 / 勝ち年5/10→7/10、両期間とも改善。
+    同時に枠を3に制限（通常版は上限なし）。台帳は kiwami_sell.json で完全に独立。
+
+    ATR連動の損切りは2026-07-26の10年検証で棄却済み（同一232件のreplayで t=-0.19＝効果ゼロ。
+    SELL候補のATR%が1.48〜2.50に均質で正規化の余地が無い）ため入れていない。
     """
     today_str = today.strftime("%Y-%m-%d")
     sig_file = "today_sell_signals.json"          # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
@@ -529,19 +703,27 @@ def send_discord_sell(today: date) -> bool:
             "color": _COLOR_INFO,
         }], env=SHADOW_SELL_WEBHOOK_ENV)
 
+    # 極みは3枠まで。すでに保有中の玉があれば、その分だけ今日は建てられない。
+    open_now = [r for r in load_sell_ledger() if r.get("status") in ("pending", "open")]
+    free = max(SELL_MAX_SLOTS - len(open_now), 0)
     lines = []
-    for s in sigs:
+    for i, s in enumerate(sigs):
         pc = s.get("prev_close") or 0
+        mark = "" if i < free else "　⏭️ **枠満杯で見送り**"
         lines.append(
             f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}\n"
-            f"　翌寄り成行で空売り → 損切り **+3.0%**（{_price_str(pc * 1.03)}）/ "
-            f"利確 **-5.0%**（{_price_str(pc * 0.95)}）/ RSI50以下 or 最大3日")
+            f"　翌寄り成行で空売り → 損切り **+{SELL_STOP_PCT}%**"
+            f"（{_price_str(pc * (1 + SELL_STOP_PCT / 100))}）/ "
+            f"利確 **-5.0%**（{_price_str(pc * 0.95)}）/ RSI50以下 or 最大3日{mark}")
+    slot_note = (f"\n\n📊 **枠 {len(open_now)}/{SELL_MAX_SLOTS} 使用中**"
+                 f"（あと{free}枠）" if open_now else "")
     return _shadow_post([{
         "title": f"⚡ 売買シグナル極み（売り）— {today_str}",
-        "description": ("**俺専用版**。売りは現時点で**通常版と中身が同一**。\n"
-                        "ATR連動の損切りは10年検証で効果ゼロ（t=-0.19）と判明したため入れていない"
-                        "＝売り候補はATR%が1.48〜2.50に均質で、正規化する余地が無い。\n"
-                        "改善が見つかったらここへ先に入れる。\n\n" + "\n\n".join(lines[:10])),
+        "description": ("**俺専用版**。銘柄の選び方は通常版と同一だが、"
+                        f"**踏み上げ損切りが +{SELL_STOP_PCT}%**（通常版は+3.0%）。\n"
+                        "10年BTで PF1.54→1.60・勝ち年5/10→7/10・両期間改善。"
+                        f"同時保有は{SELL_MAX_SLOTS}枠まで。" + slot_note + "\n\n"
+                        + "\n\n".join(lines[:10])),
         "color": _COLOR_LOSE,
         "footer": {"text": "貸借区分・在庫はSBIの発注画面で最終確認すること"},
     }], env=SHADOW_SELL_WEBHOOK_ENV)
