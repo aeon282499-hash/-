@@ -247,13 +247,18 @@ FADE_EDGE_PCT_GAPDN = 0.254    # 下寄りの玉の gross 期待値%
 FADE_MIN_GAP_UP_PCT = 0.0
                            # 10年BT: 除外でPF1.44→1.62・11年全プラス。7月は-36万→+75万に逆転。
 # 配信・記帳する本数。2026-07-28に 8 → 2。順位別の期待値を10年で測った結果、
-# エッジは1番にほぼ全部集中しており、3番以降は撃つと損になるため（1玉100万）:
-#   1番 勝率56.1% 平均+0.46% PF1.22 年+94.0万 最悪年+29.7万 勝ち11/11年
-#   2番 勝率53.3% 平均+0.18% PF1.11 年+32.7万 最悪年-38.8万 勝ち 8/11年
-#   3番 勝率51.4% 平均-0.01% PF0.99 年 -1.1万 最悪年-105万  勝ち 6/11年 ← 期待値ゼロ以下
-#   4番以降はすべてマイナス。1+2で年+126.7万、3番を足すと+125.6万で逆に減る。
-# 運用ルール: **撃つのは1番。1番が売り禁/在庫なし/寄指不成立の時だけ2番。3番以降は撃たない。**
-# 8本出していた頃は「予備」として4番以降も見せていたが、迷いの元なので表示ごと落とした。
+# 2026-07-29 再測定（1玉50万・データを2026-07-27まで更新・実株数）。
+# 「何本まで撃つか」の答えは **2本**。3本目から崩れる:
+#   上位1本 n=2,211 勝率56.3% PF1.28 年+43.3万 勝ち11/11年 最悪年+19.7万 最悪月-22.6万
+#   上位2本 n=4,101 勝率55.4% PF1.22 年+59.1万 勝ち11/11年 最悪年+20.4万 最悪月-30.1万 ←最良
+#   上位3本 n=5,667 勝率54.0% PF1.15 年+54.4万 勝ち10/11年 最悪年 -1.1万 最悪月-39.5万
+# 順位を単独で撃った場合の実力:
+#   1番だけ PF1.28 年+43.3万 勝ち11/11年
+#   2番だけ PF1.13 年+15.9万 勝ち 8/11年  ← 単独でもプラス＝「代替」でなく本命の2枚目
+#   3番だけ PF0.96 年 -4.8万 勝ち 4/11年  ← ここから期待値マイナス
+# 運用ルール: **1番と2番の両方を撃つ。3番以降は撃たない。**
+# （2026-07-28までは「撃つのは1番だけ・2番は代替」と配信していたが、上位1本の数字だけを見た
+#   誤りだった。2番を足すと年+15.8万増えて勝ち年11/11は変わらない＝2本が正しい。）
 PAPER_MAX_PICKS = 2
 
 
@@ -589,38 +594,53 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
 
     # ── 🎯 今日のデイトレ 上位N（フェード・毎営業日） ──
     if go_picks:
-        lines.append(f"**🎯 今日のデイトレ 上位{len(go_picks)}（フェード＝上がりすぎを空売り・成行→引成）**")
-        lines.append("　＝25MA乖離とATR%の順位平均で並べた順（伸びきって荒い銘柄ほど翌日よく落ちる）")
-        for p in go_picks:
+        _cap_all = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE)
+        _cap_up = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE)
+        n_shoot = min(len(go_picks), PAPER_MAX_PICKS)
+        total = sum(_shares_for(p["min_entry_price"]) * p["min_entry_price"]
+                    for p in go_picks[:n_shoot])
+
+        # ── 手順（毎日同じ・迷わないように最初に固定表示）──
+        lines.append("**🩳 デイトレ売り（フェード）**")
+        lines.append("```")
+        lines.append("① 9:00 寄付 “成行” で空売り（下寄りでも撃つ）")
+        lines.append("② 約定したらすぐ「引成」で買戻しを予約")
+        lines.append("③ 大引けで自動決済。持ち越し禁止・損切りなし")
+        lines.append("```")
+        lines.append(f"**下の{n_shoot}銘柄を撃つ**（両方とも本命／合計 約{total/1e4:.0f}万円）")
+        lines.append("")
+
+        for i, p in enumerate(go_picks):
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
             shares = _shares_for(p["min_entry_price"])
             amt = shares * p["min_entry_price"]
-            reg = f" ／ {p['reg_note']}" if p.get("reg_note") else ""
-            rk = p.get("rank", 1)
-            tag = "" if rk <= 3 else "（予備）"
-            lines.append(f"**{rk}番{tag}** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
-                         f"前日+{p['daily_gain']:.0f}% ／ 出来高{p.get('vol_ratio', 0):.0f}倍 ／ "
-                         f"レンジ{p.get('range_pct', 0):.0f}% ／ 貸借{sh['mark']}{reg}")
-            _cap_all = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE)
-            _cap_up = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE)
-            lines.append(f"　→ **寄付 成行で売り {shares:,}株**（約{amt/1e4:.0f}万円）"
-                         f"→ 当日 **引成 買戻し** ／ 信用: {p.get('borrow', '')}")
-            lines.append(f"　　💰プレミアム料の上限（発注画面の総額と見比べる）: "
-                         f"**〜{_cap_all:,}円なら成行でOK** ／ {_cap_all:,}〜{_cap_up:,}円なら"
-                         f"**寄指¥{p['prev_close']:,.0f}以上**に切替（下寄りなら見送り）／ "
-                         f"{_cap_up:,}円超は**撃たない**")
-        if len(go_picks) >= 2:
-            lines.append("　※**撃つのは1番だけ**。2番は1番が売り禁/在庫なし/寄指不成立の時の代替"
-                         "（期待値は1番の39%）。3番以降は10年でPF0.99＝撃つと損なので出していません")
-        lines.append("　※◎売残少=空売り楽で優先／⭐売り長=最強だが要在庫確認・逆日歩")
-        lines.append("　※**下寄りでも撃つ**（2026-07-28変更）。下寄りの玉も10年両期間でPF1超"
-                     "（前1.08/後1.21・平均+0.254%）＝成行の方が年+4.4万・最悪年-2.0万→+28.2万・"
-                     "勝ち10/11→**11/11年**。ただしプレミアム料が上記を超える日は寄指に切替")
-        lines.append("　※約定した分だけ・当日決済必須・持ち越し禁止・損切りなし(引けまで保持)")
-        lines.append("　※実弾: SBI一日信用売り(手数料0)・約定確認後すぐ**引成返済を予約**"
-                     "(未決済のまま大引けだと強制決済+手数料)・在庫無し/プレミアム高は見送り")
-        lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用の在庫があれば売れる**"
-                     "＝発注画面で在庫とプレミアム料を確認してから")
+            reg = f" {p['reg_note']}" if p.get("reg_note") else ""
+            rk = p.get("rank", i + 1)
+            if i < n_shoot:
+                head = f"**{rk}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
+            else:
+                head = (f"{rk}番（予備・撃たない） {p.get('name', p['ticker'])}"
+                        f"（{p['ticker']}）")
+            lines.append(head)
+            qty = (f"**{shares:,}株 空売り**（約{amt/1e4:.0f}万円）" if i < n_shoot
+                   else f"{shares:,}株（約{amt/1e4:.0f}万円）")
+            lines.append(f"　{qty}／ 貸借{sh['mark']}{reg}"
+                         + (f" ／ {p['borrow']}" if p.get("borrow") else ""))
+            lines.append(f"　前日+{p['daily_gain']:.0f}% ・ 出来高{p.get('vol_ratio', 0):.0f}倍 ・ "
+                         f"レンジ{p.get('range_pct', 0):.0f}%")
+            if i < n_shoot:
+                lines.append(f"　💰プレミアム料 〜{_cap_all:,}円→成行OK ／ "
+                             f"〜{_cap_up:,}円→寄指¥{p['prev_close']:,.0f}以上に切替 ／ "
+                             f"超えたら撃たない")
+            lines.append("")
+
+        lines.append("　※**1番と2番の両方を撃つ**（2026-07-29修正）。10年BTで上位2本が最良＝"
+                     "年+43.3万→**+59.1万**・勝ち11/11年。2番単独でもPF1.13でプラス。"
+                     "3番以降はPF0.96で撃つと損なので出していない")
+        lines.append("　※在庫が無い/プレミアム料が上限超なら、その銘柄だけ見送る（もう片方は撃つ）")
+        lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用に在庫があれば売れる**")
+        lines.append("　※◎売残少=空売り楽／⭐売り長=最強だが要在庫確認・逆日歩")
+        lines.append("　※実弾はSBI一日信用売り(手数料0)。未決済のまま大引けだと強制決済+手数料")
         lines.append("")
     else:
         # GO無し（薄い候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）
