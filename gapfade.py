@@ -72,6 +72,32 @@ UNIV = "_intraday_targets.json"
 # 以降はスキップする。投げ売りブースターが同じガード漏れで4連投した前例あり。
 SEND_MARKER = "gapfade_last_send.json"
 
+# ── 時刻ガード（2026-07-29 新設）────────────────────────────────────────────
+# 実測: この workflow の GitHub cron は **毎日3時間以上遅れて起動する**。
+#   予定 9:25→実起動12:46 / 10:10→13:25 / 10:50→13:53 / 11:20→14:32（7/28も同じ）。
+# その結果 7/29 は 12:56 に「12:30に撃て」と配信していた＝**26分手遅れの指示**。
+# cronを増やしても全部が同じだけずれるので本数では解決しない。
+#   ①早すぎ(寄り値が未確定)なら何も送らず終了する＝同日ガードを消費しない
+#   ②締切(=エントリー時刻)を過ぎたら、撃てと言わずに「遅延・本日見送り」として送る
+# 恒久解は cron-job.org → Cloudflare Worker → workflow_dispatch（他システムでは毎日
+# 8:05きっかりに着弾している実績あり）。本人のWorker登録が済むまでの防御がここ。
+EARLIEST_HM = "09:20"       # 最初の15分足が確定するのが9:15。これ未満は寄り値が取れない
+DEADLINE_HM = "12:20"       # 後場寄り12:30に成行を仕込める最終ライン（10分前）
+
+
+def _now_hm() -> str:
+    return datetime.now(JST).strftime("%H:%M")
+
+
+def timing_state(now_hm: str | None = None) -> str:
+    """'early'（寄り値前）/ 'ok'（間に合う）/ 'late'（エントリー時刻を過ぎた）。"""
+    hm = now_hm or _now_hm()
+    if hm < EARLIEST_HM:
+        return "early"
+    if hm > DEADLINE_HM:
+        return "late"
+    return "ok"
+
 
 def _load_iss() -> dict:
     try:
@@ -204,20 +230,35 @@ def mark_sent(day: str) -> None:
                   f, ensure_ascii=False, indent=2)
 
 
-def notify(day: str, cand: list[dict], stats: str, dry: bool) -> bool:
-    """Discordへ配信。実際に送信できたら True（マーカーを書く条件）。"""
+def notify(day: str, cand: list[dict], stats: str, dry: bool,
+           state: str = "ok", now_hm: str | None = None) -> bool:
+    """Discordへ配信。実際に送信できたら True（マーカーを書く条件）。
+    state='late' のときは「撃て」と言わず、遅延で見送りになった事実だけを送る。"""
     # 専用チャンネル（2026-07-26 本人指定）。未設定なら🔻フェードと同じDAY chへフォールバック。
     hook = (os.getenv("DISCORD_WEBHOOK_GAPFADE_URL")
             or os.getenv("DISCORD_WEBHOOK_DAY_URL")
             or os.getenv("DISCORD_WEBHOOK_URL_DAY") or "").strip()
-    if not cand:
+    hm = now_hm or _now_hm()
+    if state == "late":
+        # エントリー時刻を過ぎてから届いた＝この指示はもう実行できない。
+        # 「撃て」と書くと手遅れの発注を誘発するので、銘柄は参考表示に留める。
+        head = (f"⚠️ **配信が遅れました（{hm} 着・エントリーは{ENTRY_LABEL}）**\n"
+                f"**本日は見送りです。**この時刻から後場寄りの成行は出せません。\n"
+                f"原因: GitHub cron の起動遅延（実測で毎日3時間以上）。恒久解は外部トリガー。\n\n")
+        if cand:
+            ref = "\n".join(f"（参考）{i+1}. {c['ticker']} ギャップ+{c['gap']:.1f}% 寄¥{c['open']:,.0f}"
+                            for i, c in enumerate(cand))
+            body = head + "本日該当していた銘柄（記録用・撃たない）:\n" + ref
+        else:
+            body = head + f"なお本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なしでした。"
+    elif not cand:
         body = f"本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なし。**撃つ日ではありません。**"
     else:
         lines = [f"**{i+1}. {c['ticker']}** ギャップ **+{c['gap']:.1f}%** ／ 寄¥{c['open']:,.0f} "
                  f"→ {c['shares']}株（約{c['shares']*c['open']/10000:.0f}万）" for i, c in enumerate(cand)]
         body = (f"**{ENTRY_LABEL} に成行で空売り → 大引けで買い戻し**\n"
-                "※指値は使わない（刺さらないと見送りになる）。約定したらすぐ引成の返済予約を入れる\n"
-                "※昼休み中に出しておきたいなら12:30の後場寄り成行でも可（PF1.70→1.50）\n\n"
+                f"※いま{hm}。昼休み(11:30-12:30)のうちに後場寄りの成行を仕込んでおく\n"
+                "※指値は使わない（刺さらないと見送りになる）。約定したらすぐ引成の返済予約を入れる\n\n"
                 + "\n".join(lines))
     payload = {"embeds": [{"title": f"🩳 ギャップフェード {day}",
                            "description": body + f"\n\n{stats}",
@@ -260,6 +301,14 @@ if __name__ == "__main__":
 
     from dotenv import load_dotenv
     load_dotenv()
+
+    # 寄り値が確定する前（9:20 JST未満）に起動した場合は何もしない。
+    # ここで空配信すると同日ガードを消費して、間に合う時刻の後続便が黙って死ぬ。
+    state = timing_state()
+    if state == "early" and not dry:
+        print(f"[guard] {_now_hm()} JST は寄り値の確定前（{EARLIEST_HM}未満）→ 何もせず終了")
+        raise SystemExit(0)
+
     store = fetch()
     frames = daily_frames(store)
     iss = _load_iss()
@@ -280,5 +329,9 @@ if __name__ == "__main__":
 
     if already_sent(today) and not dry:
         print(f"[notify] 本日({today})は配信済み → スキップ（多重トリガーの2本目）")
-    elif notify(today, cand, report(led), dry):
-        mark_sent(today)
+    else:
+        if state == "late":
+            print(f"[guard] {_now_hm()} JST はエントリー({ENTRY_LABEL})を過ぎている"
+                  f" → 「撃て」ではなく遅延通知として配信する")
+        if notify(today, cand, report(led), dry, state=state):
+            mark_sent(today)
