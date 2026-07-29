@@ -113,9 +113,22 @@ ok(res[5.0]["pnl_pct"] > res[3.0]["pnl_pct"], "広い方が損益は上（この
 print("\n" + "=" * 78)
 print("③ 損切り幅の計算 shadow_stop_pct")
 print("=" * 78)
-ok(S.shadow_stop_pct(2.30) == 4.6, "ATR2.30% → 4.6%（×2.0）")
-ok(S.shadow_stop_pct(0.50) == S.STOP_FLOOR, f"ATR0.50% → 下限{S.STOP_FLOOR}%で止まる")
-ok(S.shadow_stop_pct(3.00) == 6.0, "ATR3.00%（入口キャップ上限）→ 6.0%が最大")
+# 2026-07-29: ATR連動を取り下げ、買いの損切りは一律3.0%に戻した（USE_ATR_STOP=False）。
+# 理由=採用検証が枠5・株数丸めなしで、実運用の枠3では一律-3%に負ける（年-6万・勝ち年-2）。
+# 機構はATRが損を減らすのでなく損切り箱から期限箱へ移すだけで、円が完全に閉じる。
+ok(S.USE_ATR_STOP is False, "USE_ATR_STOP=False（ATR連動は取り下げ）")
+ok(all(S.shadow_stop_pct(a) == S.LIVE_STOP for a in (None, 0.5, 1.4, 2.30, 3.00)),
+   f"ATRの値によらず一律{S.LIVE_STOP}%")
+
+# 復活経路が壊れていないことも守る（USE_ATR_STOP=True に戻せば元の式に戻る）。
+S.USE_ATR_STOP = True
+try:
+    ok(S.shadow_stop_pct(2.30) == 4.6, "復活時: ATR2.30% → 4.6%（×2.0）")
+    ok(S.shadow_stop_pct(0.50) == S.STOP_FLOOR, f"復活時: ATR0.50% → 下限{S.STOP_FLOOR}%")
+    ok(S.shadow_stop_pct(3.00) == 6.0, "復活時: ATR3.00% → 6.0%が最大")
+    ok(S.shadow_stop_pct(None) == S.LIVE_STOP, "復活時でもATR欠測は3.0%へフォールバック")
+finally:
+    S.USE_ATR_STOP = False
 ok(S.shadow_stop_pct(None) == S.LIVE_STOP,
    f"ATR取得不能 → 本番と同じ{S.LIVE_STOP}%にフォールバック（差分ゼロ＝安全側）")
 
