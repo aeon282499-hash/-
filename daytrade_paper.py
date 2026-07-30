@@ -220,6 +220,26 @@ FADE_VOL_RATIO_MAX = 6.0
 # 無効化は None。
 FADE_DEV25_MAX = 80.0
 
+# ── ATR%と25MA乖離の「下限」（2026-07-31検証・_bt_fade_atrdev.py / _bt_fade_final.py）──
+# 発端は本人の「もう少し勝率が欲しい。小型株を除くと良くならないか」。
+# **小型株除外は逆効果だった**（_bt_fade_smallcap.py）: 代金フロアを3億→10億にすると
+# 勝率55.4%→53.5%・年+59.1万→+20.2万・勝ち11→8年。株価1,000円フロアも年+28.0万・勝ち8年。
+# フェードは過熱の反動を取る戦略なので、厚くて動かない玉は+6%上げても垂れない。
+# 効いたのは逆方向＝**よく動く玉だけ残す**（残る側の株価中央は1,350円で現行1,548円より安い）。
+#   現行                勝率55.4% PF1.22 年+59.1万 勝ち11/11 前半+312.6万 後半+338.0万 撃つ日2,211
+#   ATR5%以上×乖離12%以上  勝率59.6% PF1.45 年+67.4万 勝ち11/11 前半+340.5万 後半+401.4万 撃つ日1,350
+# 高原であることの確認: ATR4.0〜5.5 × 乖離10〜15 の全セルで両期間改善。往復0.15%のコストを
+# 乗せるとATR4〜6×乖離0〜18まで面が広がる（件数が減るぶんコスト総額も減るので差が開く：
+# 0.20%コストで 現行+27.4万/年 に対し新条件+48.4万/年）。上位3日・3銘柄を除いても93%/87%残る。
+# 捨てる側が本当に捨てて良いかの直接確認: 落とす玉だけで組むと年-5.8万・勝ち5/11年
+# （ATR5%未満だけなら年-11.2万・勝ち4/11年・後半-117万）＝エッジがあるのは残す側だけ。
+# 撃たなくなる2,240玉の実績は勝率51.7%・計-54.1万＝損の塊を落としている。
+# 代償（承知の上で採る）: 撃つ日が年201日→123日に減る（2本ある日673/1,350日）。
+#   最悪年 +20.4万→+4.4万（2018）・最悪月 -30.1万→-32.8万（2026-01）。全年プラスは維持。
+# 無効化は None。
+FADE_ATR_MIN = 5.0
+FADE_DEV25_MIN = 12.0
+
 # プレミアム料（SBI一日信用/HYPERの空売り・円/株/日）の損益分岐。10年の gross 取り分から算出:
 #   上寄りの日に約定した玉（＝寄指で通る本体）: 平均 +0.509% ＝ 100万建玉で 5,091円
 #   下寄りの日に追加される玉                : 平均 +0.254% ＝ 100万建玉で 2,537円
@@ -260,6 +280,26 @@ FADE_MIN_GAP_UP_PCT = 0.0
 # （2026-07-28までは「撃つのは1番だけ・2番は代替」と配信していたが、上位1本の数字だけを見た
 #   誤りだった。2番を足すと年+15.8万増えて勝ち年11/11は変わらない＝2本が正しい。）
 PAPER_MAX_PICKS = 2
+
+
+def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
+    """撃てる玉か判定し、撃てないなら理由を返す（撃てるなら None）。
+
+    BTは「この3条件を満たす玉だけに絞ってから乖離+ATRで並べた上位2本」を撃つ想定なので、
+    ここを通らない玉は必ず順位の後ろへ回す（＝画面の1番＝BTの1番を常に成立させる）。
+    候補プール自体からは落とさない: 落とすと「今日は何も出ない」日に理由が見えなくなるため、
+    上昇率トップは NO-GO の理由付きで必ず表示する（売り禁を除外せずバッジ表示にしたのと同じ方針）。
+    """
+    # 小数1桁で出す: 5.96%を「+6%<6%」と表示すると条件が矛盾して見える（境界の玉は毎日出る）
+    if gain < DAILY_PICK_GAIN_MIN:
+        return f"前日+{gain:.1f}%<{DAILY_PICK_GAIN_MIN:.0f}%＝薄い(コスト後トントン帯)"
+    if FADE_ATR_MIN is not None and atr_pct < FADE_ATR_MIN:
+        return (f"ATR{atr_pct:.1f}%<{FADE_ATR_MIN:.0f}%＝普段動かない玉の急騰"
+                "(本物の材料で翌日も買われる・10年勝率50.5%)")
+    if FADE_DEV25_MIN is not None and dev25 < FADE_DEV25_MIN:
+        return (f"25MA乖離{dev25:.1f}%<{FADE_DEV25_MIN:.0f}%＝まだ伸びきっていない"
+                "(戻す余地が小さい)")
+    return None
 
 
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
@@ -369,7 +409,10 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     # 混ぜて並べると画面の「1番」がBTの1番と食い違う（2026-07-28: 上昇率5.6%のインフォマートが
     # 乖離20.9%で5番に入り、GO対象のフリー(7番)/カバー(8番)より上に表示されていた）。
     # 閾値未満は候補として残すが必ず後ろ＝「1番＝撃つ玉」が常に成立する。
-    cands.sort(key=lambda x: (x["daily_gain"] < DAILY_PICK_GAIN_MIN, x["pick_score"]))
+    # 2026-07-31: 後ろに回す条件を「上昇率」だけからATR%下限・乖離下限も含む3条件に拡張。
+    for x in cands:
+        x["_nogo"] = fade_nogo_reason(x["daily_gain"], x["atr_pct"], x["dev25"])
+    cands.sort(key=lambda x: (x["_nogo"] is not None, x["pick_score"]))
     picks = cands[:max(1, n)]
     try:  # 銘柄名補完（上位数件のみ・軽量）
         from screener import fetch_tse_universe
@@ -399,10 +442,11 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         elif al.get("daily_pub"):
             regs.append("📢日々公表(規制近接)")
         p["reg_note"] = "・".join(regs)
-        go = p["daily_gain"] >= DAILY_PICK_GAIN_MIN and sh["mark"] == "○"
+        reason = p.pop("_nogo", None)
+        go = reason is None and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
-            p["nogo_reason"] = f"前日+{p['daily_gain']:.0f}%<{DAILY_PICK_GAIN_MIN:.0f}%＝薄い(コスト後トントン帯)"
+            p["nogo_reason"] = reason or "貸借✕＝売れない玉"
     return picks
 
 
@@ -637,14 +681,21 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines.append("　※**1番と2番の両方を撃つ**（2026-07-29修正）。10年BTで上位2本が最良＝"
                      "年+43.3万→**+59.1万**・勝ち11/11年。2番単独でもPF1.13でプラス。"
                      "3番以降はPF0.96で撃つと損なので出していない")
+        lines.append("　※2026-07-31から**ATR5%以上×25MA乖離12%以上**の玉だけ撃つ（勝率55→**60%**・"
+                     "PF1.22→**1.45**・年+59.1万→**+67.4万**）。そのぶん撃たない日が増える")
         lines.append("　※在庫が無い/プレミアム料が上限超なら、その銘柄だけ見送る（もう片方は撃つ）")
         lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用に在庫があれば売れる**")
         lines.append("　※◎売残少=空売り楽／⭐売り長=最強だが要在庫確認・逆日歩")
         lines.append("　※実弾はSBI一日信用売り(手数料0)。未決済のまま大引けだと強制決済+手数料")
         lines.append("")
     else:
-        # GO無し（薄い候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）
+        # GO無し（条件未達の候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）。
+        # 2026-07-31にATR/乖離の下限を入れて見送り日が約4割に増えたので、なぜ撃たないかは書く
+        # （理由が見えないと「システムが止まったのか」と区別できない）。
         lines.append("**🎯 今日は撃つ銘柄なし（見送り）**")
+        if picks and picks[0].get("nogo_reason"):
+            lines.append(f"　理由: 1番手が {picks[0]['nogo_reason']}")
+        lines.append("　※撃たない日は10年BTで4割前後ある（条件を満たす玉だけ撃つ設計）")
         lines.append("")
     # (旧)売り禁除外の可視化行は廃止=2026-07-23から売り禁も🚫バッジ付きで銘柄行に表示
 

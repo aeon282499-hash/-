@@ -219,19 +219,33 @@ def test_cumulative_stats():
     check("保有中=1", st["pending"] == 1)
 
 
-def _flat_then(last_gain_pct, base=1000, sticky=False, vol_x=3.0):
-    """30日フラット→最終日に指定%急騰のOHLCV rowsを作る。
+def _flat_then(last_gain_pct, base=1000, sticky=False, vol_x=3.0,
+               rng_pct=4.0, predrift_pct=20.0):
+    """29日じわ上げ→最終日に指定%急騰のOHLCV rowsを作る。前日終値は必ず base に揃う。
     sticky=True で最終日レンジを極小(張り付きS高)にする。
     vol_x=出来高倍率。2026-07-28にFADE_VOL_RATIO_MAX=6を入れたため既定を6→3に下げた
-    （6倍だと候補から除外されてテストが成立しない）。"""
+    （6倍だと候補から除外されてテストが成立しない）。
+
+    2026-07-31に FADE_ATR_MIN=5 / FADE_DEV25_MIN=12 を入れたので、旧「完全フラット→急騰」
+    （ATR約1.5% / 乖離≒上昇率）では現実に存在しない玉になり全テストが候補外に落ちた。
+    そこで平常日にも値幅と上昇トレンドを持たせる:
+      rng_pct       … 平常日の高安の振れ（片側%）。ATR%を作る。既定4%→ATR約7%
+      predrift_pct  … 急騰前に既に何%上げてきているか。25MA乖離を上昇率と切り離す。
+    どちらも0にすれば旧来の「動かない玉が突然跳ねた」状態を再現できる（＝NO-GO側のテスト用）。
+    """
     last = round(base * (1 + last_gain_pct / 100))
     if sticky:                          # 張り付き: 高安が終値にほぼ張り付く
         hi, lo = round(last * 1.002), round(last * 0.998)
     else:
         hi, lo = last, base             # レンジ大（安値=前日水準まで振れた）
-    rows = [(f"2026-06-{d:02d}", base, base + 2, base - 2, base, 1_000_000) for d in range(1, 29)]
-    rows += [("2026-07-13", base, base + 2, base - 2, base, 1_000_000),
-             ("2026-07-14", base, hi, lo, last, int(1_000_000 * vol_x))]
+    lo0 = base * (1 - predrift_pct / 100)
+    rows = []
+    dates = [f"2026-06-{d:02d}" for d in range(1, 29)] + ["2026-07-13"]
+    for i, ds in enumerate(dates):      # lo0 → base へ線形に上げる（最終要素がちょうど base）
+        c = lo0 + (base - lo0) * i / (len(dates) - 1)
+        rows.append((ds, round(c), round(c * (1 + rng_pct / 100)),
+                     round(c * (1 - rng_pct / 100)), round(c), 1_000_000))
+    rows.append(("2026-07-14", base, hi, lo, last, int(1_000_000 * vol_x)))
     return mkdf(rows)
 
 
@@ -307,6 +321,21 @@ def test_daily_top_fades():
     check("乖離80%超は候補から除外",
           dp.daily_top_fades({"9999.T": _hi}, today, {"9999": "2"}) == [])
     check("FADE_DEV25_MAXは80.0", dp.FADE_DEV25_MAX == 80.0)
+    # 2026-07-31: ATR%下限5・25MA乖離下限12（勝率55.4%→59.6%・PF1.22→1.45・年+59.1万→+67.4万）。
+    # 候補プールからは落とさず「必ず順位の後ろ＋NO-GO理由」にする＝0件の日も理由が見える。
+    _dull = dp.daily_top_fades({"9999.T": _flat_then(21, rng_pct=0.5)}, today, {"9999": "2"})
+    check("ATR低い玉はNOGO(除外はしない)",
+          len(_dull) == 1 and _dull[0]["verdict"] == "NOGO" and "ATR" in _dull[0]["nogo_reason"])
+    _near = dp.daily_top_fades({"9999.T": _flat_then(8, predrift_pct=0.0)}, today, {"9999": "2"})
+    check("25MA乖離が小さい玉はNOGO",
+          len(_near) == 1 and _near[0]["verdict"] == "NOGO" and "乖離" in _near[0]["nogo_reason"])
+    check("FADE_ATR_MINは5.0", dp.FADE_ATR_MIN == 5.0)
+    check("FADE_DEV25_MINは12.0", dp.FADE_DEV25_MIN == 12.0)
+    # 条件を満たす玉は必ずNO-GO玉より前に来る（画面の1番＝BTの1番）
+    _mix = dp.daily_top_fades({"9999.T": _flat_then(21, rng_pct=0.5),   # ATR不足=撃たない
+                               "6666.T": _flat_then(9)}, today, {"9999": "2", "6666": "2"})
+    check("撃てる玉がNO-GO玉より前", _mix[0]["ticker"] == "6666.T" and _mix[0]["verdict"] == "GO")
+    check("後ろのNO-GO玉も理由付きで見える", _mix[1]["verdict"] == "NOGO" and _mix[1]["nogo_reason"])
     # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）
     check("GO閾値+6%: 返る2件とも全部GO",
           all(p["verdict"] == "GO" for p in picks))
