@@ -258,7 +258,7 @@
       "basis_date": "2026-07-29",
       "prev_close": 390.0,
       "limit_price": 390.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 8.33,
       "short": {
         "mark": "○",
@@ -266,7 +266,14 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": true,
-      "rank": 1
+      "rank": 1,
+      "entry_session": "2026-07-30",
+      "entry_open": 404.0,
+      "entry_close": 395.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 2.228,
+      "pnl_yen": 10800,
+      "win": true
     },
     {
       "ticker": "4911.T",
@@ -276,7 +283,7 @@
       "basis_date": "2026-07-29",
       "prev_close": 3481.0,
       "limit_price": 3485.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.01,
       "short": {
         "mark": "○",
@@ -284,9 +291,16 @@
         "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
       },
       "jsf_stop": false,
-      "rank": 2
+      "rank": 2,
+      "entry_session": "2026-07-30",
+      "entry_open": 3460.0,
+      "entry_close": 3360.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 2.89,
+      "pnl_yen": 10000,
+      "win": true
     }
   ],
   "expired": [],
-  "last_report_date": "2026-07-30"
+  "last_report_date": "2026-07-31"
 }

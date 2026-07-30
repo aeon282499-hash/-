@@ -1,23 +1,4 @@
 {
-  "date": "2026-07-30",
-  "signals": [
-    {
-      "ticker": "7751.T",
-      "name": "キヤノン",
-      "direction": "SELL",
-      "prev_close": 4635.0
-    },
-    {
-      "ticker": "6758.T",
-      "name": "ソニーグループ",
-      "direction": "SELL",
-      "prev_close": 3809.0
-    },
-    {
-      "ticker": "3003.T",
-      "name": "ヒューリック",
-      "direction": "SELL",
-      "prev_close": 1907.0
-    }
-  ]
+  "date": "2026-07-31",
+  "signals": []
 }

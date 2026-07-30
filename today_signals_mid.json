@@ -1,26 +1,12 @@
 {
-  "date": "2026-07-30",
+  "date": "2026-07-31",
   "signals": [
     {
-      "ticker": "4042.T",
-      "name": "東ソー",
+      "ticker": "4536.T",
+      "name": "参天製薬",
       "direction": "BUY",
-      "prev_close": 2713.5,
-      "limit_price": 2740
-    },
-    {
-      "ticker": "4626.T",
-      "name": "太陽ホールディングス",
-      "direction": "BUY",
-      "prev_close": 4685.0,
-      "limit_price": 4730
-    },
-    {
-      "ticker": "5301.T",
-      "name": "東海カーボン",
-      "direction": "BUY",
-      "prev_close": 1546.5,
-      "limit_price": 1561
+      "prev_close": 1936.5,
+      "limit_price": 1955
     }
   ]
 }
