@@ -62,6 +62,22 @@ RUNUP_MAX = -3.0      # 直前5営業日騰落% がこれ未満
 TOV_MIN = 7.5e8       # 20日中央値売買代金
 HIST_DAYS = 60        # J-Quants取得窓（暦日）
 
+# ── 決算ボラゲート（2026-07-31採用・_bt_earnings_vol_axis.py / _bt_earnings_tail_check.py）──
+# 決算ボラ = その銘柄の過去の決算翌寄りギャップ絶対値の中央値。
+# 「決算でどれだけ動く体質か」であって「上がるかどうか」ではない点が肝。
+# 本システムのエッジは方向でなく非対称（勝ち平均+4.96% / 負け平均-3.73%）にあるので、
+# 振れない銘柄ではそもそもエッジが発生しない。実測でも最も動かない20%は10年+8万＝ゼロ。
+# 10年BT（8枠・1玉100万）: +1,418万/DD-448万 → +1,750万/DD-298万・陽性9→10/11年・
+#   勝率49.0→50.5%。前半281→541万・後半1,136→1,209万で両期間改善。
+#   閾値2.0〜4.5%が高原・枠5〜16すべてでプラス・大勝ち玉トップ20の利益94%が残る。
+# 直近5年半でも +1,274→+1,300万 / DD-118→-99万＝レジームに賭けていない。
+# 値は build_earnings_vol.py が earnings_vol.json に事前生成（実行時計算は窓60日では不可）。
+# データが無い銘柄は必ず「買う」側に倒す＝完全フェイルオープン。
+EARNINGS_VOL_MIN = 2.0          # None にすると無効化
+EARNINGS_VOL_FILE = "earnings_vol.json"
+_EVOL: dict[str, float] | None = None
+_EVOL_BUILT: str = "?"
+
 # ── PEAD延長（2026-07-11採用・_bt_earnings_pead*.py） ──
 # 翌朝の寄りがエントリー比+8%超の爆勝ちギャップだけ売らず、エントリー5営業日目の
 # 大引けまでホールド（決算後ドリフト）。8枠シムで大+540→+770万/中+272→+384万/
@@ -198,6 +214,74 @@ def rule_pass(rsi: float | None, runup5: float | None,
         return False
     return (rsi <= RSI_MAX and runup5 < RUNUP_MAX
             and tov20 >= TOV_MIN and price <= price_cap)
+
+
+def load_earnings_vol() -> dict[str, float]:
+    """earnings_vol.json を読む。無い/壊れている場合は空＝全銘柄フェイルオープン。"""
+    global _EVOL, _EVOL_BUILT
+    if _EVOL is not None:
+        return _EVOL
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), EARNINGS_VOL_FILE)
+    if not os.path.exists(path):
+        print(f"[earnings_hold] {EARNINGS_VOL_FILE} が無い → 決算ボラゲートOFF（全部買う）")
+        _EVOL = {}
+        return _EVOL
+    try:
+        with open(path, encoding="utf-8") as f:
+            blob = json.load(f)
+        _EVOL = {k: float(v["vol"]) for k, v in (blob.get("vol") or {}).items()
+                 if isinstance(v, dict) and v.get("vol") is not None}
+        _EVOL_BUILT = str(blob.get("built", "?"))
+    except Exception as e:
+        print(f"[earnings_hold] {EARNINGS_VOL_FILE} 読込失敗: {e} → 決算ボラゲートOFF")
+        _EVOL = {}
+        return _EVOL
+
+    print(f"[earnings_hold] 決算ボラ: {len(_EVOL):,}銘柄（生成 {_EVOL_BUILT}・"
+          f"閾値{EARNINGS_VOL_MIN}%）")
+    try:
+        age = (date.today() - datetime.strptime(_EVOL_BUILT, "%Y-%m-%d").date()).days
+        if age > 120:
+            print(f"[earnings_hold] ⚠️ 決算ボラが{age}日前のまま "
+                  f"→ build_earnings_vol.py の定期実行を確認")
+    except Exception:
+        pass
+    return _EVOL
+
+
+def vol_pass(ticker: str) -> tuple[bool, float | None]:
+    """決算ボラゲート。(通すか, その銘柄の決算ボラ)。
+
+    データが無い銘柄は必ず True（買う）＝フェイルオープン。ゲートで «買わない» 判断を
+    するのは、実測値があってそれが閾値未満のときだけ。
+    """
+    if EARNINGS_VOL_MIN is None:
+        return True, None
+    v = load_earnings_vol().get(ticker)
+    if v is None:
+        return True, None
+    return v >= EARNINGS_VOL_MIN, v
+
+
+VOL_REJECT_FILE = "earnings_vol_rejected.json"
+
+
+def _log_vol_rejected(day: str, rows: list[dict]) -> None:
+    """ゲートで弾いた銘柄を残す。«弾かなければどうだったか» を後で検証するため。
+
+    帳簿(positions_earnings*.json)には一切触らない。失敗しても本処理は止めない。
+    """
+    try:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), VOL_REJECT_FILE)
+        log = {}
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                log = json.load(f)
+        log[day] = rows
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(log, f, ensure_ascii=False, indent=1)
+    except Exception as e:
+        print(f"[earnings_hold] 除外ログの保存失敗: {e}（本処理は継続）")
 
 
 def calc_shares(price: float, size: int) -> int:
@@ -367,7 +451,8 @@ def build_candidates(codes: list[dict], all_data: dict,
 
     times = times or {}
     today_str = date.today().strftime("%Y-%m-%d")
-    out = []
+    out: list[dict] = []
+    rejected: list[dict] = []
     for x in codes:
         tk = x["code"] + ".T"
         df = all_data.get(tk)
@@ -392,13 +477,24 @@ def build_candidates(codes: list[dict], all_data: dict,
         if rsi is None or runup5 is None:
             continue
         if rule_pass(rsi, runup5, tov20, price, MAX_PRICE_CAP):
+            ok, evol = vol_pass(tk)
+            if not ok:
+                # 弾いた銘柄は必ず残す。後から「弾かなければどうだったか」を検証するため。
+                rejected.append({"ticker": tk, "name": x["name"], "vol": evol,
+                                 "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
+                                 "price": price})
+                continue
             lt = last_disc_time(times, tk, today_str)
             out.append({"ticker": tk, "code": x["code"], "name": x["name"],
                         "type": x.get("type", ""), "price": price,
                         "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
-                        "tov20": tov20,
+                        "tov20": tov20, "evol": evol,
                         "last_time": lt[:5] if lt else None,
                         "last_bucket": time_bucket(lt)})
+    if rejected:
+        print(f"  [SKIP VOL] 決算ボラ<{EARNINGS_VOL_MIN}%で除外 {len(rejected)}件: "
+              + " ".join(f"{r['ticker']}({r['vol']:.1f}%)" for r in rejected))
+        _log_vol_rejected(today_str, rejected)
     return sorted(out, key=lambda r: r["rsi"])
 
 
