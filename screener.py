@@ -116,36 +116,94 @@ EARNINGS_EXCLUSION_DAYS = 3
 _EARNINGS_EXCLUDED_DATES: dict[str, set[str]] = {}
 
 
-def _load_earnings_calendar(days: int = EARNINGS_EXCLUSION_DAYS) -> None:
-    """earnings_calendar.json から (ticker → 除外日set) を構築する。
-    決算開示日 ±N日（カレンダー日ベース）をシグナル日として除外対象にする。
-    JSON はリポジトリ同梱（build_earnings_calendar.py で生成・週次自動更新）。
+def _expand_window(dates, days: int) -> set[str]:
+    """開示日リスト → ±days日（カレンダー日）の除外日set。不正日付は黙って捨てる。"""
+    from datetime import datetime, timedelta
+    excl: set[str] = set()
+    for d_str in dates:
+        try:
+            d = datetime.strptime(str(d_str), "%Y-%m-%d").date()
+        except Exception:
+            continue
+        for offset in range(-days, days + 1):
+            excl.add((d + timedelta(days=offset)).strftime("%Y-%m-%d"))
+    return excl
+
+
+def _load_jpx_schedule(days: int = EARNINGS_EXCLUSION_DAYS) -> dict[str, set[str]]:
+    """JPX公式「決算発表予定日」(jpx_earnings_schedule.json) → (ticker → 除外日set)。
+
+    決算持ち越しシグナルが毎日 fetch_jpx_earnings_schedule.py で更新しリポジトリに
+    置いているものを共用する（約1〜2ヶ月先までの実際の発表予定日）。
+
+    これが無い状態では「決算前」の除外がほぼ効かない（2026-07-30実測: 翌営業日発表
+    262社のうち予測カレンダーが捕捉できたのは41社=16%・JPX予定表なら259社=99%）。
+    予測 predict_next_earnings.py は非四半期開示が混ざると間隔が歪んで予測ごと落ちる
+    （太陽HD 4626 が 7/31 の1Qを外し、7/30に買いシグナルを出して決算跨ぎになった）。
+    取得失敗・ファイル無しは完全フェイルオープン（従来動作＝予測ベースのみ）。
     """
     import json
-    from datetime import datetime, timedelta
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "earnings_calendar.json")
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "jpx_earnings_schedule.json")
     if not os.path.exists(path):
-        print(f"[screener] earnings_calendar.json が見つかりません → 決算除外フィルタOFF")
-        return
+        print("[screener] jpx_earnings_schedule.json が無い → 決算『前』除外は予測のみ")
+        return {}
     try:
         with open(path, "r", encoding="utf-8") as f:
-            cal = json.load(f)
+            blob = json.load(f)
+        schedule = blob.get("schedule") or {}
+        fetched = blob.get("fetched", "?")
     except Exception as e:
-        print(f"[screener] earnings_calendar.json 読込失敗: {e} → 決算除外フィルタOFF")
-        return
+        print(f"[screener] jpx_earnings_schedule.json 読込失敗: {e} → 決算『前』除外は予測のみ")
+        return {}
+
+    by_ticker: dict[str, list[str]] = {}
+    for disc_date, rows in schedule.items():
+        for row in rows or []:
+            code = str((row or {}).get("code") or "").strip()
+            if not code:
+                continue
+            by_ticker.setdefault(f"{code}.T", []).append(disc_date)
+
+    out = {t: _expand_window(ds, days) for t, ds in by_ticker.items()}
+    n_days = len(schedule)
+    print(f"[screener] JPX決算予定表: {len(out)}銘柄 / 予定日{n_days}日分（取得日 {fetched}）")
+    return out
+
+
+def _load_earnings_calendar(days: int = EARNINGS_EXCLUSION_DAYS) -> None:
+    """(ticker → 除外日set) を構築する。決算開示日 ±N日をシグナル日として除外対象にする。
+
+    2系統をマージする:
+      - earnings_calendar.json … 過去の実開示日（+ 精度の低い間隔予測）→ 主に「決算後」
+      - jpx_earnings_schedule.json … JPX公式の発表予定日 → 「決算前」（2026-07-30追加）
+    """
+    import json
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "earnings_calendar.json")
+    cal = {}
+    if not os.path.exists(path):
+        print(f"[screener] earnings_calendar.json が見つかりません → 過去実績ぶんの除外OFF")
+    else:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                cal = json.load(f)
+        except Exception as e:
+            print(f"[screener] earnings_calendar.json 読込失敗: {e} → 過去実績ぶんの除外OFF")
+            cal = {}
+
     _EARNINGS_EXCLUDED_DATES.clear()
     for ticker, dates in cal.items():
-        excl: set[str] = set()
-        for d_str in dates:
-            try:
-                d = datetime.strptime(d_str, "%Y-%m-%d").date()
-                for offset in range(-days, days + 1):
-                    excl.add((d + timedelta(days=offset)).strftime("%Y-%m-%d"))
-            except Exception:
-                continue
+        excl = _expand_window(dates, days)
         if excl:
             _EARNINGS_EXCLUDED_DATES[ticker] = excl
-    print(f"[screener] 決算カレンダー: {len(_EARNINGS_EXCLUDED_DATES)}銘柄ロード（±{days}日窓）")
+    n_hist = len(_EARNINGS_EXCLUDED_DATES)
+
+    for ticker, excl in _load_jpx_schedule(days).items():
+        if excl:
+            _EARNINGS_EXCLUDED_DATES.setdefault(ticker, set()).update(excl)
+
+    print(f"[screener] 決算カレンダー: {len(_EARNINGS_EXCLUDED_DATES)}銘柄ロード"
+          f"（実績{n_hist}銘柄＋JPX予定・±{days}日窓）")
 
 
 def _is_near_earnings(ticker: str, sig_date: str) -> bool:
