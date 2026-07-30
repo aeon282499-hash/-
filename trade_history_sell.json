@@ -59,6 +59,36 @@
       "close": 654.0,
       "pnl": -1.24,
       "win": false
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "7751.T",
+      "name": "キヤノン",
+      "direction": "SELL",
+      "open": 4699.0,
+      "close": 4554.0,
+      "pnl": 3.09,
+      "win": true
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "6758.T",
+      "name": "ソニーグループ",
+      "direction": "SELL",
+      "open": 3809.0,
+      "close": 3809.0,
+      "pnl": 0.0,
+      "win": false
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "3003.T",
+      "name": "ヒューリック",
+      "direction": "SELL",
+      "open": 1904.5,
+      "close": 1829.5,
+      "pnl": 3.94,
+      "win": true
     }
   ]
 }

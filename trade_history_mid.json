@@ -529,6 +529,36 @@
       "close": 1648.5,
       "pnl": 0.52,
       "win": true
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "4042.T",
+      "name": "東ソー",
+      "direction": "BUY",
+      "open": 2686.0,
+      "close": 2681.0,
+      "pnl": -0.19,
+      "win": false
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "4626.T",
+      "name": "太陽ホールディングス",
+      "direction": "BUY",
+      "open": 4680.0,
+      "close": 4700.0,
+      "pnl": 0.43,
+      "win": true
+    },
+    {
+      "date": "2026-07-30",
+      "ticker": "5301.T",
+      "name": "東海カーボン",
+      "direction": "BUY",
+      "open": 1532.0,
+      "close": 1528.0,
+      "pnl": -0.26,
+      "win": false
     }
   ]
 }
