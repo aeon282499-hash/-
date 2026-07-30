@@ -228,6 +228,13 @@ FADE_DEV25_MAX = 80.0
 # 効いたのは逆方向＝**よく動く玉だけ残す**（残る側の株価中央は1,350円で現行1,548円より安い）。
 #   現行                勝率55.4% PF1.22 年+59.1万 勝ち11/11 前半+312.6万 後半+338.0万 撃つ日2,211
 #   ATR5%以上×乖離12%以上  勝率59.6% PF1.45 年+67.4万 勝ち11/11 前半+340.5万 後半+401.4万 撃つ日1,350
+# 【2026-07-31 監査による訂正】上の「年+67.4万」はBT側の数字で、**本番が実際に取れる額ではない**。
+#   本番だけが持つ制約（株価300円下限・出来高10万株下限・ETF除外・株数は前日終値基準）を
+#   BTに入れ、同点順位をticker昇順に固定して測り直すと **年+54.7万**（勝率60.2%/PF1.41/
+#   勝ち11-11年/最悪年+9.1万/最悪月-38.9万/撃つ日1,228）。BTは年+10.3万＝19%過大だった。
+#   最大の要因は株価300円下限で、BTは20〜300円の低位株229玉を撃っている（1ティックが数%＝
+#   [[feedback_bt_intraday_traps]]の「低位株の幻」）。この下限は本番が正しいのでBT側を直す。
+#   2026年(1-7月)も +69.2万 → **+35.8万** に下がる（1月は-38.9万）。詳細は _audit_fade_parity.py。
 # 高原であることの確認: ATR4.0〜5.5 × 乖離10〜15 の全セルで両期間改善。往復0.15%のコストを
 # 乗せるとATR4〜6×乖離0〜18まで面が広がる（件数が減るぶんコスト総額も減るので差が開く：
 # 0.20%コストで 現行+27.4万/年 に対し新条件+48.4万/年）。上位3日・3銘柄を除いても93%/87%残る。
@@ -351,9 +358,34 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         if last_mkt is None or ds > last_mkt:
             last_mkt = ds
 
+    # ── ETF/ETN除外（2026-07-31 監査で発覚した実害バグ）──────────────────────
+    # BTは name_map が引けない銘柄（＝ETF/ETN）を丸ごと落としていたが、本番には
+    # 一切のETF判定が無かった。10年で22件のETFが入口を全部通り、しかも
+    # **2020-03-12(コロナ暴落)と2025-04-09(関税暴落)は通常株の候補がゼロ**＝
+    # その日は「ベア2倍ETFを空売りしろ」という指示だけが出ていた（下げ相場で
+    # 上がり続ける玉を空売りする＝戦略の前提と真逆）。直近も2026-05/06に3日該当。
+    # fetch_tse_universe はプライム/スタンダード/グロースのみを返すのでETFは入らない。
+    # ※screener.is_etf_ticker は使わない: 名称キーワード"ブル"/"ベア"/"ダブル"が
+    #   ブルボン・ミネベアミツミ・ダブル・スコープ等の**実在株10銘柄を誤判定**するため。
+    equities: set[str] | None = None
+    names: dict[str, str] = {}
+    try:
+        from screener import fetch_tse_universe
+        names = dict(fetch_tse_universe())      # 銘柄名の補完にも再利用（API呼び出しは1回）
+        _u = set(names)
+        # 取得失敗時は日経225のフォールバックが返る。それで絞ると候補がほぼ消えて
+        # 「毎日シグナルなし」で黙って死ぬので、少数しか返らなければガードを諦める。
+        equities = _u if len(_u) >= 1000 else None
+        if equities is None:
+            print(f"[fade] 銘柄マスタが{len(_u)}件しか取れずETF除外を見送り（フェイルオープン）")
+    except Exception as e:
+        print(f"[fade] 銘柄マスタ取得失敗({e}) → ETF除外を見送り（フェイルオープン）")
+
     cands = []
     for tk, df in data.items():
         if df is None or df.empty:
+            continue
+        if equities is not None and tk not in equities:     # ETF/ETN/REITを除外
             continue
         if iss_map.get(_code4(tk)) != "2":                  # 貸借○のみ（売れる玉だけ）
             continue
@@ -409,6 +441,11 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             "range_pct": round(rng * 100, 1),
             "dev25": round(dev, 1),
             "atr_pct": round(atr_pct, 2),
+            # 閾値判定と順位付けは**丸める前**の値で行う（2026-07-31監査）。
+            # 表示用に丸めた dev25/atr_pct をそのまま使うと、①ATR4.996%が5.00%に化けて
+            # 下限を通る ②同点が増えて「どちらを撃つか」が並び順で決まる玉が増える。
+            "_dev_raw": dev,
+            "_atr_raw": atr_pct,
         })
     if not cands:
         return []
@@ -417,9 +454,15 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     #   上昇率降順(旧) 前半PF1.15/後半1.15・10年+293万・最悪年-8.6万・勝ち8/11年
     #   乖離+ATR(新)   前半PF1.20/後半1.25・10年+415万・最悪年+11.9万・**勝ち11/11年**
     # 配合を乖離0%〜100%のどこに振っても年+89〜97万/勝ち11年で崩れない＝針でなく高原。
+    # 同点は必ず ticker 昇順で決める（2026-07-31監査）。従来は sorted の安定ソート任せ＝
+    # J-Quantsが返す辞書順で「どちらを撃つか」が決まっていた。10年BTでは2位と3位が同点に
+    # なる日が93日/1,350日(6.9%)あり、同点の決め方だけで10年の総額が±53.5万(7.5%)動く。
+    # 恣意的でも再現可能な規則を置かないと、BTの数字と本番の挙動が構造的に一致しない。
     _n = len(cands)
-    _rank_dev = {id(x): i for i, x in enumerate(sorted(cands, key=lambda z: -z["dev25"]))}
-    _rank_atr = {id(x): i for i, x in enumerate(sorted(cands, key=lambda z: -z["atr_pct"]))}
+    _rank_dev = {id(x): i for i, x in
+                 enumerate(sorted(cands, key=lambda z: (-z["_dev_raw"], z["ticker"])))}
+    _rank_atr = {id(x): i for i, x in
+                 enumerate(sorted(cands, key=lambda z: (-z["_atr_raw"], z["ticker"])))}
     for x in cands:
         x["pick_score"] = round((_rank_dev[id(x)] + _rank_atr[id(x)]) / 2 / max(_n, 1), 4)
     # GO基準(上昇率≥DAILY_PICK_GAIN_MIN)を満たす玉を必ず先に並べ、その中を pick_score 順にする。
@@ -429,16 +472,12 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     # 閾値未満は候補として残すが必ず後ろ＝「1番＝撃つ玉」が常に成立する。
     # 2026-07-31: 後ろに回す条件を「上昇率」だけからATR%下限・乖離下限も含む3条件に拡張。
     for x in cands:
-        x["_nogo"] = fade_nogo_reason(x["daily_gain"], x["atr_pct"], x["dev25"])
-    cands.sort(key=lambda x: (x["_nogo"] is not None, x["pick_score"]))
+        x["_nogo"] = fade_nogo_reason(x["daily_gain"], x["_atr_raw"], x["_dev_raw"])
+    # pick_score も4桁に丸めてあるので、最後は ticker で決着させる（同点を残さない）
+    cands.sort(key=lambda x: (x["_nogo"] is not None, x["pick_score"], x["ticker"]))
     picks = cands[:max(1, n)]
-    try:  # 銘柄名補完（上位数件のみ・軽量）
-        from screener import fetch_tse_universe
-        nm = {t: n2 for t, n2 in fetch_tse_universe()}
-        for p in picks:
-            p["name"] = nm.get(p["ticker"], p["ticker"])
-    except Exception:
-        pass
+    for p in picks:      # 銘柄名補完（上の ETF ガードで取った names を使い回す）
+        p["name"] = names.get(p["ticker"], p["ticker"])
     for i, p in enumerate(picks, 1):
         sh = shortability(p["ticker"], iss_map)
         p["short"] = sh
@@ -461,6 +500,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             regs.append("📢日々公表(規制近接)")
         p["reg_note"] = "・".join(regs)
         reason = p.pop("_nogo", None)
+        p.pop("_dev_raw", None); p.pop("_atr_raw", None)   # 内部用（JSONに出さない）
         go = reason is None and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:

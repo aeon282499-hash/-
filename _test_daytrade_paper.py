@@ -361,6 +361,35 @@ def test_daily_top_fades():
     check("張り付きS高は除外→空",
           dp.daily_top_fades({"5555.T": _flat_then(20, sticky=True)}, today, {"5555": "2"}) == [])
 
+    # ── 2026-07-31 監査で見つかった3件の修正 ──────────────────────────────
+    # ①ETF/ETN除外。銘柄マスタ（プライム/スタンダード/グロースのみ）に無い銘柄は撃たない。
+    #   実害: 2020-03-12と2025-04-09は通常株の候補ゼロで、ベア2倍ETFの空売り指示だけが出ていた。
+    # 1,000件超＝正常なマスタ。ETF帯(13xx)は含めない＝ここに無い銘柄が除外対象になる
+    big = [(f"{i}.T", f"stock{i}") for i in range(3000, 4200)]
+    screener.fetch_tse_universe = lambda *a, **k: big + [("6666.T", "普通株")]
+    only_etf = dp.daily_top_fades({"1360.T": _flat_then(21)}, today, {"1360": "2"})
+    check("マスタに無い銘柄(ETF)は候補から除外", only_etf == [])
+    mixed = dp.daily_top_fades({"1360.T": _flat_then(25), "6666.T": _flat_then(9)},
+                               today, {"1360": "2", "6666": "2"})
+    check("ETFを飛ばして通常株が1番", len(mixed) == 1 and mixed[0]["ticker"] == "6666.T")
+    # フェイルオープン: マスタが少数しか返らない（＝取得失敗のフォールバック）ならガードしない。
+    # ここで閉じると毎日「シグナルなし」で黙って死ぬ。
+    screener.fetch_tse_universe = lambda *a, **k: [("7203.T", "トヨタ")]
+    check("マスタ取得失敗時はガードせず従来通り",
+          len(dp.daily_top_fades({"1360.T": _flat_then(21)}, today, {"1360": "2"})) == 1)
+    screener.fetch_tse_universe = lambda *a, **k: []
+
+    # ②同点は ticker 昇順で決める（従来は辞書の並び順任せ＝BTと構造的に一致しない）
+    a1, a2 = _flat_then(15), _flat_then(15)                        # 完全に同じ形＝必ず同点
+    p_fwd = dp.daily_top_fades({"8111.T": a1, "8222.T": a2}, today, {"8111": "2", "8222": "2"}, n=1)
+    p_rev = dp.daily_top_fades({"8222.T": a2, "8111.T": a1}, today, {"8111": "2", "8222": "2"}, n=1)
+    check("同点の1番は入力順に依存しない",
+          p_fwd[0]["ticker"] == p_rev[0]["ticker"] == "8111.T")
+
+    # ③閾値判定は丸める前の値で行う（ATR4.996%が表示丸めで5.00%に化けて通るのを防ぐ）
+    check("丸め前の値でATR下限を判定", dp.fade_nogo_reason(20.0, 4.996, 30.0) is not None)
+    check("表示は丸めた値のまま", "ATR5.0%" in dp.fade_nogo_reason(20.0, 4.996, 30.0))
+
     # 張り付き#1と非張り付き#2 → 非張り付きだけ残る
     mix = {"5555.T": _flat_then(30, sticky=True), "6666.T": _flat_then(18)}
     pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
