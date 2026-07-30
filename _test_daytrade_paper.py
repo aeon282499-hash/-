@@ -220,7 +220,7 @@ def test_cumulative_stats():
 
 
 def _flat_then(last_gain_pct, base=1000, sticky=False, vol_x=3.0,
-               rng_pct=4.0, predrift_pct=20.0):
+               rng_pct=4.0, predrift_pct=20.0, vol_base=1_000_000):
     """29日じわ上げ→最終日に指定%急騰のOHLCV rowsを作る。前日終値は必ず base に揃う。
     sticky=True で最終日レンジを極小(張り付きS高)にする。
     vol_x=出来高倍率。2026-07-28にFADE_VOL_RATIO_MAX=6を入れたため既定を6→3に下げた
@@ -244,8 +244,8 @@ def _flat_then(last_gain_pct, base=1000, sticky=False, vol_x=3.0,
     for i, ds in enumerate(dates):      # lo0 → base へ線形に上げる（最終要素がちょうど base）
         c = lo0 + (base - lo0) * i / (len(dates) - 1)
         rows.append((ds, round(c), round(c * (1 + rng_pct / 100)),
-                     round(c * (1 - rng_pct / 100)), round(c), 1_000_000))
-    rows.append(("2026-07-14", base, hi, lo, last, int(1_000_000 * vol_x)))
+                     round(c * (1 - rng_pct / 100)), round(c), vol_base))
+    rows.append(("2026-07-14", base, hi, lo, last, int(vol_base * vol_x)))
     return mkdf(rows)
 
 
@@ -331,6 +331,18 @@ def test_daily_top_fades():
           len(_near) == 1 and _near[0]["verdict"] == "NOGO" and "乖離" in _near[0]["nogo_reason"])
     check("FADE_ATR_MINは5.0", dp.FADE_ATR_MIN == 5.0)
     check("FADE_DEV25_MINは12.0", dp.FADE_DEV25_MIN == 12.0)
+    # 2026-07-31: 株価下限を撤廃（旧300円）。10年で年+53.3万→+66.7万・両期間改善・最悪月も改善。
+    # 低位株でも①貸借○は元から条件②板は出来高の0.03%③寄成/引成は板寄せで呼値を払わない。
+    _low = _flat_then(21, base=200, vol_base=3_000_000)      # 株価242円・代金6億
+    check("FADE_PX_MINは0（下限撤廃）", dp.FADE_PX_MIN == 0)
+    check("300円未満でも候補に残る",
+          len(dp.daily_top_fades({"9999.T": _low}, today, {"9999": "2"})) == 1)
+    dp.FADE_PX_MIN = 300                                      # 復活経路が生きていること
+    try:
+        check("FADE_PX_MIN=300に戻せば除外される",
+              dp.daily_top_fades({"9999.T": _low}, today, {"9999": "2"}) == [])
+    finally:
+        dp.FADE_PX_MIN = 0
     # 条件を満たす玉は必ずNO-GO玉より前に来る（画面の1番＝BTの1番）
     _mix = dp.daily_top_fades({"9999.T": _flat_then(21, rng_pct=0.5),   # ATR不足=撃たない
                                "6666.T": _flat_then(9)}, today, {"9999": "2", "6666": "2"})
