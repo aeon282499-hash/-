@@ -168,6 +168,17 @@ def _load_jpx_schedule(days: int = EARNINGS_EXCLUSION_DAYS) -> dict[str, set[str
     out = {t: _expand_window(ds, days) for t, ds in by_ticker.items()}
     n_days = len(schedule)
     print(f"[screener] JPX決算予定表: {len(out)}銘柄 / 予定日{n_days}日分（取得日 {fetched}）")
+
+    # 予定表を更新しているのは決算持ち越しシグナル側（毎日15時台）。
+    # あちらが止まるとこちらの「決算前」除外が黙って予測ベースに劣化するので警告する。
+    try:
+        from datetime import datetime
+        age = (_today_jst() - datetime.strptime(fetched, "%Y-%m-%d").date()).days
+        if age > 10:
+            print(f"[screener] ⚠️ JPX予定表が{age}日前のまま（決算持ち越し側の更新が止まっている可能性）"
+                  f" → 決算『前』除外の精度が落ちる")
+    except Exception:
+        pass
     return out
 
 
