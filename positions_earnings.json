@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-29",
+ "last_signal_date": "2026-07-30",
  "positions": [
   {
    "ticker": "6521.T",
@@ -82,8 +82,14 @@
    "shares": 200,
    "rsi": 28.6,
    "runup5": -16.8,
-   "status": "pending",
-   "prev_close": 3911.0
+   "status": "closed",
+   "prev_close": 3911.0,
+   "entry": 3911.0,
+   "exit_date": "2026-07-30",
+   "exit": 3890.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.54,
+   "pnl_yen": -4200
   },
   {
    "ticker": "6526.T",
@@ -94,8 +100,14 @@
    "shares": 400,
    "rsi": 30.6,
    "runup5": -19.4,
-   "status": "pending",
-   "prev_close": 2023.0
+   "status": "closed",
+   "prev_close": 2023.0,
+   "entry": 2023.0,
+   "exit_date": "2026-07-30",
+   "exit": 1853.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -8.4,
+   "pnl_yen": -68000
   },
   {
    "ticker": "4461.T",
@@ -106,8 +118,11 @@
    "shares": 100,
    "rsi": 34.6,
    "runup5": -19.4,
-   "status": "pending",
-   "prev_close": 8830.0
+   "status": "extended",
+   "prev_close": 8830.0,
+   "entry": 8830.0,
+   "gap_pct": 16.65,
+   "ext_exit_date": "2026-08-05"
   },
   {
    "ticker": "9502.T",
@@ -118,8 +133,14 @@
    "shares": 300,
    "rsi": 37.8,
    "runup5": -5.4,
-   "status": "pending",
-   "prev_close": 2816.0
+   "status": "closed",
+   "prev_close": 2816.0,
+   "entry": 2816.0,
+   "exit_date": "2026-07-30",
+   "exit": 2566.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -8.88,
+   "pnl_yen": -75000
   },
   {
    "ticker": "8366.T",
@@ -130,8 +151,91 @@
    "shares": 400,
    "rsi": 44.0,
    "runup5": -8.1,
-   "status": "pending",
-   "prev_close": 2449.0
+   "status": "closed",
+   "prev_close": 2449.0,
+   "entry": 2449.0,
+   "exit_date": "2026-07-30",
+   "exit": 2321.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -5.23,
+   "pnl_yen": -51200
+  },
+  {
+   "ticker": "8309.T",
+   "name": "三井住友トラストグループ",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 1676.0,
+   "shares": 500,
+   "rsi": 11.4,
+   "runup5": -75.5,
+   "status": "pending"
+  },
+  {
+   "ticker": "5333.T",
+   "name": "ＮＧＫ",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 5278.0,
+   "shares": 100,
+   "rsi": 27.6,
+   "runup5": -15.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "6101.T",
+   "name": "ツガミ",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 5670.0,
+   "shares": 100,
+   "rsi": 31.6,
+   "runup5": -17.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "6752.T",
+   "name": "パナソニック　ホールディングス",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 3564.0,
+   "shares": 200,
+   "rsi": 33.1,
+   "runup5": -11.3,
+   "status": "pending"
+  },
+  {
+   "ticker": "1803.T",
+   "name": "清水建設",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 2312.0,
+   "shares": 400,
+   "rsi": 35.4,
+   "runup5": -6.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "6754.T",
+   "name": "アンリツ",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 3593.0,
+   "shares": 200,
+   "rsi": 37.9,
+   "runup5": -10.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "6703.T",
+   "name": "沖電気工業",
+   "type": "第１四半期",
+   "date": "2026-07-30",
+   "signal_price": 3040.0,
+   "shares": 300,
+   "rsi": 39.4,
+   "runup5": -9.3,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-07-30"
