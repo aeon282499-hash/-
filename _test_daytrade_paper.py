@@ -312,15 +312,22 @@ def test_daily_top_fades():
     check("出来高5倍は候補に残る",
           len(dp.daily_top_fades({"9999.T": _flat_then(21, vol_x=5.0)}, today, {"9999": "2"})) == 1)
     check("FADE_VOL_RATIO_MAXは6.0", dp.FADE_VOL_RATIO_MAX == 6.0)
-    # 2026-07-28: 25MA乖離80%超=仕手化して踏み上げが止まらない領域→候補外
-    # （2026-03のJDIが乖離+105%/+152%で-43.8万/-28.6万。除外で最悪月DD-91.1万→-57.7万）
+    # 2026-07-31: 乖離80%上限を撤廃。旧上限は「株価300円下限あり」の土台でJDI対策として
+    # 入れたものだが、低位株を入れて再検証すると乖離80%超は10年89件で計+50.5万のプラスで、
+    # 上限は「一番よく落ちる玉」を捨てる側に回っていた（年+66.6→+69.1万・最悪月-35.2→-19.9万）。
     _hi = _flat_then(20, base=1000)
     _hi.iloc[-1, _hi.columns.get_loc("Close")] = 2400      # 25MA比+約140%
     _hi.iloc[-1, _hi.columns.get_loc("High")] = 2500
     _hi.iloc[-1, _hi.columns.get_loc("Low")] = 2200
-    check("乖離80%超は候補から除外",
-          dp.daily_top_fades({"9999.T": _hi}, today, {"9999": "2"}) == [])
-    check("FADE_DEV25_MAXは80.0", dp.FADE_DEV25_MAX == 80.0)
+    check("FADE_DEV25_MAXはNone（上限撤廃）", dp.FADE_DEV25_MAX is None)
+    check("乖離80%超でも候補に残る",
+          len(dp.daily_top_fades({"9999.T": _hi}, today, {"9999": "2"})) == 1)
+    dp.FADE_DEV25_MAX = 80.0                               # 復活経路が生きていること
+    try:
+        check("FADE_DEV25_MAX=80に戻せば除外される",
+              dp.daily_top_fades({"9999.T": _hi}, today, {"9999": "2"}) == [])
+    finally:
+        dp.FADE_DEV25_MAX = None
     # 2026-07-31: ATR%下限5・25MA乖離下限12（勝率55.4%→59.6%・PF1.22→1.45・年+59.1万→+67.4万）。
     # 候補プールからは落とさず「必ず順位の後ろ＋NO-GO理由」にする＝0件の日も理由が見える。
     _dull = dp.daily_top_fades({"9999.T": _flat_then(21, rng_pct=0.5)}, today, {"9999": "2"})
@@ -348,8 +355,9 @@ def test_daily_top_fades():
                                "6666.T": _flat_then(9)}, today, {"9999": "2", "6666": "2"})
     check("撃てる玉がNO-GO玉より前", _mix[0]["ticker"] == "6666.T" and _mix[0]["verdict"] == "GO")
     check("後ろのNO-GO玉も理由付きで見える", _mix[1]["verdict"] == "NOGO" and _mix[1]["nogo_reason"])
-    # 2026-07-28: GO閾値 +12% → +6%（毎日撃つため）
-    check("GO閾値+6%: 返る2件とも全部GO",
+    # 2026-07-31: GO閾値 +6% → +7%（低位株を入れて再検証・PF1.43→1.52・両期間改善）
+    check("DAILY_PICK_GAIN_MINは7.0", dp.DAILY_PICK_GAIN_MIN == 7.0)
+    check("GO閾値+7%: 返る2件とも全部GO",
           all(p["verdict"] == "GO" for p in picks))
     check("n=3指定なら3件(後方互換)", len(dp.daily_top_fades(data, today, iss, n=3)) == 3)
     # 2026-07-28: GU下限は撤回（上位1〜3本の実運用条件では最悪年が2〜5倍悪化した）。
@@ -362,9 +370,12 @@ def test_daily_top_fades():
     # 貸借○が1つも無ければ[]（売れない玉は選ばない）
     check("貸借○ゼロ→空リスト", dp.daily_top_fades(data, today, {}) == [])
 
-    # +8%(貸借○)だけ → 1件・NOGO薄い
+    # 閾値+7%の境界（貸借○だけの単独ケース）
     p8 = dp.daily_top_fades({"8888.T": _flat_then(8)}, today, {"8888": "2"})
-    check("+8%→GO（閾値+6%に緩和済）", len(p8) == 1 and p8[0]["verdict"] == "GO")
+    check("+8%→GO（閾値+7%を超える）", len(p8) == 1 and p8[0]["verdict"] == "GO")
+    p65 = dp.daily_top_fades({"8888.T": _flat_then(6.5)}, today, {"8888": "2"})
+    check("+6.5%→NOGO薄い（+7%未満は撃たない）",
+          len(p65) == 1 and p65[0]["verdict"] == "NOGO" and "薄い" in p65[0]["nogo_reason"])
     p5 = dp.daily_top_fades({"8888.T": _flat_then(5.5)}, today, {"8888": "2"})
     check("+5.5%→NOGO薄い（閾値未満）",
           len(p5) == 1 and p5[0]["verdict"] == "NOGO" and "薄い" in p5[0]["nogo_reason"])
