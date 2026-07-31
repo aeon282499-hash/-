@@ -39,6 +39,9 @@ KEEP = [
     "Sales", "OP", "OdP", "NP", "EPS", "TA", "Eq", "EqAR",
     "FSales", "FOP", "FOdP", "FNP", "FEPS",
     "RetroRst", "ChgAcEst",
+    # 配当（2026-08-01追加）: 「増配基調か」を測るのに要る。
+    # 初版のKEEPに入れ忘れており _fins_history.pkl に無かった。
+    "DivFY", "DivAnn", "FDivAnn", "FDivFY", "NxFDivAnn", "PayoutRatioAnn",
 ]
 
 
