@@ -90,6 +90,20 @@ def _dispatch(payload: dict, *, tier: dict, side: str, public_url: str = "") -> 
         _post(public_url, payload, f"public-{side}")
 
 
+def _mirror_monthly(payload: dict, tier: dict, side: str) -> None:
+    """月次レポートを専用チャンネル(MONTHLY)へ全階層ミラーする。public_mirror gate から独立。
+
+    2026-05-21以降 TIERS の public_mirror は3階層とも False（PUBLIC_BUY が大資金チャンネル、
+    PUBLIC_SELL が売りチャンネルと同一webhookで二重投稿になるため）。月次だけはこの gate に
+    巻き込まれて **2026-05-21〜07-31 の間ずっと月次専用チャンネルが無配信** だった。
+    MONTHLY のwebhook id はどの階層チャンネルとも重複しない専用ch なので gate 不要。
+    ※シグナル系(BUY/SELL)を同じ扱いにしてはいけない＝あちらは重複するので gate が必要。
+    """
+    if not PUBLIC_MONTHLY:
+        return
+    _post(PUBLIC_MONTHLY, payload, f"public-MONTHLY-{tier['label']}-{side}")
+
+
 # ── ユーティリティ ──────────────────────────────────────────
 def _affordable(price: float, size_yen: int) -> bool:
     if not price or price <= 0:
@@ -672,7 +686,9 @@ def send_monthly_report(positions: list[dict], today: date,
         return
     embed = _build_monthly_embed(positions, today, tier, sell=False)
     if embed:
-        _dispatch({"embeds": [embed]}, tier=tier, side="BUY", public_url=PUBLIC_MONTHLY)
+        payload = {"embeds": [embed]}
+        _dispatch(payload, tier=tier, side="BUY")
+        _mirror_monthly(payload, tier, "BUY")
         print(f"[notifier-{tier['label']}] 月別・年間損益送信")
 
 
@@ -684,7 +700,9 @@ def send_sell_monthly_report(positions: list[dict], today: date,
         return
     embed = _build_monthly_embed(positions, today, tier, sell=True)
     if embed:
-        _dispatch({"embeds": [embed]}, tier=tier, side="SELL", public_url=PUBLIC_MONTHLY)
+        payload = {"embeds": [embed]}
+        _dispatch(payload, tier=tier, side="SELL")
+        _mirror_monthly(payload, tier, "SELL")
         print(f"[notifier-{tier['label']}] SELL月別・年間損益送信")
 
 
