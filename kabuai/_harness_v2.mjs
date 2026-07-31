@@ -131,6 +131,37 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
       !$get("#view").innerHTML.includes("🧨買残+5%")&&!$get("#view").innerHTML.includes(">⚠️日々公表</span>"));
     DATA.sell_watch=save; sandbox.render();
   }
+  // 💥 崩壊ショート（2026-08-01追加）
+  {
+    const save=DATA.sell_watch;
+    const base={code:"6976",name:"テスト誘電",price:5200,r1:-12.9,off_peak20:-14.0,ma5_dev:-8.1,
+                vol_x:2.4,below5:1,runup20:175.0,turnover_oku:88.0};
+    const crashMeta={count:1,cond:{runup20:30,vol_x:2.0,r1:-5,first_day:true,shortable:true},
+      stats:{n:425,per_year:43,avg:0.78,win:57.6,pf:1.47,era1:0.95,era2:0.61,period:"2016-2026/07"},
+      how:"翌日の寄りで空売り → その日の大引けで買い戻す（当日完結）",
+      caveat:"逆日歩は未測定。年+0.78%は逆日歩0.8%で消える水準なので実弾前に要実測。"};
+    DATA.sell_watch={date:DATA.data_date,count:2,cond:{runup20:15,vol_x:1.3},note:"t",
+      crash:crashMeta,
+      members:[{...base,code:"1111",name:"貸借ダメ社",crash:false,shortable:false},
+               {...base,crash:true,shortable:true}]};
+    sandbox.render(); const cv=$get("#view").innerHTML;
+    check("sell: 💥崩壊ショートの見出しと件数", cv.includes("💥 崩壊ショート（BT合格）1件"));
+    check("sell: 💥のBT数字（勝率/PF/両期間）", cv.includes("57.6%")&&cv.includes("PF1.47")&&cv.includes("両期間プラス"));
+    check("sell: 💥の撃ち方の明示", cv.includes("寄りで空売り")&&cv.includes("大引けで買い戻す"));
+    check("sell: 💥の逆日歩の警告", cv.includes("逆日歩は未測定"));
+    check("sell: 💥は推奨でないと明示", cv.includes("推奨ではありません"));
+    check("sell: 💥バッジが該当行に付く", cv.includes("💥崩壊ショート"));
+    check("sell: 貸借✕は別バッジで区別", cv.includes("貸借✕"));
+    check("sell: 💥該当が先頭に並ぶ",
+      cv.indexOf("テスト誘電")>=0 && cv.indexOf("テスト誘電")<cv.indexOf("貸借ダメ社"));
+    // crashキーが無い旧データでも落ちない（後方互換）
+    DATA.sell_watch={date:DATA.data_date,count:1,cond:{runup20:15,vol_x:1.3},note:"t",
+      members:[{...base,crash:undefined,shortable:undefined}]};
+    sandbox.render(); const ov=$get("#view").innerHTML;
+    check("sell: crash未提供でも描画OK", clean(ov)&&!ov.includes("崩壊ショート（BT合格）"));
+    check("sell: crash未提供なら💥バッジも出ない", !ov.includes("💥崩壊ショート"));
+    DATA.sell_watch=save; sandbox.render();
+  }
   // 🩳 デイトレ売り（フェード・2026-07-23追加）
   {
     const save=DATA.sell_watch;

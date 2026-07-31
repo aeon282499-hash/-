@@ -824,6 +824,44 @@ def build() -> dict:
         fade = {"date": data_date, "picks": [], "banned": 0, "go": 0, "error": True}
     sell_watch["fade"] = fade
 
+    # ── 💥 崩壊ショート（2026-08-01 本人指示でアプリ掲載）──
+    # 🔻売りタブの検出（急騰+15%×5MA割れ×陰線×出来高1.3倍）は «情報» としては広いが、
+    # 10年BTで測ると PF1.09 とほぼエッジが無い。条件を締めると別物になる:
+    #   急騰+30% × 出来高2.0倍 × 当日-5%以下 × 5MA割れ初日 × 貸借○ × 代金5億
+    #   → 425件/10年（年43件）平均+0.78% 勝率57.6% PF1.47 前半+0.95%/後半+0.61%
+    #   （_bt_crashshort_10y.py。株式分割の疑い2件を除いた数字）
+    # 面は単調（急騰・出来高を締めるほど良化）で針ではない。
+    # 撃ち方は「翌日の寄りで空売り → その日の大引けで買い戻す」＝当日完結でSTOPが置ける。
+    # ⚠ 逆日歩は未測定。年+0.78%は逆日歩0.8%で丸ごと消えるので、実弾前に要実測。
+    #   アプリ上は «BT合格の該当日» を示すだけで推奨ではない（＝既存の情報タブと同じ扱い）。
+    CRASH_RUNUP_MIN, CRASH_VOLX_MIN, CRASH_R1_MAX = 30.0, 2.0, -5.0
+    n_crash = 0
+    for m in sell_members:
+        try:
+            hit = ((m.get("runup20") or 0) >= CRASH_RUNUP_MIN
+                   and (m.get("vol_x") or 0) >= CRASH_VOLX_MIN
+                   and (m.get("r1") if m.get("r1") is not None else 0) <= CRASH_R1_MAX
+                   and (m.get("below5") or 99) <= 1)          # 5MA割れ «初日» だけ
+            # 貸借○（制度信用で空売り可）。区分が取れない銘柄は hit にしない＝安全側。
+            iss = (_iss or {}).get(m["code"]) or (_iss or {}).get(m["code"] + ".T")
+            m["shortable"] = (iss == "2") if iss is not None else None
+            m["crash"] = bool(hit and m["shortable"] is True)
+            if m["crash"]:
+                n_crash += 1
+        except Exception:
+            m["crash"] = False
+            m["shortable"] = None
+    sell_watch["crash"] = {
+        "count": n_crash,
+        "cond": {"runup20": CRASH_RUNUP_MIN, "vol_x": CRASH_VOLX_MIN,
+                 "r1": CRASH_R1_MAX, "first_day": True, "shortable": True},
+        "stats": {"n": 425, "per_year": 43, "avg": 0.78, "win": 57.6, "pf": 1.47,
+                  "era1": 0.95, "era2": 0.61, "period": "2016-2026/07"},
+        "how": "翌日の寄りで空売り → その日の大引けで買い戻す（当日完結）",
+        "caveat": "逆日歩は未測定。年+0.78%は逆日歩0.8%で消える水準なので実弾前に要実測。",
+    }
+    print(f"[build] 💥崩壊ショート(BT合格): {n_crash}件 / 🔻検出{len(sell_members)}件中")
+
     # ── ⚡ 裁量デイトレ・ウォッチ（15分足MA5継続・2026-07-24 本人指示） ──
     # フェード（前日+12%を寄り売り=日足）とは別物。前日±4%動いた銘柄を「その方向」に
     # 15分足MA5の押し目/戻り×VWAPでついていく裁量トレードの毎朝ウォッチ（各トップ5）。
