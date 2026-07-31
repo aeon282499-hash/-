@@ -148,6 +148,23 @@ def main() -> None:
             continue
         out[tk] = {"vol": round(v, 2), "n": n}
 
+    # ── 壊れたテーブルで上書きしないガード ──────────────────────
+    # 取得が途中で失敗すると銘柄数の少ないJSONができる。本番は «テーブルに無い銘柄＝
+    # フェイルオープン（買う）» なので、痩せたテーブルを配ると **ゲートが黙って無効化**
+    # される（エラーも出ない）。既存より大きく減るなら書かずに終える。
+    if os.path.exists(args.out):
+        try:
+            with open(args.out, encoding="utf-8") as f:
+                prev = json.load(f).get("vol") or {}
+            if prev and len(out) < len(prev) * 0.8:
+                print(f"[vol] ⚠️ 既存{len(prev):,}銘柄 → 新{len(out):,}銘柄と大きく減るため"
+                      f"**書き込みを中止**（取得失敗の疑い）。既存ファイルを維持する。")
+                raise SystemExit(1)
+        except SystemExit:
+            raise
+        except Exception as e:
+            print(f"[vol] 既存ファイルの比較に失敗（続行）: {e}")
+
     blob = {"built": until, "since": since, "min_events": MIN_EVENTS, "vol": out}
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(blob, f, ensure_ascii=False, indent=1)

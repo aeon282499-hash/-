@@ -1,0 +1,72 @@
+name: 決算ボラ月次更新
+
+# earnings_vol.json（銘柄ごとの「決算でどれだけ動く体質か」）を再生成する。
+# 決算持ち越しシグナルの入口ゲート（EARNINGS_VOL_MIN=2.0%）が参照する。
+#
+# なぜ専用workflowなのか:
+#   CIにはローカルのjquants_cache*.pklが無いので、build_earnings_vol.py は
+#   J-Quantsから5年ぶん（約1,220営業日）を取りに行く＝単独で20〜40分。
+#   決算カレンダー週次(timeout 60分)に同居させると必ず溢れるため分離した。
+#
+# 頻度: 値は12回超の開示の中央値なので動きは非常に遅い。月1回で十分。
+#   新規上場銘柄の追加と窓のローリングが主目的。
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 13 1 * *'    # 毎月1日 13:00 UTC = 22:00 JST（場が閉じたあと）
+
+permissions:
+  contents: write
+
+concurrency:
+  group: earnings-vol
+  cancel-in-progress: false
+
+jobs:
+  update-vol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180          # 取得が遅い日でも打ち切られないよう厚めに
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      # build_earnings_vol.py は「既存より2割以上銘柄が減るなら書かずにexit 1」する。
+      # 痩せたテーブルを配ると本番はフェイルオープンでゲートが黙って無効化されるため。
+      # ここで失敗したら既存ファイルが残るだけなので、運用は継続する（＝止めない）。
+      - name: 決算ボラ再生成
+        id: build
+        continue-on-error: true
+        run: python -u build_earnings_vol.py --years 5
+
+      - name: 差分があればコミット
+        if: steps.build.outcome == 'success'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add earnings_vol.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "chore: update earnings_vol.json [skip ci]"
+            git pull --rebase
+            git push
+          fi
+
+      - name: 失敗時は明示（既存ファイルで運用継続）
+        if: steps.build.outcome != 'success'
+        run: |
+          echo "::warning::決算ボラの再生成に失敗。既存の earnings_vol.json で運用継続します。"
+          echo "生成から120日を超えると朝の実行ログに⚠️が出ます。"

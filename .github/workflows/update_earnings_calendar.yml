@@ -40,29 +40,20 @@ jobs:
       - name: 未来決算予想日を追加（過去パターンから±90日推定）
         run: python -u predict_next_earnings.py
 
-      # 決算ボラ(earnings_vol.json)は「その銘柄が決算でどれだけ動く体質か」で、
-      # 12回超の開示の中央値なので動きは非常に遅い。毎週回す必要はないが、
-      # 新規上場の追加と窓のローリングのために月初の金曜だけ再生成する。
-      # 失敗しても既存JSONで運用継続（本番はデータ欠損＝フェイルオープン）。
-      - name: 決算ボラ再生成（月初の金曜のみ）
-        continue-on-error: true
-        run: |
-          DAY=$(date -u +%d)
-          if [ "$DAY" -le 07 ]; then
-            python -u build_earnings_vol.py --years 5
-          else
-            echo "skip（月初の金曜以外）"
-          fi
+      # 決算ボラ(earnings_vol.json)の再生成は update_earnings_vol.yml に分離した。
+      # 理由: CIにはローカルpklが無いのでJ-Quantsから5年ぶん(約1,220営業日)取ることになり、
+      # 単独で20〜40分かかる。このjobのtimeout-minutes=60はカレンダー生成で既にほぼ埋まるため、
+      # 同居させると continue-on-error で «黙って失敗し続ける» 形になっていた。
 
       - name: 差分があればコミット
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add earnings_calendar.json earnings_vol.json
+          git add earnings_calendar.json
           if git diff --cached --quiet; then
             echo "no changes"
           else
-            git commit -m "chore: update earnings_calendar.json / earnings_vol.json [skip ci]"
+            git commit -m "chore: update earnings_calendar.json [skip ci]"
             git pull --rebase
             git push
           fi
