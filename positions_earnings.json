@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-30",
+ "last_signal_date": "2026-07-31",
  "positions": [
   {
    "ticker": "6521.T",
@@ -169,8 +169,14 @@
    "shares": 500,
    "rsi": 11.4,
    "runup5": -75.5,
-   "status": "pending",
-   "prev_close": 1672.0
+   "status": "closed",
+   "prev_close": 1672.0,
+   "entry": 1672.0,
+   "exit_date": "2026-07-31",
+   "exit": 1650.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.32,
+   "pnl_yen": -11000
   },
   {
    "ticker": "5333.T",
@@ -181,8 +187,11 @@
    "shares": 100,
    "rsi": 27.6,
    "runup5": -15.0,
-   "status": "pending",
-   "prev_close": 5245.0
+   "status": "extended",
+   "prev_close": 5245.0,
+   "entry": 5245.0,
+   "gap_pct": 15.25,
+   "ext_exit_date": "2026-08-06"
   },
   {
    "ticker": "6101.T",
@@ -193,8 +202,11 @@
    "shares": 100,
    "rsi": 31.6,
    "runup5": -17.8,
-   "status": "pending",
-   "prev_close": 5560.0
+   "status": "extended",
+   "prev_close": 5560.0,
+   "entry": 5560.0,
+   "gap_pct": 10.79,
+   "ext_exit_date": "2026-08-06"
   },
   {
    "ticker": "6752.T",
@@ -206,7 +218,8 @@
    "rsi": 33.1,
    "runup5": -11.3,
    "status": "pending",
-   "prev_close": 3584.0
+   "prev_close": 3584.0,
+   "note": "決済価格未取得(entry=3584.0, exit=None)・翌日再試行"
   },
   {
    "ticker": "1803.T",
@@ -217,8 +230,14 @@
    "shares": 400,
    "rsi": 35.4,
    "runup5": -6.8,
-   "status": "pending",
-   "prev_close": 2317.5
+   "status": "closed",
+   "prev_close": 2317.5,
+   "entry": 2317.5,
+   "exit_date": "2026-07-31",
+   "exit": 2367.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 2.16,
+   "pnl_yen": 20000
   },
   {
    "ticker": "6754.T",
@@ -229,8 +248,14 @@
    "shares": 200,
    "rsi": 37.9,
    "runup5": -10.0,
-   "status": "pending",
-   "prev_close": 3553.0
+   "status": "closed",
+   "prev_close": 3553.0,
+   "entry": 3553.0,
+   "exit_date": "2026-07-31",
+   "exit": 3693.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 3.94,
+   "pnl_yen": 28000
   },
   {
    "ticker": "6703.T",
@@ -241,8 +266,58 @@
    "shares": 300,
    "rsi": 39.4,
    "runup5": -9.3,
-   "status": "pending",
-   "prev_close": 2776.0
+   "status": "closed",
+   "prev_close": 2776.0,
+   "entry": 2776.0,
+   "exit_date": "2026-07-31",
+   "exit": 2859.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 2.99,
+   "pnl_yen": 24900
+  },
+  {
+   "ticker": "6723.T",
+   "name": "ルネサスエレクトロニクス",
+   "type": "第２四半期",
+   "date": "2026-07-31",
+   "signal_price": 3399.0,
+   "shares": 200,
+   "rsi": 33.1,
+   "runup5": -13.5,
+   "status": "pending"
+  },
+  {
+   "ticker": "5214.T",
+   "name": "日本電気硝子",
+   "type": "第２四半期",
+   "date": "2026-07-31",
+   "signal_price": 5350.0,
+   "shares": 100,
+   "rsi": 35.4,
+   "runup5": -3.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "5332.T",
+   "name": "ＴＯＴＯ",
+   "type": "第１四半期",
+   "date": "2026-07-31",
+   "signal_price": 7011.0,
+   "shares": 100,
+   "rsi": 35.5,
+   "runup5": -5.5,
+   "status": "pending"
+  },
+  {
+   "ticker": "5802.T",
+   "name": "住友電気工業",
+   "type": "第１四半期",
+   "date": "2026-07-31",
+   "signal_price": 2303.5,
+   "shares": 400,
+   "rsi": 42.1,
+   "runup5": -6.7,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-07-31"
