@@ -169,6 +169,38 @@ class TestRealFile(unittest.TestCase):
             self.assertFalse(ok, f"{tk} は弾かれるはず（実測{v}）")
 
 
+class TestIntradayGate(unittest.TestCase):
+    """場中発表の除外（2026-08-01 本人指示）。"""
+
+    def setUp(self):
+        self._flag = M.EXCLUDE_INTRADAY_DISC
+
+    def tearDown(self):
+        M.EXCLUDE_INTRADAY_DISC = self._flag
+
+    def test_after_close_passes(self):
+        M.EXCLUDE_INTRADAY_DISC = True
+        for t in ("15:30:00", "16:00:00", "17:00:00"):
+            self.assertTrue(M.disc_time_pass(t), t)
+
+    def test_intraday_blocked(self):
+        """大引けは15:30（2024-11の東証延長）＝15:00発表も場中扱い。"""
+        M.EXCLUDE_INTRADAY_DISC = True
+        for t in ("15:00:00", "15:29:00", "14:00:00", "11:30:00", "08:00:00"):
+            self.assertFalse(M.disc_time_pass(t), t)
+
+    def test_no_history_is_fail_open(self):
+        M.EXCLUDE_INTRADAY_DISC = True
+        self.assertTrue(M.disc_time_pass(None))
+        self.assertTrue(M.disc_time_pass(""))
+        self.assertTrue(M.disc_time_pass("xx:yy"))
+
+    def test_disabled_passes_everything(self):
+        M.EXCLUDE_INTRADAY_DISC = False
+        for t in ("14:00:00", None, "15:30:00"):
+            self.assertTrue(M.disc_time_pass(t))
+
+
 class TestBuildCandidatesWiring(unittest.TestCase):
     """build_candidates にゲートが正しく刺さっているか（配線の検査）。"""
 
@@ -209,6 +241,34 @@ class TestBuildCandidatesWiring(unittest.TestCase):
         with mock.patch.dict("sys.modules", {"yfinance": mock.Mock(Ticker=FakeTicker)}), \
              mock.patch.object(M.os.path, "dirname", return_value=d):
             return M.build_candidates(codes, all_data, {}), d
+
+    def test_intraday_gate_wired(self):
+        """前回が場中発表の銘柄が build_candidates で落ちること。"""
+        M._EVOL = {"1111.T": 5.0, "2222.T": 5.0, "3333.T": 5.0}
+        M._EVOL_BUILT = "2026-07-31"
+        times = {"1111.T": {"2026-05-01": "16:00:00"},    # 引け後 → 通す
+                 "2222.T": {"2026-05-01": "14:00:00"}}    # 場中   → 落とす
+        codes, all_data = self._fixture()
+        import pandas as pd
+
+        class FakeTicker:
+            def __init__(self, *_a, **_k):
+                pass
+
+            def history(self, *_a, **_k):
+                return pd.DataFrame({"Close": [980.0]})
+
+        d = tempfile.mkdtemp()
+        with mock.patch.dict("sys.modules", {"yfinance": mock.Mock(Ticker=FakeTicker)}), \
+             mock.patch.object(M.os.path, "dirname", return_value=d):
+            out = M.build_candidates(codes, all_data, times)
+        got = {r["ticker"] for r in out}
+        self.assertIn("1111.T", got, "前回16:00＝引け後は通るはず")
+        self.assertIn("3333.T", got, "時刻履歴なしはフェイルオープンで通るはず")
+        self.assertNotIn("2222.T", got, "前回14:00＝場中は落ちるはず")
+        with open(os.path.join(d, M.VOL_REJECT_FILE), encoding="utf-8") as f:
+            rows = next(iter(json.load(f).values()))
+        self.assertEqual(rows[0]["why"], "intraday")
 
     def test_gate_filters_and_logs(self):
         M._EVOL = {"1111.T": 5.0, "2222.T": 1.0}      # 3333.Tは実績なし＝フェイルオープン

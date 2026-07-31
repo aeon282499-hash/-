@@ -74,6 +74,10 @@ HIST_DAYS = 60        # J-Quants取得窓（暦日）
 # 値は build_earnings_vol.py が earnings_vol.json に事前生成（実行時計算は窓60日では不可）。
 # データが無い銘柄は必ず「買う」側に倒す＝完全フェイルオープン。
 EARNINGS_VOL_MIN = 2.0          # None にすると無効化
+
+# ── 場中発表の除外（2026-08-01・本人指示）──
+# 詳細と実測値は disc_time_pass() のdocstring。False で従来動作に戻る。
+EXCLUDE_INTRADAY_DISC = True
 EARNINGS_VOL_FILE = "earnings_vol.json"
 _EVOL: dict[str, float] | None = None
 _EVOL_BUILT: str = "?"
@@ -161,10 +165,36 @@ def load_times() -> dict:
 
 
 def last_disc_time(times: dict, ticker: str, before: str) -> str | None:
-    """beforeより前の直近の発表時刻。時刻表示用（除外には使わない=BTで逆効果と確定）。"""
+    """beforeより前の直近の発表時刻。"""
     dm = times.get(ticker, {})
     prev = [d for d in dm if d < before]
     return dm[max(prev)] if prev else None
+
+
+def disc_time_pass(last_time: str | None) -> bool:
+    """場中発表の銘柄を除外する（2026-08-01 本人指示）。
+
+    戦略の前提は「引け後に決算が出る → 大引けで仕込んで翌寄りのギャップを取る」。
+    場中に発表済みなら買う時点でニュースが出ており前提から外れる、という指摘。
+
+    実装上の制約: 14:55の判定時点で «今日もう発表したか» を知る手段が無い
+    （/fins/summary は前日ぶんまでしか取れない）。使えるのは前回の発表時刻だけ。
+    実測でこの予測は当たる: 前回の引け後/場中は92.2%が今回も同じ
+    （前回場中→今回も場中80% / 前回引け後→今回場中は5.0%の取りこぼし）。
+
+    BT実測（10年・8枠・1玉100万・他のズレは全部本番に合わせた実像ベース）:
+      現状（場中も買う）              1,637件 +1,191万 DD-237万 陽性10/11 直近5年+952万
+      当日の実時刻で除外（実装不可）    1,443件 +1,138万 DD-233万 陽性 9/11 直近5年+917万
+      本ルール（前回が場中なら除外）    1,483件 +1,165万 DD-220万 陽性 9/11 直近5年+943万
+    ＝損益は10年-26万(-2%)の微減、DDは-237→-220万で微改善、陽性年は10→9。
+    ほぼ誤差の範囲。数字ではなく「前提に合わせる」という判断で入れている。
+    戻すときは EXCLUDE_INTRADAY_DISC=False の1行。
+
+    履歴が無い銘柄は買う側に倒す（フェイルオープン）。
+    """
+    if not EXCLUDE_INTRADAY_DISC:
+        return True
+    return time_bucket(last_time) in ("引け後", "履歴なし")
 
 
 def refresh_earnings_times(today: date, days: int = 10) -> None:
@@ -478,13 +508,16 @@ def build_candidates(codes: list[dict], all_data: dict,
             continue
         if rule_pass(rsi, runup5, tov20, price, MAX_PRICE_CAP):
             ok, evol = vol_pass(tk)
-            if not ok:
+            lt = last_disc_time(times, tk, today_str)
+            if not ok or not disc_time_pass(lt):
                 # 弾いた銘柄は必ず残す。後から「弾かなければどうだったか」を検証するため。
                 rejected.append({"ticker": tk, "name": x["name"], "vol": evol,
+                                 "why": "vol" if not ok else "intraday",
+                                 "last_time": lt[:5] if lt else None,
+                                 "bucket": time_bucket(lt),
                                  "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
                                  "price": price})
                 continue
-            lt = last_disc_time(times, tk, today_str)
             out.append({"ticker": tk, "code": x["code"], "name": x["name"],
                         "type": x.get("type", ""), "price": price,
                         "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
@@ -492,8 +525,14 @@ def build_candidates(codes: list[dict], all_data: dict,
                         "last_time": lt[:5] if lt else None,
                         "last_bucket": time_bucket(lt)})
     if rejected:
-        print(f"  [SKIP VOL] 決算ボラ<{EARNINGS_VOL_MIN}%で除外 {len(rejected)}件: "
-              + " ".join(f"{r['ticker']}({r['vol']:.1f}%)" for r in rejected))
+        v = [r for r in rejected if r["why"] == "vol"]
+        i = [r for r in rejected if r["why"] == "intraday"]
+        if v:
+            print(f"  [SKIP VOL] 決算ボラ<{EARNINGS_VOL_MIN}%で除外 {len(v)}件: "
+                  + " ".join(f"{r['ticker']}({r['vol']:.1f}%)" for r in v))
+        if i:
+            print(f"  [SKIP INTRADAY] 前回が場中発表のため除外 {len(i)}件: "
+                  + " ".join(f"{r['ticker']}({r['last_time']})" for r in i))
         _log_vol_rejected(today_str, rejected)
     return sorted(out, key=lambda r: r["rsi"])
 
