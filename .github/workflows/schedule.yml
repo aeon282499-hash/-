@@ -14,6 +14,44 @@ jobs:
   # 18日で確定1件・投げ売り日0件＝A/Bの母数が集まらず、配信も金曜に多重発火していた。
   # 再開する場合はこの trigger-capit ジョブと schedule_capitulation*.yml の cron を戻す。
 
+  # ── ギャップフェード: 確実発火経路へ接続（2026-08-01） ──
+  # gapfade.yml のGitHub cronは実測で毎日3時間以上遅れる。日別の初回起動を調べると
+  #   7/27 13:10❌ / 7/28 12:43(entry2分前) / 7/29 12:46❌ / 7/30 07:14✅ / 7/31 07:28✅
+  # ＝5営業日のうち2日はエントリー12:45に間に合っていなかった。
+  # このworkflowはCloudflare Worker経由で毎朝8:05きっかりに起動する実績があるので、
+  # そこから相乗りでdispatchする（本人のWorker追加登録なしで恒久化できる）。
+  # ただし8:05は寄り前でギャップが未確定なので、寄り後まで待ってから叩く。
+  # 待ちはpublicリポジトリのActions（分数無制限）で吸収する。
+  # gapfade.py側に同日ガードがあるので、既存cronと二重に起動しても配信は1回だけ。
+  trigger-gapfade:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 180
+    permissions:
+      actions: write
+    steps:
+      - name: 寄り後(9:30 JST)まで待つ
+        run: |
+          # 9:30 JST = 0:30 UTC。ただし本トリガーは 8:05 JST = **前日** 23:05 UTC に来るので、
+          # 「今日の0:30 UTC」だと過去になり待機ゼロで寄り前に叩いてしまう（実際に踏んだ）。
+          # 次に来る 0:30 UTC を目標にする。
+          NOW=$(date -u +%s)
+          TARGET=$(date -u -d 'today 00:30' +%s)
+          [ "$TARGET" -le "$NOW" ] && TARGET=$(date -u -d 'tomorrow 00:30' +%s)
+          WAIT=$(( TARGET - NOW ))
+          echo "現在 $(date -u +'%m/%d %H:%M') UTC / 目標 $(date -u -d "@$TARGET" +'%m/%d %H:%M') UTC (=9:30 JST)"
+          if [ "$WAIT" -gt 0 ] && [ "$WAIT" -le 14400 ]; then
+            echo "${WAIT}秒 待機"
+            sleep "$WAIT"
+          else
+            # 4時間を超える待ちは想定外の起動時刻＝待たずに進む（既存cronの保険が効く）
+            echo "待機スキップ（WAIT=${WAIT}秒＝想定外）"
+          fi
+      - name: ギャップフェード配信をdispatch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run gapfade.yml --repo "${{ github.repository }}" --ref main
+
   # ── 決算持ち越し: 朝の売り忘れ防止リマインダー（2026-07-10・独立ジョブ＝本番配信は無傷） ──
   # 昨日大引けで買った建玉を「今日の寄り成行で売る」確認を各階層チャンネルへ。建玉ゼロなら無送信。
   earnings-reminder:
