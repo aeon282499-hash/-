@@ -47,9 +47,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           # 存在するファイルだけ add（同上）
+          # earnings_vol_rejected.json＝決算ボラ/場中ゲートで弾いた銘柄の記録。
+          # コミットしないとrunnerごと消えて「弾かなければどうだったか」を後から検証できない。
           for f in positions_earnings.json positions_earnings_mid.json \
                    positions_earnings_small.json jpx_earnings_schedule.json \
-                   earnings_times.json; do
+                   earnings_times.json earnings_vol_rejected.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0
