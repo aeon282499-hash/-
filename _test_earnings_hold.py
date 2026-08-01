@@ -15,7 +15,7 @@ FAIL = 0
 
 # 2026-07-26に本番は大資金1階層のみへ縮小（本人指示）。ただし**階層機構はコードに残っている**ので、
 # 中/小は合成tierで回して回帰カバレッジを維持する（復活時にそのまま効く）。
-TIER_L = m.TIERS[0]  # 大100万（本番で稼働中）
+TIER_L = m.TIERS[0]  # 本番稼働tier（2026-08-01〜 50万/5千円・本人決定「50万がいいな」）
 TIER_M = {"label": "中資金", "size": 500_000, "price_cap": 5000,
           "webhook_env": "DISCORD_WEBHOOK_EARNINGS_MID_URL",
           "positions_file": "positions_earnings_mid.json"}
@@ -36,15 +36,15 @@ def check(label, cond):
 
 print("── TIERS構成（2026-07-26〜 大資金1階層のみ・本人指示）──")
 check("稼働は1階層だけ", len(m.TIERS) == 1)
-check("稼働階層は大資金", m.TIERS[0]["label"] == "大資金")
+check("稼働階層は50万×8枠（2026-08-01本人決定）", m.TIERS[0]["label"] == "50万×8枠")
 check("中/小は配信されない", not any(t["label"] in ("中資金", "小資金") for t in m.TIERS))
-check("大=100万/1万円", TIER_L["size"] == 1_000_000 and TIER_L["price_cap"] == 10000)
+check("本番=50万/5千円", TIER_L["size"] == 500_000 and TIER_L["price_cap"] == 5000)
 check("中=50万/5千円（合成・復活時の仕様）", TIER_M["size"] == 500_000 and TIER_M["price_cap"] == 5000)
 check("小=30万/3千円（合成・復活時の仕様）", TIER_S["size"] == 300_000 and TIER_S["price_cap"] == 3000)
 check("webhook/positionsは階層ごとに別（機構は維持）",
       len({t["webhook_env"] for t in (TIER_L, TIER_M, TIER_S)}) == 3
       and len({t["positions_file"] for t in (TIER_L, TIER_M, TIER_S)}) == 3)
-check("候補抽出の価格上限は大の1万円のまま", m.MAX_PRICE_CAP == 10000)
+check("候補抽出の価格上限は5千円（50万で1単元買える上限）", m.MAX_PRICE_CAP == 5000)
 
 print("── rule_pass 境界 ──")
 check("基準ケース通過(中)", m.rule_pass(45.0, -3.1, 1e9, 5000, 5000))
@@ -205,8 +205,8 @@ picks = [{"ticker": "1234.T", "code": "1234", "name": "サンプル", "type": "�
 e2 = m.embed_signals(picks, 42, date(2026, 7, 10), TIER_M)
 check("中: 200株表示", "200株" in e2["description"])
 e2L = m.embed_signals(picks, 42, date(2026, 7, 10), TIER_L)
-check("大: 400株表示", "400株" in e2L["description"])
-check("大: footerに8枠×100万", "8枠×100万" in e2L["footer"]["text"])
+check("本番tier: 200株表示（50万/2340円）", "200株" in e2L["description"])
+check("本番tier: footerに8枠×50万", "8枠×50万" in e2L["footer"]["text"])
 check("footerに注意書き", "STOP無効" in e2["footer"]["text"])
 check("前回発表時刻の表示", "前回発表 15:30" in e2["description"])
 picks[0].update({"last_time": "11:30", "last_bucket": "場中"})
