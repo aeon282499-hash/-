@@ -264,10 +264,11 @@ class TestTdnetParse(unittest.TestCase):
                 ("15:30", "3333", "決算短信〔日本基準〕"),   # 引け後→数えない
                 ("16:00", "4444", "決算短信〔日本基準〕"),   # 引け後→数えない
                 ("10:00", "5555", "人事異動のお知らせ"),      # 短信でない→数えない
+                ("09:00", "7777", "（訂正）「決算短信」の一部訂正について"),  # 訂正→数えない
                 ("xx:yy", "6666", "決算短信〔日本基準〕")]   # 時刻不明→スキップ
         codes, parsed = M._codes_announced_before_close(rows)
         self.assertEqual(codes, {"1111", "2222"})
-        self.assertEqual(parsed, 5, "パース成功は時刻が読めた5行")
+        self.assertEqual(parsed, 6, "パース成功は時刻が読めた6行")
 
     def test_all_unparseable_times_counts_zero(self):
         """時刻が全行パース不能なら parsed=0（fetch側がNone退行の判定に使う）。"""

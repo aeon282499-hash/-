@@ -275,7 +275,9 @@ def _codes_announced_before_close(rows: list[tuple[str, str, str]]) -> tuple[set
         except Exception:
             continue
         parsed += 1
-        if hm < 15 * 60 + 30 and "決算短信" in title:
+        # 「〜決算短信〜の一部訂正」は過去の短信の直しであって本日の決算発表ではない。
+        # 数えると「朝に訂正だけ出し本物は引け後」の銘柄を誤除外する。
+        if hm < 15 * 60 + 30 and "決算短信" in title and "訂正" not in title:
             codes.add(code)
     return codes, parsed
 
