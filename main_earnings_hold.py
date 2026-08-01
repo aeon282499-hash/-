@@ -262,29 +262,69 @@ def wait_until_min(target_min: int, max_wait_min: int = 40) -> None:
         _time.sleep(min(remain * 60 + 1, 30))
 
 
-def fetch_tdnet_announced(ymd: str, max_pages: int = 30) -> set[str] | None:
-    """当日すでに決算短信を発表した銘柄の4桁コード集合。失敗はNone（フェイルオープン）。"""
+def _codes_announced_before_close(rows: list[tuple[str, str, str]]) -> tuple[set[str], int]:
+    """行リスト→「大引け(15:30)より前に決算短信を出した」4桁コード集合と時刻パース成功数。
+
+    15:30以降の発表は引け後＝買ってよい側なので数えない（遅延起動や--force再実行で
+    引け後銘柄を「発表済み」と誤除外しないため。通常の15:06照会では差は出ない）。"""
+    codes: set[str] = set()
+    parsed = 0
+    for t, code, title in rows:
+        try:
+            hm = int(t[:2]) * 60 + int(t[3:5])
+        except Exception:
+            continue
+        parsed += 1
+        if hm < 15 * 60 + 30 and "決算短信" in title:
+            codes.add(code)
+    return codes, parsed
+
+
+def fetch_tdnet_announced(ymd: str, max_pages: int = 30,
+                          deadline_sec: float = 120.0) -> set[str] | None:
+    """当日「大引け前に」決算短信を発表した銘柄の4桁コード集合。
+
+    取得不能はNone＝呼び出し側で習性ルール(前回場中は全部弾く)に退行する（保守側）。
+    平日午後のTDnetに開示ゼロはあり得ないため、1ページ目が非200/0行/全行時刻パース不能
+    の場合も「故障」とみなしNoneを返す（空集合=正常・発表なし、と区別する）。
+    deadline超過も同様（遅いだけの成功で配信を遅らせない）。"""
+    import time as _time
+
     import urllib3
     urllib3.disable_warnings()
+    t0 = _time.monotonic()
     try:
         codes: set[str] = set()
+        parsed_total = 0
         for page in range(1, max_pages + 1):
+            if _time.monotonic() - t0 > deadline_sec:
+                print(f"  [tdnet] {deadline_sec:.0f}秒超過(page{page}) → 退行")
+                return None
             r = requests.get(TDNET_LIST_URL.format(page=page, ymd=ymd),
                              headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
                              verify=False, timeout=20)
             if r.status_code != 200:
+                if page == 1:
+                    print(f"  [tdnet] 1ページ目 HTTP {r.status_code} → 退行")
+                    return None
                 break
             rows = _parse_tdnet_page(r.content.decode("utf-8", errors="replace"))
             if not rows:
+                if page == 1:
+                    print("  [tdnet] 1ページ目パース0行(構造変更?) → 退行")
+                    return None
                 break
-            for _t, code, title in rows:
-                if "決算短信" in title:
-                    codes.add(code)
+            c, p = _codes_announced_before_close(rows)
+            codes |= c
+            parsed_total += p
             if len(rows) < 100:
                 break
+        if parsed_total == 0:
+            print("  [tdnet] 時刻が1件もパースできない(形式変更?) → 退行")
+            return None
         return codes
     except Exception as e:
-        print(f"  [tdnet] 取得失敗: {e} → 前回時刻のみで判定（フェイルオープン）")
+        print(f"  [tdnet] 取得失敗: {e} → 習性ルールに退行")
         return None
 
 
