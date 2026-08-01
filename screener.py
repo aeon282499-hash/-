@@ -1231,12 +1231,27 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
     except Exception as e:
         print(f"[screener] 地合い判定失敗: {e} → 市場フィルターOFF")
 
+    # ── 鮮度ガード（2026-08-02・フェード7/22とデイトレBUY 8/2で塞いだ穴の横展開）──
+    # 最終足が直近営業日でない銘柄＝売買停止中は判定しない。停止前の古い足のまま
+    # RSI/乖離を満たし続け、停止明けの暴発ギャップ（TOB等）に突っ込むBUYを出すのを防ぐ。
+    # 10年測定(_audit_swing_halt.py): 代金20億級で凍結指標がBUY/SELL条件を満たした停止は
+    # **0回**＝BTの数字は1円も変わらない（BTは実在する足しか取引しない）純粋な将来保険。
+    last_mkt = None
+    for _df in data.values():
+        if _df is None or _df.empty:
+            continue
+        _mx = _df.index.max()
+        if last_mkt is None or _mx > last_mkt:
+            last_mkt = _mx
+
     # ── シグナル判定 ──────────────────────────────────
     candidates: list[dict] = []
     sell_candidates: list[dict] = []
     for ticker, df in data.items():
         if ticker not in name_map:
             continue
+        if last_mkt is not None and df.index.max() != last_mkt:
+            continue   # 最終足が古い＝売買停止/上場廃止手続き中
         close = df["Close"].dropna()
         if len(close) < max(MA_DEV_PERIOD, ATR_PERIOD) + 5:
             continue
