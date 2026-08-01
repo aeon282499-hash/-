@@ -865,6 +865,125 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
     print(f"[paper] Discord通知 HTTP {r.status_code}")
 
 
+def monthly_stats(book: dict, ym: str) -> dict:
+    """ym='YYYY-MM' の確定分だけを集計する。signal_date（撃った日）で月に割り当てる。
+
+    当日決済のシステムなので «撃った日＝決済日» で、月跨ぎのズレは起きない。
+    """
+    month = [p for p in (book.get("positions") or [])
+             if p.get("status") == "closed"
+             and str(p.get("signal_date", "")).startswith(ym)
+             and p.get("pnl_yen") is not None]
+    # exit_type=SKIP は「条件を満たさず撃たなかった」記録＝成績に混ぜない。
+    # cumulative_stats も CLOSE だけを集計しているので、ここを揃えないと
+    # 「今月12件／通算11件」のような矛盾した表示になる（実際に出た）。
+    rows = [p for p in month if p.get("exit_type") == "CLOSE"]
+    n_skip = len(month) - len(rows)
+    if not rows:
+        return {"ym": ym, "n": 0, "n_skip": n_skip}
+    yen = [float(p["pnl_yen"]) for p in rows]
+    pct = [float(p["pnl_pct"]) for p in rows if p.get("pnl_pct") is not None]
+    wins = [y for y in yen if y > 0]
+    loss = [y for y in yen if y < 0]
+    # PFは «円» と «%» で答えが変わる（玉のサイズが銘柄ごとに違うため）。
+    # 円=実際のお金 / %=1件あたりの質。両方出さないと「通算PFと今月PFが違う」
+    # という見え方になる（cumulative_stats は%ベース）。
+    gp = sum(p for p in pct if p > 0)
+    gl = -sum(p for p in pct if p < 0)
+    best = max(rows, key=lambda p: p["pnl_yen"])
+    worst = min(rows, key=lambda p: p["pnl_yen"])
+    days = sorted({p["signal_date"] for p in rows})
+    by_day: dict[str, float] = {}
+    for p in rows:
+        by_day[p["signal_date"]] = by_day.get(p["signal_date"], 0.0) + float(p["pnl_yen"])
+    return {
+        "ym": ym, "n": len(rows), "yen": sum(yen),
+        "win_n": len(wins), "win_rate": len(wins) / len(rows) * 100,
+        "avg_pct": (sum(pct) / len(pct)) if pct else float("nan"),
+        "pf": (sum(wins) / abs(sum(loss))) if loss else float("inf"),
+        "pf_pct": (gp / gl) if gl > 0 else (float("inf") if gp > 0 else 0.0),
+        "best": best, "worst": worst, "days": days, "n_skip": n_skip,
+        "day_win": sum(1 for v in by_day.values() if v > 0), "day_n": len(by_day),
+        "best_day": max(by_day.items(), key=lambda kv: kv[1]),
+        "worst_day": min(by_day.items(), key=lambda kv: kv[1]),
+        "rows": rows,
+    }
+
+
+def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
+    """月次サマリーを1通だけ送る。対象月に確定が無ければ送らない。"""
+    m = monthly_stats(book, ym)
+    y, mo = ym.split("-")
+    if not m["n"]:
+        print(f"[paper] {ym} の確定なし → 月次は無送信")
+        return False
+
+    cum = cumulative_stats(book)["all"]
+    L = []
+    L.append(f"**{int(mo)}月の確定 {m['n']}件**")
+    L.append("```")
+    L.append(f"損益      {m['yen']:>+12,.0f} 円")
+    L.append(f"勝率      {m['win_rate']:>11.1f} %   ({m['win_n']}勝{m['n']-m['win_n']}敗)")
+    L.append(f"平均      {m['avg_pct']:>+11.2f} %/件")
+    L.append(f"PF(円)    {_fmt_pf(m['pf']):>12}   ← 実際のお金")
+    L.append(f"PF(%)     {_fmt_pf(m['pf_pct']):>12}   ← 1件あたりの質")
+    L.append(f"撃った日  {m['day_n']:>11} 日   (勝ち{m['day_win']}日)")
+    L.append("```")
+    if m["pf"] < 1 <= m["pf_pct"]:
+        L.append("⚠️ PFが円で1割れ・%で1超え＝**大きい玉で負けて小さい玉で勝っている**。"
+                 "玉サイズの偏りが効いているサイン。")
+    if m.get("n_skip"):
+        L.append(f"※ 条件を満たさず見送った記録が別に{m['n_skip']}件（成績には含めない）")
+    b, wst = m["best"], m["worst"]
+    L.append(f"🟢 最良 **{b['name']}**（{b['ticker'].replace('.T','')}）"
+             f" {b['pnl_pct']:+.2f}% / {b['pnl_yen']:+,.0f}円  〔{b['signal_date']}〕")
+    L.append(f"🔴 最悪 **{wst['name']}**（{wst['ticker'].replace('.T','')}）"
+             f" {wst['pnl_pct']:+.2f}% / {wst['pnl_yen']:+,.0f}円  〔{wst['signal_date']}〕")
+    bd, wd = m["best_day"], m["worst_day"]
+    L.append(f"📈 最良日 {bd[0]} {bd[1]:+,.0f}円 ／ 📉 最悪日 {wd[0]} {wd[1]:+,.0f}円")
+    L.append("")
+    L.append(f"**通算**（紙・{cum['n']}件） 損益 **{cum['yen']:+,.0f}円** ／ PF {_fmt_pf(cum['pf'])}")
+
+    color = 0x43A047 if m["yen"] > 0 else (0xE53935 if m["yen"] < 0 else 0x757575)
+    payload = {"embeds": [{
+        "title": f"📅【デイトレ売り（フェード）｜月次サマリー】{y}年{int(mo)}月",
+        "description": "\n".join(L),
+        "color": color,
+        "footer": {"text": "紙の理論値。実弾はSBI約定に従う。玉サイズが違うので「%平均」と「円合計」の符号は一致しないことがある。"},
+    }]}
+    if dry:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return True
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY")
+           or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
+    if not url:
+        print("[paper] webhook未設定 → 月次スキップ")
+        return False
+    import requests
+    r = requests.post(url, json=payload, timeout=15)
+    print(f"[paper] 月次サマリー Discord HTTP {r.status_code} ({ym})")
+    return True
+
+
+def prev_month(d) -> str:
+    first = d.replace(day=1)
+    last_prev = first - timedelta(days=1)
+    return last_prev.strftime("%Y-%m")
+
+
+def maybe_send_monthly(book: dict, today, dry: bool = False) -> None:
+    """月初の営業日に前月分を1回だけ送る（スイングの月次と同じ考え方）。
+
+    月内の初回営業日かどうかは «その月でまだ月次を送っていないか» で判定する。
+    立ち上げ月やCIが落ちた月でも、次に走った営業日に届く（取りこぼさない）。
+    """
+    ym = prev_month(today)
+    if book.get("last_monthly_report") == ym:
+        return
+    if send_monthly(book, ym, dry=dry) and not dry:
+        book["last_monthly_report"] = ym
+
+
 _LAST_ISS = {}
 
 
@@ -923,6 +1042,12 @@ def run(today=None, signals=None, dry=False):
         if not dry:
             book["last_report_date"] = today_str
 
+    # 月が変わったら前月の月次サマリーを1回だけ（2026-08-01 本人指摘で追加）
+    try:
+        maybe_send_monthly(book, today, dry=dry)
+    except Exception as e:
+        print(f"[paper] 月次サマリー失敗（本処理は継続）: {e}")
+
     if not dry:
         save_book(book)
 
@@ -936,6 +1061,15 @@ def main():
     dry = "--dry" in sys.argv
     if "--test" in sys.argv:
         import _test_daytrade_paper  # noqa
+        return
+    # 月次サマリーだけ手で送る/確認する: --monthly 2026-07
+    if "--monthly" in sys.argv:
+        i = sys.argv.index("--monthly")
+        ym = sys.argv[i + 1] if len(sys.argv) > i + 1 else prev_month(_today_jst_date())
+        book = load_book()
+        if send_monthly(book, ym, dry=dry) and not dry:
+            book["last_monthly_report"] = ym
+            save_book(book)
         return
     run(dry=dry)
 

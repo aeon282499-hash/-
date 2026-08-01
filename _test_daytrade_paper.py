@@ -446,12 +446,74 @@ def test_borrow_grade():
     check("None→貸株?", dp.borrow_grade(None) == "貸株?")
 
 
+def _book_for_monthly():
+    def row(d, yen, pct, et="CLOSE", tk="1111.T"):
+        return {"ticker": tk, "name": "テスト社", "direction": "SELL", "signal_date": d,
+                "status": "closed", "exit_type": et, "pnl_yen": yen, "pnl_pct": pct,
+                "win": yen > 0}
+    return {"positions": [
+        row("2026-07-02", +10000, +2.0),
+        row("2026-07-02", -30000, -1.0),          # 同じ日にもう1件（日次集計の確認）
+        row("2026-07-15", +5000, +1.0),
+        row("2026-07-20", 0, 0.0, et="SKIP"),      # 見送り＝成績に入れない
+        row("2026-06-10", +99999, +9.9),           # 前月＝混ざってはいけない
+        {"ticker": "9999.T", "name": "保有中", "direction": "SELL",
+         "signal_date": "2026-07-31", "status": "pending"},   # 未決済＝入れない
+    ], "expired": [], "last_report_date": None}
+
+
+def test_monthly_stats():
+    b = _book_for_monthly()
+    m = dp.monthly_stats(b, "2026-07")
+    check("月次: SKIPと未決済を除く3件", m["n"] == 3)
+    check("月次: 見送り件数を別に持つ", m["n_skip"] == 1)
+    check("月次: 前月が混ざらない", m["yen"] == 10000 - 30000 + 5000)
+    check("月次: 勝率は円ベースの勝ち数", abs(m["win_rate"] - 2 / 3 * 100) < 0.01)
+    check("月次: PF(円)とPF(%)は別物", abs(m["pf"] - 15000 / 30000) < 1e-9
+          and abs(m["pf_pct"] - 3.0 / 1.0) < 1e-9)
+    check("月次: 撃った日は2日", m["day_n"] == 2)
+    check("月次: 最悪日は同日合算で判定", m["worst_day"][0] == "2026-07-02"
+          and m["worst_day"][1] == -20000)
+    check("月次: 最良/最悪トレード", m["best"]["pnl_yen"] == 10000
+          and m["worst"]["pnl_yen"] == -30000)
+    e = dp.monthly_stats(b, "2026-05")
+    check("月次: 該当なしの月はn=0", e["n"] == 0)
+
+
+def test_monthly_send_guard():
+    b = _book_for_monthly()
+    sent = []
+    orig = dp.send_monthly
+    dp.send_monthly = lambda book, ym, dry=False: (sent.append(ym), True)[1]
+    try:
+        dp.maybe_send_monthly(b, date(2026, 8, 3))
+        check("月初に前月分を送る", sent == ["2026-07"])
+        check("送信後にマーカーが立つ", b.get("last_monthly_report") == "2026-07")
+        dp.maybe_send_monthly(b, date(2026, 8, 4))
+        check("同じ月は二度送らない", sent == ["2026-07"])
+        dp.maybe_send_monthly(b, date(2026, 9, 1))
+        check("翌月になれば8月分を送る", sent == ["2026-07", "2026-08"])
+    finally:
+        dp.send_monthly = orig
+    check("prev_month: 年跨ぎ", dp.prev_month(date(2026, 1, 5)) == "2025-12")
+    check("prev_month: 通常", dp.prev_month(date(2026, 8, 1)) == "2026-07")
+
+
+def test_monthly_no_data_no_send():
+    """確定ゼロの月は無送信＝マーカーも立てない（翌月に持ち越さない）。"""
+    b = {"positions": [], "expired": [], "last_report_date": None}
+    check("確定なしならFalse", dp.send_monthly(b, "2026-07", dry=True) is False)
+    dp.maybe_send_monthly(b, date(2026, 8, 3), dry=True)
+    check("確定なしならマーカーを立てない", "last_monthly_report" not in b)
+
+
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
-               test_daily_top_fades, test_alert_map_exclusion, test_borrow_grade]:
+               test_daily_top_fades, test_alert_map_exclusion, test_borrow_grade,
+               test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")
