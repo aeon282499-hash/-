@@ -312,6 +312,17 @@ def main() -> None:
                 last = json.load(f)
             if last.get("date") == today_str:
                 print(f"[main_day] 本日分({today_str})は配信済み({last.get('sent_at','?')}) → スキップ")
+                # 紙トレ層（デイトレ売り配信）だけ未報告なら追い焼きする（2026-08-02）。
+                # 配信済みマーカーは紙層の**前**に書かれるため、1本目のトリガーで紙だけ
+                # 失敗すると、8:20保険便がここで即exitして紙を永久に再試行できなかった。
+                # run(signals=None)は day_signals.json から当日分を自分で読む＝引数不要。
+                try:
+                    from daytrade_paper import load_book as _lb, run as _run_paper
+                    if _lb().get("last_report_date") != today_str:
+                        print("[main_day] 紙トレ層が未報告 → 保険便で再試行")
+                        _run_paper(today=today)
+                except Exception as pe:
+                    print(f"[main_day] 紙トレ層 再試行エラー（無視）: {pe}")
                 sys.exit(0)
         except Exception as e:
             print(f"[main_day] {LAST_RUN_FILE} 読込失敗: {e} → 続行")

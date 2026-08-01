@@ -193,12 +193,25 @@ def run_screener_day() -> tuple[list[dict], dict]:
         print(f"[screener_day] 地合いNG → シグナル0件で終了")
         return [], macro
 
+    # 鮮度ガード（2026-08-02・フェード側7/22と同じ穴）: 最終足が直近営業日でない銘柄
+    # ＝売買停止中は除外。停止直前の「10倍出来高ブレイク足」が居座り続けて毎日発火し、
+    # 停止明けの暴発ギャップ（TOB等）に突っ込む買い指示を出すのを防ぐ。
+    last_mkt = None
+    for _df in data.values():
+        if _df is None or _df.empty:
+            continue
+        _ds = _df.index.max().strftime("%Y-%m-%d")
+        if last_mkt is None or _ds > last_mkt:
+            last_mkt = _ds
+
     candidates: list[dict] = []
     for ticker, df in data.items():
         if ticker == "1321.T":
             continue
         if len(df) < BREAKOUT_DAYS + 5:
             continue
+        if last_mkt and df.index[-1].strftime("%Y-%m-%d") != last_mkt:
+            continue   # 最終足が古い＝売買停止/上場廃止手続き中
         name   = name_map.get(ticker, ticker)
         result = judge_signal_day(ticker, name, df)
         if result is None:

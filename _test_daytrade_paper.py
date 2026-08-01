@@ -468,6 +468,43 @@ def test_rank_within_go_and_raw_gain():
           picks[0]["ticker"] == "1111.T" and picks[1]["ticker"] == "9998.T")
 
 
+def test_fetch_failed_is_not_miokuri():
+    """2026-08-02: データ取得失敗は「見送り」でなく「判定不能」として配信し、日付ガードを
+    立てない（8:20保険便が再試行できるように）。従来は障害が正常な見送りに偽装されていた。"""
+    import io
+    import contextlib
+    import json as _json
+    stats = dp.cumulative_stats({"positions": [], "expired": []})
+
+    def _desc(fetch_failed):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            dp.send_report([], [], [], stats, date(2026, 8, 3), dry=True,
+                           fetch_failed=fetch_failed)
+        return _json.loads(buf.getvalue())["embeds"][0]["description"]
+
+    d_fail, d_ok = _desc(True), _desc(False)
+    check("fetch失敗は「判定不能」表示", "データ取得に失敗" in d_fail and "判定不能" in d_fail)
+    check("fetch失敗は「撃つ銘柄なし」を出さない", "撃つ銘柄なし" not in d_fail)
+    check("通常の0件は従来どおり「見送り」", "撃つ銘柄なし" in d_ok)
+
+    # run()レベル: fetch失敗→fetch_failed=Trueで配信・last_report_dateを立てない＝再試行可能
+    book = {"positions": [], "expired": [], "last_report_date": None}
+    sent = {}
+    orig = (dp._fetch_all, dp.send_report, dp.load_book, dp.save_book)
+    dp._fetch_all = lambda today: (_ for _ in ()).throw(RuntimeError("boom"))
+    dp.send_report = lambda *a, **k: sent.update(k)
+    dp.load_book = lambda: book
+    dp.save_book = lambda b: None
+    try:
+        dp.run(today=date(2026, 8, 3), signals=[], dry=False)
+    finally:
+        dp._fetch_all, dp.send_report, dp.load_book, dp.save_book = orig
+    check("run: fetch失敗はfetch_failed=Trueで配信", sent.get("fetch_failed") is True)
+    check("run: fetch失敗は日付ガードを立てない（保険便が再試行できる）",
+          book.get("last_report_date") is None)
+
+
 def test_borrow_grade():
     check("倍率<1→⭐売り長", "⭐売り長" in dp.borrow_grade(0.6))
     check("倍率>=10→◎売残少", "◎売残少" in dp.borrow_grade(30))
@@ -584,7 +621,8 @@ def run_all():
                test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion,
-               test_rank_within_go_and_raw_gain, test_borrow_grade,
+               test_rank_within_go_and_raw_gain, test_fetch_failed_is_not_miokuri,
+               test_borrow_grade,
                test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")

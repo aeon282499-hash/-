@@ -763,7 +763,8 @@ def _fmt_pf(pf):
 
 
 # ------------------------------------------------------------------ Discord
-def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None):
+def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None,
+                fetch_failed=False):
     date_str = today.strftime("%Y年%m月%d日")
     lines = []
     if picks is None:
@@ -785,7 +786,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines.append("② 約定したらすぐ「引成」で買戻しを予約")
         lines.append("③ 大引けで自動決済。持ち越し禁止・損切りなし")
         lines.append("```")
-        lines.append(f"**下の{n_shoot}銘柄を撃つ**（両方とも本命／合計 約{total/1e4:.0f}万円）")
+        _tag = "両方とも本命" if n_shoot >= 2 else "今日は1番のみ（2番は条件未達）"
+        lines.append(f"**下の{n_shoot}銘柄を撃つ**（{_tag}／合計 約{total/1e4:.0f}万円）")
         lines.append("")
 
         for i, p in enumerate(go_picks):
@@ -826,6 +828,13 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用に在庫があれば売れる**")
         lines.append("　※◎売残少=空売り楽／⭐売り長=最強だが要在庫確認・逆日歩")
         lines.append("　※実弾はSBI一日信用売り(手数料0)。未決済のまま大引けだと強制決済+手数料")
+        lines.append("")
+    elif fetch_failed:
+        # データ取得失敗＝「見送り」ではなく判定不能（2026-08-02）。従来はこの経路も
+        # 「撃つ銘柄なし（見送り）」と配信され、障害が正常な見送りに偽装されていた。
+        lines.append("**⚠️ データ取得に失敗＝今日は判定不能**")
+        lines.append("　※条件未達の見送りではない。次のトリガーで自動再試行する。"
+                     "続報が来なければJ-Quants障害の可能性")
         lines.append("")
     else:
         # GO無し（条件未達の候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）。
@@ -1162,11 +1171,13 @@ def run(today=None, signals=None, dry=False):
     book = load_book()
 
     # 決済＆1番選定に全銘柄を一括取得（失敗時は無取得で決済のみ試行）
+    fetch_failed = False
     try:
         data = _fetch_all(today)
     except Exception as e:
         print(f"[paper] データ取得失敗（{e}）→ 決済のみ試行")
         data = {}
+        fetch_failed = True
 
     just_closed = settle(book, data, today)
 
@@ -1201,9 +1212,13 @@ def run(today=None, signals=None, dry=False):
         save_book(book)
 
     # 毎営業日1回だけ配信（上位2まで。二重送信は日付ガード）
+    # データ取得失敗の日は「見送り」でなく障害として配信し、**日付ガードを立てない**
+    # （2026-08-02）。立てると次のトリガー(8:20保険便)が再試行できず、システム障害が
+    # 「今日は条件未達」に偽装される＝7/31にNO-GO理由表示を入れた目的の真逆になる。
     if book.get("last_report_date") != today_str:
-        send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned)
-        if not dry:
+        send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned,
+                    fetch_failed=fetch_failed)
+        if not dry and not fetch_failed:
             book["last_report_date"] = today_str
 
     # 週明け/月初に前週・前月のサマリーを1回だけ（2026-08-01 本人指摘で追加）
