@@ -201,6 +201,21 @@ class TestIntradayGate(unittest.TestCase):
         for t in ("16:00:00", "14:00:00", None):
             self.assertFalse(M.disc_time_pass(t, announced_today=True), t)
 
+    def test_1506_check_passes_expired_slot(self):
+        """v2.1: 15:06照会時点で、前回15:00型なのに未発表＝発表枠を過ぎた→引け後に回った公算で通す。"""
+        M.EXCLUDE_INTRADAY_DISC = True
+        self.assertTrue(M.disc_time_pass("15:00:00", now_min=15 * 60 + 6))
+        self.assertFalse(M.disc_time_pass("15:10:00", now_min=15 * 60 + 6),
+                         "15:07以降の駆け込み型はまだ枠が残っている→弾く")
+
+    def test_tdnet_down_degrades_to_v1(self):
+        """TDnet取得不能は初版の習性ルール（前回が場中なら全部弾く＝保守側）に退行する。"""
+        M.EXCLUDE_INTRADAY_DISC = True
+        self.assertFalse(M.disc_time_pass("14:00:00", tdnet_ok=False))
+        self.assertFalse(M.disc_time_pass("15:00:00", tdnet_ok=False))
+        self.assertTrue(M.disc_time_pass("16:00:00", tdnet_ok=False))
+        self.assertTrue(M.disc_time_pass(None, tdnet_ok=False))
+
     def test_no_history_is_fail_open(self):
         M.EXCLUDE_INTRADAY_DISC = True
         self.assertTrue(M.disc_time_pass(None))
@@ -307,7 +322,7 @@ class TestBuildCandidatesWiring(unittest.TestCase):
         times = {"1111.T": {"2026-05-01": "16:00:00"},    # 引け後       → 通す
                  "2222.T": {"2026-05-01": "15:00:00"},    # 引け直前型    → 落とす
                  "3333.T": {"2026-05-01": "14:00:00"}}    # 午前型・未発表 → 通す(v2の変更点)
-        out, d = self._run_with(times)
+        out, d = self._run_with(times, announced=set())
         got = {r["ticker"] for r in out}
         self.assertIn("1111.T", got, "前回16:00＝引け後は通るはず")
         self.assertIn("3333.T", got, "前回14:00でも当日未発表なら通るはず(第一工業製薬型)")
@@ -315,6 +330,17 @@ class TestBuildCandidatesWiring(unittest.TestCase):
         with open(os.path.join(d, M.VOL_REJECT_FILE), encoding="utf-8") as f:
             rows = next(iter(json.load(f).values()))
         self.assertEqual(rows[0]["why"], "preclose")
+
+    def test_tdnet_down_wiring_degrades(self):
+        """announced=None(TDnet取得不能)では習性ルールに退行し、場中型が全部落ちること。"""
+        M._EVOL = {"1111.T": 5.0, "2222.T": 5.0, "3333.T": 5.0}
+        M._EVOL_BUILT = "2026-07-31"
+        times = {"1111.T": {"2026-05-01": "16:00:00"},
+                 "2222.T": {"2026-05-01": "15:00:00"},
+                 "3333.T": {"2026-05-01": "14:00:00"}}
+        out, _ = self._run_with(times, announced=None)
+        self.assertEqual({r["ticker"] for r in out}, {"1111.T"},
+                         "退行時は前回が場中の2銘柄とも落ちるはず")
 
     def test_announced_gate_wired(self):
         """TDnetで当日発表済みの銘柄は前回時刻が引け後でも落ちること。"""

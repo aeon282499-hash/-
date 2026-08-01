@@ -79,6 +79,12 @@ EARNINGS_VOL_MIN = 2.0          # None にすると無効化
 # ── 場中発表の除外（2026-08-01・本人指示）──
 # 詳細と実測値は disc_time_pass() のdocstring。False で従来動作に戻る。
 EXCLUDE_INTRADAY_DISC = True
+# 15:00は場中発表の最大バケット（[15:00,15:30)帯の90.7%・15:05までで92.3%）。
+# 14:55照会では原理的に見えないため、TDnet照会と配信を15:06まで待つ
+# （本人了承「配信は15:05でもいいよ」2026-08-01）。
+# BT: 場中すり抜け9.3%→0.9% / 引け後の取りこぼし5.8%→0.6%（_bt_earnings_intraday_v2.py）
+# None で待たない（従来の即時配信に戻す）。
+TDNET_WAIT_MIN = 15 * 60 + 6
 EARNINGS_VOL_FILE = "earnings_vol.json"
 _EVOL: dict[str, float] | None = None
 _EVOL_BUILT: str = "?"
@@ -172,41 +178,46 @@ def last_disc_time(times: dict, ticker: str, before: str) -> str | None:
     return dm[max(prev)] if prev else None
 
 
-def disc_time_pass(last_time: str | None, announced_today: bool = False) -> bool:
-    """場中発表の銘柄を除外する（2026-08-01 本人指示→同日v2に改修）。
+def disc_time_pass(last_time: str | None, announced_today: bool = False,
+                   tdnet_ok: bool = True, now_min: int = 15 * 60) -> bool:
+    """場中発表の銘柄を除外する（2026-08-01 本人指示→同日v2→v2.1）。
 
     戦略の前提は「引け後に決算が出る → 大引けで仕込んで翌寄りのギャップを取る」。
     本人は実運用で「買う直前に、もう発表済みかを見る」で場中組を一切買っていない。
     初版(1eb2c62)は «前回の発表時刻が場中なら弾く» の習性代用だったが、これは
     前回14:00→今回16:00の第一工業製薬(7/29 gap+16.65%の爆益玉)を弾いてしまう。
 
-    v2 = 本人の実手順の機械化:
+    v2.1 = 本人の実手順の機械化（now_min=TDnetを照会した時刻・分）:
       ①当日すでに発表済み（TDnetで観測・announced_today）→ 弾く   ※事実ベース
-      ②未発表でも前回が[15:00,15:30)の引け直前型     → 弾く   ※15:00は場中の最大バケット。
-        14:55の判定後・15:30大引け前に出る公算が高く、事実確認が構造的に不可能な帯
-      ③それ以外（前回が寄り前〜14時台でも当日未発表） → 通す   ※発表枠を引け後に移した公算
+      ②未発表でも前回時刻が[now_min,15:30)＝習性の発表枠がこれから大引けまでに残っている
+        → 弾く（この帯だけは事実確認が構造的に不可能）
+      ③前回時刻がnow_minより前なのに当日未発表 → 通す（発表枠を引け後に移した公算。
+        15:00発表組の救済はTDNET_WAIT_MINで15:06まで待つことで①の事実判定に変わる）
 
     BT実測（_bt_earnings_intraday_v2.py・2022-26・時刻カバー100%・本番同一構成）:
-      場中すり抜け  初版11.3% → v2 9.3% / 引け後の取りこぼし 初版7.4% → v2 5.8%＝両面改善
-      枠シム損益は 初版+781万 vs v2+774万(4.5年)＝誤差。採用理由は数字でなく
-      「本人が実際に買える集合と配信を一致させる」こと。
-      残る漏れ＝前回が午前型なのに当日15:00-15:29に出す銘柄(年20件強)。これは14:55時点で
-      原理的に知り得ない。本人の「買う直前チェック」が最後の網（通知に前回時刻を表示済み）。
+      場中すり抜け  初版11.3% → v2@14:55 9.3% → v2.1@15:06 0.9%
+      引け後の取りこぼし 初版7.4% → 5.8% → 0.6%
+      ＝15:06まで待つだけで両面ほぼ消滅（[15:00,15:30)帯の90.7%が15:00ちょうど発表のため）。
+      残る漏れ＝当日15:07以降の駆け込み発表(帯の7.7%・年数件)。本人の直前チェックが最後の網。
 
-    履歴が無い銘柄は買う側に倒す（フェイルオープン）。TDnet取得失敗も①を素通し。
+    フェイルセーフ:
+      TDnet取得失敗(tdnet_ok=False)は初版の習性ルールに退行（前回が場中なら全部弾く＝保守側）。
+      時刻履歴が無い銘柄は買う側に倒す（フェイルオープン）。
     戻すときは EXCLUDE_INTRADAY_DISC=False の1行。
     """
     if not EXCLUDE_INTRADAY_DISC:
         return True
     if announced_today:
         return False
+    if not tdnet_ok:
+        return time_bucket(last_time) in ("引け後", "履歴なし")
     if not last_time:
         return True
     try:
         hm = int(last_time[:2]) * 60 + int(last_time[3:5])
     except Exception:
         return True
-    return not (15 * 60 <= hm < 15 * 60 + 30)
+    return not (now_min <= hm < 15 * 60 + 30)
 
 
 # ── TDnet適時開示のリアルタイム照会（2026-08-01・disc_time_pass v2の①） ──
@@ -228,6 +239,19 @@ def _parse_tdnet_page(html: str) -> list[tuple[str, str, str]]:
     for t, code, title in _TDNET_ROW_RE.findall(html):
         out.append((t.strip()[:5], code.strip()[:4], title.strip()))
     return out
+
+
+def wait_until_min(target_min: int, max_wait_min: int = 40) -> None:
+    """JSTでtarget_min(0:00からの分)まで待つ。15:00ちょうど発表組がTDnetに載るのを待つため。
+    すでに過ぎていれば即返る。極端に早い起動(max_wait超)も待たずに返る（ハング防止）。"""
+    import time as _time
+
+    while True:
+        now = datetime.now(JST)
+        remain = target_min - (now.hour * 60 + now.minute + now.second / 60)
+        if remain <= 0 or remain > max_wait_min:
+            return
+        _time.sleep(min(remain * 60 + 1, 30))
 
 
 def fetch_tdnet_announced(ymd: str, max_pages: int = 30) -> set[str] | None:
@@ -534,15 +558,19 @@ def settle_pendings(store: dict, today: date, all_data: dict,
 
 def build_candidates(codes: list[dict], all_data: dict,
                      times: dict | None = None,
-                     announced: set[str] | None = None) -> list[dict]:
-    """発表予定銘柄にルールA(価格帯は最大キャップ)を適用。現在値はyfinance(15分遅延≒14:40)。
+                     announced: set[str] | None = None,
+                     now_min: int = 15 * 60) -> list[dict]:
+    """発表予定銘柄にルールA(価格帯は最大キャップ)を適用。現在値はyfinance(15分遅延)。
 
-    announced = 当日すでに決算短信を出した4桁コード集合(TDnet)。None=取得不能（素通し）。
+    announced = 当日すでに決算短信を出した4桁コード集合(TDnet)。
+                None=取得不能→場中除外は初版の習性ルールに退行(保守側)。
+    now_min   = TDnetを照会した時刻(0:00からの分)。習性除外帯[now_min,15:30)の起点。
     """
     import yfinance as yf
     from screener import calc_rsi
 
     times = times or {}
+    tdnet_ok = announced is not None
     announced = announced or set()
     today_str = date.today().strftime("%Y-%m-%d")
     out: list[dict] = []
@@ -574,7 +602,8 @@ def build_candidates(codes: list[dict], all_data: dict,
             ok, evol = vol_pass(tk)
             lt = last_disc_time(times, tk, today_str)
             is_announced = x["code"] in announced
-            if not ok or not disc_time_pass(lt, announced_today=is_announced):
+            if not ok or not disc_time_pass(lt, announced_today=is_announced,
+                                            tdnet_ok=tdnet_ok, now_min=now_min):
                 # 弾いた銘柄は必ず残す。後から「弾かなければどうだったか」を検証するため。
                 why = "vol" if not ok else ("announced" if is_announced else "preclose")
                 rejected.append({"ticker": tk, "name": x["name"], "vol": evol,
@@ -888,10 +917,20 @@ def main() -> None:
     print(f"[earnings_hold] J-Quants {start}〜{end}: {len(all_data)}銘柄")
 
     # ── 3. 候補生成（yfinanceは1回だけ・価格帯カットは階層側） ──
+    # 15:00ちょうどの発表（場中の最大バケット）がTDnetに載るまで待ってから照会する。
+    # 重い前処理（JPX/J-Quants）は済んでいるので、ここから配信までは1〜2分。
+    if TDNET_WAIT_MIN and not dry:
+        wait_until_min(TDNET_WAIT_MIN)
+    chk = datetime.now(JST)
+    chk_min = chk.hour * 60 + chk.minute
     announced = fetch_tdnet_announced(today.strftime("%Y%m%d"))
-    if announced is not None:
-        print(f"[earnings_hold] TDnet: 本日ここまでに決算短信 {len(announced)}銘柄")
-    cands_all = build_candidates(todays, all_data, times, announced=announced)
+    if announced is None:
+        print(f"[earnings_hold] TDnet取得不能 → 習性ルール(前回場中は除外)に退行")
+    else:
+        print(f"[earnings_hold] TDnet({chk.strftime('%H:%M')}時点): "
+              f"本日ここまでに決算短信 {len(announced)}銘柄")
+    cands_all = build_candidates(todays, all_data, times,
+                                 announced=announced, now_min=chk_min)
     print(f"[earnings_hold] 全候補 {len(cands_all)}件（価格帯カット前）")
 
     # ── 4. 階層ループ: 決済記帳 → 当日シグナル → 配信 → 保存 ──
