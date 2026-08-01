@@ -507,13 +507,56 @@ def test_monthly_no_data_no_send():
     check("確定なしならマーカーを立てない", "last_monthly_report" not in b)
 
 
+def test_weekly_stats():
+    b = _book_for_monthly()
+    # 2026-07-02(木)と07-15(水)はW27とW29
+    check("週キー: 月曜始まり", dp.week_key(date(2026, 7, 2)) == "2026-W27")
+    check("週キー: 日曜は同じ週", dp.week_key(date(2026, 7, 5)) == "2026-W27")
+    check("週キー: 翌月曜で繰り上がる", dp.week_key(date(2026, 7, 6)) == "2026-W28")
+    mon, fri = dp.week_range("2026-W27")
+    check("週の範囲", mon == "2026-06-29" and fri == "2026-07-03")
+    s = dp.weekly_stats(b, "2026-W27")
+    check("週次: その週の2件だけ", s["n"] == 2 and s["yen"] == -20000)
+    check("週次: SKIPは別勘定", dp.weekly_stats(b, "2026-W30")["n"] == 0)
+    check("週次: 該当なしはn=0", dp.weekly_stats(b, "2026-W01")["n"] == 0)
+    check("週次: PF(円)とPF(%)", abs(s["pf"] - 10000 / 30000) < 1e-9
+          and abs(s["pf_pct"] - 2.0 / 1.0) < 1e-9)
+
+
+def test_weekly_send_guard():
+    b = _book_for_monthly()
+    sent = []
+    orig = dp.send_weekly
+    dp.send_weekly = lambda book, wk, dry=False: (sent.append(wk), True)[1]
+    try:
+        # 2026-08-03(月)はW32 → 前週はW31
+        dp.maybe_send_weekly(b, date(2026, 8, 3))
+        check("週明けに前週分を送る", sent == ["2026-W31"])
+        check("送信後にマーカー", b.get("last_weekly_report") == "2026-W31")
+        dp.maybe_send_weekly(b, date(2026, 8, 4))
+        check("同じ週は二度送らない", sent == ["2026-W31"])
+        dp.maybe_send_weekly(b, date(2026, 8, 11))
+        check("翌週になれば次を送る", sent == ["2026-W31", "2026-W32"])
+    finally:
+        dp.send_weekly = orig
+    check("prev_week: 年跨ぎ", dp.prev_week(date(2026, 1, 5)) == "2026-W01")
+
+
+def test_weekly_no_data_no_send():
+    b = {"positions": [], "expired": [], "last_report_date": None}
+    check("週次: 確定なしならFalse", dp.send_weekly(b, "2026-W31", dry=True) is False)
+    dp.maybe_send_weekly(b, date(2026, 8, 3), dry=True)
+    check("週次: 確定なしならマーカーを立てない", "last_weekly_report" not in b)
+
+
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion, test_borrow_grade,
-               test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send]:
+               test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
+               test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")

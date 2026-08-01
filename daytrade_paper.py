@@ -24,7 +24,7 @@ daytrade_paper.py — デイトレv2 紙トレ台帳（記帳・決済・通算�
 import os
 import sys
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import zoneinfo
 
 import jpholiday
@@ -965,6 +965,129 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
     return True
 
 
+def week_key(d) -> str:
+    """ISO週キー 'YYYY-Www'。月曜始まり。"""
+    y, w, _ = d.isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def prev_week(d) -> str:
+    return week_key(d - timedelta(days=7))
+
+
+def week_range(wk: str) -> tuple[str, str]:
+    """'YYYY-Www' → その週の月曜と金曜の日付文字列。"""
+    y, w = int(wk[:4]), int(wk[6:])
+    mon = date.fromisocalendar(y, w, 1)
+    return mon.strftime("%Y-%m-%d"), (mon + timedelta(days=4)).strftime("%Y-%m-%d")
+
+
+def weekly_stats(book: dict, wk: str) -> dict:
+    """ISO週 wk の確定分だけを集計する。月次と同じく exit_type=CLOSE のみ。"""
+    rows_all = [p for p in (book.get("positions") or [])
+                if p.get("status") == "closed" and p.get("pnl_yen") is not None
+                and p.get("signal_date")
+                and week_key(datetime.strptime(p["signal_date"], "%Y-%m-%d").date()) == wk]
+    rows = [p for p in rows_all if p.get("exit_type") == "CLOSE"]
+    n_skip = len(rows_all) - len(rows)
+    if not rows:
+        return {"wk": wk, "n": 0, "n_skip": n_skip}
+    yen = [float(p["pnl_yen"]) for p in rows]
+    pct = [float(p["pnl_pct"]) for p in rows if p.get("pnl_pct") is not None]
+    wins = [y for y in yen if y > 0]
+    loss = [y for y in yen if y < 0]
+    gp = sum(p for p in pct if p > 0)
+    gl = -sum(p for p in pct if p < 0)
+    by_day: dict[str, float] = {}
+    for p in rows:
+        by_day[p["signal_date"]] = by_day.get(p["signal_date"], 0.0) + float(p["pnl_yen"])
+    return {
+        "wk": wk, "n": len(rows), "yen": sum(yen), "n_skip": n_skip,
+        "win_n": len(wins), "win_rate": len(wins) / len(rows) * 100,
+        "avg_pct": (sum(pct) / len(pct)) if pct else float("nan"),
+        "pf": (sum(wins) / abs(sum(loss))) if loss else float("inf"),
+        "pf_pct": (gp / gl) if gl > 0 else (float("inf") if gp > 0 else 0.0),
+        "best": max(rows, key=lambda p: p["pnl_yen"]),
+        "worst": min(rows, key=lambda p: p["pnl_yen"]),
+        "by_day": by_day, "rows": rows,
+    }
+
+
+def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
+    """週次サマリーを1通だけ送る。確定が無ければ送らない。"""
+    s = weekly_stats(book, wk)
+    mon, fri = week_range(wk)
+    if not s["n"]:
+        print(f"[paper] {wk} の確定なし → 週次は無送信")
+        return False
+
+    L = [f"**{mon[5:].replace('-', '/')}〜{fri[5:].replace('-', '/')} の確定 {s['n']}件**", "```"]
+    L.append(f"損益      {s['yen']:>+12,.0f} 円")
+    L.append(f"勝率      {s['win_rate']:>11.1f} %   ({s['win_n']}勝{s['n']-s['win_n']}敗)")
+    L.append(f"平均      {s['avg_pct']:>+11.2f} %/件")
+    L.append(f"PF(円)    {_fmt_pf(s['pf']):>12}")
+    L.append(f"PF(%)     {_fmt_pf(s['pf_pct']):>12}")
+    L.append("```")
+    # 日別（撃たなかった日も «―» で見えるようにする＝稼働のハートビート）
+    L.append("**日別**")
+    day_lines = []
+    d0 = datetime.strptime(mon, "%Y-%m-%d").date()
+    for k in range(5):
+        d = d0 + timedelta(days=k)
+        ds = d.strftime("%Y-%m-%d")
+        lab = "月火水木金"[k]
+        if ds in s["by_day"]:
+            v = s["by_day"][ds]
+            day_lines.append(f"{lab} {ds[5:]}  {v:>+9,.0f}円")
+        else:
+            day_lines.append(f"{lab} {ds[5:]}  {'—':>10}"
+                             + ("（休場）" if not is_trading_day(d) else "（対象なし）"))
+    L.append("```\n" + "\n".join(day_lines) + "\n```")
+    if s.get("n_skip"):
+        L.append(f"※ 条件を満たさず見送った記録が別に{s['n_skip']}件（成績には含めない）")
+    b, w_ = s["best"], s["worst"]
+    L.append(f"🟢 最良 **{b['name']}**（{b['ticker'].replace('.T','')}）"
+             f" {b['pnl_pct']:+.2f}% / {b['pnl_yen']:+,.0f}円")
+    L.append(f"🔴 最悪 **{w_['name']}**（{w_['ticker'].replace('.T','')}）"
+             f" {w_['pnl_pct']:+.2f}% / {w_['pnl_yen']:+,.0f}円")
+    cum = cumulative_stats(book)["all"]
+    L.append("")
+    L.append(f"**通算**（紙・{cum['n']}件） 損益 **{cum['yen']:+,.0f}円** ／ PF {_fmt_pf(cum['pf'])}")
+
+    color = 0x43A047 if s["yen"] > 0 else (0xE53935 if s["yen"] < 0 else 0x757575)
+    payload = {"embeds": [{
+        "title": f"🗓️【デイトレ売り（フェード）｜週次サマリー】{wk}",
+        "description": "\n".join(L),
+        "color": color,
+        "footer": {"text": "紙の理論値。金曜の玉は月曜朝に確定するため、週明けの初回実行で前週分を送る。"},
+    }]}
+    if dry:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return True
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY")
+           or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
+    if not url:
+        print("[paper] webhook未設定 → 週次スキップ")
+        return False
+    import requests
+    r = requests.post(url, json=payload, timeout=15)
+    print(f"[paper] 週次サマリー Discord HTTP {r.status_code} ({wk})")
+    return True
+
+
+def maybe_send_weekly(book: dict, today, dry: bool = False) -> None:
+    """週が明けた最初の営業日に前週分を1回だけ送る。
+
+    金曜に撃った玉は «その日の終値» で決済するので、確定するのは翌営業日（＝月曜朝）の
+    実行時。だから金曜の実行時点では週が閉じておらず、週明けに送るのが正しい。
+    """
+    wk = prev_week(today)
+    if book.get("last_weekly_report") == wk:
+        return
+    if send_weekly(book, wk, dry=dry) and not dry:
+        book["last_weekly_report"] = wk
+
+
 def prev_month(d) -> str:
     first = d.replace(day=1)
     last_prev = first - timedelta(days=1)
@@ -1042,11 +1165,13 @@ def run(today=None, signals=None, dry=False):
         if not dry:
             book["last_report_date"] = today_str
 
-    # 月が変わったら前月の月次サマリーを1回だけ（2026-08-01 本人指摘で追加）
-    try:
-        maybe_send_monthly(book, today, dry=dry)
-    except Exception as e:
-        print(f"[paper] 月次サマリー失敗（本処理は継続）: {e}")
+    # 週明け/月初に前週・前月のサマリーを1回だけ（2026-08-01 本人指摘で追加）
+    # 週→月の順。どちらも失敗しても本処理は止めない。
+    for _fn, _lab in ((maybe_send_weekly, "週次"), (maybe_send_monthly, "月次")):
+        try:
+            _fn(book, today, dry=dry)
+        except Exception as e:
+            print(f"[paper] {_lab}サマリー失敗（本処理は継続）: {e}")
 
     if not dry:
         save_book(book)
@@ -1061,6 +1186,15 @@ def main():
     dry = "--dry" in sys.argv
     if "--test" in sys.argv:
         import _test_daytrade_paper  # noqa
+        return
+    # 週次サマリーだけ手で送る/確認する: --weekly 2026-W31
+    if "--weekly" in sys.argv:
+        i = sys.argv.index("--weekly")
+        wk = sys.argv[i + 1] if len(sys.argv) > i + 1 else prev_week(_today_jst_date())
+        book = load_book()
+        if send_weekly(book, wk, dry=dry) and not dry:
+            book["last_weekly_report"] = wk
+            save_book(book)
         return
     # 月次サマリーだけ手で送る/確認する: --monthly 2026-07
     if "--monthly" in sys.argv:
