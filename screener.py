@@ -91,6 +91,14 @@ RSI_WARMUP_CAL_DAYS = 120
 # None で無効化。スナップショット取得失敗時もフィルタ無効で通常配信（フェイルオープン）。
 MARGIN_DAYS_COVER_MAX = 0.8
 
+# 買残回転のプール段階の除外はこの緩い側で行う（2026-08-02・_bt_kiwami_axes2.py）。
+# 通常版（友達用3階層）は main.py の選定段階で従来どおり 0.8 を適用＝トレード完全不変。
+# 極み（本人実弾・3枠×100万）だけ 1.2 まで許可＝10年で +194万→+311万・PF1.13→1.21・
+# 勝ち年7→9/10・両期間改善・上位20玉除去でも+91万→+206万。閾値近傍は0.9〜2.0の全域で
+# 0.8超えの滑らかな山（頂点1.2）。増える玉(0.8〜1.2帯)は318件+89万/勝率55.7%。
+# 空売り残高回転(short_dc)の重ね掛けは全変種で悪化＝棄却（同スクリプト②）。
+MARGIN_DC_POOL_MAX = 1.2
+
 RSI_BUY_MAX    = 45     # RSIがこの値以下 → 買い候補（売られすぎ）
 DEV_BUY_MAX    = -1.5  # 乖離率がこの値(%)以下 → 買い候補（下がりすぎ）
 
@@ -1214,7 +1222,8 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
     today_str = _today_jst().strftime("%Y-%m-%d")   # JST基準（決算±3日窓の判定日）
 
     # ── 信用週末残高スナップショット（買残回転日数フィルタ用・失敗時はフィルタ無効）──
-    margin_snap = _fetch_margin_snapshot(token) if MARGIN_DAYS_COVER_MAX else None
+    margin_snap = (_fetch_margin_snapshot(token)
+                   if (MARGIN_DAYS_COVER_MAX or MARGIN_DC_POOL_MAX) else None)
 
     # ── 日経225データ取得（市場フィルター用）─────────
     nk_above_ma25 = None  # True=25MA以上, False=以下, None=取得不可
@@ -1263,11 +1272,13 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
             _dc = _margin_days_cover(ticker, df, margin_snap)
             if _is_near_earnings(ticker, today_str):
                 print(f"  [SKIP EARNINGS] {ticker} 決算日±3日内のため除外")
-            elif (MARGIN_DAYS_COVER_MAX is not None and _dc is not None
-                  and _dc > MARGIN_DAYS_COVER_MAX):
-                print(f"  [SKIP MARGIN] {ticker} 買残回転{_dc:.2f}日>{MARGIN_DAYS_COVER_MAX}日"
+            elif (MARGIN_DC_POOL_MAX is not None and _dc is not None
+                  and _dc > MARGIN_DC_POOL_MAX):
+                print(f"  [SKIP MARGIN] {ticker} 買残回転{_dc:.2f}日>{MARGIN_DC_POOL_MAX}日"
                       f"（しこり玉・10年BTで両期間ワースト帯）のため除外")
             else:
+                # 通常版(0.8)の適用は main.py の選定段階（days_cover を持たせて渡す）
+                result["days_cover"] = _dc
                 candidates.append(result)
                 print(f"  [BUY HIT] [{ticker}] {name} "
                       f"RSI={result['rsi']} deviation={result['deviation']:+.1f}% "

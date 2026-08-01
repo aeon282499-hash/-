@@ -145,9 +145,22 @@ def _prev_trading_row_date(df: pd.DataFrame, entry_date_str: str) -> str | None:
     return d.index[-1].strftime("%Y-%m-%d") if len(d) else None
 
 
+KIWAMI_SIG_FILE = "today_signals_kiwami.json"   # 買残回転1.2で選定した極み専用シグナル（2026-08-02）
+
+
 def record_signals(key: str, today: date, all_data: dict) -> int:
     """本番が今朝採用したBUYシグナルを影台帳に取り込む（同一(ticker,signal_date)は再登録しない）。"""
     sig_file = TIER_FILES[key][0]
+    # 極み(main)は買残回転1.2の専用ファイルを優先（2026-08-02・10年+194万→+311万の採用）。
+    # 当日分が無ければ従来の today_signals.json へフォールバック＝移行期・障害時も取りこぼさない。
+    if key == "main" and os.path.exists(KIWAMI_SIG_FILE):
+        try:
+            with open(KIWAMI_SIG_FILE, encoding="utf-8") as f:
+                _kp = json.load(f)
+            if _kp.get("date") == today.strftime("%Y-%m-%d"):
+                sig_file = KIWAMI_SIG_FILE
+        except Exception as e:
+            print(f"[shadow-main] 極みシグナル読込失敗({e}) → 通常版にフォールバック")
     if not os.path.exists(sig_file):
         return 0
     with open(sig_file, encoding="utf-8") as f:

@@ -172,6 +172,40 @@ except Exception as e:
 ok(S.atr_pct_at(d.head(5), "2026-04-05") is None, "データ不足なら None（→3.0%フォールバック）")
 
 print("\n" + "=" * 78)
+print("④ 極みシグナルファイルの優先とフォールバック（2026-08-02・買残回転1.2緩和）")
+print("=" * 78)
+_cwd = os.getcwd()
+with tempfile.TemporaryDirectory() as _td:
+    os.chdir(_td)
+    try:
+        _today = date(2026, 8, 3)
+        _hist = mkdf(flat(40, 100))
+        _ad = {"7777.T": _hist, "8888.T": _hist}
+        with open("today_signals.json", "w", encoding="utf-8") as f:
+            json.dump({"date": "2026-08-03", "signals": [
+                {"ticker": "7777.T", "name": "通常", "direction": "BUY",
+                 "prev_close": 100, "limit_price": 101}]}, f)
+        with open(S.KIWAMI_SIG_FILE, "w", encoding="utf-8") as f:
+            json.dump({"date": "2026-08-03", "signals": [
+                {"ticker": "8888.T", "name": "極み", "direction": "BUY",
+                 "prev_close": 100, "limit_price": 101, "days_cover": 1.1}]}, f)
+        _n = S.record_signals("main", _today, _ad)
+        _rows = S.load_ledger("main")
+        ok(_n == 1 and [r["ticker"] for r in _rows] == ["8888.T"],
+           "極みファイル(当日)があればそちらを読む＝買残0.8〜1.2帯が極みに届く")
+        os.remove(S.ledger_path("main"))
+        with open(S.KIWAMI_SIG_FILE, "w", encoding="utf-8") as f:
+            json.dump({"date": "2026-08-01", "signals": [
+                {"ticker": "8888.T", "name": "極み", "direction": "BUY",
+                 "prev_close": 100}]}, f)
+        _n = S.record_signals("main", _today, _ad)
+        _rows = S.load_ledger("main")
+        ok(_n == 1 and [r["ticker"] for r in _rows] == ["7777.T"],
+           "極みファイルが古い日付なら通常版today_signalsへフォールバック")
+    finally:
+        os.chdir(_cwd)
+
+print("\n" + "=" * 78)
 print(f"結果: {PASS} PASS / {FAIL} FAIL")
 print("=" * 78)
 raise SystemExit(1 if FAIL else 0)

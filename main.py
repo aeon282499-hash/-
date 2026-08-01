@@ -140,9 +140,15 @@ def _select_tier_signals(all_buy_candidates: list[dict],
                          tier: dict,
                          buy_positions: list[dict],
                          sell_positions: list[dict],
-                         max_signals: int) -> tuple[list[dict], list[dict]]:
+                         max_signals: int,
+                         dc_max: float | None = None) -> tuple[list[dict], list[dict]]:
     """階層の口座サイズで買える＆自分の保有中銘柄を除外し、BUY/SELLとも同時保有の
-    同一業種を SECTOR_CAP / SECTOR_CAP_SELL 件までに制限（超過は次点繰り上げ）したtop5を返す。"""
+    同一業種を SECTOR_CAP / SECTOR_CAP_SELL 件までに制限（超過は次点繰り上げ）したtop5を返す。
+
+    dc_max: 買残回転日数の上限（2026-08-02〜）。screenerのプール除外は緩い側
+    (MARGIN_DC_POOL_MAX=1.2)で行い、通常版（友達用3階層）はここで従来どおり0.8を適用
+    ＝通常版のトレードは完全不変。極みだけ1.2で選定する（10年+194万→+311万・PF1.13→1.21・
+    勝ち年7→9/10・両期間改善・根拠=_bt_kiwami_axes2.py）。days_cover欠損はフェイルオープン。"""
     size = tier["size"]
     buy_open = {p["ticker"] for p in buy_positions if p.get("status") in ("pending", "open")}
     sell_open = {p["ticker"] for p in sell_positions if p.get("status") in ("pending", "open")}
@@ -160,6 +166,9 @@ def _select_tier_signals(all_buy_candidates: list[dict],
             break
         if c.get("prev_close", 0) * 100 > size or c["ticker"] in buy_open:
             continue
+        _dcv = c.get("days_cover")
+        if dc_max is not None and _dcv is not None and _dcv > dc_max:
+            continue   # 買残回転がこの階層の上限超（通常版0.8/極み1.2）
         sec = _sector_of(c["ticker"])
         if sec_count.get(sec, 0) >= SECTOR_CAP:
             capped += 1
@@ -306,9 +315,11 @@ def main() -> None:
                 # 空なので送らない＝ゼロ行レポートのノイズ回避。初トレード後の月から出る）。
                 send_sell_monthly_report(sell_positions, today, tier=tier)
 
-            # 階層別シグナル選定
+            # 階層別シグナル選定（通常版は買残回転0.8を維持＝従来とトレード完全一致）
+            from screener import MARGIN_DAYS_COVER_MAX
             tier_signals, tier_sell_signals = _select_tier_signals(
                 all_buy, all_sell, tier, positions, sell_positions, MAX_SIGNALS,
+                dc_max=MARGIN_DAYS_COVER_MAX,
             )
             print(f"[main-{label}] サイズ{tier['size']//10000}万で買える: "
                   f"BUY {len(tier_signals)}件 / SELL {len(tier_sell_signals)}件")
@@ -346,6 +357,35 @@ def main() -> None:
                                  "prev_close": s.get("prev_close", 0)}
                                 for s in tier_sell_signals],
                 }, f, ensure_ascii=False, indent=2)
+
+            # ── 極み用シグナル（買残回転1.2で選定・2026-08-02）─────────────
+            # 通常版(0.8)より広い候補で同じ選定を行い、専用ファイルに書く。
+            # shadow_exit.record_signals がこれを優先して読む（無ければ従来の
+            # today_signals.json にフォールバック＝移行期も取りこぼさない）。
+            # 保有中除外/業種capの文脈は従来の極み入口(=大資金top5)と同じく大資金の
+            # positions を使う（極み台帳側の保有中除外・3枠は record_signals が行う）。
+            if key == "main":
+                try:
+                    from screener import MARGIN_DC_POOL_MAX
+                    kiwami_signals, _ = _select_tier_signals(
+                        all_buy, [], tier, positions, sell_positions, MAX_SIGNALS,
+                        dc_max=MARGIN_DC_POOL_MAX,
+                    )
+                    with open("today_signals_kiwami.json", "w", encoding="utf-8") as f:
+                        json.dump({
+                            "date":    today_str,
+                            "signals": [{"ticker": s["ticker"], "name": s["name"],
+                                         "direction": "BUY",
+                                         "prev_close": s.get("prev_close", 0),
+                                         "limit_price": yose_limit_price(s.get("prev_close", 0) or 0),
+                                         "days_cover": s.get("days_cover")}
+                                        for s in kiwami_signals],
+                        }, f, ensure_ascii=False, indent=2)
+                    print(f"[main-極み] 買残1.2選定: {len(kiwami_signals)}件 → today_signals_kiwami.json")
+                except Exception as _ke:
+                    # 極みファイル生成が死んでも友達向け配信(中・小)は止めない。
+                    # shadow_exit側は当日ファイルが無ければ通常版へフォールバックする。
+                    print(f"[main-極み] 生成失敗（通常版にフォールバック）: {_ke}")
 
             # 大資金分は後段（Twitter等）で使うので保持
             if key == "main":

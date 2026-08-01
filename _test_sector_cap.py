@@ -96,5 +96,21 @@ sells_unk = [cand(t) for t in ("9991.T", "9992.T", "9993.T", "9994.T")]
 _, gots = select([], sells=sells_unk)
 check("SELL業種不明は相互キャップなし", gots == ["9991.T", "9992.T", "9993.T", "9994.T"])
 
+# ⑪⑫⑬ 買残回転のdc_maxゲート（2026-08-02・通常版0.8/極み1.2の分岐）
+def cand_dc(tk, dc, pc=1000):
+    return {"ticker": tk, "prev_close": pc, "days_cover": dc}
+
+buys_dc = [cand_dc("9991.T", 0.5), cand_dc("9992.T", 1.0), cand_dc("9993.T", 1.5),
+           {"ticker": "9994.T", "prev_close": 1000}]   # 9994=days_cover欠損
+b08, _ = main._select_tier_signals(buys_dc, [], TIER, [], [], 5, dc_max=0.8)
+check("通常版(0.8): 0.8超は除外・欠損はフェイルオープン",
+      [c["ticker"] for c in b08] == ["9991.T", "9994.T"])
+b12, _ = main._select_tier_signals(buys_dc, [], TIER, [], [], 5, dc_max=1.2)
+check("極み(1.2): 0.8〜1.2帯を採用・1.2超は除外",
+      [c["ticker"] for c in b12] == ["9991.T", "9992.T", "9994.T"])
+bno, _ = main._select_tier_signals(buys_dc, [], TIER, [], [], 5, dc_max=None)
+check("dc_max=Noneは全部通す(後方互換)",
+      [c["ticker"] for c in bno] == ["9991.T", "9992.T", "9993.T", "9994.T"])
+
 print(f"\nRESULT: {PASS} PASS / {FAIL} FAIL")
 sys.exit(1 if FAIL else 0)

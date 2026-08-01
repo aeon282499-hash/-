@@ -192,7 +192,7 @@ jobs:
             positions.json positions_sell.json \
             positions_mid.json positions_sell_mid.json \
             positions_small.json positions_sell_small.json \
-            today_signals.json today_sell_signals.json \
+            today_signals.json today_sell_signals.json today_signals_kiwami.json \
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json \
