@@ -363,14 +363,19 @@ def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
     候補プール自体からは落とさない: 落とすと「今日は何も出ない」日に理由が見えなくなるため、
     上昇率トップは NO-GO の理由付きで必ず表示する（売り禁を除外せずバッジ表示にしたのと同じ方針）。
     """
-    # 小数1桁で出す: 5.96%を「+6%<6%」と表示すると条件が矛盾して見える（境界の玉は毎日出る）
+    # 小数1桁で出す: 5.96%を「+6%<6%」と表示すると条件が矛盾して見える（境界の玉は毎日出る）。
+    # ただし1桁に丸めても閾値と同値に見える玉（raw 6.98%→「+7.0%<7%」）は3桁まで出して
+    # 矛盾表示を避ける（判定自体はrawで正しい・2026-08-01）。
+    def _p(v, lim):
+        return 1 if round(v, 1) < lim else 3
     if gain < DAILY_PICK_GAIN_MIN:
-        return f"前日+{gain:.1f}%<{DAILY_PICK_GAIN_MIN:.0f}%＝薄い(コスト後トントン帯)"
+        return (f"前日+{gain:.{_p(gain, DAILY_PICK_GAIN_MIN)}f}%"
+                f"<{DAILY_PICK_GAIN_MIN:.0f}%＝薄い(コスト後トントン帯)")
     if FADE_ATR_MIN is not None and atr_pct < FADE_ATR_MIN:
-        return (f"ATR{atr_pct:.1f}%<{FADE_ATR_MIN:.0f}%＝普段動かない玉の急騰"
+        return (f"ATR{atr_pct:.{_p(atr_pct, FADE_ATR_MIN)}f}%<{FADE_ATR_MIN:.0f}%＝普段動かない玉の急騰"
                 "(本物の材料で翌日も買われる・10年勝率50.5%)")
     if FADE_DEV25_MIN is not None and dev25 < FADE_DEV25_MIN:
-        return (f"25MA乖離{dev25:.1f}%<{FADE_DEV25_MIN:.0f}%＝まだ伸びきっていない"
+        return (f"25MA乖離{dev25:.{_p(dev25, FADE_DEV25_MIN)}f}%<{FADE_DEV25_MIN:.0f}%＝まだ伸びきっていない"
                 "(戻す余地が小さい)")
     return None
 
@@ -378,14 +383,14 @@ def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None, alert_map: dict | None = None,
                     excluded_out: list | None = None) -> list[dict]:
-    """毎日『フェード上位N銘柄』を上昇率降順で返す（各GO/NO-GO判定付き・空なら[]）。
-    選定＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%)。
-    判定: 前日+12%以上(DAILY_PICK_GAIN_MIN) → GO（撃つ／紙）。それ未満は薄い → NO-GO（見送り）。
+    """毎日『フェード上位N銘柄』を乖離+ATRの順位平均で返す（各GO/NO-GO判定付き・空なら[]）。
+    候補＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) × 出来高6倍未満 × 代金3億以上。
+    GO判定: 前日+7%(DAILY_PICK_GAIN_MIN) × ATR5%以上 × 25MA乖離12%以上。未達はNO-GO（理由付きで後ろ）。
     売り禁(日証金申込停止)は**除外せず🚫バッジ表示**（2026-07-23本人指示「ハイカラで売れた」＝
     制度信用✕でもSBI一日信用HYPER/一般信用は自社在庫の別枠で売れることがある。jsf_stopフラグ付与・
     紙台帳にも記録し在庫依存分を後で分離分析できるようにする）。7/22の完全除外仕様は1日で廃止。
     注意喚起/増担保/日々公表も reg_note ⚠️注記のみ。excluded_out は旧互換で常に空。
-    10年検証: 張り付き除外+上位3で+12%が総額最良(+26.4M・11年全プラス)。"""
+    10年検証(2026-07-31監査後の公式値): 上位2本で 年+71.8万/勝率59.2%/PF1.50/勝ち11-11年。"""
     if not data:
         return []
     today_str = today.strftime("%Y-%m-%d")
@@ -494,6 +499,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             # 下限を通る ②同点が増えて「どちらを撃つか」が並び順で決まる玉が増える。
             "_dev_raw": dev,
             "_atr_raw": atr_pct,
+            "_gain_raw": gain,
         })
     if not cands:
         return []
@@ -506,21 +512,34 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     # J-Quantsが返す辞書順で「どちらを撃つか」が決まっていた。10年BTでは2位と3位が同点に
     # なる日が93日/1,350日(6.9%)あり、同点の決め方だけで10年の総額が±53.5万(7.5%)動く。
     # 恣意的でも再現可能な規則を置かないと、BTの数字と本番の挙動が構造的に一致しない。
-    _n = len(cands)
-    _rank_dev = {id(x): i for i, x in
-                 enumerate(sorted(cands, key=lambda z: (-z["_dev_raw"], z["ticker"])))}
-    _rank_atr = {id(x): i for i, x in
-                 enumerate(sorted(cands, key=lambda z: (-z["_atr_raw"], z["ticker"])))}
-    for x in cands:
-        x["pick_score"] = round((_rank_dev[id(x)] + _rank_atr[id(x)]) / 2 / max(_n, 1), 4)
-    # GO基準(上昇率≥DAILY_PICK_GAIN_MIN)を満たす玉を必ず先に並べ、その中を pick_score 順にする。
-    # BTは「上昇率≥閾値に絞ってから乖離+ATRで並べた上位1本」を撃つ想定なので、閾値未満を
+    # GO基準を満たす玉を必ず先に並べ、その中を pick_score 順にする。
+    # BTは「閾値で絞ってから乖離+ATRで並べた上位2本」を撃つ想定なので、閾値未満を
     # 混ぜて並べると画面の「1番」がBTの1番と食い違う（2026-07-28: 上昇率5.6%のインフォマートが
     # 乖離20.9%で5番に入り、GO対象のフリー(7番)/カバー(8番)より上に表示されていた）。
     # 閾値未満は候補として残すが必ず後ろ＝「1番＝撃つ玉」が常に成立する。
     # 2026-07-31: 後ろに回す条件を「上昇率」だけからATR%下限・乖離下限も含む3条件に拡張。
+    # 2026-08-01: 判定は _gain_raw（丸め前）で行う。da0ae89監査でATR/乖離はraw判定に直したのに
+    # 上昇率だけ round(gain,2) のまま残っていて、raw+6.998%が「+7.00%」に化けてGOになっていた
+    # （10年で2件・計-3.3万の実害を _audit_fade_rankpool.py で確認）。
     for x in cands:
-        x["_nogo"] = fade_nogo_reason(x["daily_gain"], x["_atr_raw"], x["_dev_raw"])
+        x["_nogo"] = fade_nogo_reason(x["_gain_raw"], x["_atr_raw"], x["_dev_raw"])
+
+    # 順位（乖離+ATRの順位平均）は **GO玉はGO玉の中だけ** で付ける（2026-08-01修正）。
+    # 従来は閾値未達のNO-GO玉まで含む全候補で順位を付けていたが、順位の平均は母集団に
+    # 依存するので、GOが3本以上ある日に「どの2本を撃つか」がBT（絞ってから順位付け）と
+    # 食い違っていた＝10年で42日/1,191日(3.5%)・_audit_fade_rankpool.py で実測。
+    # NO-GO玉は表示順のためNO-GO同士で順位を付けて後ろに並べる。
+    def _score_within(group: list) -> None:
+        gn = len(group)
+        rd = {id(x): i for i, x in
+              enumerate(sorted(group, key=lambda z: (-z["_dev_raw"], z["ticker"])))}
+        ra = {id(x): i for i, x in
+              enumerate(sorted(group, key=lambda z: (-z["_atr_raw"], z["ticker"])))}
+        for x in group:
+            x["pick_score"] = round((rd[id(x)] + ra[id(x)]) / 2 / max(gn, 1), 4)
+
+    _score_within([x for x in cands if x["_nogo"] is None])
+    _score_within([x for x in cands if x["_nogo"] is not None])
     # pick_score も4桁に丸めてあるので、最後は ticker で決着させる（同点を残さない）
     cands.sort(key=lambda x: (x["_nogo"] is not None, x["pick_score"], x["ticker"]))
     picks = cands[:max(1, n)]
@@ -548,7 +567,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             regs.append("📢日々公表(規制近接)")
         p["reg_note"] = "・".join(regs)
         reason = p.pop("_nogo", None)
-        p.pop("_dev_raw", None); p.pop("_atr_raw", None)   # 内部用（JSONに出さない）
+        p.pop("_dev_raw", None); p.pop("_atr_raw", None); p.pop("_gain_raw", None)   # 内部用（JSONに出さない）
         go = reason is None and sh["mark"] == "○"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
@@ -784,11 +803,11 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                              f"超えたら撃たない")
             lines.append("")
 
-        lines.append("　※**1番と2番の両方を撃つ**（2026-07-29修正）。10年BTで上位2本が最良＝"
-                     "年+43.3万→**+59.1万**・勝ち11/11年。2番単独でもPF1.13でプラス。"
-                     "3番以降はPF0.96で撃つと損なので出していない")
-        lines.append("　※2026-07-31から**ATR5%以上×25MA乖離12%以上**の玉だけ撃つ（勝率55→**60%**・"
-                     "PF1.22→**1.45**・年+59.1万→**+67.4万**）。そのぶん撃たない日が増える")
+        lines.append("　※**1番と2番の両方を撃つ**（どちらも本命）。10年BTで上位2本が最良・"
+                     "3番以降は期待値マイナスなので出していない")
+        lines.append("　※現行ルール=前日+7%×ATR5%以上×25MA乖離12%以上"
+                     "（10年: 勝率**59%**・PF**1.50**・年**+71.8万**・勝ち11/11年）。"
+                     "撃たない日が約5割ある設計")
         lines.append("　※在庫が無い/プレミアム料が上限超なら、その銘柄だけ見送る（もう片方は撃つ）")
         # 2026-07-31に株価下限(300円)を撤廃した。板と呼値は問題ない（板寄せ約定・出来高比0.03%）が、
         # 一日信用の売り在庫だけはBTで測れない唯一の未知なので、低位株の日だけ注意を促す。
@@ -1112,8 +1131,8 @@ _LAST_ISS = {}
 
 # ------------------------------------------------------------------ orchestration
 def run(today=None, signals=None, dry=False):
-    """main_day末尾から呼ぶ想定。毎営業日『フェード上位3』＋ライブBUYを紙で回す。
-    紙記帳するのは GO（前日+12%以上×貸借○×張り付き除外）の上位3と、ライブBUY発火のみ。
+    """main_day末尾から呼ぶ想定。毎営業日『フェード上位2』＋ライブBUYを紙で回す。
+    紙記帳するのは GO（前日+7%×ATR5%×乖離12%×貸借○×張り付き除外）の上位2と、ライブBUY発火のみ。
     signals未指定（単体実行）なら day_signals.json のBUYを読む。"""
     global _LAST_ISS
     if today is None:
@@ -1142,13 +1161,19 @@ def run(today=None, signals=None, dry=False):
 
     just_closed = settle(book, data, today)
 
-    tok = _jq_token() if data else None
+    try:
+        tok = _jq_token() if data else None
+    except Exception as e:
+        # トークン失敗→iss_map空→貸借○ゼロ＝シグナルゼロ日（フェイルクローズ・既存の設計通り）。
+        # ここで run() ごと死ぬと決済結果まで保存されないので、それだけは避ける（2026-08-01）。
+        print(f"[paper] J-Quantsトークン取得失敗（{e}）→ 付帯情報なしで続行")
+        tok = None
     _LAST_ISS = fetch_iss_map(tok) if data else {}
     ratio_map = fetch_ratio_map(tok) if data else {}
     alert_map = fetch_alert_map(tok) if data else {}
     banned: list = []   # 売り禁(日証金申込停止)で除外した銘柄（配信で可視化）
     picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map,
-                            alert_map=alert_map, excluded_out=banned)   # 上位3（各GO/NO-GO+借りやすさ）
+                            alert_map=alert_map, excluded_out=banned)   # 上位2（各GO/NO-GO+借りやすさ）
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
     # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）
@@ -1159,7 +1184,14 @@ def run(today=None, signals=None, dry=False):
     print(f"[paper] 決済{len(just_closed)}件 / 記帳{len(added)}件（買{len(buy_fires)}/GO売{len(go_picks)}）/ "
           f"通算執行{stats['all']['n']}件 PF{_fmt_pf(stats['all']['pf'])} 損益{stats['all']['yen']:+,}円")
 
-    # 毎営業日1回だけ配信（上位3まで。二重送信は日付ガード）
+    # 決済・記帳をこの時点で一度保存する（2026-08-01）。この先のDiscord送信が例外を出すと
+    # run() が死んで保存に届かず、翌日は dedup キー(ticker, signal_date)が変わるため
+    # **当日のGO記帳が永久に消える**。紙のforward実績はサイズ判断の土台なので先に確定させる。
+    # （main_day側は例外を握りつぶすので配信は無傷＝失われるのは紙の1日分、それを塞ぐ）
+    if not dry:
+        save_book(book)
+
+    # 毎営業日1回だけ配信（上位2まで。二重送信は日付ガード）
     if book.get("last_report_date") != today_str:
         send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned)
         if not dry:

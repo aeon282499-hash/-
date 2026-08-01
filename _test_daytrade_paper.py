@@ -411,7 +411,9 @@ def test_daily_top_fades():
 
     # ③閾値判定は丸める前の値で行う（ATR4.996%が表示丸めで5.00%に化けて通るのを防ぐ）
     check("丸め前の値でATR下限を判定", dp.fade_nogo_reason(20.0, 4.996, 30.0) is not None)
-    check("表示は丸めた値のまま", "ATR5.0%" in dp.fade_nogo_reason(20.0, 4.996, 30.0))
+    # 2026-08-01: 1桁丸めで閾値と同値に見える境界玉は3桁表示（「ATR5.0%<5%」の矛盾を避ける）
+    check("境界玉は3桁で矛盾表示を避ける", "ATR4.996%" in dp.fade_nogo_reason(20.0, 4.996, 30.0))
+    check("非境界は従来の1桁表示", "ATR3.4%" in dp.fade_nogo_reason(20.0, 3.44, 30.0))
 
     # 張り付き#1と非張り付き#2 → 非張り付きだけ残る
     mix = {"5555.T": _flat_then(30, sticky=True), "6666.T": _flat_then(18)}
@@ -437,6 +439,33 @@ def test_daily_top_fades():
     mix2 = {"5550.T": stale, "6666.T": _flat_then(18)}
     pf2 = dp.daily_top_fades(mix2, today, {"5550": "2", "6666": "2"})
     check("停止中(古い足+30%)は除外→直近足6666", len(pf2) == 1 and pf2[0]["ticker"] == "6666.T")
+
+
+def test_rank_within_go_and_raw_gain():
+    """2026-08-01監査の2バグ: ①GO判定にround(gain,2)を使い raw+6.998%が「+7.00%」に化けて
+    GOになっていた（ATR/乖離はda0ae89でraw判定に直したのにgainだけ直し漏れ・10年2件-3.3万）。
+    ②順位（乖離+ATRの順位平均）を閾値未達のNO-GO玉込みの全候補で付けていたため、GOが3本以上の
+    日に撃つ2本がBT（絞ってから順位）と食い違っていた（10年42日/1,191日・_audit_fade_rankpool.py）。"""
+    import screener
+    screener.fetch_tse_universe = lambda *a, **k: []
+    today = date(2026, 7, 15)
+
+    # ① base1429→1529 = raw+6.9979%。表示は+7.00%に丸まるが判定はraw＝NOGO
+    p = dp.daily_top_fades({"7770.T": _flat_then(6.9979, base=1429)}, today, {"7770": "2"})
+    check("raw+6.998%はNOGO（丸めでGOに化けない）", p[0]["verdict"] == "NOGO")
+    check("境界玉のgainは3桁表示で矛盾を避ける", "6.99" in p[0]["nogo_reason"])
+
+    # ② GO2本: A=9998(乖離30.8/ATR5.2) B=1111(乖離17.8/ATR7.9) ＋ NOGO玉X=5555(gain6%・
+    # 乖離21.5がAとBの間)。GO内だけで順位を付けると2本は同点→ticker昇順で1111が1番。
+    # 旧実装(全候補で順位)はXが乖離軸だけに割り込んで9998が1番になっていた（順位の入れ替わり）。
+    data = {"9998.T": _flat_then(8.0, rng_pct=3.0, predrift_pct=45.0),
+            "1111.T": _flat_then(8.0, rng_pct=4.5, predrift_pct=22.0),
+            "5555.T": _flat_then(6.0, rng_pct=1.2, predrift_pct=33.0)}
+    iss = {"9998": "2", "1111": "2", "5555": "2"}
+    picks = dp.daily_top_fades(data, today, iss, n=3)
+    check("GO2本+NOGO1本の構図", [q["verdict"] for q in picks] == ["GO", "GO", "NOGO"])
+    check("順位はGO玉の中だけで決める（NO-GO玉に影響されない）",
+          picks[0]["ticker"] == "1111.T" and picks[1]["ticker"] == "9998.T")
 
 
 def test_borrow_grade():
@@ -554,7 +583,8 @@ def run_all():
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
-               test_daily_top_fades, test_alert_map_exclusion, test_borrow_grade,
+               test_daily_top_fades, test_alert_map_exclusion,
+               test_rank_within_go_and_raw_gain, test_borrow_grade,
                test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")
