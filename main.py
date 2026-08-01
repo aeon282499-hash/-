@@ -80,6 +80,10 @@ def is_trading_day(d) -> bool:
         return False
     if jpholiday.is_holiday(d):
         return False
+    # 年末年始(12/31〜1/3)は東証休業（jpholidayは1/1のみ・2026-08-02統一）。
+    # next/prev_trading_day もこの関数経由なので、年跨ぎの期限計算も同時に直る。
+    if (d.month == 12 and d.day == 31) or (d.month == 1 and d.day <= 3):
+        return False
     return True
 
 

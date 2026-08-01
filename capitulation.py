@@ -201,6 +201,9 @@ def report_stats(closed: list[dict], size: int, threshold: int) -> dict:
 #  共通ヘルパー
 # ══════════════════════════════════════════════════════════════════
 def is_trading_day(d) -> bool:
+    # 年末年始(12/31〜1/3)は東証休業（jpholidayは1/1のみ・2026-08-02統一）
+    if (d.month == 12 and d.day == 31) or (d.month == 1 and d.day <= 3):
+        return False
     return d.weekday() < 5 and not jpholiday.is_holiday(d)
 
 

@@ -32,6 +32,9 @@ def _today_jst() -> date:
 
 def is_today_trading_day() -> bool:
     today = _today_jst()
+    # 年末年始(12/31〜1/3)は東証休業（jpholidayは1/1のみ・2026-08-02統一）
+    if (today.month == 12 and today.day == 31) or (today.month == 1 and today.day <= 3):
+        return False
     return today.weekday() < 5 and not jpholiday.is_holiday(today)
 
 

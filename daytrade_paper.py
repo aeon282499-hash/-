@@ -71,6 +71,10 @@ def _today_jst_date():
 
 
 def is_trading_day(d) -> bool:
+    # 年末年始(12/31〜1/3)は東証休業だが jpholiday は1/1しか知らない（大納会12/30・大発会1/4）。
+    # main_earnings_hold には最初から入っていた判定で、他の本番系だけ欠けていた（2026-08-02統一）。
+    if (d.month == 12 and d.day == 31) or (d.month == 1 and d.day <= 3):
+        return False
     return d.weekday() < 5 and not jpholiday.is_holiday(d)
 
 
@@ -715,7 +719,12 @@ def record(book: dict, signals: list[dict], data: dict, iss_map: dict, today) ->
             rec["daily_gain"] = s.get("daily_gain")
             rec["short"] = shortability(tk, iss_map)
             rec["jsf_stop"] = bool(s.get("jsf_stop"))   # 売り禁=ハイカラ在庫依存の紙。後で分離分析用
-            rec["rank"] = s.get("rank")                 # 1-3=本命/4-8=予備。帯別成績の分離分析用
+            rec["rank"] = s.get("rank")                 # 1-2=本命。帯別成績の分離分析用
+            # 選定2軸と補助指標も記帳する（2026-08-02）。どんな玉が実弾で滑る/建てられないかを
+            # 後で層別分析するため（jsf_stop・rankと同じ思想）。旧記帳には無いキー＝Noneは書かない。
+            for k in ("dev25", "atr_pct", "vol_ratio", "range_pct"):
+                if s.get(k) is not None:
+                    rec[k] = s.get(k)
         book["positions"].append(rec)
         added.append(rec)
 
