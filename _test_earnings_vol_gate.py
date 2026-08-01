@@ -183,11 +183,23 @@ class TestIntradayGate(unittest.TestCase):
         for t in ("15:30:00", "16:00:00", "17:00:00"):
             self.assertTrue(M.disc_time_pass(t), t)
 
-    def test_intraday_blocked(self):
-        """大引けは15:30（2024-11の東証延長）＝15:00発表も場中扱い。"""
+    def test_preclose_type_blocked(self):
+        """前回が[15:00,15:30)の引け直前型は、当日未発表でも弾く（事実確認が構造的に不可能な帯）。"""
         M.EXCLUDE_INTRADAY_DISC = True
-        for t in ("15:00:00", "15:29:00", "14:00:00", "11:30:00", "08:00:00"):
+        for t in ("15:00:00", "15:29:00"):
             self.assertFalse(M.disc_time_pass(t), t)
+
+    def test_daytime_type_passes_if_not_announced(self):
+        """v2の肝: 前回が寄り前〜14時台でも当日未発表なら通す（第一工業製薬 前回14:00→今回16:00 gap+16.65%）。"""
+        M.EXCLUDE_INTRADAY_DISC = True
+        for t in ("08:00:00", "11:30:00", "14:00:00", "14:59:00"):
+            self.assertTrue(M.disc_time_pass(t), t)
+
+    def test_announced_today_blocked(self):
+        """TDnetで当日発表済みが観測できたら前回時刻に関係なく弾く（事実ベース）。"""
+        M.EXCLUDE_INTRADAY_DISC = True
+        for t in ("16:00:00", "14:00:00", None):
+            self.assertFalse(M.disc_time_pass(t, announced_today=True), t)
 
     def test_no_history_is_fail_open(self):
         M.EXCLUDE_INTRADAY_DISC = True
@@ -199,6 +211,36 @@ class TestIntradayGate(unittest.TestCase):
         M.EXCLUDE_INTRADAY_DISC = False
         for t in ("14:00:00", None, "15:30:00"):
             self.assertTrue(M.disc_time_pass(t))
+            self.assertTrue(M.disc_time_pass(t, announced_today=True))
+
+
+class TestTdnetParse(unittest.TestCase):
+    """TDnet一覧HTMLのパース（構造は2026-08-01の実ページで確認済み）。"""
+
+    HTML = (
+        '<tr><td class="kjTime">13:00</td><td class="kjCode">61010</td>'
+        '<td class="kjName">ツガミ</td>'
+        '<td class="kjTitle"><a href="x.pdf">2027年3月期 第1四半期決算短信〔日本基準〕（連結）</a></td></tr>'
+        '<tr><td class="kjTime">13:10</td><td class="kjCode">99990</td>'
+        '<td class="kjName">別件社</td>'
+        '<td class="kjTitle"><a href="y.pdf">人事異動に関するお知らせ</a></td></tr>'
+        '<tr><td class="kjTime">14:00</td><td class="kjCode">464A0</td>'
+        '<td class="kjName">英字コード社</td>'
+        '<td class="kjTitle"><a href="z.pdf">2026年5月期 決算短信〔日本基準〕（非連結）</a></td></tr>'
+    )
+
+    def test_parse_rows(self):
+        rows = M._parse_tdnet_page(self.HTML)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0], ("13:00", "6101", rows[0][2]))
+        self.assertIn("決算短信", rows[0][2])
+
+    def test_tanshin_filter_and_alpha_code(self):
+        codes = {c for _t, c, title in M._parse_tdnet_page(self.HTML) if "決算短信" in title}
+        self.assertEqual(codes, {"6101", "464A"}, "決算短信だけ・英字コードも4桁で拾う")
+
+    def test_broken_html_returns_empty(self):
+        self.assertEqual(M._parse_tdnet_page("<html>構造が変わった</html>"), [])
 
 
 class TestBuildCandidatesWiring(unittest.TestCase):
@@ -242,12 +284,7 @@ class TestBuildCandidatesWiring(unittest.TestCase):
              mock.patch.object(M.os.path, "dirname", return_value=d):
             return M.build_candidates(codes, all_data, {}), d
 
-    def test_intraday_gate_wired(self):
-        """前回が場中発表の銘柄が build_candidates で落ちること。"""
-        M._EVOL = {"1111.T": 5.0, "2222.T": 5.0, "3333.T": 5.0}
-        M._EVOL_BUILT = "2026-07-31"
-        times = {"1111.T": {"2026-05-01": "16:00:00"},    # 引け後 → 通す
-                 "2222.T": {"2026-05-01": "14:00:00"}}    # 場中   → 落とす
+    def _run_with(self, times, announced=None):
         codes, all_data = self._fixture()
         import pandas as pd
 
@@ -261,14 +298,36 @@ class TestBuildCandidatesWiring(unittest.TestCase):
         d = tempfile.mkdtemp()
         with mock.patch.dict("sys.modules", {"yfinance": mock.Mock(Ticker=FakeTicker)}), \
              mock.patch.object(M.os.path, "dirname", return_value=d):
-            out = M.build_candidates(codes, all_data, times)
+            return M.build_candidates(codes, all_data, times, announced=announced), d
+
+    def test_intraday_gate_wired(self):
+        """引け直前型は落ち、午前型は当日未発表なら通ること（v2）。"""
+        M._EVOL = {"1111.T": 5.0, "2222.T": 5.0, "3333.T": 5.0}
+        M._EVOL_BUILT = "2026-07-31"
+        times = {"1111.T": {"2026-05-01": "16:00:00"},    # 引け後       → 通す
+                 "2222.T": {"2026-05-01": "15:00:00"},    # 引け直前型    → 落とす
+                 "3333.T": {"2026-05-01": "14:00:00"}}    # 午前型・未発表 → 通す(v2の変更点)
+        out, d = self._run_with(times)
         got = {r["ticker"] for r in out}
         self.assertIn("1111.T", got, "前回16:00＝引け後は通るはず")
-        self.assertIn("3333.T", got, "時刻履歴なしはフェイルオープンで通るはず")
-        self.assertNotIn("2222.T", got, "前回14:00＝場中は落ちるはず")
+        self.assertIn("3333.T", got, "前回14:00でも当日未発表なら通るはず(第一工業製薬型)")
+        self.assertNotIn("2222.T", got, "前回15:00＝引け直前型は落ちるはず")
         with open(os.path.join(d, M.VOL_REJECT_FILE), encoding="utf-8") as f:
             rows = next(iter(json.load(f).values()))
-        self.assertEqual(rows[0]["why"], "intraday")
+        self.assertEqual(rows[0]["why"], "preclose")
+
+    def test_announced_gate_wired(self):
+        """TDnetで当日発表済みの銘柄は前回時刻が引け後でも落ちること。"""
+        M._EVOL = {"1111.T": 5.0, "2222.T": 5.0, "3333.T": 5.0}
+        M._EVOL_BUILT = "2026-07-31"
+        times = {"1111.T": {"2026-05-01": "16:00:00"}}
+        out, d = self._run_with(times, announced={"1111"})
+        got = {r["ticker"] for r in out}
+        self.assertNotIn("1111.T", got, "当日発表済みは落ちるはず")
+        self.assertEqual(got, {"2222.T", "3333.T"})
+        with open(os.path.join(d, M.VOL_REJECT_FILE), encoding="utf-8") as f:
+            rows = next(iter(json.load(f).values()))
+        self.assertEqual(rows[0]["why"], "announced")
 
     def test_gate_filters_and_logs(self):
         M._EVOL = {"1111.T": 5.0, "2222.T": 1.0}      # 3333.Tは実績なし＝フェイルオープン
