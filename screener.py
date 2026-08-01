@@ -267,6 +267,8 @@ def _fetch_margin_snapshot(token: str) -> dict | None:
                 if rows:
                     snap = {}
                     for r in rows:
+                        if not is_common_stock_code(r.get("Code", "")):
+                            continue   # 優先株式の残高で本体を上書きしない
                         try:
                             snap[str(r.get("Code", ""))[:4]] = float(r.get("LongVol") or 0)
                         except (TypeError, ValueError):
@@ -314,6 +316,8 @@ def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
         for item in items:
             market = item.get("MktNm", "")
             if any(k in market for k in target_keywords):
+                if not is_common_stock_code(item.get("Code", "")):
+                    continue   # 優先株式は除外（名前も「〜（優先株式）」で本体を上書きしていた）
                 code   = str(item.get("Code", ""))[:4]
                 name   = item.get("CoName", code)
                 ticker = code + ".T"
@@ -323,6 +327,19 @@ def fetch_tse_universe(token: str | None = None) -> list[tuple[str, str]]:
     except Exception as e:
         print(f"[universe] J-Quants取得失敗: {e} → フォールバック使用")
         return _nikkei225_universe()
+
+
+def is_common_stock_code(code) -> bool:
+    """J-Quantsの5桁コードが普通株式か（5桁目='0'）。
+
+    上場優先株式は「本体4桁+5桁目≠0」（例: ソフトバンク94340に対し優先株式94345/94346）。
+    4桁に切り詰める箇所でこれを通さないと、優先株式の行が普通株式を後勝ちで上書きする。
+    2026-08-02監査での実害: 伊藤園/インフロニア/ゼンショー/日本航空/ANA/ソフトバンクの
+    6銘柄が**価格データごと優先株式に置換**され、さらに margin-interest の IssType も
+    優先株式の「1」で上書きされて5銘柄が貸借×扱い＝フェード候補から永久除外されていた。
+    """
+    c = str(code).strip()
+    return len(c) < 5 or c[4] == "0"
 
 
 def batch_download_jquants(
@@ -435,6 +452,8 @@ def batch_download_jquants(
 
     result: dict[str, pd.DataFrame] = {}
     for code, grp in df_all.groupby("Code"):
+        if not is_common_stock_code(code):
+            continue   # 優先株式(5桁目≠0)は普通株式と4桁衝突し後勝ちで上書きするため除外
         base   = str(code)[:4]
         ticker = base + ".T"
         sub    = grp[["Date", "Open", "High", "Low", "Close", "Volume"]].copy()

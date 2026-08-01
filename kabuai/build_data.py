@@ -105,6 +105,13 @@ def _jquants_get(path: str, token: str, params: dict | None = None) -> dict:
     return resp.json()
 
 
+def _is_common_stock(code) -> bool:
+    """J-Quants 5桁コードが普通株式か（5桁目='0'）。優先株式(94345等)は4桁切り詰めで
+    本体(94340)と衝突し後勝ちで上書きするため、切り詰め前に必ずこれで弾く（2026-08-02）。"""
+    c = str(code).strip()
+    return len(c) < 5 or c[4] == "0"
+
+
 def _segment_map_from_master(master: dict) -> dict:
     """master(/equities/master) から code(4桁) → 市場区分(プライム/スタンダード/グロース)。"""
     seg: dict = {}
@@ -148,6 +155,8 @@ def load_jquants_api() -> tuple[dict, dict, str]:
         for item in master.get("data", []):
             mkt = item.get("MktNm", "")
             if any(k in mkt for k in ("プライム", "スタンダード", "グロース")):
+                if not _is_common_stock(item.get("Code", "")):
+                    continue   # 優先株式（名前「〜（優先株式）」で本体を上書きしていた）
                 code = str(item.get("Code", ""))[:4]
                 name_map[code] = item.get("CoName", code)
         print(f"[jquants_api] master: {len(name_map)} 銘柄名ロード"
@@ -200,6 +209,8 @@ def load_jquants_api() -> tuple[dict, dict, str]:
     data: dict = {}
     n_drop_nonequity = 0
     for code, grp in df_all.groupby("Code"):
+        if not _is_common_stock(code):      # 優先株式が本体の価格データを上書きするのを防ぐ
+            continue
         c4 = str(code)[:4]
         if allowed and c4 not in allowed:   # master 取得失敗時(allowed空)はフィルタしない
             n_drop_nonequity += 1
@@ -733,7 +744,8 @@ def build() -> dict:
             _ds = (datetime.now(JST) - timedelta(days=_back)).strftime("%Y-%m-%d")
             _mi = _jquants_get("/markets/margin-interest", _tok, {"date": _ds}).get("data", [])
             if _mi:
-                _snap = {str(_r.get("Code", ""))[:4]: _r for _r in _mi}
+                _snap = {str(_r.get("Code", ""))[:4]: _r for _r in _mi
+                         if _is_common_stock(_r.get("Code", ""))}
                 print(f"[build] 🪶信用軽: 週次残高 {_ds} ({len(_snap)}銘柄)")
                 break
             time.sleep(0.2)

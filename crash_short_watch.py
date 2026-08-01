@@ -55,7 +55,9 @@ def _iss_map(token: str) -> dict:
                                  {"date": cur.strftime("%Y-%m-%d")})
                 rows = d.get("data", [])
                 if rows:
-                    return {str(r.get("Code", ""))[:4]: str(r.get("IssType", "")) for r in rows}
+                    from screener import is_common_stock_code
+                    return {str(r.get("Code", ""))[:4]: str(r.get("IssType", ""))
+                            for r in rows if is_common_stock_code(r.get("Code", ""))}
             cur -= timedelta(days=1)
     except Exception as e:
         print(f"[iss] 取得失敗: {e}")

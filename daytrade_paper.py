@@ -98,7 +98,7 @@ def save_book(book: dict) -> None:
 def fetch_iss_map(token) -> dict:
     """{code4: IssType} を直近公表週の /markets/margin-interest から。取れなければ {}。"""
     try:
-        from screener import _jquants_get
+        from screener import _jquants_get, is_common_stock_code
         cur = _today_jst_date() - timedelta(days=4)
         for _ in range(14):
             if cur.weekday() < 5:
@@ -106,7 +106,11 @@ def fetch_iss_map(token) -> dict:
                                  {"date": cur.strftime("%Y-%m-%d")})
                 rows = d.get("data", [])
                 if rows:
-                    return {str(r.get("Code", ""))[:4]: str(r.get("IssType", "")) for r in rows}
+                    # 優先株式(5桁目≠0)を除外（2026-08-02）: 94345/94346のIssType"1"が
+                    # 94340(ソフトバンク本体・貸借"2")を後勝ちで上書きし、本体が貸借×扱いで
+                    # 候補から永久除外されていた（JAL/ANA/ゼンショー/インフロニアも同様）
+                    return {str(r.get("Code", ""))[:4]: str(r.get("IssType", ""))
+                            for r in rows if is_common_stock_code(r.get("Code", ""))}
             cur -= timedelta(days=1)
     except Exception as e:
         print(f"[paper] iss_map取得失敗: {e}")
@@ -116,7 +120,7 @@ def fetch_iss_map(token) -> dict:
 def fetch_ratio_map(token) -> dict:
     """{code4: 信用倍率(買残/売残)} を直近週の margin-interest から。売残0は99(=借りやすい)。取れなければ {}。"""
     try:
-        from screener import _jquants_get
+        from screener import _jquants_get, is_common_stock_code
         cur = _today_jst_date() - timedelta(days=4)
         for _ in range(14):
             if cur.weekday() < 5:
@@ -125,6 +129,8 @@ def fetch_ratio_map(token) -> dict:
                 if rows:
                     out = {}
                     for r in rows:
+                        if not is_common_stock_code(r.get("Code", "")):
+                            continue   # 優先株式の残高で本体の信用倍率を上書きしない
                         sv = float(r.get("ShrtVol") or 0)
                         lv = float(r.get("LongVol") or 0)
                         out[str(r.get("Code", ""))[:4]] = (lv / sv) if sv > 0 else 99.0
@@ -142,7 +148,7 @@ def fetch_alert_map(token) -> dict:
     daily_pub=日々公表。夕方公表なので朝runの最新は前営業日分（当日朝指定の新規売り禁は
     拾えないことがある→配信の「最終確認はSBI」注記でカバー）。取れなければ {}＝フェイルオープン。"""
     try:
-        from screener import _jquants_get
+        from screener import _jquants_get, is_common_stock_code
         cur = _today_jst_date()
         for _ in range(8):
             if cur.weekday() < 5:
@@ -152,6 +158,8 @@ def fetch_alert_map(token) -> dict:
                 if rows:
                     out = {}
                     for r in rows:
+                        if not is_common_stock_code(r.get("Code", "")):
+                            continue   # 優先株式の規制情報で本体を上書きしない
                         pr = r.get("PubReason") or {}
                         out[str(r.get("Code", ""))[:4]] = {
                             "jsf_stop":  pr.get("RestrictedByJSF") == "1",

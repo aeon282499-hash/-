@@ -505,6 +505,19 @@ def test_fetch_failed_is_not_miokuri():
           book.get("last_report_date") is None)
 
 
+def test_common_stock_code_guard():
+    """2026-08-02: 優先株式(5桁目≠0)の4桁衝突ガード。94345/94346(ソフトバンク優先株式)が
+    94340(本体)を後勝ちで上書きし、伊藤園/インフロニア/ゼンショー/JAL/ANA/ソフトバンクの
+    6銘柄が価格データ・貸借区分とも優先株式のものに置換されていた（IssType=1上書きで
+    5銘柄が貸借×扱い＝フェード候補から永久除外）。"""
+    from screener import is_common_stock_code
+    check("普通株式(5桁目=0)は通る", is_common_stock_code("94340") and is_common_stock_code("72030"))
+    check("英字入り新コードも通る", is_common_stock_code("130A0"))
+    check("優先株式(5桁目≠0)は弾く", not is_common_stock_code("94345")
+          and not is_common_stock_code("94346") and not is_common_stock_code("25935"))
+    check("4桁以下は通る(旧互換)", is_common_stock_code("9434"))
+
+
 def test_borrow_grade():
     check("倍率<1→⭐売り長", "⭐売り長" in dp.borrow_grade(0.6))
     check("倍率>=10→◎売残少", "◎売残少" in dp.borrow_grade(30))
@@ -622,7 +635,7 @@ def run_all():
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion,
                test_rank_within_go_and_raw_gain, test_fetch_failed_is_not_miokuri,
-               test_borrow_grade,
+               test_common_stock_code_guard, test_borrow_grade,
                test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")
