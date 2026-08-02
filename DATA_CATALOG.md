@@ -15,6 +15,7 @@
 | `_iss_type_by_year.pkl` | 小 | 貸借区分の年別 | **欠年あり(2019/2024/2025)→使う時は必ず近傍年補完(iss_for)** |
 | `_intraday_cache_wide.pkl` / `_intraday_cache.pkl` | 97/13MB | yfinance分足(2026-05〜07) | yfinanceは60日しか遡れない＝実質再取得不可 |
 | `market_calendar.csv` | 60KB | 東証公式営業日 2016-08-02〜2027-12-31 | git管理。HolDiv: 1=営業日/0=休場/3=祝日取引日 |
+| `_short_positions_10y.pkl` / `_short_positions_fade.pkl` | 計約40MB | 空売り残高報告10年（決算907銘柄+フェード364銘柄・69万+18万報告・報告者別） | 2026-08-03取得。再取得は`fetch_short_positions.py <銘柄リスト> <出力>`（約30分/900銘柄） |
 
 ## 2. 再取得可能だが重い（スナップ済み・壊れたら作り直せる）
 
