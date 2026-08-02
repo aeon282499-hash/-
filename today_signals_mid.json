@@ -1,12 +1,12 @@
 {
-  "date": "2026-07-31",
+  "date": "2026-08-03",
   "signals": [
     {
-      "ticker": "4536.T",
-      "name": "参天製薬",
+      "ticker": "2229.T",
+      "name": "カルビー",
       "direction": "BUY",
-      "prev_close": 1936.5,
-      "limit_price": 1955
+      "prev_close": 2904.0,
+      "limit_price": 2933
     }
   ]
 }

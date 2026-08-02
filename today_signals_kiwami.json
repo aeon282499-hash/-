@@ -1,0 +1,13 @@
+{
+  "date": "2026-08-03",
+  "signals": [
+    {
+      "ticker": "2127.T",
+      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "direction": "BUY",
+      "prev_close": 637.6,
+      "limit_price": 643,
+      "days_cover": 1.1902202711988992
+    }
+  ]
+}
