@@ -816,8 +816,12 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                          + (f" ／ {p['borrow']}" if p.get("borrow") else ""))
             lines.append(f"　前日+{p['daily_gain']:.0f}% ・ 出来高{p.get('vol_ratio', 0):.0f}倍 ・ "
                          f"レンジ{p.get('range_pct', 0):.0f}%")
-            if i < n_shoot:
-                lines.append(f"　💰プレミアム料 〜{_cap_all:,}円→成行OK ／ "
+            # プレミアム料の損益分岐は「SBIが1株あたりプレミアム料を取る時」だけの話
+            # （主に🚫売り禁をハイカラで売る場合。通常の貸借○×制度信用はコスト実質ゼロ）。
+            # 2026-08-03 本人「わかりずらい・成売りでOKじゃなかった?」→毎日全銘柄に出すのを
+            # やめ、売り禁銘柄の行にだけ付ける。通常銘柄は手順①の成行のままで考えることなし。
+            if i < n_shoot and p.get("jsf_stop"):
+                lines.append(f"　💰ハイカラのプレミアム料が 総額〜{_cap_all:,}円→成行OK ／ "
                              f"〜{_cap_up:,}円→寄指¥{p['prev_close']:,.0f}以上に切替 ／ "
                              f"超えたら撃たない")
             lines.append("")
@@ -827,6 +831,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines.append("　※現行ルール=前日+7%×ATR5%以上×25MA乖離12%以上"
                      "（10年: 勝率**59%**・PF**1.50**・年**+71.8万**・勝ち11/11年）。"
                      "撃たない日が約5割ある設計")
+        lines.append("　※通常銘柄は①の成行だけでよい。SBIの発注画面に**1株あたりプレミアム料**が"
+                     "出た時だけ💰行の分岐を使う（出なければ考えることなし）")
         lines.append("　※在庫が無い/プレミアム料が上限超なら、その銘柄だけ見送る（もう片方は撃つ）")
         # 2026-07-31に株価下限(300円)を撤廃した。板と呼値は問題ない（板寄せ約定・出来高比0.03%）が、
         # 一日信用の売り在庫だけはBTで測れない唯一の未知なので、低位株の日だけ注意を促す。
