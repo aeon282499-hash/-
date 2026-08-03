@@ -1,12 +1,40 @@
 {
-  "date": "2026-08-03",
+  "date": "2026-08-04",
   "signals": [
     {
-      "ticker": "2229.T",
-      "name": "カルビー",
+      "ticker": "7981.T",
+      "name": "タカラスタンダード",
       "direction": "BUY",
-      "prev_close": 2904.0,
-      "limit_price": 2933
+      "prev_close": 2995.0,
+      "limit_price": 3020
+    },
+    {
+      "ticker": "3231.T",
+      "name": "野村不動産ホールディングス",
+      "direction": "BUY",
+      "prev_close": 900.0,
+      "limit_price": 909
+    },
+    {
+      "ticker": "2811.T",
+      "name": "カゴメ",
+      "direction": "BUY",
+      "prev_close": 2587.5,
+      "limit_price": 2613
+    },
+    {
+      "ticker": "7278.T",
+      "name": "エクセディ",
+      "direction": "BUY",
+      "prev_close": 5860.0,
+      "limit_price": 5910
+    },
+    {
+      "ticker": "5938.T",
+      "name": "ＬＩＸＩＬ",
+      "direction": "BUY",
+      "prev_close": 1719.0,
+      "limit_price": 1736
     }
   ]
 }

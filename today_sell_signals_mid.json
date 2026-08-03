@@ -1,4 +1,11 @@
 {
-  "date": "2026-08-03",
-  "signals": []
+  "date": "2026-08-04",
+  "signals": [
+    {
+      "ticker": "9507.T",
+      "name": "四国電力",
+      "direction": "SELL",
+      "prev_close": 1724.5
+    }
+  ]
 }
