@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-07-31",
+ "last_signal_date": "2026-08-03",
  "positions": [
   {
    "ticker": "6521.T",
@@ -217,9 +217,11 @@
    "shares": 200,
    "rsi": 33.1,
    "runup5": -11.3,
-   "status": "pending",
+   "status": "extended",
    "prev_close": 3584.0,
-   "note": "決済価格未取得(entry=3584.0, exit=None)・翌日再試行"
+   "entry": 3584.0,
+   "gap_pct": 19.53,
+   "ext_exit_date": "2026-08-06"
   },
   {
    "ticker": "1803.T",
@@ -284,8 +286,11 @@
    "shares": 200,
    "rsi": 33.1,
    "runup5": -13.5,
-   "status": "pending",
-   "prev_close": 3442.0
+   "status": "extended",
+   "prev_close": 3442.0,
+   "entry": 3442.0,
+   "gap_pct": 10.17,
+   "ext_exit_date": "2026-08-07"
   },
   {
    "ticker": "5214.T",
@@ -296,8 +301,14 @@
    "shares": 100,
    "rsi": 35.4,
    "runup5": -3.0,
-   "status": "pending",
-   "prev_close": 5323.0
+   "status": "closed",
+   "prev_close": 5323.0,
+   "entry": 5323.0,
+   "exit_date": "2026-08-03",
+   "exit": 4433.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -16.72,
+   "pnl_yen": -89000
   },
   {
    "ticker": "5332.T",
@@ -308,8 +319,14 @@
    "shares": 100,
    "rsi": 35.5,
    "runup5": -5.5,
-   "status": "pending",
-   "prev_close": 7010.0
+   "status": "closed",
+   "prev_close": 7010.0,
+   "entry": 7010.0,
+   "exit_date": "2026-08-03",
+   "exit": 6300.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -10.13,
+   "pnl_yen": -71000
   },
   {
    "ticker": "5802.T",
@@ -320,8 +337,25 @@
    "shares": 400,
    "rsi": 42.1,
    "runup5": -6.7,
-   "status": "pending",
-   "prev_close": 2184.0
+   "status": "closed",
+   "prev_close": 2184.0,
+   "entry": 2184.0,
+   "exit_date": "2026-08-03",
+   "exit": 2006.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -8.13,
+   "pnl_yen": -71000
+  },
+  {
+   "ticker": "7173.T",
+   "name": "東京きらぼしフィナンシャルグループ",
+   "type": "第１四半期",
+   "date": "2026-08-03",
+   "signal_price": 1694.0,
+   "shares": 200,
+   "rsi": 48.2,
+   "runup5": -6.6,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-03"

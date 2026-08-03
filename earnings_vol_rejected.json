@@ -77,5 +77,84 @@
    "why": "vol",
    "note": "CI実行ログから復元（当時ログ未コミット）"
   }
+ ],
+ "2026-08-03": [
+  {
+   "ticker": "4151.T",
+   "name": "協和キリン",
+   "vol": 1.97,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 40.2,
+   "runup5": -5.4,
+   "price": 2516.0
+  },
+  {
+   "ticker": "6366.T",
+   "name": "千代田化工建設",
+   "vol": 1.39,
+   "why": "vol",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 44.0,
+   "runup5": -10.5,
+   "price": 650.0
+  },
+  {
+   "ticker": "7003.T",
+   "name": "三井Ｅ＆Ｓ",
+   "vol": 4.18,
+   "why": "announced",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 50.3,
+   "runup5": -9.8,
+   "price": 4618.0
+  },
+  {
+   "ticker": "7189.T",
+   "name": "西日本フィナンシャルホールディングス",
+   "vol": 1.75,
+   "why": "vol",
+   "last_time": "16:30",
+   "bucket": "引け後",
+   "rsi": 48.0,
+   "runup5": -6.3,
+   "price": 4245.0
+  },
+  {
+   "ticker": "8306.T",
+   "name": "三菱ＵＦＪフィナンシャル・グループ",
+   "vol": 0.97,
+   "why": "vol",
+   "last_time": "16:15",
+   "bucket": "引け後",
+   "rsi": 52.8,
+   "runup5": -6.3,
+   "price": 3561.0
+  },
+  {
+   "ticker": "8334.T",
+   "name": "群馬銀行",
+   "vol": 1.42,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 54.7,
+   "runup5": -4.3,
+   "price": 2543.0
+  },
+  {
+   "ticker": "8439.T",
+   "name": "東京センチュリー",
+   "vol": 1.35,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 42.7,
+   "runup5": -6.7,
+   "price": 2525.0
+  }
  ]
 }
