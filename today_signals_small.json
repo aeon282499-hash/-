@@ -1,33 +1,12 @@
 {
-  "date": "2026-08-04",
+  "date": "2026-08-05",
   "signals": [
     {
-      "ticker": "7981.T",
-      "name": "タカラスタンダード",
+      "ticker": "9301.T",
+      "name": "三菱倉庫",
       "direction": "BUY",
-      "prev_close": 2995.0,
-      "limit_price": 3020
-    },
-    {
-      "ticker": "3231.T",
-      "name": "野村不動産ホールディングス",
-      "direction": "BUY",
-      "prev_close": 900.0,
-      "limit_price": 909
-    },
-    {
-      "ticker": "2811.T",
-      "name": "カゴメ",
-      "direction": "BUY",
-      "prev_close": 2587.5,
-      "limit_price": 2613
-    },
-    {
-      "ticker": "5938.T",
-      "name": "ＬＩＸＩＬ",
-      "direction": "BUY",
-      "prev_close": 1719.0,
-      "limit_price": 1736
+      "prev_close": 1478.0,
+      "limit_price": 1492
     }
   ]
 }

@@ -328,10 +328,54 @@
       "pnl_pct": -4.858,
       "pnl_yen": -14500,
       "win": false
+    },
+    {
+      "ticker": "4424.T",
+      "name": "Ａｍａｚｉａ",
+      "direction": "SELL",
+      "signal_date": "2026-08-05",
+      "basis_date": "2026-08-04",
+      "prev_close": 403.0,
+      "limit_price": 403.0,
+      "status": "pending",
+      "daily_gain": 7.18,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "dev25": 20.6,
+      "atr_pct": 16.24,
+      "vol_ratio": 0.5,
+      "range_pct": 10.2
+    },
+    {
+      "ticker": "6993.T",
+      "name": "大黒屋ホールディングス",
+      "direction": "SELL",
+      "signal_date": "2026-08-05",
+      "basis_date": "2026-08-04",
+      "prev_close": 102.0,
+      "limit_price": 102.0,
+      "status": "pending",
+      "daily_gain": 7.37,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 2,
+      "dev25": 17.8,
+      "atr_pct": 7.0,
+      "vol_ratio": 1.2,
+      "range_pct": 7.8
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-04",
+  "last_report_date": "2026-08-05",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W31"
 }

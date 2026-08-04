@@ -622,11 +622,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 1900.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -3.0,
+    "exit_type": "STOP",
+    "exit_date": "2026-08-04"
   },
   {
     "signal_date": "2026-08-04",
@@ -638,12 +638,12 @@
     "atr_pct": 2.798,
     "stop_pct": 3.0,
     "live_stop": 3.0,
-    "entry_open": null,
-    "status": "pending",
+    "entry_open": 3045.0,
+    "status": "expired",
     "hold_days": 0,
     "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "NOFILL",
+    "exit_date": "2026-08-04"
   },
   {
     "signal_date": "2026-08-04",
@@ -653,6 +653,23 @@
     "prev_close": 900.0,
     "limit_price": 909,
     "atr_pct": 2.298,
+    "stop_pct": 3.0,
+    "live_stop": 3.0,
+    "entry_open": 906.0,
+    "status": "open",
+    "hold_days": 1,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-08-05",
+    "entry_date": "2026-08-05",
+    "ticker": "9301.T",
+    "name": "三菱倉庫",
+    "prev_close": 1478.0,
+    "limit_price": 1492,
+    "atr_pct": 2.909,
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": null,

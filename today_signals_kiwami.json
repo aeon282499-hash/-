@@ -1,13 +1,31 @@
 {
-  "date": "2026-08-04",
+  "date": "2026-08-05",
   "signals": [
     {
-      "ticker": "2127.T",
-      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "ticker": "7988.T",
+      "name": "ニフコ",
       "direction": "BUY",
-      "prev_close": 639.3,
-      "limit_price": 645,
-      "days_cover": 1.1264898919579782
+      "prev_close": 4936.0,
+      "limit_price": 4985,
+      "days_cover": 0.20232505156921965,
+      "rsi": 44.85,
+      "deviation": -3.09,
+      "vol_ratio": 1.79,
+      "range_ratio": 1.57,
+      "turnover": 2573274600.0
+    },
+    {
+      "ticker": "9301.T",
+      "name": "三菱倉庫",
+      "direction": "BUY",
+      "prev_close": 1478.0,
+      "limit_price": 1492,
+      "days_cover": 0.16759739458001,
+      "rsi": 34.45,
+      "deviation": -6.69,
+      "vol_ratio": 3.63,
+      "range_ratio": 1.92,
+      "turnover": 4773690000.0
     }
   ]
 }
