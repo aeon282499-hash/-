@@ -618,6 +618,10 @@ def send_discord(today: date) -> bool:
     rows_main = load_ledger("main")
     recorded = {r["ticker"] for r in rows_main if r.get("signal_date") == today_str}
     n_open = sum(1 for r in rows_main if r.get("status") in ("pending", "open"))
+    # 昨日以前から保有中の銘柄が今日また候補に入った場合＝再エントリー不可（📌表示）。
+    # ⚪(枠外・小玉で建ててよい)と混ざると二重建てを誘発するので分ける（2026-08-04）。
+    holding = {r["ticker"] for r in rows_main
+               if r.get("status") in ("pending", "open") and r.get("signal_date") != today_str}
     if not sigs:      # フォールバック: ファイル無し/古い日付なら台帳の当日分だけでも出す
         sigs = [{"ticker": r["ticker"], "name": r.get("name", r["ticker"]),
                  "prev_close": r.get("prev_close", 0), "limit_price": r.get("limit_price")}
@@ -636,15 +640,17 @@ def send_discord(today: date) -> bool:
             f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
             f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_str}**",
             f"📦 枠 {min(n_open, MAX_SLOTS)}/{MAX_SLOTS} 使用中"
-            + (f"（🟢=枠内・台帳が答え合わせ ／ ⚪=**枠外**・建てるなら小玉で自己管理）"
-               if len(sigs) > len(recorded) else ""),
+            + (f"（🟢=枠内・台帳が答え合わせ ／ ⚪=**枠外**・建てるなら小玉で自己管理"
+               + (" ／ 📌=保有中・再エントリー不可" if any(s["ticker"] in holding for s in sigs) else "")
+               + "）" if len(sigs) > len(recorded) else ""),
             "─" * 24,
         ]
         for i, s in enumerate(sigs, 1):
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
             lp = s.get("limit_price") or 0
-            mark = "🟢" if s["ticker"] in recorded else "⚪"
+            mark = ("🟢" if s["ticker"] in recorded
+                    else "📌" if s["ticker"] in holding else "⚪")
             if pc > 0:
                 shares = max(100, int(size / pc / 100) * 100)
                 head = (f"{mark} **#{i} {s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
