@@ -52,6 +52,9 @@ jobs:
           DISCORD_WEBHOOK_GAPFADE_URL: ${{ secrets.DISCORD_WEBHOOK_GAPFADE_URL }}
           DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
           DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
+          # 貸借区分の取得に必要（2026-08-04・_iss_type_by_year.pklはgit外でCIに無い＝
+          # これが無いと全銘柄が貸借×扱いになり毎日「該当なし」に偽装される実バグがあった）
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python -X utf8 gapfade.py
       - name: 台帳を保存
         run: |

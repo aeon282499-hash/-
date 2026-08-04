@@ -100,9 +100,44 @@ def timing_state(now_hm: str | None = None) -> str:
 
 
 def _load_iss() -> dict:
+    """貸借区分 {code4: IssType}。①J-Quants直（CIで動く・鮮度も最良）②ローカルpklフォールバック。
+
+    【2026-08-04 バグ修正】旧実装はローカルpklだけを読んでいたが、pklは.gitignoreの*.pkl
+    ルールでCIに存在しない＝本番は毎朝空dictになり、貸借判定で全銘柄が弾かれて
+    **稼働開始(7/27)から8営業日ずっと「該当なし」に偽装されていた**（BT発火率は3.8本/日）。
+    どちらも失敗した日は {} を返し、呼び出し側が「判定不能」として配信する（該当なしと区別）。"""
+    key = (os.getenv("JQUANTS_API_KEY") or "").strip()
+    if key:
+        try:
+            import requests
+            d0 = datetime.now(JST).date() - timedelta(days=4)   # 週次公表ラグの安全側
+            for _ in range(14):
+                if d0.weekday() < 5:
+                    r = requests.get("https://api.jquants.com/v2/markets/margin-interest",
+                                     headers={"x-api-key": key},
+                                     params={"date": d0.strftime("%Y-%m-%d")},
+                                     timeout=(10, 50))
+                    if r.status_code == 200:
+                        rows = r.json().get("data", [])
+                        if rows:
+                            out = {}
+                            for x in rows:
+                                c = str(x.get("Code", "")).strip()
+                                if len(c) >= 5 and c[4] != "0":
+                                    continue    # 優先株(94345等)の4桁衝突ガード（7a64848と同じ）
+                                out[c[:4]] = str(x.get("IssType", ""))
+                            print(f"[iss] J-Quants {d0} 断面 {len(out)}銘柄")
+                            return out
+                    time.sleep(1.2)
+                d0 -= timedelta(days=1)
+            print("[iss] J-Quants 14日遡っても空")
+        except Exception as e:
+            print(f"[iss] API取得失敗: {e}")
     try:
         d = pickle.load(open("_iss_type_by_year.pkl", "rb"))
-        return d[sorted(d)[-1]]
+        m = d[sorted(d)[-1]]
+        print(f"[iss] ローカルpklフォールバック {len(m)}銘柄")
+        return m
     except Exception:
         return {}
 
@@ -231,9 +266,10 @@ def mark_sent(day: str) -> None:
 
 
 def notify(day: str, cand: list[dict], stats: str, dry: bool,
-           state: str = "ok", now_hm: str | None = None) -> bool:
+           state: str = "ok", now_hm: str | None = None, no_iss: bool = False) -> bool:
     """Discordへ配信。実際に送信できたら True（マーカーを書く条件）。
-    state='late' のときは「撃て」と言わず、遅延で見送りになった事実だけを送る。"""
+    state='late' のときは「撃て」と言わず、遅延で見送りになった事実だけを送る。
+    no_iss=True は貸借区分が取れなかった日＝「該当なし」でなく「判定不能」を明示する。"""
     # 専用チャンネル（2026-07-26 本人指定）。未設定なら🔻フェードと同じDAY chへフォールバック。
     hook = (os.getenv("DISCORD_WEBHOOK_GAPFADE_URL")
             or os.getenv("DISCORD_WEBHOOK_DAY_URL")
@@ -251,6 +287,11 @@ def notify(day: str, cand: list[dict], stats: str, dry: bool,
             body = head + "本日該当していた銘柄（記録用・撃たない）:\n" + ref
         else:
             body = head + f"なお本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なしでした。"
+    elif no_iss:
+        # 貸借区分が取れない＝候補ゼロはシステム障害であって相場の「該当なし」ではない。
+        # マーカーを立てないので後続の保険トリガーが自動で再試行する。
+        body = ("⚠️ **貸借区分が取得できず判定不能**（該当なしではありません）。\n"
+                "次のトリガーで自動再試行します。続くようならJ-Quants障害の可能性。")
     elif not cand:
         body = f"本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なし。**撃つ日ではありません。**"
     else:
@@ -312,20 +353,21 @@ if __name__ == "__main__":
     store = fetch()
     frames = daily_frames(store)
     iss = _load_iss()
+    no_iss = not iss          # 貸借区分が取れない＝候補判定不能（該当なしと区別する）
     today = datetime.now(JST).strftime("%Y-%m-%d")
 
     # 答え合わせ・台帳更新は毎回やる（冪等）。配信だけ1日1回に絞る。
     n = settle(frames, led)
     print(f"[settle] {n}件を確定")
 
-    cand = candidates(frames, today, iss)
+    cand = [] if no_iss else candidates(frames, today, iss)
     seen = {(r["date"], r["ticker"]) for r in led}
     for c in cand:
         if (today, c["ticker"]) not in seen:
             led.append({"date": today, **c, "entry_px": None, "exit_px": None, "pnl": None, "yen": None})
     led.sort(key=lambda r: (r["date"], -r["gap"]))
     json.dump(led, open(LEDGER, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print(f"[cand] {today} の候補 {len(cand)}件 / 台帳{len(led)}件")
+    print(f"[cand] {today} の候補 {len(cand)}件 / 台帳{len(led)}件" + ("（貸借判定不能）" if no_iss else ""))
 
     if already_sent(today) and not dry:
         print(f"[notify] 本日({today})は配信済み → スキップ（多重トリガーの2本目）")
@@ -333,5 +375,6 @@ if __name__ == "__main__":
         if state == "late":
             print(f"[guard] {_now_hm()} JST はエントリー({ENTRY_LABEL})を過ぎている"
                   f" → 「撃て」ではなく遅延通知として配信する")
-        if notify(today, cand, report(led), dry, state=state):
+        # no_iss の日はマーカーを立てない＝後続の保険トリガーが自動で再試行する
+        if notify(today, cand, report(led), dry, state=state, no_iss=no_iss) and not no_iss:
             mark_sent(today)
