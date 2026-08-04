@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-03",
+ "last_signal_date": "2026-08-04",
  "positions": [
   {
    "ticker": "6521.T",
@@ -355,8 +355,36 @@
    "shares": 200,
    "rsi": 48.2,
    "runup5": -6.6,
-   "status": "pending",
-   "prev_close": NaN
+   "status": "closed",
+   "prev_close": NaN,
+   "entry": 1694.0,
+   "exit_date": "2026-08-04",
+   "exit": 1695.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.06,
+   "pnl_yen": 200
+  },
+  {
+   "ticker": "8252.T",
+   "name": "丸井グループ",
+   "type": "第１四半期",
+   "date": "2026-08-04",
+   "signal_price": 2852.5,
+   "shares": 100,
+   "rsi": 42.0,
+   "runup5": -5.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "2331.T",
+   "name": "ＡＬＳＯＫ",
+   "type": "第１四半期",
+   "date": "2026-08-04",
+   "signal_price": 1124.0,
+   "shares": 400,
+   "rsi": 47.5,
+   "runup5": -6.1,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-04"

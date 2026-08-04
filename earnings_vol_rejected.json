@@ -156,5 +156,139 @@
    "runup5": -6.7,
    "price": 2525.0
   }
+ ],
+ "2026-08-04": [
+  {
+   "ticker": "2810.T",
+   "name": "ハウス食品グループ本社",
+   "vol": 1.19,
+   "why": "vol",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 33.8,
+   "runup5": -11.2,
+   "price": 3566.0
+  },
+  {
+   "ticker": "4005.T",
+   "name": "住友化学",
+   "vol": 1.95,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 32.3,
+   "runup5": -8.7,
+   "price": 483.5
+  },
+  {
+   "ticker": "4042.T",
+   "name": "東ソー",
+   "vol": 1.03,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 38.0,
+   "runup5": -3.0,
+   "price": 2662.5
+  },
+  {
+   "ticker": "4676.T",
+   "name": "フジ・メディア・ホールディングス",
+   "vol": 1.68,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 40.1,
+   "runup5": -7.1,
+   "price": 3906.0
+  },
+  {
+   "ticker": "6326.T",
+   "name": "クボタ",
+   "vol": 4.45,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 38.7,
+   "runup5": -4.4,
+   "price": 2625.5
+  },
+  {
+   "ticker": "7203.T",
+   "name": "トヨタ自動車",
+   "vol": 1.3,
+   "why": "vol",
+   "last_time": "13:55",
+   "bucket": "場中",
+   "rsi": 48.5,
+   "runup5": -3.4,
+   "price": 2907.0
+  },
+  {
+   "ticker": "7261.T",
+   "name": "マツダ",
+   "vol": 1.97,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 44.8,
+   "runup5": -5.6,
+   "price": 1116.5
+  },
+  {
+   "ticker": "7337.T",
+   "name": "ひろぎんホールディングス",
+   "vol": 1.03,
+   "why": "vol",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 47.6,
+   "runup5": -4.1,
+   "price": 2182.5
+  },
+  {
+   "ticker": "7380.T",
+   "name": "十六フィナンシャルグループ",
+   "vol": 0.54,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 47.8,
+   "runup5": -5.3,
+   "price": 2373.0
+  },
+  {
+   "ticker": "9001.T",
+   "name": "東武鉄道",
+   "vol": 1.22,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 43.0,
+   "runup5": -6.5,
+   "price": 2927.5
+  },
+  {
+   "ticker": "9142.T",
+   "name": "九州旅客鉄道",
+   "vol": 1.14,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 37.1,
+   "runup5": -9.5,
+   "price": 3425.0
+  },
+  {
+   "ticker": "9434.T",
+   "name": "ソフトバンク",
+   "vol": 0.01,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 50.1,
+   "runup5": -4.6,
+   "price": 220.10000610351562
+  }
  ]
 }
