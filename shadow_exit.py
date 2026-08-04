@@ -634,30 +634,51 @@ def send_discord(today: date) -> bool:
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
         except Exception:
             exit_str = "3営業日後"
+
+        def _mark(tk: str) -> str:
+            return "🟢" if tk in recorded else "📌" if tk in holding else "⚪"
+
+        # 通常版(today_signals.json)に出ている銘柄は詳細を出さない（本人2026-08-04
+        # 「通常の銘柄はいらない・見れるから。欲しいのは極みルールの4銘柄目」）。
+        # 共通分は枠印+ticker の1行に圧縮し、詳細ブロックは極みだけの銘柄に絞る。
+        reg_set: set = set()
+        try:
+            if os.path.exists(TIER_FILES["main"][0]):
+                with open(TIER_FILES["main"][0], encoding="utf-8") as f:
+                    _rp = json.load(f)
+                if _rp.get("date") == today_str:
+                    reg_set = {s["ticker"] for s in _rp.get("signals", [])}
+        except Exception:
+            pass
+        common = [s for s in sigs if s["ticker"] in reg_set]
+        extras = [s for s in sigs if s["ticker"] not in reg_set]
+
         lines = [
-            "🏆 並びは**勝ちやすさスコア順**（#1が本命・空き枠は上から埋まる）",
-            f"🎯 **寄指（寄付限定指値）**で発注・1件{size//10000}万円",
-            "　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
-            f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
-            f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_str}**",
+            "🏆 並びは**勝ちやすさスコア順**（空き枠は上から埋まる）",
+            f"🎯 **寄指（寄付限定指値）**・1件{size//10000}万円 ／ "
+            f"🛑 -{LIVE_STOP:.0f}% ✅ +{TAKE_PROFIT:.0f}% ／ 📅 期限 **{exit_str}**",
             f"📦 枠 {min(n_open, MAX_SLOTS)}/{MAX_SLOTS} 使用中"
-            + (f"（🟢=枠内・台帳が答え合わせ ／ ⚪=**枠外**・建てるなら小玉で自己管理"
-               + (" ／ 📌=保有中・再エントリー不可" if any(s["ticker"] in holding for s in sigs) else "")
-               + "）" if len(sigs) > len(recorded) else ""),
-            "─" * 24,
+            "（🟢=枠内・台帳が追跡 ／ ⚪=**枠外**・建てるなら小玉 ／ 📌=保有中・建てない）",
         ]
-        for i, s in enumerate(sigs, 1):
+        if common:
+            lines.append("📎 通常版と共通: "
+                         + " ".join(f"{_mark(s['ticker'])}{str(s['ticker']).replace('.T','')}"
+                                    for s in common)
+                         + "（詳細は通常チャンネル）")
+        lines.append("─" * 24)
+        if not extras:
+            lines.append("**極みだけの追加銘柄は本日なし**（通常版と同一）")
+        for i, s in enumerate(extras, 1):
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
             lp = s.get("limit_price") or 0
-            mark = ("🟢" if s["ticker"] in recorded
-                    else "📌" if s["ticker"] in holding else "⚪")
+            mark = _mark(s["ticker"])
             if pc > 0:
                 shares = max(100, int(size / pc / 100) * 100)
-                head = (f"{mark} **#{i} {s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
+                head = (f"{mark} **{s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
                         f"→ **寄指 {lp:,.0f}円** {shares:,}株/約{shares*pc/1e4:.0f}万")
             else:
-                head = f"{mark} **#{i} {s.get('name', tk)}** ({tk})"
+                head = f"{mark} **{s.get('name', tk)}** ({tk})"
             parts = []
             if s.get("rsi") is not None:
                 parts.append(f"RSI={s['rsi']:.1f}")
@@ -676,10 +697,12 @@ def send_discord(today: date) -> bool:
                 lines.append("   " + "・".join(parts))
             lines.append("")
         embeds.append({
-            "title": f"⚡📊【スイング極み】{today.strftime('%Y年%m月%d日')} — 買い{len(sigs)}銘柄",
+            "title": (f"⚡📊【スイング極み】{today.strftime('%Y年%m月%d日')} — "
+                      f"極み追加{len(extras)}銘柄"
+                      + (f"／共通{len(common)}銘柄" if common else "")),
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
-            "footer": {"text": "通常版との差=買残回転1.2日まで許可（銘柄が違う日がある）。"
+            "footer": {"text": "極み=通常版と同じ選定を買残回転1.2日まで広げた版。"
                                "🟢のみ台帳(3枠)が追跡・⚪の実弾は自己管理"},
         })
 
