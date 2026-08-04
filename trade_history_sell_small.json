@@ -39,6 +39,16 @@
       "close": 1829.5,
       "pnl": 3.94,
       "win": true
+    },
+    {
+      "date": "2026-08-04",
+      "ticker": "9507.T",
+      "name": "四国電力",
+      "direction": "SELL",
+      "open": 1724.5,
+      "close": 1717.0,
+      "pnl": 0.43,
+      "win": true
     }
   ]
 }
