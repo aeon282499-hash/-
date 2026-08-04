@@ -373,7 +373,8 @@
    "shares": 100,
    "rsi": 42.0,
    "runup5": -5.4,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 2835.5
   },
   {
    "ticker": "2331.T",
@@ -384,8 +385,9 @@
    "shares": 400,
    "rsi": 47.5,
    "runup5": -6.1,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 1121.5
   }
  ],
- "last_reminder_date": "2026-08-04"
+ "last_reminder_date": "2026-08-05"
 }
