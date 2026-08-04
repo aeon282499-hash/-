@@ -1,0 +1,56 @@
+name: 崩壊ショート紙運用
+
+# crash_short_watch.py（2026-07-20新設・これまで手動のみ）を毎朝自動実行して
+# crash_short_log.json に forward 記録を貯める。実弾なし・紙運用専用。
+# 朝実行の理由: J-Quants日足は前営業日分までなので検出は常に「前日のバー」に対して行う。
+# 寄り前に走れば「今日の寄りで空売り想定」の形になり、毎営業日のバーを漏れなく拾える
+# （金曜分は月曜朝に検出→月曜寄り想定。(ticker,d0)重複ガードがあるので2回撃ちは無害）。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 22 * * 0-4'   # 7:30 JST想定（本命・寄り前）
+    - cron: '45 23 * * 0-4'   # 8:45 JST想定（バックアップ・遅延対策）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      DISCORD_WEBHOOK_CRASH_SHORT_URL: ${{ secrets.DISCORD_WEBHOOK_CRASH_SHORT_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 紙運用 検出＋前回分の答え合わせ
+        run: python -X utf8 crash_short_watch.py
+
+      - name: 記帳コミット（crash_short_log.json）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          for f in crash_short_log.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: crash short paper log [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done

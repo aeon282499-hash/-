@@ -1,0 +1,51 @@
+name: 決算パリティ月次監視
+
+# 毎月1日に前月の帳簿実績をBT想定(z-score)と比較してDiscordへ。
+# GitHub cronは40分〜3h45m遅延するため1〜3日の3回撃ち・本体のstateガードで配信は1回だけ。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 11 1-3 * *'   # 20:30 JST想定（月初1〜3日）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール（帳簿読むだけなので軽量）
+        run: pip install requests
+
+      - name: パリティ監視実行
+        run: python earnings_parity_monitor.py
+
+      - name: stateコミット（parity_state.json）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          for f in parity_state.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: parity monitor state [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done
