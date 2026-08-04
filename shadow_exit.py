@@ -596,39 +596,84 @@ def _price_str(v: float | None) -> str:
 
 
 def send_discord(today: date) -> bool:
-    """今朝の影シグナル・影の決済・通算スコアを専用チャンネルへ1通で送る。
-    送るものが何も無い日は送信しない（ハートビートは本番チャンネル側にあるため不要）。"""
+    """今朝の極みシグナル・決済・通算スコアを専用チャンネルへ1通で送る。
+    送るものが何も無い日は送信しない（ハートビートは本番チャンネル側にあるため不要）。
+
+    【2026-08-04 形式刷新・本人指示】①通常版(notifier._build_buy_embed)と同じ形式に
+    ②枠満杯でもシグナルは全部出す（🟢=枠内・台帳が追う ／ ⚪=枠外・建てるなら小玉で自己管理）。
+    台帳(答え合わせ)は従来どおり3枠のみ＝⚪を実際に建てた分は台帳に載らない。"""
     today_str = today.strftime("%Y-%m-%d")
     embeds: list[dict] = []
 
-    # ① 今朝の影シグナル（銘柄は本番と同一・違うのは損切り価格だけ）
-    lines = []
-    for key in NOTIFY_KEYS:
-        _, _, size, label = TIER_FILES[key]
-        for r in load_ledger(key):
-            if r["signal_date"] != today_str:
-                continue
-            pc = r.get("prev_close") or 0
-            stop_pct = r["stop_pct"]
-            atr = r.get("atr_pct")
-            ref = r.get("limit_price") or pc          # 寄指の指値を基準に損切り価格の目安を出す
-            atr_s = "—" if atr is None else f"{atr:.2f}%"
-            lines.append(
-                f"**{label}｜{r['name']}**（{r['ticker'][:4]}）\n"
-                f"　ATR {atr_s} → **損切り -{stop_pct:.1f}%**（本番 -{LIVE_STOP:.0f}%）\n"
-                f"　寄指 {_price_str(r.get('limit_price'))} 以下で約定なら "
-                f"損切り目安 **{_price_str(ref * (1 - stop_pct / 100))}** / 利確 "
-                f"{_price_str(ref * (1 + TAKE_PROFIT / 100))}（+{TAKE_PROFIT:.0f}%・本番と同じ）"
-            )
-    if lines:
+    # ① 今朝の極みシグナル（today_signals_kiwami.json の全件・通常版と同形式）
+    sigs: list[dict] = []
+    if os.path.exists(KIWAMI_SIG_FILE):
+        try:
+            with open(KIWAMI_SIG_FILE, encoding="utf-8") as f:
+                _kp = json.load(f)
+            if _kp.get("date") == today_str:
+                sigs = [s for s in _kp.get("signals", []) if s.get("direction") == "BUY"]
+        except Exception as e:
+            print(f"[shadow] 極みシグナル読込失敗: {e}")
+    rows_main = load_ledger("main")
+    recorded = {r["ticker"] for r in rows_main if r.get("signal_date") == today_str}
+    n_open = sum(1 for r in rows_main if r.get("status") in ("pending", "open"))
+    if not sigs:      # フォールバック: ファイル無し/古い日付なら台帳の当日分だけでも出す
+        sigs = [{"ticker": r["ticker"], "name": r.get("name", r["ticker"]),
+                 "prev_close": r.get("prev_close", 0), "limit_price": r.get("limit_price")}
+                for r in rows_main if r.get("signal_date") == today_str]
+
+    if sigs:
+        size = TIER_FILES["main"][2]
+        try:
+            from notifier import _nth_trading_day
+            exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
+        except Exception:
+            exit_str = "3営業日後"
+        lines = [
+            f"🎯 **寄指（寄付限定指値）**で発注・1件{size//10000}万円",
+            "　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
+            f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
+            f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_str}**",
+            f"📦 枠 {min(n_open, MAX_SLOTS)}/{MAX_SLOTS} 使用中"
+            + (f"（🟢=枠内・台帳が答え合わせ ／ ⚪=**枠外**・建てるなら小玉で自己管理）"
+               if len(sigs) > len(recorded) else ""),
+            "─" * 24,
+        ]
+        for i, s in enumerate(sigs, 1):
+            tk = str(s["ticker"]).replace(".T", "")
+            pc = s.get("prev_close", 0) or 0
+            lp = s.get("limit_price") or 0
+            mark = "🟢" if s["ticker"] in recorded else "⚪"
+            if pc > 0:
+                shares = max(100, int(size / pc / 100) * 100)
+                head = (f"{mark} **#{i} {s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
+                        f"→ **寄指 {lp:,.0f}円** {shares:,}株/約{shares*pc/1e4:.0f}万")
+            else:
+                head = f"{mark} **#{i} {s.get('name', tk)}** ({tk})"
+            parts = []
+            if s.get("rsi") is not None:
+                parts.append(f"RSI={s['rsi']:.1f}")
+            if s.get("deviation") is not None:
+                parts.append(f"乖離{s['deviation']:+.1f}%")
+            if s.get("vol_ratio") is not None and s.get("vol_ratio", 0) >= 2.0:
+                parts.append(f"出来高×{s['vol_ratio']:.1f}")
+            elif s.get("range_ratio") is not None:
+                parts.append(f"値幅/ATR={s['range_ratio']:.1f}")
+            if s.get("turnover"):
+                parts.append(f"代金{s['turnover']/1e8:.0f}億")
+            if s.get("days_cover") is not None:
+                parts.append(f"買残回転{s['days_cover']:.2f}日")
+            lines.append(head)
+            if parts:
+                lines.append("   " + "・".join(parts))
+            lines.append("")
         embeds.append({
-            "title": f"⚡ 売買シグナル極み（買い）— {today_str}",
-            "description": ("**俺専用版**。銘柄・寄指・利確は通常版と同一で、**損切りだけ**が銘柄ごとに変わる。\n"
-                            "⚠️ 15時の処分チェックは通常ルール(-3%)基準で動くので、"
-                            "**極みの損切りは自分でOCOに入れること**。\n\n"
-                            + "\n\n".join(lines[:10])),
+            "title": f"⚡📊【スイング極み】{today.strftime('%Y年%m月%d日')} — 買い{len(sigs)}銘柄",
+            "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
-            "footer": {"text": "根拠=10年BTで大100万+234.5万→+345.3万・最悪3年-116.2→-78.1万（_bt_atr_exit_*.py）"},
+            "footer": {"text": "通常版との差=買残回転1.2日まで許可（銘柄が違う日がある）。"
+                               "🟢のみ台帳(3枠)が追跡・⚪の実弾は自己管理"},
         })
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
@@ -681,30 +726,14 @@ def send_discord(today: date) -> bool:
                                "ただし差が出るのは損切りに触った玉だけ＝数ヶ月貯めないと判断不能"},
         })
 
-    # 枠満杯で見送った銘柄（通常版には出るが極みには入らない理由を明示）
-    skip_note = ""
-    sp = f"_shadow_skipped_main.json"
-    if os.path.exists(sp):
-        try:
-            with open(sp, encoding="utf-8") as f:
-                d = json.load(f)
-            if d.get("date") == today_str and d.get("names"):
-                skip_note = (f"\n\n⏭️ **枠満杯（{MAX_SLOTS}枠）で見送り**: "
-                             + "、".join(d["names"])
-                             + f"\n　通常版には出ているが極みでは建てない"
-                               f"（同時保有は{MAX_SLOTS}枠まで）")
-        except Exception:
-            pass
-    if skip_note and embeds:
-        embeds[0]["description"] += skip_note
+    # 枠満杯の見送りは 2026-08-04 から ⚪ 印で①に直接表示（skip_noteの別枠表示は廃止）
 
-    if not lines:
+    if not sigs:
         # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
         embeds.insert(0, {
-            "title": f"⚡ 売買シグナル極み（買い）— {today_str}",
+            "title": f"⚡📊【スイング極み】{today.strftime('%Y年%m月%d日')} — シグナルなし",
             "description": ("**本日の買いシグナルはありません。**\n"
-                            "（極みは通常版と同じ銘柄を選び、損切りだけATR連動にした版）"
-                            + skip_note),
+                            "（極み＝通常版と同じ選定を買残回転1.2日までの広い候補で行う版）"),
             "color": _COLOR_INFO,
         })
     if not embeds:

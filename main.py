@@ -324,6 +324,41 @@ def main() -> None:
             print(f"[main-{label}] サイズ{tier['size']//10000}万で買える: "
                   f"BUY {len(tier_signals)}件 / SELL {len(tier_sell_signals)}件")
 
+            # ── 極み用シグナル（買残回転1.2で選定・2026-08-02）─────────────
+            # 通常版(0.8)より広い候補で同じ選定を行い、専用ファイルに書く。
+            # shadow_exit.record_signals がこれを優先して読む（無ければ通常版へフォールバック）。
+            # 【2026-08-04 バグ修正】このブロックは add_signals_to_positions の**前**に
+            # 置くこと。旧位置（記帳後）では当日の通常版採用5本が「保有中」扱いで除外され、
+            # 極みファイルが「追加帯の差分だけ」になっていた（8/3=0件・8/4=1件の実害）。
+            # 正しい極み＝通常版と同じ選定を dc1.2 の広い候補でやり直したスーパーセット。
+            if key == "main":
+                try:
+                    from screener import MARGIN_DC_POOL_MAX
+                    kiwami_signals, _ = _select_tier_signals(
+                        all_buy, [], tier, positions, sell_positions, MAX_SIGNALS,
+                        dc_max=MARGIN_DC_POOL_MAX,
+                    )
+                    with open("today_signals_kiwami.json", "w", encoding="utf-8") as f:
+                        json.dump({
+                            "date":    today_str,
+                            "signals": [{"ticker": s["ticker"], "name": s["name"],
+                                         "direction": "BUY",
+                                         "prev_close": s.get("prev_close", 0),
+                                         "limit_price": yose_limit_price(s.get("prev_close", 0) or 0),
+                                         "days_cover": s.get("days_cover"),
+                                         # 配信を通常版と同形式にするための表示用指標（2026-08-04）
+                                         "rsi": s.get("rsi"),
+                                         "deviation": s.get("deviation"),
+                                         "vol_ratio": s.get("vol_ratio"),
+                                         "range_ratio": s.get("range_ratio"),
+                                         "turnover": s.get("turnover", 0)}
+                                        for s in kiwami_signals],
+                        }, f, ensure_ascii=False, indent=2)
+                    print(f"[main-極み] 買残1.2選定: {len(kiwami_signals)}件 → today_signals_kiwami.json")
+                except Exception as _ke:
+                    # 極みファイル生成が死んでも友達向け配信(中・小)は止めない。
+                    print(f"[main-極み] 生成失敗（通常版にフォールバック）: {_ke}")
+
             # 新規シグナル追加・保存
             positions      = add_signals_to_positions(positions, tier_signals, today, entry_date)
             sell_positions = add_signals_to_positions(sell_positions, tier_sell_signals, today, entry_date)
@@ -357,35 +392,6 @@ def main() -> None:
                                  "prev_close": s.get("prev_close", 0)}
                                 for s in tier_sell_signals],
                 }, f, ensure_ascii=False, indent=2)
-
-            # ── 極み用シグナル（買残回転1.2で選定・2026-08-02）─────────────
-            # 通常版(0.8)より広い候補で同じ選定を行い、専用ファイルに書く。
-            # shadow_exit.record_signals がこれを優先して読む（無ければ従来の
-            # today_signals.json にフォールバック＝移行期も取りこぼさない）。
-            # 保有中除外/業種capの文脈は従来の極み入口(=大資金top5)と同じく大資金の
-            # positions を使う（極み台帳側の保有中除外・3枠は record_signals が行う）。
-            if key == "main":
-                try:
-                    from screener import MARGIN_DC_POOL_MAX
-                    kiwami_signals, _ = _select_tier_signals(
-                        all_buy, [], tier, positions, sell_positions, MAX_SIGNALS,
-                        dc_max=MARGIN_DC_POOL_MAX,
-                    )
-                    with open("today_signals_kiwami.json", "w", encoding="utf-8") as f:
-                        json.dump({
-                            "date":    today_str,
-                            "signals": [{"ticker": s["ticker"], "name": s["name"],
-                                         "direction": "BUY",
-                                         "prev_close": s.get("prev_close", 0),
-                                         "limit_price": yose_limit_price(s.get("prev_close", 0) or 0),
-                                         "days_cover": s.get("days_cover")}
-                                        for s in kiwami_signals],
-                        }, f, ensure_ascii=False, indent=2)
-                    print(f"[main-極み] 買残1.2選定: {len(kiwami_signals)}件 → today_signals_kiwami.json")
-                except Exception as _ke:
-                    # 極みファイル生成が死んでも友達向け配信(中・小)は止めない。
-                    # shadow_exit側は当日ファイルが無ければ通常版へフォールバックする。
-                    print(f"[main-極み] 生成失敗（通常版にフォールバック）: {_ke}")
 
             # 大資金分は後段（Twitter等）で使うので保持
             if key == "main":
