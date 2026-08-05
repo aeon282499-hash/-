@@ -16,6 +16,8 @@
 | `_intraday_cache_wide.pkl` / `_intraday_cache.pkl` | 97/13MB | yfinance分足(2026-05〜07) | yfinanceは60日しか遡れない＝実質再取得不可 |
 | `market_calendar.csv` | 60KB | 東証公式営業日 2016-08-02〜2027-12-31 | git管理。HolDiv: 1=営業日/0=休場/3=祝日取引日 |
 | `_short_positions_10y.pkl` / `_short_positions_fade.pkl` | 計約40MB | 空売り残高報告10年（決算907銘柄+フェード364銘柄・69万+18万報告・報告者別） | 2026-08-03取得。再取得は`fetch_short_positions.py <銘柄リスト> <出力>`（約30分/900銘柄） |
+| `_margin_alert_bal_10y.pkl` | 約50MB | 日々公表信用残（ShrtOut/LongOut等の残高列つき）＋規制フラグ・日次10年・約180銘柄/日・DataFrame | 2026-08-05取得(`_fetch_alert_10y.py`・約80分・resume可)。古い側から窓外に消える。フェード検証済み(_log_fade_newlens3.txt=売り禁玉が利益の62%/PF1.84) |
+| `_margin_alert_10y.pkl` | 小 | 同データのフラグのみ辞書版 {date:{code4:"6bitフラグ"}}（極み/決算セッションのフォーマット） | ⚠️2026-08-05に2セッションが同名で衝突し相互破壊→bal完成後に`_repair_alert_pkl.py --derive-only`で導出して復旧。**このファイルを再フェッチしないこと（balから導出が正）** |
 
 ## 2. 再取得可能だが重い（スナップ済み・壊れたら作り直せる）
 
