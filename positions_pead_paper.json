@@ -1,0 +1,18 @@
+{
+ "last_run_date": "2026-08-05",
+ "positions": [
+  {
+   "ticker": "6134.T",
+   "name": "ＦＵＪＩ",
+   "d0": "2026-08-03",
+   "d1": "2026-08-04",
+   "gap_pct": 14.04,
+   "d0_close": 7445.0,
+   "d1_close": 8143.0,
+   "exit_date": "2026-08-10",
+   "status": "held",
+   "entry": 8143.0,
+   "entry_kind": "D1大引け"
+  }
+ ]
+}

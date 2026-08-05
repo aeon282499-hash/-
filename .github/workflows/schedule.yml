@@ -181,6 +181,11 @@ jobs:
         continue-on-error: true
         run: python build_dashboard.py
 
+      - name: PEAD専業・紙運用（実弾なし・2026-07-12見送り判定のforward検証）
+        # 2026-08-05 本人「決算後に買って利益を積み上げたい」→復活パス=紙運用で稼働
+        continue-on-error: true
+        run: python main_pead_paper.py
+
       - name: ポジション保存（スイング3階層分 + デイトレ + セクターローテ）
         run: |
           git config user.name  "github-actions[bot]"
@@ -196,6 +201,7 @@ jobs:
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json \
+            positions_pead_paper.json \
             today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
             today_signals_theme.json logs/theme_diag.jsonl \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json \
