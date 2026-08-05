@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "date": "2026-08-05",
+    "ticker": "5801.T",
+    "gap": 7.67,
+    "open": 3846.0,
+    "prev_close": 3572.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-08-05",
+    "ticker": "3436.T",
+    "gap": 6.33,
+    "open": 3777.0,
+    "prev_close": 3552.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-08-05",
+    "ticker": "4182.T",
+    "gap": 5.54,
+    "open": 4590.0,
+    "prev_close": 4349.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-08-05",
+    "ticker": "5367.T",
+    "gap": 5.26,
+    "open": 1340.0,
+    "prev_close": 1273.0,
+    "shares": 300,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  }
+]
