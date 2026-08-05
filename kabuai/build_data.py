@@ -782,13 +782,13 @@ def build() -> dict:
     print(f"[build] 🔻売り(モメンタム終了): {len(sell_members)}件 (掲載{min(len(sell_members),30)})")
 
     # ── 🩳 デイトレ売り（フェード）・2026-07-23 本人指示でアプリ掲載 ──
-    # Discord配信(daytrade_paper.daily_top_fades)と同一ロジックを直接import＝判定のズレなし。
-    # 貸借○ × 張り付き除外 × 前日+5%↑、GO=DAILY_PICK_GAIN_MIN↑。
-    # 2026-07-28 全面改修: 並び順を「上昇率降順」→「25MA乖離の順位とATR%の順位の平均」に変更し、
-    # GO閾値を+12%→+6%、建玉を50万→100万に。10年検証(上位1本)で
-    # 前半PF1.20/後半1.25・年+94.0万・**勝ち11/11年**（旧は前半1.15/後半1.15・年+34万・勝ち8/11年）。
-    # 売り禁(margin-alert)は除外せず🚫バッジ=同日本人指示「ハイカラで売れた」(制度✕でも
-    # SBI一日信用HYPER/一般信用は別枠在庫)。翌営業日「寄り売り→引け買戻し」の当日完結。非致命。
+    # Discord配信(daytrade_paper.daily_top_fades)と同一ロジックを直接import＝判定のズレなし
+    # （建玉サイズ・値がさカットもCAPITAL_PER_TRADEに自動連動）。
+    # 現行確定形(2026-08-01全軸検証完了): 前日+7% × 貸借○ × ATR5%↑ × 乖離12%↑ × 出来高6倍未満
+    # × 張り付き除外(レンジ>5%) × 株価下限なし・並び順=25MA乖離とATR%の順位平均・上位2本。
+    # 2026-08-05 1玉50万→100万（本人決定・8月は1番だけ建てる→8月末在庫実測で2本目判断）。
+    # 売り禁(margin-alert)は除外せず🚫バッジ=本人指示「ハイカラで売れた」(制度✕でも
+    # SBI一日信用HYPER/一般信用は別枠在庫)。利益の62%は売り禁玉=在庫が生命線(2026-08-05定量化)。
     fade: dict = {"date": data_date, "picks": [], "banned": 0, "go": 0}
     _iss, _alert = {}, {}          # 裁量デイトレ・ウォッチでも再利用
     try:
@@ -825,10 +825,10 @@ def build() -> dict:
         fade["banned"] = len(_banned)
         fade["go"] = sum(1 for p in fade["picks"] if p.get("verdict") == "GO")
         fade["go_min"] = _dp.DAILY_PICK_GAIN_MIN
-        # 10年検証（乖離+ATR順・上位1本・建玉100万・_bt_fade_deep.py）
-        fade["stats"] = {"n": 2230, "win": 57.0, "avg": 0.94, "pf": 1.22,
-                         "period": "2016-2026/07", "y2026_avg": 1.60,
-                         "yearly": "10年すべて勝ち年（最悪年+29.7万）", "annual": 94.0}
+        # 10年検証（現行確定形・上位2本・1玉100万・2026-08-05 _bt_fade_100man_monthly.py）
+        fade["stats"] = {"n": 1805, "win": 59.1, "avg": 0.99, "pf": 1.49,
+                         "period": "2016-2026/07", "y2026_avg": 0.76,
+                         "yearly": "勝ち11/11年（1玉100万・最悪月-45.5万）", "annual": 153.4}
         print(f"[build] 🩳デイトレ売り(フェード): picks{len(fade['picks'])} "
               f"GO{fade['go']} 売り禁🚫{sum(1 for p in fade['picks'] if p.get('jsf_stop'))}")
     except Exception as _e:
