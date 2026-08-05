@@ -420,14 +420,14 @@ def test_daily_top_fades():
     pm = dp.daily_top_fades(mix, today, {"5555": "2", "6666": "2"})
     check("張り付き#1を飛ばし6666だけ", len(pm) == 1 and pm[0]["ticker"] == "6666.T")
 
-    # 値がさ株(1単元>予算50万=株価>5千円)は除外（2026-07-28 100万→50万・本人の許容損失から逆算）
-    check("値がさ株(>5千円)は除外",
+    # 値がさ株(1単元>予算100万=株価>1万円)は除外（2026-08-05 50万→100万・本人決定）
+    check("値がさ株(>1万円)は除外",
           dp.daily_top_fades({"4444.T": _flat_then(20, base=20000)}, today, {"4444": "2"}) == [])
-    check("50万境界: 株価5,500円は除外",
-          dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"}) == [])
-    check("50万境界: 株価4,000円は対象内",
-          len(dp.daily_top_fades({"3333.T": _flat_then(20, base=4000)}, today, {"3333": "2"})) == 1)
-    check("CAPITAL_PER_TRADEは50万", dp.CAPITAL_PER_TRADE == 500_000)
+    check("100万境界: 終値10,800円は除外",
+          dp.daily_top_fades({"3333.T": _flat_then(20, base=9000)}, today, {"3333": "2"}) == [])
+    check("100万境界: 終値6,600円は対象内(50万時代は除外だった帯)",
+          len(dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"})) == 1)
+    check("CAPITAL_PER_TRADEは100万", dp.CAPITAL_PER_TRADE == 1_000_000)
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
