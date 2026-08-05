@@ -290,5 +290,172 @@
    "runup5": -4.6,
    "price": 220.10000610351562
   }
+ ],
+ "2026-08-05": [
+  {
+   "ticker": "2269.T",
+   "name": "明治ホールディングス",
+   "vol": 1.01,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 37.8,
+   "runup5": -9.3,
+   "price": 3602.0
+  },
+  {
+   "ticker": "2433.T",
+   "name": "博報堂ＤＹホールディングス",
+   "vol": 2.53,
+   "why": "announced",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 43.6,
+   "runup5": -14.1,
+   "price": 1196.0
+  },
+  {
+   "ticker": "2784.T",
+   "name": "アルフレッサ　ホールディングス",
+   "vol": 1.22,
+   "why": "vol",
+   "last_time": "16:30",
+   "bucket": "引け後",
+   "rsi": 36.5,
+   "runup5": -11.6,
+   "price": 2172.0
+  },
+  {
+   "ticker": "3861.T",
+   "name": "王子ホールディングス",
+   "vol": 1.07,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 49.3,
+   "runup5": -5.6,
+   "price": 845.9000244140625
+  },
+  {
+   "ticker": "3863.T",
+   "name": "日本製紙",
+   "vol": 2.23,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 45.0,
+   "runup5": -8.1,
+   "price": 1355.0
+  },
+  {
+   "ticker": "4403.T",
+   "name": "日油",
+   "vol": 0.85,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 36.7,
+   "runup5": -7.0,
+   "price": 2628.0
+  },
+  {
+   "ticker": "4503.T",
+   "name": "アステラス製薬",
+   "vol": 1.86,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 44.9,
+   "runup5": -6.5,
+   "price": 2147.0
+  },
+  {
+   "ticker": "5406.T",
+   "name": "神戸製鋼所",
+   "vol": 2.95,
+   "why": "announced",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 46.0,
+   "runup5": -5.9,
+   "price": 1950.0
+  },
+  {
+   "ticker": "7164.T",
+   "name": "全国保証",
+   "vol": 1.6,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 44.7,
+   "runup5": -6.7,
+   "price": 3019.0
+  },
+  {
+   "ticker": "7186.T",
+   "name": "横浜フィナンシャルグループ",
+   "vol": 1.16,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 49.9,
+   "runup5": -3.3,
+   "price": 1848.5
+  },
+  {
+   "ticker": "7269.T",
+   "name": "スズキ",
+   "vol": 3.08,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 37.2,
+   "runup5": -12.2,
+   "price": 1883.5
+  },
+  {
+   "ticker": "7270.T",
+   "name": "ＳＵＢＡＲＵ",
+   "vol": 1.75,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 41.2,
+   "runup5": -13.7,
+   "price": 2459.0
+  },
+  {
+   "ticker": "7459.T",
+   "name": "メディパルホールディングス",
+   "vol": 0.8,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 43.1,
+   "runup5": -11.3,
+   "price": 2716.5
+  },
+  {
+   "ticker": "9006.T",
+   "name": "京浜急行電鉄",
+   "vol": 1.02,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 43.6,
+   "runup5": -8.2,
+   "price": 1516.5
+  },
+  {
+   "ticker": "9021.T",
+   "name": "西日本旅客鉄道",
+   "vol": 1.57,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 48.6,
+   "runup5": -9.8,
+   "price": 2903.5
+  }
  ]
 }

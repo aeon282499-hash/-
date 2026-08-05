@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-04",
+ "last_signal_date": "2026-08-05",
  "positions": [
   {
    "ticker": "6521.T",
@@ -373,8 +373,14 @@
    "shares": 100,
    "rsi": 42.0,
    "runup5": -5.4,
-   "status": "pending",
-   "prev_close": 2835.5
+   "status": "closed",
+   "prev_close": 2835.5,
+   "entry": 2835.5,
+   "exit_date": "2026-08-05",
+   "exit": 2860.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.86,
+   "pnl_yen": 2450
   },
   {
    "ticker": "2331.T",
@@ -385,8 +391,47 @@
    "shares": 400,
    "rsi": 47.5,
    "runup5": -6.1,
-   "status": "pending",
-   "prev_close": 1121.5
+   "status": "closed",
+   "prev_close": 1121.5,
+   "entry": 1121.5,
+   "exit_date": "2026-08-05",
+   "exit": 1118.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.27,
+   "pnl_yen": -1200
+  },
+  {
+   "ticker": "2206.T",
+   "name": "江崎グリコ",
+   "type": "第２四半期",
+   "date": "2026-08-05",
+   "signal_price": 4890.0,
+   "shares": 100,
+   "rsi": 32.1,
+   "runup5": -7.7,
+   "status": "pending"
+  },
+  {
+   "ticker": "4452.T",
+   "name": "花王",
+   "type": "第２四半期",
+   "date": "2026-08-05",
+   "signal_price": 3170.0,
+   "shares": 100,
+   "rsi": 43.5,
+   "runup5": -7.3,
+   "status": "pending"
+  },
+  {
+   "ticker": "2801.T",
+   "name": "キッコーマン",
+   "type": "第１四半期",
+   "date": "2026-08-05",
+   "signal_price": 1588.5,
+   "shares": 300,
+   "rsi": 44.8,
+   "runup5": -9.1,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-05"
