@@ -137,9 +137,9 @@
     "limit_price": null,
     "entry_open": 1724.5,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.435,
+    "unrealized_pnl": -0.986,
     "exit_type": null,
     "exit_date": null
   }

@@ -893,12 +893,12 @@
     "atr_pct": 2.968,
     "stop_pct": 3.0,
     "live_stop": 3.0,
-    "entry_open": null,
-    "status": "pending",
+    "entry_open": 4987.0,
+    "status": "expired",
     "hold_days": 0,
     "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "NOFILL",
+    "exit_date": "2026-08-05"
   },
   {
     "signal_date": "2026-08-05",
@@ -910,9 +910,9 @@
     "atr_pct": 2.909,
     "stop_pct": 3.0,
     "live_stop": 3.0,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
+    "entry_open": 1476.0,
+    "status": "open",
+    "hold_days": 1,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null

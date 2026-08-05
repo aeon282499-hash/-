@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-05",
+ "last_run_date": "2026-08-06",
  "positions": [
   {
    "ticker": "6134.T",
@@ -12,6 +12,31 @@
    "exit_date": "2026-08-10",
    "status": "held",
    "entry": 8143.0,
+   "entry_kind": "D1大引け"
+  },
+  {
+   "ticker": "4062.T",
+   "name": "イビデン",
+   "d0": "2026-08-04",
+   "d1": "2026-08-05",
+   "gap_pct": 22.05,
+   "d0_close": 16330.0,
+   "d1_close": 20330.0,
+   "exit_date": "2026-08-12",
+   "status": "pending_d2",
+   "chase_date": "2026-08-06"
+  },
+  {
+   "ticker": "7272.T",
+   "name": "ヤマハ発動機",
+   "d0": "2026-08-04",
+   "d1": "2026-08-05",
+   "gap_pct": 15.59,
+   "d0_close": 1511.0,
+   "d1_close": 1805.0,
+   "exit_date": "2026-08-12",
+   "status": "held",
+   "entry": 1805.0,
    "entry_kind": "D1大引け"
   }
  ]

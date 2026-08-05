@@ -1,12 +1,4 @@
 {
-  "date": "2026-08-05",
-  "signals": [
-    {
-      "ticker": "9301.T",
-      "name": "三菱倉庫",
-      "direction": "BUY",
-      "prev_close": 1478.0,
-      "limit_price": 1492
-    }
-  ]
+  "date": "2026-08-06",
+  "signals": []
 }

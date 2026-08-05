@@ -1,19 +1,4 @@
 {
-  "date": "2026-08-05",
-  "signals": [
-    {
-      "ticker": "7988.T",
-      "name": "ニフコ",
-      "direction": "BUY",
-      "prev_close": 4936.0,
-      "limit_price": 4985
-    },
-    {
-      "ticker": "9301.T",
-      "name": "三菱倉庫",
-      "direction": "BUY",
-      "prev_close": 1478.0,
-      "limit_price": 1492
-    }
-  ]
+  "date": "2026-08-06",
+  "signals": []
 }
