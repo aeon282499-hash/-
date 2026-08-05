@@ -186,6 +186,11 @@ jobs:
         continue-on-error: true
         run: python main_pead_paper.py
 
+      - name: 決算持ち越し 朝の予備リスト配信（非公式・15:06本配信の先読み）
+        # 2026-08-06 本人依頼。昨日終値ベースの圏内リスト＋15:06時点の空き枠見込み
+        continue-on-error: true
+        run: python main_earnings_preview.py
+
       - name: ポジション保存（スイング3階層分 + デイトレ + セクターローテ）
         run: |
           git config user.name  "github-actions[bot]"
@@ -201,7 +206,7 @@ jobs:
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json \
-            positions_pead_paper.json \
+            positions_pead_paper.json earnings_preview_state.json \
             today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
             today_signals_theme.json logs/theme_diag.jsonl \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json \
