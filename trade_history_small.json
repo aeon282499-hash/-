@@ -509,6 +509,16 @@
       "close": 1720.0,
       "pnl": 0.17,
       "win": true
+    },
+    {
+      "date": "2026-08-05",
+      "ticker": "9301.T",
+      "name": "三菱倉庫",
+      "direction": "BUY",
+      "open": 1476.0,
+      "close": 1493.5,
+      "pnl": 1.19,
+      "win": true
     }
   ]
 }
