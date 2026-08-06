@@ -113,4 +113,35 @@ with tempfile.TemporaryDirectory() as td:
     finally:
         os.chdir(cwd)
 
+# ── 買いシグナル（--signal・寄りギャップ速報） ─────────────────────
+with tempfile.TemporaryDirectory() as td:
+    cwd = os.getcwd()
+    os.chdir(td)
+    try:
+        d0 = "2026-08-05"
+        json.dump({"schedule": {d0: [{"code": "1111", "name": "GO玉"},
+                                     {"code": "2222", "name": "ギャップ不足"},
+                                     {"code": "3333", "name": "本体重複"}]}},
+                  open(mp.SCHEDULE_PATH, "w", encoding="utf-8"), ensure_ascii=False)
+        json.dump({"positions": [{"ticker": "3333.T", "date": d0}]},
+                  open("positions_earnings.json", "w", encoding="utf-8"))
+        base = [(f"2026-07-{d:02d}", 1000, 1000, 1_000_000) for d in range(1, 32)
+                if date(2026, 7, d).weekday() < 5] + [(d0, 1000, 1000, 1_000_000)]
+        all_data = {f"{c}.T": mkdf(base) for c in ("1111", "2222", "3333")}
+        orig_fo = mp.fetch_today_opens
+        mp.fetch_today_opens = lambda tks: {"1111.T": 1150.0, "2222.T": 1050.0, "3333.T": 1300.0}
+        try:
+            sigs = mp.signal_scan({"positions": []}, all_data, d0, date(2026, 8, 6))
+        finally:
+            mp.fetch_today_opens = orig_fo
+        ok(len(sigs) == 1 and sigs[0]["ticker"] == "1111.T", "シグナル=1111のみ(不足/重複除外)")
+        ok(sigs[0]["gap_pct"] == 15.0, "gap=+15.0%")
+        ok(sigs[0]["exit_date"] == "2026-08-13", "売り=今日+4営業日(8/11山の日スキップ)")
+        emb = mp.build_signal_embed(sigs, date(2026, 8, 6))
+        ok("大引け成行で買う（紙）" in emb["description"], "embedに買い指示(紙)")
+        ok("実弾禁止" in emb["description"], "embedに実弾禁止")
+        ok("参考800株" in emb["description"], "参考株数=100万//1150=800株")
+    finally:
+        os.chdir(cwd)
+
 print(f"\nALL {N[0]}/{N[0]} PASS")

@@ -235,10 +235,124 @@ def build_embed(new_e: list, closed: list, chased: list, dropped: list,
         lines.append(f"保有{len(held)}/追撃待ち{len(pend)}（枠{SLOTS}）")
     lines.append(f"**通算: {st['n']}件 勝率{(st['win']/st['n']*100 if st['n'] else 0):.0f}% "
                  f"PF{st['pf']:.2f} {st['yen']:+,}円**（名目100万×5枠）")
-    return {"title": f"🧪 PEAD専業・紙運用 {today.strftime('%m/%d')}",
+    return {"title": f"🧪 PEAD紙・答え合わせ {today.strftime('%m/%d')}",
             "description": "\n".join(lines), "color": 0x9B59B6,
             "footer": {"text": "紙運用＝実弾禁止。2026-07-12実弾見送り判定のforward検証。"
                                "BT正直版=年+79万/PF1.67が本物か8月〜で確認する"}}
+
+
+def fetch_today_opens(tickers: list[str]) -> dict:
+    """今日の寄り値をYahooチャートAPIから取得（requests+verify=False=ローカルAV対応・CI両用）。"""
+    import requests
+    import urllib3
+    urllib3.disable_warnings()
+    out = {}
+    sess = requests.Session()
+    for tk in tickers:
+        try:
+            r = sess.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}",
+                         params={"range": "1d", "interval": "1d"},
+                         headers={"User-Agent": "Mozilla/5.0"}, verify=False, timeout=10)
+            res = r.json()["chart"]["result"][0]
+            o = res["indicators"]["quote"][0]["open"]
+            if o and o[0]:
+                out[tk] = float(o[0])
+        except Exception:
+            continue
+        import time
+        time.sleep(0.2)
+    return out
+
+
+def signal_scan(book: dict, all_data: dict, d0s: str, today) -> list[dict]:
+    """今日=D1の寄りギャップで「今日の大引けで買う（紙）」候補を返す。約定はしない＝翌朝の
+    記帳runが公式終値で確定する。速報はYahoo寄り値・記帳は公式値（僅差はあり得る）。"""
+    try:
+        with open(SCHEDULE_PATH, encoding="utf-8") as f:
+            sched = json.load(f).get("schedule", {}).get(d0s, [])
+    except Exception:
+        sched = []
+    if not sched:
+        return []
+    have = {p["ticker"] for p in book["positions"] if p["status"] in ("held", "pending_d2")}
+    slots = SLOTS - len(have)
+    if slots <= 0:
+        return []
+    excl = main_ledger_tickers(d0s)
+    pre = []
+    for r in sched:
+        tk = str(r.get("code", "")) + ".T"
+        if tk in have or tk in excl:
+            continue
+        b0 = _bar(all_data, tk, d0s)
+        if b0 is None:
+            continue
+        c0 = float(b0["Close"])
+        if c0 <= 0 or c0 > PRICE_CAP:
+            continue
+        tov = tov20_median(all_data, tk, d0s)
+        if tov is None or tov < TOV_MIN:
+            continue
+        pre.append({"ticker": tk, "name": str(r.get("name", tk))[:10], "d0_close": c0})
+    opens = fetch_today_opens([p["ticker"] for p in pre])
+    cands = []
+    for p in pre:
+        o1 = opens.get(p["ticker"])
+        if not o1:
+            continue
+        gap = (o1 / p["d0_close"] - 1) * 100
+        if gap <= GAP_MIN:
+            continue
+        cands.append({**p, "open": o1, "gap_pct": round(gap, 2),
+                      "exit_date": eh.nth_trading_day(today, HOLD_TD).strftime("%Y-%m-%d")})
+    cands.sort(key=lambda x: -x["gap_pct"])
+    return cands[:slots]
+
+
+def build_signal_embed(sigs: list[dict], today) -> dict:
+    if sigs:
+        lines = ["**下の銘柄を、今日15:30の大引け成行で買う（紙）**", ""]
+        for i, s in enumerate(sigs, 1):
+            ref_sh = int(NOTIONAL / s["open"] // 100 * 100)
+            ref = f"参考{ref_sh}株(約{ref_sh * s['open'] / 1e4:,.0f}万)" if ref_sh else "参考:1単元が100万超"
+            lines.append(f"`{i}.` 🟣 **{s['name']}** ({s['ticker'][:-2]}) 寄り+{s['gap_pct']:.1f}%"
+                         f"\n　　大引け成行で買い → **{s['exit_date']} の大引けで売り**・{ref}")
+        lines += ["", "⚠️ 引けストップ高なら約定しない（その場合は明朝、寄り追撃を自動判定）",
+                  "⚠️ **これは紙シグナル＝実弾禁止**。記帳は明朝、公式終値で自動"]
+    else:
+        lines = ["本日の買いシグナルなし（gap+12%超の該当なし or 枠フル）"]
+    return {"title": f"🧪 PEAD紙・買いシグナル {today.strftime('%m/%d')}",
+            "description": "\n".join(lines), "color": 0x9B59B6,
+            "footer": {"text": "紙運用＝実弾禁止。forward検証がBT(年+79万/PF1.67)通りなら実弾昇格を判断"}}
+
+
+def run_signal(dry: bool = False, force: bool = False) -> None:
+    """9:30過ぎ実行: 今日の寄りギャップで「今日の大引けで買う（紙）」を配信。記帳はしない。"""
+    today = jst_today()
+    if not force and not eh.is_trading_day(today):
+        print("[pead-sig] 休場日スキップ")
+        return
+    book = load_book()
+    ts = today.strftime("%Y-%m-%d")
+    if not force and book.get("last_signal_date") == ts:
+        print("[pead-sig] 本日配信済み")
+        return
+    d0 = prev_trading_day(today)
+    from screener import _jquants_id_token, batch_download_jquants
+    token = _jquants_id_token()
+    start = (d0 - timedelta(days=70)).strftime("%Y-%m-%d")
+    all_data = batch_download_jquants(token, start=start, end=ts)
+    sigs = signal_scan(book, all_data, d0.strftime("%Y-%m-%d"), today)
+    embed = build_signal_embed(sigs, today)
+    if dry:
+        print(json.dumps(embed, ensure_ascii=False, indent=1))
+    else:
+        url = os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "").strip()
+        if url:
+            eh.send_discord([embed], url, "pead-signal")
+        book["last_signal_date"] = ts
+        save_book(book)
+    print(f"[pead-sig] シグナル{len(sigs)}件")
 
 
 def run(dry: bool = False, force: bool = False) -> None:
@@ -272,4 +386,7 @@ def run(dry: bool = False, force: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    run(dry="--dry" in sys.argv, force="--force" in sys.argv)
+    if "--signal" in sys.argv:
+        run_signal(dry="--dry" in sys.argv, force="--force" in sys.argv)
+    else:
+        run(dry="--dry" in sys.argv, force="--force" in sys.argv)

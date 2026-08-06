@@ -96,6 +96,54 @@ jobs:
             echo "push retry $i"; sleep 5
           done
 
+  # ── PEAD紙・買いシグナル（2026-08-06 本人「買えみたいにわかりやすく」）──
+  # 寄り値確定後の9:31に「今日の大引けで買う（紙）」を配信。実弾なし・記帳は翌朝run。
+  pead-signal:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: pead-signal
+      cancel-in-progress: false
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 9:31 JSTまで待つ（寄り値確定後）
+        run: |
+          while [ "$(TZ=Asia/Tokyo date +%H%M)" -lt "0931" ]; do sleep 60; done
+
+      - name: 最新の台帳を取り込む（並走コミット反映＝二重配信ガード）
+        run: git pull --rebase origin main || true
+
+      - name: PEAD紙・買いシグナル配信
+        run: python main_pead_paper.py --signal
+
+      - name: シグナル記録コミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          [ -f positions_pead_paper.json ] && git add positions_pead_paper.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update pead paper signal marker [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done
+
   run:
     runs-on: ubuntu-latest
     permissions:
