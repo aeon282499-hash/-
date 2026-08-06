@@ -84,15 +84,22 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url || steps.deployment_retry2.outputs.page_url }}
     steps:
+      # Pages 側のキュー詰まりで deployment_queued のまま10分タイムアウトが多発
+      # （2026-08-06 夕方、4回連続）。deploy-pages の timeout は上限600000ms=10分で
+      # 延長不可（1800000指定は warning つきで10分に丸められた実測あり）。
+      # 対策＝失敗したら同一ジョブ内で再デプロイ（最大3回×各10分）。
       - id: deployment
         uses: actions/deploy-pages@v5
-        with:
-          # Pages 側のキュー詰まりで deployment_queued のまま既定10分を超えて
-          # タイムアウトした実績あり（2026-08-06 夕方2便+再実行が全滅）。
-          # キューが遅いだけなら待てば通るので 30 分まで粘る。
-          timeout: 1800000
+        continue-on-error: true
+      - id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+      - id: deployment_retry2
+        if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
+        uses: actions/deploy-pages@v5
 
   # 全面リバウンド日の Discord 通知は本人指示で停止（2026-06-24）。アプリ内の
   # 🌊全面リバウンド日タブはビルドで生成され続けるが、朝の Discord push は送らない。
