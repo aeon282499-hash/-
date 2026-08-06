@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-05",
+ "last_signal_date": "2026-08-06",
  "positions": [
   {
    "ticker": "6521.T",
@@ -118,11 +118,16 @@
    "shares": 100,
    "rsi": 34.6,
    "runup5": -19.4,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 8830.0,
    "entry": 8830.0,
    "gap_pct": 16.65,
-   "ext_exit_date": "2026-08-05"
+   "ext_exit_date": "2026-08-05",
+   "exit_date": "2026-08-05",
+   "exit": 14100.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 59.68,
+   "pnl_yen": 527000
   },
   {
    "ticker": "9502.T",
@@ -409,8 +414,14 @@
    "shares": 100,
    "rsi": 32.1,
    "runup5": -7.7,
-   "status": "pending",
-   "prev_close": 4915.0
+   "status": "closed",
+   "prev_close": 4915.0,
+   "entry": 4915.0,
+   "exit_date": "2026-08-06",
+   "exit": 4705.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -4.27,
+   "pnl_yen": -21000
   },
   {
    "ticker": "4452.T",
@@ -421,8 +432,11 @@
    "shares": 100,
    "rsi": 43.5,
    "runup5": -7.3,
-   "status": "pending",
-   "prev_close": 3188.0
+   "status": "extended",
+   "prev_close": 3188.0,
+   "entry": 3188.0,
+   "gap_pct": 10.19,
+   "ext_exit_date": "2026-08-13"
   },
   {
    "ticker": "2801.T",
@@ -433,8 +447,33 @@
    "shares": 300,
    "rsi": 44.8,
    "runup5": -9.1,
-   "status": "pending",
-   "prev_close": 1594.0
+   "status": "extended",
+   "prev_close": 1594.0,
+   "entry": 1594.0,
+   "gap_pct": 11.04,
+   "ext_exit_date": "2026-08-13"
+  },
+  {
+   "ticker": "6544.T",
+   "name": "ジャパンエレベーターサービスホールディングス",
+   "type": "第１四半期",
+   "date": "2026-08-06",
+   "signal_price": 1624.5,
+   "shares": 300,
+   "rsi": 35.7,
+   "runup5": -4.3,
+   "status": "pending"
+  },
+  {
+   "ticker": "8830.T",
+   "name": "住友不動産",
+   "type": "第１四半期",
+   "date": "2026-08-06",
+   "signal_price": 3543.0,
+   "shares": 100,
+   "rsi": 41.2,
+   "runup5": -4.3,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-06"

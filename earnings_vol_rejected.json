@@ -457,5 +457,128 @@
    "runup5": -9.8,
    "price": 2903.5
   }
+ ],
+ "2026-08-06": [
+  {
+   "ticker": "1662.T",
+   "name": "石油資源開発",
+   "vol": 1.08,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 46.9,
+   "runup5": -4.3,
+   "price": 1689.0
+  },
+  {
+   "ticker": "1808.T",
+   "name": "長谷工コーポレーション",
+   "vol": 1.98,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 40.5,
+   "runup5": -5.2,
+   "price": 2686.0
+  },
+  {
+   "ticker": "1925.T",
+   "name": "大和ハウス工業",
+   "vol": 1.62,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 51.4,
+   "runup5": -4.8,
+   "price": 4600.0
+  },
+  {
+   "ticker": "2587.T",
+   "name": "サントリービバレッジ＆フード",
+   "vol": 2.14,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 48.8,
+   "runup5": -6.4,
+   "price": 4577.0
+  },
+  {
+   "ticker": "4540.T",
+   "name": "ツムラ",
+   "vol": 1.86,
+   "why": "vol",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 45.9,
+   "runup5": -4.3,
+   "price": 3768.0
+  },
+  {
+   "ticker": "5947.T",
+   "name": "リンナイ",
+   "vol": 1.61,
+   "why": "vol",
+   "last_time": "10:40",
+   "bucket": "場中",
+   "rsi": 52.0,
+   "runup5": -3.5,
+   "price": 3614.0
+  },
+  {
+   "ticker": "6849.T",
+   "name": "日本光電工業",
+   "vol": 1.93,
+   "why": "vol",
+   "last_time": "16:30",
+   "bucket": "引け後",
+   "rsi": 51.3,
+   "runup5": -6.5,
+   "price": 1539.0
+  },
+  {
+   "ticker": "8282.T",
+   "name": "ケーズホールディングス",
+   "vol": 2.12,
+   "why": "announced",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 49.1,
+   "runup5": -3.8,
+   "price": 1881.5
+  },
+  {
+   "ticker": "8804.T",
+   "name": "東京建物",
+   "vol": 1.47,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 44.0,
+   "runup5": -5.4,
+   "price": 3305.0
+  },
+  {
+   "ticker": "9008.T",
+   "name": "京王電鉄",
+   "vol": 1.24,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 47.4,
+   "runup5": -7.5,
+   "price": 769.0
+  },
+  {
+   "ticker": "9831.T",
+   "name": "ヤマダホールディングス",
+   "vol": 1.1,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 43.7,
+   "runup5": -7.7,
+   "price": 674.0
+  }
  ]
 }
