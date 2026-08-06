@@ -395,7 +395,7 @@
       "basis_date": "2026-08-05",
       "prev_close": 217.0,
       "limit_price": 217.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 10.71,
       "short": {
         "mark": "○",
@@ -407,7 +407,14 @@
       "dev25": 19.2,
       "atr_pct": 14.61,
       "vol_ratio": 0.9,
-      "range_pct": 17.1
+      "range_pct": 17.1,
+      "entry_session": "2026-08-06",
+      "entry_open": 219.0,
+      "entry_close": 223.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -1.826,
+      "pnl_yen": -18400,
+      "win": false
     },
     {
       "ticker": "4022.T",
@@ -417,7 +424,7 @@
       "basis_date": "2026-08-05",
       "prev_close": 2362.0,
       "limit_price": 2362.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 16.07,
       "short": {
         "mark": "○",
@@ -429,11 +436,18 @@
       "dev25": 23.7,
       "atr_pct": 6.6,
       "vol_ratio": 1.7,
-      "range_pct": 12.7
+      "range_pct": 12.7,
+      "entry_session": "2026-08-06",
+      "entry_open": 2312.0,
+      "entry_close": 2229.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 3.59,
+      "pnl_yen": 33200,
+      "win": true
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-06",
+  "last_report_date": "2026-08-07",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W31"
 }

@@ -152,11 +152,11 @@
     "prev_close": 1724.5,
     "limit_price": null,
     "entry_open": 1724.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -0.986,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-08-06"
   }
 ]

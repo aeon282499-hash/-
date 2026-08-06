@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-06",
+ "last_run_date": "2026-08-07",
  "positions": [
   {
    "ticker": "6134.T",
@@ -23,8 +23,10 @@
    "d0_close": 16330.0,
    "d1_close": 20330.0,
    "exit_date": "2026-08-12",
-   "status": "pending_d2",
-   "chase_date": "2026-08-06"
+   "status": "held",
+   "chase_date": "2026-08-06",
+   "entry": 19980.0,
+   "entry_kind": "D2寄り追撃"
   },
   {
    "ticker": "7272.T",
@@ -37,6 +39,32 @@
    "exit_date": "2026-08-12",
    "status": "held",
    "entry": 1805.0,
+   "entry_kind": "D1大引け"
+  },
+  {
+   "ticker": "5301.T",
+   "name": "東海カーボン",
+   "d0": "2026-08-05",
+   "d1": "2026-08-06",
+   "gap_pct": 14.06,
+   "d0_close": 1622.0,
+   "d1_close": 1757.0,
+   "exit_date": "2026-08-13",
+   "status": "held",
+   "entry": 1757.0,
+   "entry_kind": "D1大引け"
+  },
+  {
+   "ticker": "4483.T",
+   "name": "ＪＭＤＣ",
+   "d0": "2026-08-05",
+   "d1": "2026-08-06",
+   "gap_pct": 13.68,
+   "d0_close": 3070.0,
+   "d1_close": 3565.0,
+   "exit_date": "2026-08-13",
+   "status": "held",
+   "entry": 3565.0,
    "entry_kind": "D1大引け"
   }
  ],

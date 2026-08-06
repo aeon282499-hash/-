@@ -775,11 +775,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 906.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -0.486,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-08-06"
   },
   {
     "signal_date": "2026-08-04",
@@ -792,11 +792,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 2591.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 0.753,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-08-06"
   },
   {
     "signal_date": "2026-08-05",
