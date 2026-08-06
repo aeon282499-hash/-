@@ -462,7 +462,8 @@
    "shares": 300,
    "rsi": 35.7,
    "runup5": -4.3,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 1620.0
   },
   {
    "ticker": "8830.T",
@@ -473,8 +474,9 @@
    "shares": 100,
    "rsi": 41.2,
    "runup5": -4.3,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 3546.0
   }
  ],
- "last_reminder_date": "2026-08-06"
+ "last_reminder_date": "2026-08-07"
 }
