@@ -1,1 +1,17 @@
-[]
+[
+ {
+  "ticker": "6237.T",
+  "code": "6237",
+  "name": "イワキ",
+  "d0": "2026-08-06",
+  "close": 5600.0,
+  "r1": -5.88,
+  "volx": 2.76,
+  "runup": 40.0,
+  "tov_oku": 8.0,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
+ }
+]
