@@ -142,5 +142,17 @@
     "exit_px": null,
     "pnl": null,
     "yen": null
+  },
+  {
+    "date": "2026-08-07",
+    "ticker": "7014.T",
+    "gap": 5.17,
+    "open": 4580.0,
+    "prev_close": 4355.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
   }
 ]
