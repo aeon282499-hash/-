@@ -54,10 +54,10 @@
     "open": 3856.0,
     "prev_close": 3598.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 3937.0,
+    "exit_px": 4002.0,
+    "pnl": -1.751,
+    "yen": -8754
   },
   {
     "date": "2026-08-06",
