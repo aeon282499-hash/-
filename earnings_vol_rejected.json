@@ -580,5 +580,84 @@
    "runup5": -7.7,
    "price": 674.0
   }
+ ],
+ "2026-08-07": [
+  {
+   "ticker": "1605.T",
+   "name": "ＩＮＰＥＸ",
+   "vol": 1.78,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 50.2,
+   "runup5": -3.2,
+   "price": 3511.0
+  },
+  {
+   "ticker": "1802.T",
+   "name": "大林組",
+   "vol": 1.94,
+   "why": "vol",
+   "last_time": "12:00",
+   "bucket": "場中",
+   "rsi": 34.6,
+   "runup5": -4.0,
+   "price": 3039.0
+  },
+  {
+   "ticker": "1979.T",
+   "name": "大氣社",
+   "vol": 1.39,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 30.8,
+   "runup5": -5.5,
+   "price": 4000.0
+  },
+  {
+   "ticker": "5105.T",
+   "name": "ＴＯＹＯ　ＴＩＲＥ",
+   "vol": 3.05,
+   "why": "announced",
+   "last_time": "11:00",
+   "bucket": "場中",
+   "rsi": 33.3,
+   "runup5": -15.5,
+   "price": 3617.0
+  },
+  {
+   "ticker": "9005.T",
+   "name": "東急",
+   "vol": 1.55,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 41.4,
+   "runup5": -4.0,
+   "price": 1676.5
+  },
+  {
+   "ticker": "9007.T",
+   "name": "小田急電鉄",
+   "vol": 1.26,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 47.5,
+   "runup5": -3.4,
+   "price": 1705.0
+  },
+  {
+   "ticker": "9045.T",
+   "name": "京阪ホールディングス",
+   "vol": 1.03,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 43.4,
+   "runup5": -4.0,
+   "price": 3135.0
+  }
  ]
 }

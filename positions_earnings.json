@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-06",
+ "last_signal_date": "2026-08-07",
  "positions": [
   {
    "ticker": "6521.T",
@@ -192,11 +192,16 @@
    "shares": 100,
    "rsi": 27.6,
    "runup5": -15.0,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 5245.0,
    "entry": 5245.0,
    "gap_pct": 15.25,
-   "ext_exit_date": "2026-08-06"
+   "ext_exit_date": "2026-08-06",
+   "exit_date": "2026-08-06",
+   "exit": 5772.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 10.05,
+   "pnl_yen": 52700
   },
   {
    "ticker": "6101.T",
@@ -207,11 +212,16 @@
    "shares": 100,
    "rsi": 31.6,
    "runup5": -17.8,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 5560.0,
    "entry": 5560.0,
    "gap_pct": 10.79,
-   "ext_exit_date": "2026-08-06"
+   "ext_exit_date": "2026-08-06",
+   "exit_date": "2026-08-06",
+   "exit": 6040.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 8.63,
+   "pnl_yen": 48000
   },
   {
    "ticker": "6752.T",
@@ -222,11 +232,16 @@
    "shares": 200,
    "rsi": 33.1,
    "runup5": -11.3,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 3584.0,
    "entry": 3584.0,
    "gap_pct": 19.53,
-   "ext_exit_date": "2026-08-06"
+   "ext_exit_date": "2026-08-06",
+   "exit_date": "2026-08-06",
+   "exit": 4413.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 23.13,
+   "pnl_yen": 165800
   },
   {
    "ticker": "1803.T",
@@ -462,8 +477,14 @@
    "shares": 300,
    "rsi": 35.7,
    "runup5": -4.3,
-   "status": "pending",
-   "prev_close": 1620.0
+   "status": "closed",
+   "prev_close": 1620.0,
+   "entry": 1620.0,
+   "exit_date": "2026-08-07",
+   "exit": 1513.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -6.6,
+   "pnl_yen": -32100
   },
   {
    "ticker": "8830.T",
@@ -474,8 +495,14 @@
    "shares": 100,
    "rsi": 41.2,
    "runup5": -4.3,
-   "status": "pending",
-   "prev_close": 3546.0
+   "status": "closed",
+   "prev_close": 3546.0,
+   "entry": 3546.0,
+   "exit_date": "2026-08-07",
+   "exit": 3534.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.34,
+   "pnl_yen": -1200
   }
  ],
  "last_reminder_date": "2026-08-07"
