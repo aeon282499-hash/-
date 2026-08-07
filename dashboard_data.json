@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-07 08:37:29",
+  "generated_at": "2026-08-07 10:48:56",
   "date": "2026-08-07",
   "tier_summary": {
     "S": 1,
@@ -28,7 +28,7 @@
     "PANW": -0.87,
     "PLTR": -1.58,
     "PLUG": -1.43,
-    "QBTS": -9.28,
+    "QBTS": -24.22,
     "RGTI": -1.49,
     "S": -1.14,
     "SOX": 0.33,
@@ -268,7 +268,7 @@
         "QBTS"
       ],
       "policy": "",
-      "us_tailwind": -3.77
+      "us_tailwind": -8.75
     },
     {
       "theme": "パワー半導体",
@@ -3361,7 +3361,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": -3.77,
+      "us_tailwind": -8.75,
       "score": 47.6,
       "tier": "B",
       "init_stars": 3,
@@ -4728,7 +4728,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": -3.77,
+      "us_tailwind": -8.75,
       "score": 39.6,
       "tier": "C",
       "init_stars": 3,
@@ -4769,7 +4769,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": -3.77,
+      "us_tailwind": -8.75,
       "score": 39.6,
       "tier": "C",
       "init_stars": 3,
@@ -6233,7 +6233,7 @@
         "RGTI",
         "QBTS"
       ],
-      "us_tailwind": -3.77,
+      "us_tailwind": -8.75,
       "score": 23.6,
       "tier": "C",
       "init_stars": 1,
