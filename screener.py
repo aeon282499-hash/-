@@ -47,6 +47,12 @@ _JST = _tz(_td(hours=9))
 
 
 def _today_jst():
+    # 前夜配信モード（2026-08-09）: main.py が SIGNAL_EFFECTIVE_DATE=翌営業日 をセットすると、
+    # 判定基準日（取得窓の終端・決算±3日窓・信用残の遡り起点）がすべて翌朝8:05ランと
+    # 同じ日付で動く＝夜21時ランでも選定が朝ランと完全一致する。未設定なら従来どおり実日付。
+    ov = os.getenv("SIGNAL_EFFECTIVE_DATE", "").strip()
+    if ov:
+        return _dt.strptime(ov, "%Y-%m-%d").date()
     return _dt.now(_JST).date()
 
 
@@ -1213,6 +1219,9 @@ def run_screener() -> tuple[list[dict], list[dict], dict, list[dict], list[dict]
     # ── 日足データ取得（J-Quants）────────────────────
     token = _jquants_id_token()
     data = batch_download_jquants(token, lookback_trading_days=LOOKBACK_DAYS)
+    # 前夜配信モードが「当日終値が未公開なら帳簿もファイルも触らず終了→朝ランに委ねる」
+    # 判定に使う旗。朝ランは従来どおりこの旗を見ない（挙動不変）。
+    macro["data_ok"] = bool(data)
     if not data:
         print("[screener] J-Quantsデータ取得失敗 → シグナルなし")
         return [], [], macro, [], []

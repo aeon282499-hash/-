@@ -1,0 +1,107 @@
+name: スイング前夜配信
+
+# 2026-08-09 本人依頼「翌営業日の銘柄を前日21時に出して」で新設。
+# main.py を EVENING_RUN=1 で回す＝「翌営業日の朝8:05ランの前倒し実行」。
+# 株価四本値は当日16:30頃・信用週末残高は火曜16:30頃にJ-Quants公開済み（公式仕様）
+# なので、夜21時時点で翌朝ランと同一データ＝同一銘柄・同一帳簿処理になる。
+#
+# フォールバック設計:
+# - 夜ラン成功 → today_signals.json の日付が翌営業日になり、翌朝8:05ランは
+#   既存の送信済みガードで自然にスキップ（朝の他ジョブ=デイトレ/PEAD/決算予備は無傷）。
+# - 夜ランが失敗/データ未公開/起動せず → 何もコミットされず、翌朝8:05ランが
+#   従来どおりフル実行＝配信が消えることはない。
+#
+# 起動: GitHub cronは実測40〜50分遅延（最悪3h45m）するので、19:30 JSTと20:05 JSTの
+# 二段構えで早めに起動し、20:35 JSTまで待ってから実行する（スクリーニング約25分
+# → Discord着弾がほぼ21:00）。二重起動はconcurrency直列化＋送信済みガードで1配信のみ。
+# 分単位の正確な21:00着弾が欲しくなったら、cron-job.org→Cloudflare Workerに
+# 20:35のjobを足して workflow_dispatch で叩く（朝8:05と同じ確実発火経路）。
+
+on:
+  workflow_dispatch:           # Cloudflare Worker接続用の口（現状は手動テスト用）
+  schedule:
+    - cron: '30 10 * * 1-5'   # 19:30 JST 月-金（本命・遅延込みで20時台着を狙う）
+    - cron: '5 11 * * 1-5'    # 20:05 JST 月-金（保険の二段目）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
+      DISCORD_WEBHOOK_BUY_MID_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_MID_URL }}
+      DISCORD_WEBHOOK_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_MID_URL }}
+      DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+      DISCORD_WEBHOOK_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_SMALL_URL }}
+      DISCORD_WEBHOOK_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_URL_PUBLIC }}
+      DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
+      DISCORD_WEBHOOK_CLOSE_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_CLOSE_URL_PUBLIC }}
+      DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
+      # 「売買シグナル極み」＝本人専用（shadow_exit.py）。main.py内で通常版と一緒に動く。
+      DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
+      DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      NOTE_URL: ${{ secrets.NOTE_URL }}
+      EVENING_RUN: "1"
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 20:35 JSTまで待つ（着弾≒21:00に合わせる）
+        run: |
+          # 昼〜20:35の間に起動した場合のみ待機。深夜0時台まで遅延した異常時は
+          # 待たずに進み、main.py側の時間ガード(19時未満はスキップ)に任せる。
+          NOW=$(TZ=Asia/Tokyo date +%H%M)
+          if [ "$NOW" -ge "1200" ] && [ "$NOW" -lt "2035" ]; then
+            echo "現在 $NOW JST → 20:35 まで待機"
+            while [ "$(TZ=Asia/Tokyo date +%H%M)" -lt "2035" ]; do sleep 60; done
+          else
+            echo "現在 $NOW JST → 待機なしで実行"
+          fi
+
+      - name: 最新の台帳を取り込む（15時の大引けチェック等のコミット反映）
+        run: git pull --rebase origin main || true
+
+      - name: スイング前夜配信実行（通常版＋極み）
+        run: python main.py
+
+      - name: ポジション・シグナル保存（朝ランと同一リスト）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          for f in \
+            positions.json positions_sell.json \
+            positions_mid.json positions_sell_mid.json \
+            positions_small.json positions_sell_small.json \
+            today_signals.json today_sell_signals.json today_signals_kiwami.json \
+            today_signals_mid.json today_sell_signals_mid.json \
+            today_signals_small.json today_sell_signals_small.json \
+            shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: evening signals + positions [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          echo "push failed after 3 retries"; exit 1

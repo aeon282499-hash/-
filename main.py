@@ -208,10 +208,30 @@ def main() -> None:
     today = now.date()
     print(f"[main] 実行日時: {now.strftime('%Y-%m-%d %H:%M JST')}")
 
-    # 配信許可窓 7:00〜10:45 JST。Cloudflare本トリガ(8:05)が落ちた日に、
+    # ── 前夜配信モード（EVENING_RUN=1・2026-08-09本人依頼「翌営業日の銘柄を前日21時に」）──
+    # このランを「翌営業日の朝8:05ランの前倒し実行」として動かす。株価四本値は当日16:30頃・
+    # 信用週末残高は火曜16:30頃にJ-Quants公開済み（公式仕様）なので、夜21時の時点で翌朝ランと
+    # 同一データ＝同一銘柄になる。やることは today を翌営業日へ差し替えるだけで、選定・帳簿・
+    # ファイル出力・極み(shadow_exit)まで朝ランと完全一致（screener側の基準日は
+    # SIGNAL_EFFECTIVE_DATE 経由で追従）。配信成功時は today_signals.json の日付が翌営業日に
+    # なるため、翌朝8:05ランは既存の送信済みガードで自然にスキップ＝朝ランは保険として無傷。
+    # 金曜夜のランは「翌営業日=月曜(祝なら火曜)」分を出す。休場日の夜は新しい終値がないので何もしない。
+    evening = os.getenv("EVENING_RUN", "").strip() == "1"
+    if evening:
+        if now.hour < 19:
+            print(f"[main] 前夜配信モードだが時間外（{now.strftime('%H:%M')} JST）→ スキップします")
+            sys.exit(0)
+        if not is_trading_day(today):
+            print("[main] 前夜配信モード: 本日は休場＝新しい終値が出ない日 → スキップします")
+            sys.exit(0)
+        today = next_trading_day(today)
+        os.environ["SIGNAL_EFFECTIVE_DATE"] = today.strftime("%Y-%m-%d")
+        print(f"[main] 前夜配信モード: {now.date()} の夜 → {today} 分のシグナルとして実行")
+
+    # 配信許可窓 7:00〜10:45 JST（朝ランのみ）。Cloudflare本トリガ(8:05)が落ちた日に、
     # GitHubスケジュール保険(cron 8:20)が最大2h遅延(実測10:37着)しても拾えるよう
     # 9:30→10:45 に拡張。本トリガ成功時は today_signals.json の送信済みガードで二重送信を防ぐ。
-    if not (7 <= now.hour < 10 or (now.hour == 10 and now.minute <= 45)):
+    if not evening and not (7 <= now.hour < 10 or (now.hour == 10 and now.minute <= 45)):
         print(f"[main] 配信時間外（{now.strftime('%H:%M')} JST）→ スキップします")
         sys.exit(0)
 
@@ -240,6 +260,12 @@ def main() -> None:
     try:
         # ── ① スクリーニング（共通: スコア降順全候補を取得）────────────────
         signals_main, sell_signals_main, macro, all_buy, all_sell = run_screener()
+        if evening and not macro.get("data_ok", True):
+            # 当日終値がまだ公開されていない（J-Quants 16:30更新の遅延等）。古いデータで
+            # 選定・記帳する事故を防ぐため、帳簿もファイルも触らず即終了 →
+            # today_signals.json が昨日のままなので翌朝8:05ランがフルフォールバックする。
+            print("[main] 前夜配信モード: 当日終値が未公開 → 何もせず終了（朝ランに委ねます）")
+            sys.exit(0)
         print(f"[main] 全BUY候補 {len(all_buy)}件 / 全SELL候補 {len(all_sell)}件")
 
         # 大資金用 top5 はメインチャンネル用に保存
