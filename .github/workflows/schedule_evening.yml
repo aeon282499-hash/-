@@ -51,6 +51,10 @@ jobs:
       # フォールバックでスイング買いチャンネルへ誤爆する作りなので必須。
       DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
       DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
+      # 月次レポート専用ch（2026-08-09・未設定時は各シグナルchへフォールバック）。
+      # 月次は月初前夜の21時にこのワークフローから出るので両方必要。
+      DISCORD_WEBHOOK_SHADOW_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MONTHLY_URL }}
+      DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       NOTE_URL: ${{ secrets.NOTE_URL }}

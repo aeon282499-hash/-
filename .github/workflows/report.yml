@@ -36,6 +36,11 @@ jobs:
           DISCORD_WEBHOOK_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_URL_PUBLIC }}
           DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
           DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
+          # 極みの週次（2026-08-09追加）。これが無くて7/31・8/7の週次が
+          # 「DISCORD_WEBHOOK_SHADOW_URL 未設定→スキップ」で2週連続欠落していた。
+          # WEEKLY未設定時はSHADOW_URL(買いch)へフォールバックする実装なので両方渡す。
+          DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
+          DISCORD_WEBHOOK_SHADOW_WEEKLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_WEEKLY_URL }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python report.py
 
@@ -48,5 +53,12 @@ jobs:
             trade_history.json trade_history_sell.json \
             trade_history_mid.json trade_history_sell_mid.json \
             trade_history_small.json trade_history_sell_small.json || true
-          git diff --cached --quiet || git commit -m "chore: update trade_history (3 tiers) [skip ci]"
-          git push origin main
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update trade_history (3 tiers) [skip ci]"
+          # 8/7(金)に他workflowのpushと競合し1発pushが non-fast-forward で失敗
+          # →run全体がfailureになりtrade_historyコミットが消えた。他workflowと同じ保険を入れる。
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          echo "push failed after 3 retries"; exit 1

@@ -562,6 +562,15 @@ def report() -> None:
 #  通常  : 友達用の安定版。従来のチャンネルへ従来のまま配信（この配信は一切変更しない）。
 SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"           # 極み・買い
 SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り
+# 週次/月次レポートの専用チャンネル（2026-08-09 本人がwebhook新設・secretsに登録済み）。
+# 未設定なら従来どおり買いチャンネルへフォールバック（ローカル等でも壊れない）。
+SHADOW_WEEKLY_WEBHOOK_ENV  = "DISCORD_WEBHOOK_SHADOW_WEEKLY_URL"
+SHADOW_MONTHLY_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_MONTHLY_URL"
+
+
+def _report_env(preferred: str) -> str:
+    """専用webhookが設定されていればそれを、無ければ買いチャンネルを使う。"""
+    return preferred if os.getenv(preferred, "").strip() else SHADOW_WEBHOOK_ENV
 # 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
 # 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
 NOTIFY_KEYS = ("main",)
@@ -886,7 +895,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "description": "\n".join(lines),
         "color": _COLOR_WIN if total >= 0 else _COLOR_LOSE,
         "footer": {"text": f"1件{size // 10000}万・買いは損切りATR%×2.0(下限2.0%)／利確+5%は通常版と同じ"},
-    }])
+    }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
 
 
 def monthly_report(today: date) -> bool:
@@ -946,7 +955,7 @@ def monthly_report(today: date) -> bool:
         "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
         "footer": {"text": f"資金{capital // 10000}万・5枠(1件{size // 10000}万)・"
                            "資金枠に収まる分のみ集計／損切りはATR%×2.0(下限2.0%)"},
-    }])
+    }], env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
 
 
 def backfill(days: int = 120) -> None:

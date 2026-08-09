@@ -1004,7 +1004,9 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
     if dry:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return True
-    url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY")
+    # 月次は専用チャンネル優先（2026-08-09 本人指定）。未設定なら従来どおりデイトレchへ。
+    url = (os.getenv("DISCORD_WEBHOOK_DAY_MONTHLY_URL")
+           or os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY")
            or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         print("[paper] webhook未設定 → 月次スキップ")
