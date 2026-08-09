@@ -772,134 +772,96 @@ def _fmt_pf(pf):
 # ------------------------------------------------------------------ Discord
 def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None,
                 fetch_failed=False):
+    """毎朝のデイトレ売り配信。**スイングのシグナル配信と同一の書体**（2026-08-09改装・
+    本人「本番仕様に・通常のシグナルと一緒の形式に・文字がいっぱいでわかりずらい」）。
+    手順コードブロック・※注釈の束・通算成績ブロックは廃止し、ヘッダ2行＋銘柄行＋
+    答え合わせだけにする。通算はfooterに1行（詳細は週次/月次レポートで見る）。"""
     date_str = today.strftime("%Y年%m月%d日")
+    sep = "─" * 24
     lines = []
     if picks is None:
         picks = []
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
+    n_shoot = min(len(go_picks), PAPER_MAX_PICKS) if go_picks else 0
 
-    # ── 🎯 今日のデイトレ 上位N（フェード・毎営業日） ──
+    # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
         _cap_all = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE)
         _cap_up = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE)
-        n_shoot = min(len(go_picks), PAPER_MAX_PICKS)
-        total = sum(_shares_for(p["min_entry_price"]) * p["min_entry_price"]
-                    for p in go_picks[:n_shoot])
-
-        # ── 手順（毎日同じ・迷わないように最初に固定表示）──
-        lines.append("**🩳 デイトレ売り（フェード）**")
-        lines.append("```")
-        lines.append("① 9:00 寄付 “成行” で空売り（下寄りでも撃つ）")
-        lines.append("② 約定したらすぐ「引成」で買戻しを予約")
-        lines.append("③ 大引けで自動決済。持ち越し禁止・損切りなし")
-        lines.append("```")
-        _tag = "両方とも本命" if n_shoot >= 2 else "今日は1番のみ（2番は条件未達）"
-        lines.append(f"**下の{n_shoot}銘柄を撃つ**（{_tag}／合計 約{total/1e4:.0f}万円）")
-        lines.append("")
-
+        lines += [
+            "🎯 **9:00 寄り成行（信用売り）**で発注・1玉100万円",
+            "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
+            sep,
+        ]
         for i, p in enumerate(go_picks):
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
             shares = _shares_for(p["min_entry_price"])
             amt = shares * p["min_entry_price"]
-            reg = f" {p['reg_note']}" if p.get("reg_note") else ""
             rk = p.get("rank", i + 1)
+            ticker = p["ticker"].replace(".T", "")
+            name = p.get("name", ticker)
+            reg = f" {p['reg_note']}" if p.get("reg_note") else ""
             if i < n_shoot:
-                head = f"**{rk}番** 🔴 **{p.get('name', p['ticker'])}**（{p['ticker']}）"
+                line1 = (f"**#{rk} {name}** ({ticker}) 前日{p['prev_close']:,.0f}円 "
+                         f"→ **寄り成行** {shares:,}株/約{amt / 1e4:.0f}万")
             else:
-                head = (f"{rk}番（予備・撃たない） {p.get('name', p['ticker'])}"
-                        f"（{p['ticker']}）")
-            lines.append(head)
-            qty = (f"**{shares:,}株 空売り**（約{amt/1e4:.0f}万円）" if i < n_shoot
-                   else f"{shares:,}株（約{amt/1e4:.0f}万円）")
-            lines.append(f"　{qty}／ 貸借{sh['mark']}{reg}"
-                         + (f" ／ {p['borrow']}" if p.get("borrow") else ""))
-            lines.append(f"　前日+{p['daily_gain']:.0f}% ・ 出来高{p.get('vol_ratio', 0):.0f}倍 ・ "
-                         f"レンジ{p.get('range_pct', 0):.0f}%")
-            # プレミアム料の損益分岐は「SBIが1株あたりプレミアム料を取る時」だけの話
-            # （主に🚫売り禁をハイカラで売る場合。通常の貸借○×制度信用はコスト実質ゼロ）。
-            # 2026-08-03 本人「わかりずらい・成売りでOKじゃなかった?」→毎日全銘柄に出すのを
-            # やめ、売り禁銘柄の行にだけ付ける。通常銘柄は手順①の成行のままで考えることなし。
+                line1 = f"#{rk}（予備・撃たない） {name} ({ticker})"
+            parts = [f"前日+{p['daily_gain']:.0f}%",
+                     f"出来高×{p.get('vol_ratio', 0):.0f}",
+                     f"レンジ{p.get('range_pct', 0):.0f}%",
+                     f"貸借{sh['mark']}{reg}"]
+            if p.get("borrow"):
+                parts.append(p["borrow"])
+            lines.append(line1)
+            lines.append("   " + "・".join(parts))
+            # 売り禁玉だけ: SBI発注画面にプレミアム料が出た時の分岐（通常銘柄は成行のまま）
             if i < n_shoot and p.get("jsf_stop"):
-                lines.append(f"　💰ハイカラのプレミアム料が 総額〜{_cap_all:,}円→成行OK ／ "
-                             f"〜{_cap_up:,}円→寄指¥{p['prev_close']:,.0f}以上に切替 ／ "
-                             f"超えたら撃たない")
+                lines.append(f"   💰プレミアム料 総額〜{_cap_all:,}円→成行OK／"
+                             f"〜{_cap_up:,}円→寄指{p['prev_close']:,.0f}円以上／超えたら見送り")
             lines.append("")
-
-        lines.append("　※**1番と2番の両方を撃つ**（どちらも本命）。10年BTで上位2本が最良・"
-                     "3番以降は期待値マイナスなので出していない")
-        lines.append("　※現行ルール=前日+7%×ATR5%以上×25MA乖離12%以上"
-                     "（10年: 勝率**59%**・PF**1.50**・年**+71.8万**・勝ち11/11年）。"
-                     "撃たない日が約5割ある設計")
-        lines.append("　※通常銘柄は①の成行だけでよい。SBIの発注画面に**1株あたりプレミアム料**が"
-                     "出た時だけ💰行の分岐を使う（出なければ考えることなし）")
-        lines.append("　※在庫が無い/プレミアム料が上限超なら、その銘柄だけ見送る（もう片方は撃つ）")
-        # 2026-07-31に株価下限(300円)を撤廃した。板と呼値は問題ない（板寄せ約定・出来高比0.03%）が、
-        # 一日信用の売り在庫だけはBTで測れない唯一の未知なので、低位株の日だけ注意を促す。
         if any(p["prev_close"] < 300 for p in go_picks[:n_shoot]):
-            lines.append("　※**低位株あり**（300円未満）。板・呼値は問題ないが一日信用の売り在庫だけ"
-                         "要確認。建てられなければその銘柄は見送り")
-        lines.append("　※🚫売り禁=制度信用の新規売り停止中。**ハイカラ(HYPER)/一般信用に在庫があれば売れる**")
-        lines.append("　※◎売残少=空売り楽／⭐売り長=最強だが要在庫確認・逆日歩")
-        lines.append("　※実弾はSBI一日信用売り(手数料0)。未決済のまま大引けだと強制決済+手数料")
-        lines.append("")
+            lines.append("⚠️ 低位株あり（300円未満）＝一日信用の売り在庫だけ要確認")
+            lines.append("")
     elif fetch_failed:
-        # データ取得失敗＝「見送り」ではなく判定不能（2026-08-02）。従来はこの経路も
-        # 「撃つ銘柄なし（見送り）」と配信され、障害が正常な見送りに偽装されていた。
-        lines.append("**⚠️ データ取得に失敗＝今日は判定不能**")
-        lines.append("　※条件未達の見送りではない。次のトリガーで自動再試行する。"
-                     "続報が来なければJ-Quants障害の可能性")
-        lines.append("")
+        lines += ["**⚠️ データ取得に失敗＝今日は判定不能**",
+                  "　条件未達の見送りではない。次のトリガーで自動再試行する", ""]
     else:
-        # GO無し（条件未達の候補のみ/候補ゼロ）は銘柄名を出さず「撃つ銘柄なし」だけ（紛らわしさ回避）。
-        # 2026-07-31にATR/乖離の下限を入れて見送り日が約4割に増えたので、なぜ撃たないかは書く
-        # （理由が見えないと「システムが止まったのか」と区別できない）。
-        lines.append("**🎯 今日は撃つ銘柄なし（見送り）**")
+        lines.append("本日は条件を満たす銘柄がありません（撃たない日は設計上約5割）。")
         if picks and picks[0].get("nogo_reason"):
-            lines.append(f"　理由: 1番手が {picks[0]['nogo_reason']}")
-        lines.append("　※撃たない日は10年BTで**約5割**（2,421営業日中1,230日）。条件を満たす玉だけ撃つ設計")
+            lines.append(f"　1番手: {picks[0]['nogo_reason']}")
         lines.append("")
-    # (旧)売り禁除外の可視化行は廃止=2026-07-23から売り禁も🚫バッジ付きで銘柄行に表示
 
     # ── 🟢 ライブ買いシグナル（レア） ──
     if buy_fires:
-        lines.append(f"**🟢 買いシグナル {len(buy_fires)}件（実弾基準・出来高10倍ブレイク）**")
+        lines.append(f"**🟢 買いシグナル {len(buy_fires)}件（出来高10倍ブレイク）**")
         for s in buy_fires:
-            lines.append(f"・{s.get('name', s['ticker'])}（{s['ticker']}）MAX指値¥{s.get('max_entry_price', 0):,.0f}で寄成買い→引け")
+            lines.append(f"・{s.get('name', s['ticker'])}（{s['ticker']}）"
+                         f"MAX指値¥{s.get('max_entry_price', 0):,.0f}で寄成買い→引け")
         lines.append("")
 
-    # ── 📓 答え合わせ ──
+    # ── 📓 前日結果 ──
     if just_closed:
-        lines.append("**📓 答え合わせ（前回の当日結果）**")
+        lines.append("**📓 前日結果**")
         for p in just_closed:
             de = "🟢買" if p["direction"] == "BUY" else "🔴売"
             if p["exit_type"] == "SKIP":
-                lines.append(f"⏭️{de} {p['name']}（{p['ticker']}）見送り（{p.get('skip_reason', '指値条件外')}）")
+                lines.append(f"⏭️{de} {p['name']}（{p['ticker'].replace('.T', '')}）"
+                             f"見送り（{p.get('skip_reason', '指値条件外')}）")
             else:
                 mk = "✅" if p["pnl_pct"] > 0 else "❌"
-                lines.append(f"{mk}{de} {p['name']}（{p['ticker']}）"
-                             f"寄{p['entry_open']:,.0f}→引{p['entry_close']:,.0f} "
-                             f"**{p['pnl_pct']:+.2f}%**（{p['pnl_yen']:+,}円）")
-        lines.append("")
+                lines.append(f"{mk}{de} {p['name']}（{p['ticker'].replace('.T', '')}）"
+                             f"寄{p['entry_open']:,.0f}→引{p['entry_close']:,.0f}"
+                             f"｜**{p['pnl_yen']:+,}円**（{p['pnl_pct']:+.2f}%）")
 
-    a, b, se = stats["all"], stats["buy"], stats["sell"]
-    lines.append("**📈 紙トレ通算成績（v2・答え合わせベース）**")
-    lines.append(f"執行 **{a['n']}件** / 勝率 **{a['win']:.0f}%** / 平均 **{a['avg']:+.2f}%** / "
-                 f"PF **{_fmt_pf(a['pf'])}** / 損益 **{a['yen']:+,}円**")
-    if b["n"]:
-        lines.append(f"　🟢買 {b['n']}件 勝率{b['win']:.0f}% 平均{b['avg']:+.2f}% PF{_fmt_pf(b['pf'])}")
-    if se["n"]:
-        lines.append(f"　🔴売 {se['n']}件 勝率{se['win']:.0f}% 平均{se['avg']:+.2f}% PF{_fmt_pf(se['pf'])}")
-    tail = f"見送り{stats['skipped']} / 保有中{stats['pending']}"
-    if stats["expired"]:
-        tail += f" / 失効{stats['expired']}"
-    lines.append("　" + tail)
-
+    a = stats["all"]
+    title_suffix = f"売り{n_shoot}銘柄" if n_shoot else "シグナルなし"
     color = 0x43A047 if a["yen"] > 0 else (0xE53935 if a["yen"] < 0 else 0x757575)
     payload = {"embeds": [{
-        "title": f"🩳【デイトレ売りシグナル（紙）】{date_str}",
-        "description": "\n".join(lines),
+        "title": f"🩳【デイトレ売り】{date_str} — {title_suffix}",
+        "description": "\n".join(lines).rstrip(),
         "color": color,
-        "footer": {"text": "台帳は紙の理論値。実弾はSBI約定に従い、紙との差＝摩擦(在庫/プレミアム/滑り)を測る。"},
+        "footer": {"text": f"寄り成行→引け成行・当日決済｜通算{a['n']}件 {a['yen']:+,}円 "
+                           f"PF{_fmt_pf(a['pf'])}・見送り{stats['skipped']}"},
     }]}
 
     if dry:
