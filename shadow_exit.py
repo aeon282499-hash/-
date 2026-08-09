@@ -825,137 +825,173 @@ def _md(d: str | None) -> str:
 
 
 def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict] | None = None) -> bool:
-    """金曜引け後の極み週次（通常版 notifier.send_weekly_report と同じ体裁）。
+    """金曜引け後の極み週次。**通常版 notifier.send_weekly_report と同一の表示形式**
+    （2026-08-09改装・本人「通常版の方が見やすい・売りの損切りが合計に入らない」）。
+    明細行＝株数/建値/決済値/損益円、買い＋空売りの2ブロック、週間合計は買売込み。
 
     帳簿は翌朝 run_shadow が確定するため、金曜15:40時点では当日決済分が open のまま。
     通常版と同じくコピーに対して当日引けまでドライランしてから集計する（保存はしない）。
-    売りは極みでも通常版と中身が同一なので、渡された通常版のポジションをそのまま使う。
+    sell_positions には極みの売り台帳(kiwami_sell.json・損切り+2.5%)を渡す。
     """
     import copy
     from datetime import timedelta
+    from notifier import _pf_str
 
-    size = TIER_FILES["main"][2]
+    size = TIER_FILES["main"][2]           # 1件100万
     rows = copy.deepcopy(load_ledger("main"))
     if all_data:
         advance(rows, today + timedelta(days=1), all_data)   # 当日引けまで反映（非破壊）
 
-    ws = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
-    ts = today.strftime("%Y-%m-%d")
-    week = [r for r in rows if r.get("status") == "closed" and r.get("pnl_pct") is not None
-            and ws <= (r.get("exit_date") or "") <= ts]
-    holds = [r for r in rows if r.get("status") in ("pending", "open")]
+    week_start = today - timedelta(days=today.weekday())
+    ws, ts = week_start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
 
-    def _shares(r):
-        base = r.get("prev_close") or r.get("entry_open") or 0
+    buy_week = [r for r in rows if r.get("status") == "closed" and r.get("pnl_pct") is not None
+                and ws <= (r.get("exit_date") or "") <= ts]
+    sell_week = [p for p in (sell_positions or []) if p.get("status") == "closed"
+                 and p.get("pnl_pct") is not None and p.get("direction") == "SELL"
+                 and ws <= (p.get("exit_date") or "") <= ts]
+    holds = ([r for r in rows if r.get("status") in ("pending", "open")]
+             + [p for p in (sell_positions or []) if p.get("status") in ("pending", "open")])
+
+    week_yen_total = 0
+
+    def _shares(p):
+        base = p.get("prev_close") or p.get("entry_open") or 0
         return max(100, int(size / base / 100) * 100) if base > 0 else 100
 
-    lines, total = [], 0
-    if week:
-        lines.append(f"📈 **買い 確定 {len(week)}件**")
-        for r in sorted(week, key=lambda x: x.get("exit_date") or ""):
-            sh = _shares(r)
-            ep = r.get("entry_open") or r.get("prev_close") or 0
-            yen = int(r["pnl_pct"] / 100 * sh * ep)
-            total += yen
-            mark = "✅" if r["pnl_pct"] > 0 else "❌"
-            lines.append(
-                f"{mark} {r['name']} {_md(r.get('entry_date'))}→{_md(r.get('exit_date'))} "
-                f"{sh:,}株｜**{yen:+,}円**（{r['pnl_pct']:+.1f}% "
-                f"{_EXIT_LABEL.get(r.get('exit_type') or '', r.get('exit_type') or '?')}"
-                f"・損切り-{r.get('stop_pct', 3.0):.1f}%）")
-        pnls = [r["pnl_pct"] for r in week]
-        win = sum(1 for p in pnls if p > 0)
-        g = sum(p for p in pnls if p > 0); l = -sum(p for p in pnls if p < 0)
-        pf = "∞" if (l <= 0 and g > 0) else ("—" if l <= 0 else f"{g / l:.2f}")
-        lines.append(f"💰 週間 **{total:+,}円**｜勝率 {win}/{len(week)}｜PF {pf}")
-    else:
-        lines.append("📈 **買い 確定 0件**（今週は決済なし）")
+    def block(week: list[dict], label: str, emoji: str, *, sell: bool) -> str:
+        nonlocal week_yen_total
+        if not week:
+            return f"{emoji} {label}: 今週は決済なし"
+        pnls = [p["pnl_pct"] for p in week]
+        wins = sum(1 for x in pnls if x > 0)
+        head = (f"{emoji} {label}: {len(week)}件決済 勝率{wins}/{len(week)}"
+                f"（{round(wins / len(week) * 100)}%）・PF {_pf_str(pnls)}")
+        in_label, out_label = ("売建", "買戻") if sell else ("買", "売")
+        out_rows, entry_total, exit_total, pnl_total = [], 0, 0, 0
+        for p in sorted(week, key=lambda x: (x.get("exit_date") or "", x["ticker"])):
+            sh = _shares(p)
+            ep = p.get("entry_open") or 0
+            xp = ep * (1 - p["pnl_pct"] / 100 if sell else 1 + p["pnl_pct"] / 100)
+            entry_amt = round(sh * ep)
+            pnl_yen = round(entry_amt * p["pnl_pct"] / 100)
+            exit_amt = entry_amt - pnl_yen if sell else entry_amt + pnl_yen
+            entry_total += entry_amt
+            exit_total += exit_amt
+            pnl_total += pnl_yen
+            mark = "✅" if p["pnl_pct"] > 0 else "❌"
+            el = _EXIT_LABEL.get(p.get("exit_type") or "", p.get("exit_type") or "?")
+            out_rows.append(
+                f"{mark} {p['name']} {_md(p.get('entry_date'))}→{_md(p.get('exit_date'))}"
+                f" {sh:,}株｜{in_label} {ep:,.0f}円 → {out_label} {xp:,.0f}円"
+                f"｜**{pnl_yen:+,}円**（{p['pnl_pct']:+.1f}% {el}）")
+        week_yen_total += pnl_total
+        in_total, out_total = ("売建合計", "買戻合計") if sell else ("買付合計", "売却合計")
+        total_line = (f"💰 {in_total} {entry_total:,}円 → {out_total} {exit_total:,}円"
+                      f" ＝ **{pnl_total:+,}円**")
+        return "\n".join([head, *out_rows, total_line])
 
-    # 売り＝通常版と同一（ATR連動は10年検証で効果ゼロと確定したため極みでも変えていない）
-    if sell_positions:
-        sw = [p for p in sell_positions if p.get("status") == "closed"
-              and p.get("pnl_pct") is not None and p.get("direction") == "SELL"
-              and ws <= (p.get("exit_date") or "") <= ts]
-        if sw:
-            lines.append(f"\n📉 **空売り 確定 {len(sw)}件**（通常版と同一ルール）")
-            for p in sw:
-                mark = "✅" if p["pnl_pct"] > 0 else "❌"
-                lines.append(f"{mark} {p['name']} {_md(p.get('exit_date'))} {p['pnl_pct']:+.1f}%")
+    lines = [block(buy_week, "BUY", "📈", sell=False)]
+    if sell_week:
+        lines.append(block(sell_week, "空売り", "📉", sell=True))
 
     if holds:
-        names = "、".join(f"{r['name']}（損切り-{r.get('stop_pct', 3.0):.1f}%）" for r in holds[:5])
+        def _hold_str(p: dict) -> str:
+            tag = "空売り " if p.get("direction") == "SELL" else ""
+            if p.get("status") == "pending":
+                return f"{p['name']}（{tag}約定未確認）"
+            return f"{p['name']}（{tag}損切り-{p.get('stop_pct', LIVE_STOP):.1f}%）"
+        names = "、".join(_hold_str(p) for p in holds[:5])
         more = f" ほか{len(holds) - 5}件" if len(holds) > 5 else ""
-        lines.append(f"\n💼 持ち越し {len(holds)}件 — {names}{more}")
+        lines.append(f"💼 保有中（持ち越し）: {len(holds)}件 — {names}{more}")
     else:
-        lines.append("\n💼 持ち越し: なし")
+        lines.append("💼 保有中（持ち越し）: なし")
 
-    rng = f"{(today - timedelta(days=today.weekday())).strftime('%m/%d')}–{today.strftime('%m/%d')}"
+    # 通常版に無い明示の合計行（本人「合計値がわからん」対応＝買い＋空売りの週間損益）
+    lines.append(f"\n📊 週間合計（買い＋空売り）: **{week_yen_total:+,}円**")
+
+    rng = f"{week_start.strftime('%m/%d')}–{today.strftime('%m/%d')}"
     return _shadow_post([{
-        "title": f"📅【週次】売買シグナル極み｜{rng}",
+        "title": f"📅【週次レポート】売買シグナル極み｜{rng}",
         "description": "\n".join(lines),
-        "color": _COLOR_WIN if total >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{size // 10000}万・買いは損切りATR%×2.0(下限2.0%)／利確+5%は通常版と同じ"},
+        "color": _COLOR_WIN if week_yen_total >= 0 else _COLOR_LOSE,
+        "footer": {"text": f"1件{size // 10000}万・買い3枠/売り3枠・"
+                           "損切り 買いATR%×2.0(下限2.0%)/売り+2.5%・利確+5%"},
     }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
 
 
 def monthly_report(today: date) -> bool:
-    """月初営業日に出す極みの月別・年間損益（通常版 notifier._build_monthly_embed と同じ算式）。
+    """月初営業日に出す極みの月別・年間損益。**通常版 _build_monthly_embed と同一の表示形式**で
+    買い・売りを別embedにして1通で送る（2026-08-09改装・本人「通常版の表示に合わせて」）。
 
-    通常版と数字を並べて比べられるよう、資金枠の扱いも合わせる＝5枠(満枠は見送り)を再現し、
-    月利は Σpnl% ÷ 5、資本は size×5 とする。極みは買いのみ（売りは通常版と中身が同一）。
+    枠は極みの実構成＝買い3枠×100万・売り3枠×100万で集計する（旧版は通常版比較用に
+    5枠換算だったが、本人の実弾と一致しない金額になるため実構成へ変更）。
+    台帳は記帳時に3枠制限済みだが、7/25以前のbackfill分は無制限で入っているので
+    買いだけ _slot_funded(3枠) で資金枠を再適用する。
     """
     from collections import defaultdict
     from notifier import _slot_funded
 
     size = TIER_FILES["main"][2]
-    capital, weight = size * 5, 1 / 5
-    rows = load_ledger("main")
-    funded = _slot_funded(rows, 5)
-
-    monthly, live = defaultdict(list), defaultdict(list)
-    for r in rows:
-        if r.get("status") != "closed" or r.get("pnl_pct") is None or id(r) not in funded:
-            continue
-        ym = (r.get("exit_date") or "")[:7]
-        if not ym:
-            continue
-        monthly[ym].append(r["pnl_pct"])
-        live[ym].append(-r.get("live_stop", LIVE_STOP)
-                        if r.get("exit_type") == "STOP" and r["pnl_pct"] < 0 else None)
-
+    slots = 3
+    capital, weight = size * slots, 1 / slots
     year = str(today.year)
-    ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
-    if not ym_year:
+
+    def _embed(rows: list[dict], *, sell: bool, funded: set | None) -> dict | None:
+        monthly = defaultdict(list)
+        for r in rows:
+            if r.get("status") != "closed" or r.get("pnl_pct") is None:
+                continue
+            if funded is not None and id(r) not in funded:
+                continue
+            ym = (r.get("exit_date") or "")[:7]
+            if ym:
+                monthly[ym].append(r["pnl_pct"])
+        ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
+        if not ym_year:
+            return None
+        lines = []
+        for ym in sorted(ym_year):
+            p = ym_year[ym]
+            mr = sum(p) * weight
+            wins = sum(1 for x in p if x > 0)
+            sign = "+" if mr >= 0 else ""
+            lines.append(f"`{ym}` {len(p)}件 勝率{wins}/{len(p)} "
+                         f"**月利{sign}{mr:.1f}%**（{sign}{mr / 100 * capital / 10000:.1f}万円）")
+        allp = [x for v in ym_year.values() for x in v]
+        ann = sum(allp) * weight
+        a_sign = "+" if ann >= 0 else ""
+        desc = "\n".join(lines)
+        desc += f"\n\n**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{ann / 100 * capital / 10000:.1f}万円）**"
+        kind = "空売り" if sell else "スイング"
+        return {
+            "title": f"📉 {year}年 月別・年間損益（極み・{kind}）" if sell
+                     else f"📈 {year}年 月別・年間損益（極み・{kind}）",
+            "description": desc,
+            "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
+            "footer": {"text": f"※資金{capital // 10000}万・{slots}枠(1件{size // 10000}万)・"
+                               f"資金枠に収まる分のみ集計・損切り{'+2.5%' if sell else 'ATR%×2.0(下限2.0%)'}"},
+        }
+
+    buy_rows = load_ledger("main")
+    buy_embed = _embed(buy_rows, sell=False, funded=_slot_funded(buy_rows, slots))
+    sell_embed = _embed(load_sell_ledger(), sell=True, funded=None)   # 売り台帳は記帳時3枠制限済み
+
+    if not buy_embed and not sell_embed:
         print("[shadow] 月次: 今年の確定分なし → 送信しない")
         return False
 
-    lines = []
-    for ym in sorted(ym_year):
-        p = ym_year[ym]
-        mr = sum(p) * weight
-        wins = sum(1 for x in p if x > 0)
-        lines.append(f"`{ym}` {len(p)}件 勝率{wins}/{len(p)} "
-                     f"**月利{mr:+.1f}%**（{mr / 100 * capital / 10000:+.1f}万円）")
-    allp = [x for v in ym_year.values() for x in v]
-    ann = sum(allp) * weight
-    desc = "\n".join(lines)
-    desc += f"\n\n**{year}年合計: {ann:+.1f}%（{ann / 100 * capital / 10000:+.1f}万円）**"
-
-    # 極みの意味＝損切りの違いがどれだけ効いたか。通常版(一律-3%)との差を併記する。
+    # 極みの意味＝損切りの違いがどれだけ効いたか。通常版(一律-3%)との差を買い側末尾に併記。
     pairs = _pairs("main")
-    if pairs:
+    if pairs and buy_embed:
         dl = sum(p[2] for p in pairs) / 100 * size
         dsh = sum(p[3] for p in pairs) / 100 * size
-        desc += (f"\n\n📊 通算 通常{dl / 10000:+.1f}万 / 極み{dsh / 10000:+.1f}万 "
-                 f"＝ **差 {(dsh - dl) / 10000:+.1f}万**（突合{len(pairs)}件）")
+        buy_embed["description"] += (
+            f"\n\n📊 通算 通常{dl / 10000:+.1f}万 / 極み{dsh / 10000:+.1f}万 "
+            f"＝ **差 {(dsh - dl) / 10000:+.1f}万**（突合{len(pairs)}件）")
 
-    return _shadow_post([{
-        "title": f"📈 {year}年 月別・年間損益（売買シグナル極み・買い）",
-        "description": desc,
-        "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"資金{capital // 10000}万・5枠(1件{size // 10000}万)・"
-                           "資金枠に収まる分のみ集計／損切りはATR%×2.0(下限2.0%)"},
-    }], env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
+    return _shadow_post([e for e in (buy_embed, sell_embed) if e],
+                        env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
 
 
 def backfill(days: int = 120) -> None:
