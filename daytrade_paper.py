@@ -786,8 +786,6 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
 
     # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
-        _cap_all = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE)
-        _cap_up = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE)
         lines += [
             "🎯 **9:00 寄り成行（信用売り）**で発注・1玉100万円",
             "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
@@ -814,10 +812,9 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 parts.append(p["borrow"])
             lines.append(line1)
             lines.append("   " + "・".join(parts))
-            # 売り禁玉だけ: SBI発注画面にプレミアム料が出た時の分岐（通常銘柄は成行のまま）
-            if i < n_shoot and p.get("jsf_stop"):
-                lines.append(f"   💰プレミアム料 総額〜{_cap_all:,}円→成行OK／"
-                             f"〜{_cap_up:,}円→寄指{p['prev_close']:,.0f}円以上／超えたら見送り")
+            # 💰プレミアム料の損益分岐行は 2026-08-10 本人指示「よくわからん・いらない」で廃止
+            # （2026-08-03に売り禁玉のみへ縮小→今回で表示ゼロ）。しきい値の定数
+            # FADE_EDGE_PCT_GAPDN/MAIN は残置＝復活はここに1行足すだけ。
             lines.append("")
         if any(p["prev_close"] < 300 for p in go_picks[:n_shoot]):
             lines.append("⚠️ 低位株あり（300円未満）＝一日信用の売り在庫だけ要確認")
