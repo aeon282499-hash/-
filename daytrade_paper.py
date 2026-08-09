@@ -961,45 +961,50 @@ def monthly_stats(book: dict, ym: str) -> dict:
 
 
 def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
-    """月次サマリーを1通だけ送る。対象月に確定が無ければ送らない。"""
-    m = monthly_stats(book, ym)
-    y, mo = ym.split("-")
-    if not m["n"]:
+    """月次サマリー。**スイング月次と同一の書体**（2026-08-09改装・本人「一緒にして」）:
+    `YYYY-MM` N件 勝率 月利%（万円）の月別行＋年間合計。1番のみ（実弾対象）の円も併記。
+    月利%は1玉100万に対する率。ym は送信トリガー用（その年の全月を表にする）。"""
+    year = ym[:4]
+    rows_all = [p for p in (book.get("positions") or [])
+                if p.get("status") == "closed" and p.get("pnl_yen") is not None
+                and p.get("exit_type") == "CLOSE"
+                and str(p.get("signal_date", "")).startswith(year)]
+    if not any(str(p.get("signal_date", "")).startswith(ym) for p in rows_all):
         print(f"[paper] {ym} の確定なし → 月次は無送信")
         return False
 
-    cum = cumulative_stats(book)["all"]
-    L = []
-    L.append(f"**{int(mo)}月の確定 {m['n']}件**")
-    L.append("```")
-    L.append(f"損益      {m['yen']:>+12,.0f} 円")
-    L.append(f"勝率      {m['win_rate']:>11.1f} %   ({m['win_n']}勝{m['n']-m['win_n']}敗)")
-    L.append(f"平均      {m['avg_pct']:>+11.2f} %/件")
-    L.append(f"PF(円)    {_fmt_pf(m['pf']):>12}   ← 実際のお金")
-    L.append(f"PF(%)     {_fmt_pf(m['pf_pct']):>12}   ← 1件あたりの質")
-    L.append(f"撃った日  {m['day_n']:>11} 日   (勝ち{m['day_win']}日)")
-    L.append("```")
-    if m["pf"] < 1 <= m["pf_pct"]:
-        L.append("⚠️ PFが円で1割れ・%で1超え＝**大きい玉で負けて小さい玉で勝っている**。"
-                 "玉サイズの偏りが効いているサイン。")
-    if m.get("n_skip"):
-        L.append(f"※ 条件を満たさず見送った記録が別に{m['n_skip']}件（成績には含めない）")
-    b, wst = m["best"], m["worst"]
-    L.append(f"🟢 最良 **{b['name']}**（{b['ticker'].replace('.T','')}）"
-             f" {b['pnl_pct']:+.2f}% / {b['pnl_yen']:+,.0f}円  〔{b['signal_date']}〕")
-    L.append(f"🔴 最悪 **{wst['name']}**（{wst['ticker'].replace('.T','')}）"
-             f" {wst['pnl_pct']:+.2f}% / {wst['pnl_yen']:+,.0f}円  〔{wst['signal_date']}〕")
-    bd, wd = m["best_day"], m["worst_day"]
-    L.append(f"📈 最良日 {bd[0]} {bd[1]:+,.0f}円 ／ 📉 最悪日 {wd[0]} {wd[1]:+,.0f}円")
-    L.append("")
-    L.append(f"**通算**（紙・{cum['n']}件） 損益 **{cum['yen']:+,.0f}円** ／ PF {_fmt_pf(cum['pf'])}")
+    by_m: dict[str, list[dict]] = {}
+    for p in rows_all:
+        by_m.setdefault(p["signal_date"][:7], []).append(p)
 
-    color = 0x43A047 if m["yen"] > 0 else (0xE53935 if m["yen"] < 0 else 0x757575)
+    capital = CAPITAL_PER_TRADE
+    L = []
+    for m in sorted(by_m):
+        v = by_m[m]
+        yen = sum(int(p["pnl_yen"]) for p in v)
+        wins = sum(1 for p in v if p["pnl_yen"] > 0)
+        r1 = sum(int(p["pnl_yen"]) for p in v if (p.get("rank") or 1) == 1)
+        mr = yen / capital * 100
+        sign = "+" if mr >= 0 else ""
+        L.append(f"`{m}` {len(v)}件 勝率{wins}/{len(v)} **月利{sign}{mr:.1f}%**"
+                 f"（{sign}{yen / 10000:.1f}万円・①1番のみ{r1 / 10000:+.1f}万）")
+
+    total = sum(int(p["pnl_yen"]) for p in rows_all)
+    r1_total = sum(int(p["pnl_yen"]) for p in rows_all if (p.get("rank") or 1) == 1)
+    ann = total / capital * 100
+    a_sign = "+" if ann >= 0 else ""
+    L.append("")
+    L.append(f"**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{total / 10000:.1f}万円）**"
+             f"　①1番のみ **{r1_total / 10000:+.1f}万円**")
+
+    cum = cumulative_stats(book)["all"]
+    color = 0x43A047 if total >= 0 else 0xE53935
     payload = {"embeds": [{
-        "title": f"📅【デイトレ売り（フェード）｜月次サマリー】{y}年{int(mo)}月",
+        "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": "紙の理論値。実弾はSBI約定に従う。玉サイズが違うので「%平均」と「円合計」の符号は一致しないことがある。"},
+        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（8月実弾は①1番のみ）｜"
+                           f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -1065,53 +1070,71 @@ def weekly_stats(book: dict, wk: str) -> dict:
     }
 
 
+def _md(date_str: str | None) -> str:
+    return f"{date_str[5:7]}/{date_str[8:10]}" if date_str and len(date_str) >= 10 else "?"
+
+
+def _rank_tag(p: dict) -> str:
+    r = p.get("rank")
+    return {1: "①", 2: "②", 3: "③"}.get(r, f"({r})" if r else "")
+
+
+def _trade_shares_of(p: dict) -> int:
+    """記帳時の実株数を逆算する（pnl_yen＝株数×(売建-買戻)）。玉サイズ変更(50万→100万)を跨いでも正しい。"""
+    eo, ec = p.get("entry_open") or 0, p.get("entry_close") or 0
+    if eo > 0 and abs(eo - ec) > 1e-9 and p.get("pnl_yen"):
+        return max(100, int(round(float(p["pnl_yen"]) / (eo - ec) / 100)) * 100)
+    return max(100, int(CAPITAL_PER_TRADE / eo / 100) * 100) if eo > 0 else 100
+
+
 def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
-    """週次サマリーを1通だけ送る。確定が無ければ送らない。"""
+    """週次サマリー。**スイング週次と同一の書体**（2026-08-09改装・本人「一緒にして」）。
+    明細行＝株数/売建/買戻/損益円。①=1番（8月の実弾対象）・②=2番（紙のみ）を行頭で区別し、
+    合計にも1番のみの内訳を併記する。"""
     s = weekly_stats(book, wk)
     mon, fri = week_range(wk)
     if not s["n"]:
         print(f"[paper] {wk} の確定なし → 週次は無送信")
         return False
 
-    L = [f"**{mon[5:].replace('-', '/')}〜{fri[5:].replace('-', '/')} の確定 {s['n']}件**", "```"]
-    L.append(f"損益      {s['yen']:>+12,.0f} 円")
-    L.append(f"勝率      {s['win_rate']:>11.1f} %   ({s['win_n']}勝{s['n']-s['win_n']}敗)")
-    L.append(f"平均      {s['avg_pct']:>+11.2f} %/件")
-    L.append(f"PF(円)    {_fmt_pf(s['pf']):>12}")
-    L.append(f"PF(%)     {_fmt_pf(s['pf_pct']):>12}")
-    L.append("```")
-    # 日別（撃たなかった日も «―» で見えるようにする＝稼働のハートビート）
-    L.append("**日別**")
-    day_lines = []
-    d0 = datetime.strptime(mon, "%Y-%m-%d").date()
-    for k in range(5):
-        d = d0 + timedelta(days=k)
-        ds = d.strftime("%Y-%m-%d")
-        lab = "月火水木金"[k]
-        if ds in s["by_day"]:
-            v = s["by_day"][ds]
-            day_lines.append(f"{lab} {ds[5:]}  {v:>+9,.0f}円")
+    rows = sorted(s["rows"], key=lambda p: (p["signal_date"], p.get("rank") or 9))
+    pnls = [p["pnl_pct"] for p in rows if p.get("pnl_pct") is not None]
+    head = (f"📉 売りフェード: {s['n']}件決済 勝率{s['win_n']}/{s['n']}"
+            f"（{round(s['win_rate'])}%）・PF {_fmt_pf(s['pf_pct'])}")
+
+    L = [head]
+    entry_total = exit_total = 0
+    rank1_yen = other_yen = 0
+    for p in rows:
+        sh = _trade_shares_of(p)
+        eo = p.get("entry_open") or 0
+        ec = p.get("entry_close") or 0
+        yen = int(p["pnl_yen"])
+        entry_total += round(sh * eo)
+        exit_total += round(sh * ec)
+        if (p.get("rank") or 1) == 1:
+            rank1_yen += yen
         else:
-            day_lines.append(f"{lab} {ds[5:]}  {'—':>10}"
-                             + ("（休場）" if not is_trading_day(d) else "（対象なし）"))
-    L.append("```\n" + "\n".join(day_lines) + "\n```")
+            other_yen += yen
+        mark = "✅" if yen > 0 else ("❌" if yen < 0 else "➖")
+        jsf = "🚫" if p.get("jsf_stop") else ""
+        L.append(
+            f"{mark} {_rank_tag(p)}{p['name']} {_md(p['signal_date'])}"
+            f" {sh:,}株｜売建 {eo:,.0f}円 → 買戻 {ec:,.0f}円"
+            f"｜**{yen:+,}円**（{p.get('pnl_pct', 0):+.2f}%）{jsf}")
+    L.append(f"💰 売建合計 {entry_total:,}円 → 買戻合計 {exit_total:,}円 ＝ **{s['yen']:+,.0f}円**")
+    L.append(f"\n📊 うち ①1番のみ（実弾対象）: **{rank1_yen:+,}円** ／ ②以下（紙のみ）: {other_yen:+,}円")
     if s.get("n_skip"):
         L.append(f"※ 条件を満たさず見送った記録が別に{s['n_skip']}件（成績には含めない）")
-    b, w_ = s["best"], s["worst"]
-    L.append(f"🟢 最良 **{b['name']}**（{b['ticker'].replace('.T','')}）"
-             f" {b['pnl_pct']:+.2f}% / {b['pnl_yen']:+,.0f}円")
-    L.append(f"🔴 最悪 **{w_['name']}**（{w_['ticker'].replace('.T','')}）"
-             f" {w_['pnl_pct']:+.2f}% / {w_['pnl_yen']:+,.0f}円")
-    cum = cumulative_stats(book)["all"]
-    L.append("")
-    L.append(f"**通算**（紙・{cum['n']}件） 損益 **{cum['yen']:+,.0f}円** ／ PF {_fmt_pf(cum['pf'])}")
 
+    cum = cumulative_stats(book)["all"]
     color = 0x43A047 if s["yen"] > 0 else (0xE53935 if s["yen"] < 0 else 0x757575)
     payload = {"embeds": [{
-        "title": f"🗓️【デイトレ売り（フェード）｜週次サマリー】{wk}",
+        "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": "紙の理論値。金曜の玉は月曜朝に確定するため、週明けの初回実行で前週分を送る。"},
+        "footer": {"text": f"寄成→引成・紙の理論値（8月実弾は1番のみ）｜通算{cum['n']}件 "
+                           f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

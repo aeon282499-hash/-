@@ -120,63 +120,91 @@ def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
 
 def build_embeds(targets: list[dict], checked: list[dict], today: date,
                  positions: list[dict], sell: bool = False) -> list[dict]:
+    """通常版 notifier._build_close_embed / _build_close_no_targets_embed と同一の書体
+    （2026-08-09改装・本人「わかりずらい・売買シグナルと一緒の書体にして」）。
+    極み固有の情報は損切りが通常版と違う時だけ行末に付ける（買いは現在一律-3%＝表示不要、
+    売りは+2.5%＝通常版+3.0%と違うので明示）。"""
     stop_of = {p["ticker"]: p.get("stop_pct") or 3.0 for p in positions}
-    atr_of = {p["ticker"]: p.get("atr_pct") for p in positions}
-    d = today.strftime("%Y-%m-%d")
+    date_str = today.strftime("%m/%d")
+    time_str = datetime.now(JST).strftime("%H:%M JST")
+    sep = "─" * 22
     embeds = []
 
+    def _stop_note(tk: str) -> str:
+        sp = stop_of.get(tk, 3.0)
+        if abs(sp - 3.0) < 0.01:
+            return ""                     # 通常版と同じ幅なら書かない
+        return f"・損切り{'+' if sell else '-'}{sp:.1f}%"
+
     if targets:
-        lines = []
-        for t in targets:
-            tk = t["ticker"]
-            reason = t.get("reason") or t.get("exit_type") or "処分"
-            px = t.get("current_price")
-            pnl = t.get("unrealized_pnl")
-            lines.append(
-                f"**{t.get('name', tk)}**（{tk[:4]}）{reason}\n"
-                f"　現在値 {px:,.1f} / 含み {pnl:+.2f}%".replace("None", "—")
-                if px is not None else f"**{t.get('name', tk)}**（{tk[:4]}）{reason}")
-        act = "買い戻す" if sell else "決済する"
+        header_action = ("🛒 **15:25-15:30 クロージング**で成行買戻し（SBI証券・信用）" if sell
+                         else "🛒 **15:25-15:30 クロージング**で成行売り（SBI証券）")
+        lines = [header_action, f"対象: **{len(targets)}銘柄**", sep]
+        for i, t in enumerate(targets, 1):
+            ticker = t["ticker"].replace(".T", "")
+            name = t.get("name", ticker)
+            rtype = t.get("reason_type")
+            hold = t.get("today_hold", "?")
+            rsi = t.get("rsi_now")
+            price = t.get("current_price")
+            entry = t.get("entry_open")
+            if rtype == "RSI":
+                icon = "🔔"
+                tag = f"RSI回復(RSI={rsi:.1f})" if rsi is not None else "RSI回復"
+            elif rtype:
+                icon = "⏰"
+                tag = f"{hold}日目MAXHOLD"
+            else:
+                icon = "🔔"
+                tag = t.get("reason") or t.get("exit_type") or "処分"
+            line = f"{icon} **#{i} {name}** ({ticker}) — {tag}"
+            if price is not None and entry:
+                pnl_now = (entry - price) / entry * 100 if sell else (price - entry) / entry * 100
+                line += f" / {pnl_now:+.2f}%"
+            lines.append(line + _stop_note(t["ticker"]))
+        title_kind = "空売り大引け処分指示" if sell else "大引け処分指示"
         embeds.append({
-            "title": f"🔔 極み｜大引けで{'買戻し' if sell else '処分'} — {d}",
-            "description": (f"**15:00〜15:30に成行で{act}**"
-                            f"（極みの{'空売り' if sell else '買い'}玉）。\n\n" + "\n".join(lines)),
+            "title": f"⚡【極み {title_kind}】{date_str}",
+            "description": "\n".join(lines),
             "color": _COLOR_ACT,
+            "footer": {"text": f"配信時刻: {time_str}"},
         })
 
     settled = [c for c in checked if c.get("note") and "OCO" in str(c.get("note"))]
     holds = [c for c in checked if c not in settled]
-    if settled:
-        embeds.append({
-            "title": f"✅ 極み｜本日OCO約定済み{'（空売り）' if sell else ''}",
-            "description": "\n".join(
-                f"**{c.get('name', c['ticker'])}**（{c['ticker'][:4]}）{c['note']}"
-                for c in settled),
-            "color": _COLOR_DONE,
-        })
-    if holds:
-        lines = []
+    if settled or holds:
+        action = "買戻し" if sell else "処分"
+        lines = [f"15:00判定: {action}条件未達 → **保有継続**（OCO注文はそのまま）", sep]
+        warn = False
+        for c in settled:
+            ticker = c["ticker"].replace(".T", "")
+            hold_str = f"{c['today_hold']}日目 — " if c.get("today_hold") else ""
+            lines.append(f"✅ **{c.get('name', ticker)}** ({ticker}) {hold_str}{c['note']}")
         for c in holds:
-            tk = c["ticker"]
-            sp = stop_of.get(tk, 3.0)
-            atr = atr_of.get(tk)
-            note = f"　⚠️ {c['note']}" if c.get("note") else ""
+            ticker = c["ticker"].replace(".T", "")
+            name = c.get("name", ticker)
+            hold = c.get("today_hold")
+            if c.get("note"):
+                warn = True
+                hold_str = f"{hold}日目 — " if hold else ""
+                lines.append(f"⚠️ **{name}** ({ticker}) {hold_str}{c['note']}{_stop_note(c['ticker'])}")
+                continue
             rsi = c.get("rsi_now")
-            px = c.get("current_price")
-            lines.append(
-                f"**{c.get('name', tk)}**（{tk[:4]}）保有継続"
-                + (f" RSI {rsi:.1f}" if rsi is not None else "")
-                + (f" / 現在値 {px:,.1f}" if px is not None else "")
-                + f"\n　損切り **-{sp:.1f}%**"
-                + (f"（ATR {atr:.2f}%）" if atr else "")
-                + (f" / 残り{3 - c['today_hold']}日" if c.get("today_hold") else "")
-                + note)
+            price = c.get("current_price")
+            rsi_str = (f"RSI {rsi:.1f}＞50（反転待ち）" if sell else f"RSI {rsi:.1f}＜50（回復待ち）") \
+                if rsi is not None else "RSI —"
+            rest = 3 - (hold or 0)
+            rest_str = "明日が処分期限" if rest == 1 else f"期限まであと{rest}日"
+            px_str = f"・現在 {price:,.0f}円" if price is not None else ""
+            lines.append(f"📊 **{name}** ({ticker}) {hold}日目 — "
+                         f"{rsi_str}{px_str}・{rest_str}{_stop_note(c['ticker'])}")
+        title_kind = "売り保有チェック" if sell else "大引けチェック"
+        suffix = "" if targets else f" — {action}対象なし"
         embeds.append({
-            "title": f"🔍 極み｜{'空売り ' if sell else ''}保有継続（処分なし）",
+            "title": f"🔍【極み {title_kind}】{date_str}{suffix}",
             "description": "\n".join(lines),
-            "color": _COLOR_OK,
-            "footer": {"text": ("売りは通常版と同一ルール（損切り+3%固定）"
-                                if sell else "損切りは銘柄ごとに違う＝OCOの数字を通常版と取り違えないこと")},
+            "color": 0xE74C3C if warn else (_COLOR_DONE if settled else _COLOR_OK),
+            "footer": {"text": f"配信時刻: {time_str}"},
         })
     return embeds
 

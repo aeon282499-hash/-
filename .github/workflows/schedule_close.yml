@@ -89,6 +89,12 @@ jobs:
       - name: パッケージインストール
         run: pip install -r requirements.txt
 
+      - name: 最新マーカーを取り込む（多重起動の二重通知ガード・2026-08-09）
+        # 8/7に14:55本トリガと遅延バックアップcron(15:04)が並走し、後発のcheckoutが
+        # 先発のマーカーpush(15:10)より古くて極みの処分通知が15:09と15:24の2回出た。
+        # pip後(=実行直前)にpullすれば先発の送信済みマーカーを拾ってスキップできる。
+        run: git pull --rebase origin main || true
+
       - name: 大引け前チェック実行
         run: python close_check.py
 

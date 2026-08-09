@@ -724,29 +724,8 @@ def send_discord(today: date) -> bool:
             "color": _COLOR_INFO,
         })
 
-    # ③ 通算スコアボード
-    grand, board = 0.0, []
-    for key in NOTIFY_KEYS:
-        _, _, size, label = TIER_FILES[key]
-        pairs = _pairs(key)
-        if not pairs:
-            continue
-        dl = sum(p[2] for p in pairs) / 100 * size
-        dsh = sum(p[3] for p in pairs) / 100 * size
-        grand += dsh - dl
-        split = sum(1 for p in pairs if abs(p[3] - p[2]) > 0.01)
-        board.append(
-            f"**{label}**（{len(pairs)}件・うち判定が割れた玉{split}件）\n"
-            f"　通常 {dl / 10_000:+.2f}万 ／ 極み {dsh / 10_000:+.2f}万 ／ "
-            f"差 **{(dsh - dl) / 10_000:+.2f}万**")
-    if board:
-        embeds.append({
-            "title": f"📊 通算 通常 vs 極み　合計差 {grand / 10_000:+.2f}万",
-            "description": "\n".join(board),
-            "color": _COLOR_WIN if grand >= 0 else _COLOR_LOSE,
-            "footer": {"text": "10年BTでは大100万で+234.5万→+345.3万・最悪3年-116.2→-78.1万。"
-                               "ただし差が出るのは損切りに触った玉だけ＝数ヶ月貯めないと判断不能"},
-        })
+    # ③ 通算スコアボード（📊 通常vs極みの合計差）は 2026-08-09 本人指示
+    # 「合計差とかの案内いらない」で廃止。差の記録自体は _pairs() で常に再計算できる。
 
     # 枠満杯の見送りは 2026-08-04 から ⚪ 印で①に直接表示（skip_noteの別枠表示は廃止）
 
@@ -981,14 +960,8 @@ def monthly_report(today: date) -> bool:
         print("[shadow] 月次: 今年の確定分なし → 送信しない")
         return False
 
-    # 極みの意味＝損切りの違いがどれだけ効いたか。通常版(一律-3%)との差を買い側末尾に併記。
-    pairs = _pairs("main")
-    if pairs and buy_embed:
-        dl = sum(p[2] for p in pairs) / 100 * size
-        dsh = sum(p[3] for p in pairs) / 100 * size
-        buy_embed["description"] += (
-            f"\n\n📊 通算 通常{dl / 10000:+.1f}万 / 極み{dsh / 10000:+.1f}万 "
-            f"＝ **差 {(dsh - dl) / 10000:+.1f}万**（突合{len(pairs)}件）")
+    # 通常版との差の併記（📊通算 通常vs極み）は 2026-08-09 本人指示
+    # 「合計差とかの案内いらない」で廃止。必要になれば _pairs("main") から再計算できる。
 
     return _shadow_post([e for e in (buy_embed, sell_embed) if e],
                         env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
