@@ -47,6 +47,10 @@ jobs:
       # 「売買シグナル極み」＝本人専用（shadow_exit.py）。main.py内で通常版と一緒に動く。
       DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
+      # デイトレ売りフェード（main_day.py→daytrade_paper）。この2本が無いと
+      # フォールバックでスイング買いチャンネルへ誤爆する作りなので必須。
+      DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
+      DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       NOTE_URL: ${{ secrets.NOTE_URL }}
@@ -83,6 +87,12 @@ jobs:
       - name: スイング前夜配信実行（通常版＋極み）
         run: python main.py
 
+      - name: デイトレ売りフェード前夜配信（2026-08-09追加）
+        # main_day.py側のガードで「スイング夜ランが成功した夜だけ」実行される（鮮度ガード相乗り）。
+        # ここが失敗しても後段のコミット（スイングの帳簿保存）は止めない＝フェードだけ朝ランに落ちる。
+        continue-on-error: true
+        run: python main_day.py
+
       - name: ポジション・シグナル保存（朝ランと同一リスト）
         run: |
           git config user.name  "github-actions[bot]"
@@ -95,6 +105,7 @@ jobs:
             today_signals.json today_sell_signals.json today_signals_kiwami.json \
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
+            day_signals.json last_day_run.json positions_day_paper.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json; do
             [ -f "$f" ] && git add "$f"
           done

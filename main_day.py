@@ -298,7 +298,41 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
 
 
 def main() -> None:
-    today = datetime.now(JST).date()
+    now   = datetime.now(JST)
+    today = now.date()
+
+    # ── 前夜配信モード（EVENING_RUN=1・2026-08-09・スイング夜配信と同時実行）──
+    # スイングmain.pyと同方式で「翌営業日の朝ランの前倒し」として today を翌営業日へ差し替える。
+    # フェードの判定材料（前日+7%/ATR/乖離/貸借○）は前日終値まで＝当日16:30公開で夜には揃い、
+    # 売り禁等の規制情報も夕方公表＝翌朝8:05ランと同じものが見える。さらに売り禁玉の
+    # ハイカラ(HYPER)在庫は前夜に出る早い者勝ちなので、前夜配信の方が在庫確保に有利。
+    # 鮮度ガードはスイング夜ランに相乗り: today_signals.json の日付が翌営業日になっていない
+    # （＝スイング夜ランが未完了/データ未公開で見送った）夜は何もせず終了→朝ランが従来どおり配信。
+    # 成功時は last_day_run.json の日付が翌営業日になるため、翌朝の main_day は自然スキップ。
+    evening = os.getenv("EVENING_RUN", "").strip() == "1"
+    if evening:
+        if now.hour < 19:
+            print(f"[main_day] 前夜配信モードだが時間外（{now.strftime('%H:%M')} JST）→ スキップ")
+            sys.exit(0)
+        if not is_trading_day(today):
+            print("[main_day] 前夜配信モード: 本日は休場＝新しい終値が出ない日 → スキップ")
+            sys.exit(0)
+        nxt = today + timedelta(days=1)
+        while not is_trading_day(nxt):
+            nxt += timedelta(days=1)
+        swing_ok = False
+        try:
+            with open("today_signals.json", encoding="utf-8") as _f:
+                swing_ok = json.load(_f).get("date") == nxt.strftime("%Y-%m-%d")
+        except Exception:
+            swing_ok = False
+        if not swing_ok:
+            print("[main_day] 前夜配信モード: スイング夜ラン未完了（当日終値未公開の可能性）→ 朝ランに委ねます")
+            sys.exit(0)
+        os.environ["SIGNAL_EFFECTIVE_DATE"] = nxt.strftime("%Y-%m-%d")
+        print(f"[main_day] 前夜配信モード: {today} の夜 → {nxt} 分として実行")
+        today = nxt
+
     today_str = today.strftime("%Y-%m-%d")
     print(f"[main_day] 実行日: {today}")
 

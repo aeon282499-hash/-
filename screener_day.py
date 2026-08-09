@@ -157,10 +157,11 @@ def run_screener_day() -> tuple[list[dict], dict]:
         tickers.append("1321.T")
     print(f"[screener_day] ユニバース: {len(tickers)} 銘柄")
 
-    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
-    # JST基準（GitHubランナーはUTC。朝8時台は date.today() がUTC前日を返し、
-    # 「今日」が昨日になって前日確定足の窓が1日ズレる。2026-06-10修正）
-    _today = _dt.now(_tz(_td(hours=9))).date()
+    from datetime import timedelta as _td
+    # 基準日は screener._today_jst() に統一。JST固定（2026-06-10修正）に加え、
+    # 前夜配信モードの SIGNAL_EFFECTIVE_DATE（翌営業日）にも自動追従する（2026-08-09）。
+    from screener import _today_jst
+    _today = _today_jst()
     today_str  = _today.strftime("%Y-%m-%d")
     start_str  = (_today - _td(days=90)).strftime("%Y-%m-%d")
     token = _jquants_id_token()
