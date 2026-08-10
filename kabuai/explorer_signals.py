@@ -203,6 +203,40 @@ def nagi_break_recent(df: pd.DataFrame, cfg: dict) -> dict | None:
             "today": bool(ts == df.index[-1])}
 
 
+# ═══ Phase5: 初動ブレイク（60日ぶり高値の初回更新・10年BT検証済み 2026-08-11） ═══
+
+def break60_recent(df: pd.DataFrame, cfg: dict) -> dict | None:
+    """検証済み初動: 終値が60日高値を30営業日ぶりに初めて更新した陽線×出来高1.5倍以上。
+    本人指名の太陽誘電/キオクシア/村田/テラドローン/日電波の怪物レッグを実例トレースで
+    起点+10〜21日に捕捉できた定義（_probe_shodo_trace.py）。
+    10年BT(_bt_shodo_break.py・n=11,601): 翌寄り買い→20日保有・損切り-15%で
+    平均+0.86%/件・PF1.22・陽性年9/11（負け年2018/2024・勝率48.7%＝外れ多め当たれば大きい型）。
+    過去棄却のbt_breakout_catch(過熱済み銘柄の追っかけ)との違いは「初回性」＝30営業日
+    ブレイクが無かった後の最初の更新だけを拾う。"""
+    bc = cfg["break60"]
+    need = int(bc["high_break_days"]) + int(bc["fresh_gap_days"]) + 5
+    if len(df) < need:
+        return None
+    c, o, v = df["Close"], df["Open"], df["Volume"]
+    hi_n = c.rolling(int(bc["high_break_days"])).max().shift(1)
+    brk = c > hi_n
+    # 直近 fresh_gap_days 営業日にブレイクが無かった「初回」だけ（BTのfresh条件と同一）
+    prev_any = brk.shift(1).rolling(int(bc["fresh_gap_days"]), min_periods=1) \
+                  .max().fillna(0).astype(bool)
+    volx = v / (v.rolling(20).mean().shift(1) + 1e-9)
+    tov20 = (c * v).rolling(20).mean().shift(1)
+    trig = brk & ~prev_any & (c > o) \
+        & (volx >= float(bc["vol_ratio_min"])) & (tov20 >= float(bc["min_turnover"]))
+    recent = trig.tail(int(bc["recent_days"])).fillna(False)
+    if not bool(recent.any()):
+        return None
+    ts = recent[recent].index[-1]
+    return {"date": ts.strftime("%Y-%m-%d"),
+            "volx": round(float(volx.loc[ts]), 2),
+            "hi60": round(float(hi_n.loc[ts]), 1),
+            "today": bool(ts == df.index[-1])}
+
+
 # ═══ Phase3: 短期反発候補（フィボナッチ押し目） ═══════════════
 
 def rebound_today(df: pd.DataFrame, cfg: dict, sh: pd.DataFrame | None) -> dict | None:
@@ -315,7 +349,7 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
                 return str(name_map[k])
         return code
 
-    cats = {k: [] for k in ("shodo", "shodo_wait", "nagi", "rising", "oshime", "rebound", "stop_high")}
+    cats = {k: [] for k in ("break60", "shodo", "shodo_wait", "nagi", "rising", "oshime", "rebound", "stop_high")}
     sh_hist: dict[str, dict] = {}
     fresh_events: list[dict] = []          # CI窓で検出した初動（ランキング用）
     latest_event_by_code: dict[str, dict] = {}
@@ -386,6 +420,11 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
             if ngi:
                 cats["nagi"].append({**base, **ngi})
 
+            # ── 初動ブレイク（Phase5・10年BT検証済み） ── 流動性は自前条件(min_turnover)で担保
+            b60 = break60_recent(df, cfg)
+            if b60:
+                cats["break60"].append({**base, **b60})
+
             # ── 短期反発候補（Phase3） ──
             if _turnover_ok(df, float(cfg["rebound"]["min_turnover"])):
                 rbi = rebound_today(df, cfg, sh)
@@ -454,6 +493,7 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
     cats["shodo"].sort(key=lambda x: x["shodo_date"], reverse=True)
     cats["shodo_wait"].sort(key=lambda x: x["ma_gap_pct"], reverse=True)
     cats["nagi"].sort(key=lambda x: (x["date"], x["volr"]), reverse=True)  # 新しい日→蓄積の強い順
+    cats["break60"].sort(key=lambda x: (x["date"], x["volx"]), reverse=True)  # 新しい日→出来高の強い順
     cats["rising"].sort(key=lambda x: x["pullback_pct"])
     cats["oshime"].sort(key=lambda x: x["pullback_pct"])
     cats["rebound"].sort(key=lambda x: (0 if x["in_zone"] else 1, x["fib_pct"]))
@@ -463,10 +503,12 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
     return {
         "schema": "kabuai-explorer-1",
         "data_date": data_date,
-        "note": ("銘柄探検は探索用スクリーナーです。✅今日の買い候補（過去検証済み）とは別物で、"
-                 "各カテゴリの優位性は未検証。ストップ高は調整後株価による近似検出です。"),
+        "note": ("銘柄探検は探索用スクリーナーです。各カテゴリの優位性は未検証"
+                 "（🚩初動ブレイクのみ10年BT済み・カテゴリ説明参照）。"
+                 "ストップ高は調整後株価による近似検出です。"),
         "config_echo": {"shodo": cfg["shodo"],
                     "nagi": {k: v for k, v in cfg["nagi"].items() if not k.startswith("_")},
+                    "break60": {k: v for k, v in cfg["break60"].items() if not k.startswith("_")},
                     "rebound": {k: v for k, v in cfg["rebound"].items() if not k.startswith("_")}},
         "counts": counts,
         "categories": {k: v[:CAP] for k, v in cats.items()},

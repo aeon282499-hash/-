@@ -864,6 +864,7 @@ async function loadExplorer(){
   return EXP;
 }
 const CAT_DEFS={
+  break60:["🚩","初動ブレイク（10年検証済み）","60日ぶり高値を初めて更新した陽線×出来高1.5倍以上。太陽誘電・キオクシア・テラドローン型の初動を狙う枠。10年BT(1.1万件)=翌朝寄り買い→20日保有・損切り-15%で平均+0.86%/件・PF1.22・勝ち年9/11。勝率は5割弱＝外れも多く当たれば大きい型・負け年もある(2018年-2.6%)。寄りが+3%超に飛んだら見送り"],
   shodo:["🌱","初動","長期低迷から出来高を伴って75日線を上抜けた転換の初日"],
   shodo_wait:["⏳","初動待ち","初動の条件にあと一歩（75日線のすぐ下まで接近）"],
   nagi:["🤫","静かな初動（凪ブレイク）","凪（低ボラで動いてない）に静かな出来高増→20日高値を初突破した陽線。爆発前を狙う立花型。過去検証は2024-25年プラス・2026年は不調＝直近は逆風に注意"],
@@ -883,7 +884,7 @@ function viewExplore(){
   return `
     <h2>🧭 銘柄探検 <span class="muted" style="font-weight:400;font-size:12px">${EXP.data_date||""} 終値時点</span></h2>
     <h2 style="margin-top:4px">スイング狙い</h2>
-    ${["shodo","shodo_wait","nagi","rising","oshime"].map(cell).join("")}
+    ${["break60","shodo","shodo_wait","nagi","rising","oshime"].map(cell).join("")}
     <h2 style="margin-top:14px">デイトレ・短期</h2>
     ${["rebound","stop_high"].map(cell).join("")}
     <div class="card muted" style="font-size:11.5px;line-height:1.7">${EXP.note||""} 状態は毎日引け後のバッチで更新（初動→上昇中→押し目と遷移）。</div>
@@ -902,6 +903,9 @@ function catRow(cat,r){
   }else if(cat==="shodo_wait"){
     sub=`<div class="chips"><span class="chip">⏳ 75日線まで ${r.ma_gap_pct}%</span><span class="chip">条件 ${r.conds}/3</span></div>`;
     right="";
+  }else if(cat==="break60"){
+    sub=`<div class="chips"><span class="chip buy">🚩 60日ぶり高値ブレイク</span><span class="chip">出来高 ${r.volx!=null?r.volx+"倍":"—"}</span>${r.today?`<span class="chip">当日</span>`:""}</div>`;
+    right=`<div class="pk-ev">${r.date||""}</div>`;
   }else if(cat==="nagi"){
     sub=`<div class="chips"><span class="chip buy">🤫 凪ブレイク</span><span class="chip">出来高 ${r.volr!=null?r.volr+"倍":"—"}</span><span class="chip">凪ATR ${r.atr_pct!=null?r.atr_pct+"%":"—"}</span>${r.today?`<span class="chip">当日</span>`:""}</div>`;
     right=`<div class="pk-ev">${r.date||""}</div>`;

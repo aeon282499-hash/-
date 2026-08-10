@@ -308,9 +308,10 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   locationShim.hash="#/explore"; sandbox.render();
   let ev=$get("#view").innerHTML;
   check("explore: カテゴリ画面OK", clean(ev)&&ev.includes("銘柄探検"));
-  check("explore: 7カテゴリ＋件数表示", ["初動","初動待ち","静かな初動","上昇中","押し目","短期反発候補","ストップ高"].every(l=>ev.includes(l)));
+  check("explore: 8カテゴリ＋件数表示", ["初動ブレイク","初動","初動待ち","静かな初動","上昇中","押し目","短期反発候補","ストップ高"].every(l=>ev.includes(l)));
   check("explore: 未検証の正直表示", ev.includes("未検証"));
-  for(const cat of ["stop_high","shodo","shodo_wait","nagi","rising","oshime","rebound"]){
+  check("explore: break60はBT済み表記", ev.includes("10年検証済み")&&ev.includes("PF1.22"));
+  for(const cat of ["stop_high","shodo","shodo_wait","nagi","rising","oshime","rebound","break60"]){
     locationShim.hash=`#/explore/${cat}`; sandbox.render();
     ev=$get("#view").innerHTML;
     check(`explore/${cat}: 一覧OK(${(EXPJ.counts||{})[cat]||0}件)`, clean(ev));
