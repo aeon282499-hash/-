@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-07",
+ "last_signal_date": "2026-08-10",
  "positions": [
   {
    "ticker": "6521.T",
@@ -306,11 +306,16 @@
    "shares": 200,
    "rsi": 33.1,
    "runup5": -13.5,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 3442.0,
    "entry": 3442.0,
    "gap_pct": 10.17,
-   "ext_exit_date": "2026-08-07"
+   "ext_exit_date": "2026-08-07",
+   "exit_date": "2026-08-07",
+   "exit": 3757.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 9.15,
+   "pnl_yen": 63000
   },
   {
    "ticker": "5214.T",
@@ -503,6 +508,17 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -0.34,
    "pnl_yen": -1200
+  },
+  {
+   "ticker": "6266.T",
+   "name": "タツモ",
+   "type": "第２四半期",
+   "date": "2026-08-10",
+   "signal_price": 3450.0,
+   "shares": 100,
+   "rsi": 38.7,
+   "runup5": -15.3,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-07"
