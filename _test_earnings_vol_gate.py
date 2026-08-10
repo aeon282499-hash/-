@@ -247,11 +247,11 @@ class TestTdnetParse(unittest.TestCase):
     def test_parse_rows(self):
         rows = M._parse_tdnet_page(self.HTML)
         self.assertEqual(len(rows), 3)
-        self.assertEqual(rows[0], ("13:00", "6101", rows[0][2]))
-        self.assertIn("決算短信", rows[0][2])
+        self.assertEqual(rows[0][:3], ("13:00", "6101", "ツガミ"))
+        self.assertIn("決算短信", rows[0][3])
 
     def test_tanshin_filter_and_alpha_code(self):
-        codes = {c for _t, c, title in M._parse_tdnet_page(self.HTML) if "決算短信" in title}
+        codes = {c for _t, c, _n, title in M._parse_tdnet_page(self.HTML) if "決算短信" in title}
         self.assertEqual(codes, {"6101", "464A"}, "決算短信だけ・英字コードも4桁で拾う")
 
     def test_broken_html_returns_empty(self):
@@ -259,13 +259,13 @@ class TestTdnetParse(unittest.TestCase):
 
     def test_announced_counts_only_before_close(self):
         """15:30以降(引け後)の短信は「発表済み」に数えない（遅延起動時の誤除外防止）。"""
-        rows = [("14:00", "1111", "決算短信〔日本基準〕"),
-                ("15:29", "2222", "決算短信〔日本基準〕"),
-                ("15:30", "3333", "決算短信〔日本基準〕"),   # 引け後→数えない
-                ("16:00", "4444", "決算短信〔日本基準〕"),   # 引け後→数えない
-                ("10:00", "5555", "人事異動のお知らせ"),      # 短信でない→数えない
-                ("09:00", "7777", "（訂正）「決算短信」の一部訂正について"),  # 訂正→数えない
-                ("xx:yy", "6666", "決算短信〔日本基準〕")]   # 時刻不明→スキップ
+        rows = [("14:00", "1111", "甲社", "決算短信〔日本基準〕"),
+                ("15:29", "2222", "乙社", "決算短信〔日本基準〕"),
+                ("15:30", "3333", "丙社", "決算短信〔日本基準〕"),   # 引け後→数えない
+                ("16:00", "4444", "丁社", "決算短信〔日本基準〕"),   # 引け後→数えない
+                ("10:00", "5555", "戊社", "人事異動のお知らせ"),      # 短信でない→数えない
+                ("09:00", "7777", "己社", "（訂正）「決算短信」の一部訂正について"),  # 訂正→数えない
+                ("xx:yy", "6666", "庚社", "決算短信〔日本基準〕")]   # 時刻不明→スキップ
         codes, parsed = M._codes_announced_before_close(rows)
         self.assertEqual(codes, {"1111", "2222"})
         self.assertEqual(parsed, 6, "パース成功は時刻が読めた6行")
@@ -273,8 +273,40 @@ class TestTdnetParse(unittest.TestCase):
     def test_all_unparseable_times_counts_zero(self):
         """時刻が全行パース不能なら parsed=0（fetch側がNone退行の判定に使う）。"""
         codes, parsed = M._codes_announced_before_close(
-            [("??", "1111", "決算短信"), ("", "2222", "決算短信")])
+            [("??", "1111", "甲", "決算短信"), ("", "2222", "乙", "決算短信")])
         self.assertEqual((codes, parsed), (set(), 0))
+
+
+class TestRevisionCapture(unittest.TestCase):
+    """28軸目（2026-08-11）: 業績/配当予想の修正イベント捕捉。"""
+
+    def test_revision_title_matching(self):
+        self.assertTrue(M._is_revision_title("業績予想の修正に関するお知らせ"))
+        self.assertTrue(M._is_revision_title("通期連結業績予想および配当予想の修正について"))
+        self.assertTrue(M._is_revision_title("配当予想の修正（増配）に関するお知らせ"))
+        self.assertFalse(M._is_revision_title("（訂正）「業績予想の修正に関するお知らせ」の一部訂正"))
+        self.assertFalse(M._is_revision_title("決算短信〔日本基準〕"))
+        self.assertFalse(M._is_revision_title("業績予想に関するお知らせ"))      # 「修正」なし
+        self.assertFalse(M._is_revision_title("人事異動に関するお知らせ"))
+
+    def test_revisions_collected_before_close_only(self):
+        rows = [("13:05", "1111", "甲社", "業績予想の修正に関するお知らせ"),
+                ("14:50", "2222", "乙社", "配当予想の修正に関するお知らせ"),
+                ("15:40", "3333", "丙社", "業績予想の修正に関するお知らせ"),   # 引け後→対象外
+                ("11:00", "4444", "丁社", "（訂正）業績予想の修正の一部訂正"),  # 訂正→対象外
+                ("14:00", "5555", "戊社", "決算短信〔日本基準〕")]
+        rv: list = []
+        codes, _ = M._codes_announced_before_close(rows, revisions_out=rv)
+        self.assertEqual(codes, {"5555"}, "短信判定は従来どおり無傷")
+        self.assertEqual([r["code"] for r in rv], ["1111", "2222"])
+        self.assertEqual(rv[0]["kind"], "業績予想修正")
+        self.assertEqual(rv[1]["kind"], "配当予想修正")
+        self.assertEqual(rv[0]["time"], "13:05")
+
+    def test_revisions_out_none_keeps_legacy_behavior(self):
+        rows = [("13:05", "1111", "甲社", "業績予想の修正に関するお知らせ")]
+        codes, parsed = M._codes_announced_before_close(rows)   # revisions_out省略
+        self.assertEqual((codes, parsed), (set(), 1))
 
 
 class TestBuildCandidatesWiring(unittest.TestCase):

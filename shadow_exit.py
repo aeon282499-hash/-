@@ -895,7 +895,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "description": "\n".join(lines),
         "color": _COLOR_WIN if week_yen_total >= 0 else _COLOR_LOSE,
         "footer": {"text": f"1件{size // 10000}万・買い3枠/売り3枠・"
-                           "損切り 買いATR%×2.0(下限2.0%)/売り+2.5%・利確+5%"},
+                           "損切り 買い-3%(通常版と同じ)/売り+2.5%・利確+5%"},
     }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
 
 
@@ -949,7 +949,7 @@ def monthly_report(today: date) -> bool:
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
             "footer": {"text": f"※資金{capital // 10000}万・{slots}枠(1件{size // 10000}万)・"
-                               f"資金枠に収まる分のみ集計・損切り{'+2.5%' if sell else 'ATR%×2.0(下限2.0%)'}"},
+                               f"資金枠に収まる分のみ集計・損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
         }
 
     buy_rows = load_ledger("main")

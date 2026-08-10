@@ -236,17 +236,26 @@ TDNET_LIST_URL = "https://www.release.tdnet.info/inbs/I_list_{page:03d}_{ymd}.ht
 _TDNET_ROW_RE = None  # コンパイル済み正規表現のキャッシュ
 
 
-def _parse_tdnet_page(html: str) -> list[tuple[str, str, str]]:
-    """一覧HTMLから(時刻'HH:MM', 4桁コード, 表題)を抽出。構造が変わったら空を返す。"""
+def _parse_tdnet_page(html: str) -> list[tuple[str, str, str, str]]:
+    """一覧HTMLから(時刻'HH:MM', 4桁コード, 会社名, 表題)を抽出。構造が変わったら空を返す。
+    会社名は28軸目（修正イベント候補・2026-08-11）の表示用に追加でキャプチャ。"""
     global _TDNET_ROW_RE
     if _TDNET_ROW_RE is None:
         _TDNET_ROW_RE = re.compile(
             r'kjTime[^>]*>([^<]+)<.*?kjCode[^>]*>([^<]+)<.*?'
-            r'kjName[^>]*>[^<]*<.*?kjTitle[^>]*>.*?>([^<]+)<', re.S)
+            r'kjName[^>]*>([^<]*)<.*?kjTitle[^>]*>.*?>([^<]+)<', re.S)
     out = []
-    for t, code, title in _TDNET_ROW_RE.findall(html):
-        out.append((t.strip()[:5], code.strip()[:4], title.strip()))
+    for t, code, name, title in _TDNET_ROW_RE.findall(html):
+        out.append((t.strip()[:5], code.strip()[:4], name.strip(), title.strip()))
     return out
+
+
+def _is_revision_title(title: str) -> bool:
+    """「業績予想の修正」「配当予想の修正」系の表題か（28軸目・2026-08-11）。
+    「一部訂正」は過去開示の直しであってイベントではないので除外（短信の扱いと同じ）。"""
+    if "訂正" in title:
+        return False
+    return "修正" in title and ("業績予想" in title or "配当予想" in title)
 
 
 def wait_until_min(target_min: int, max_wait_min: int = 40) -> None:
@@ -262,14 +271,17 @@ def wait_until_min(target_min: int, max_wait_min: int = 40) -> None:
         _time.sleep(min(remain * 60 + 1, 30))
 
 
-def _codes_announced_before_close(rows: list[tuple[str, str, str]]) -> tuple[set[str], int]:
+def _codes_announced_before_close(rows: list[tuple[str, str, str, str]],
+                                  revisions_out: list[dict] | None = None) -> tuple[set[str], int]:
     """行リスト→「大引け(15:30)より前に決算短信を出した」4桁コード集合と時刻パース成功数。
 
     15:30以降の発表は引け後＝買ってよい側なので数えない（遅延起動や--force再実行で
-    引け後銘柄を「発表済み」と誤除外しないため。通常の15:06照会では差は出ない）。"""
+    引け後銘柄を「発表済み」と誤除外しないため。通常の15:06照会では差は出ない）。
+    revisions_out: 28軸目（2026-08-11）。大引け前の業績/配当予想の修正イベントを
+    {code,name,time,kind} で追記する（呼び出し側が候補化）。"""
     codes: set[str] = set()
     parsed = 0
-    for t, code, title in rows:
+    for t, code, name, title in rows:
         try:
             hm = int(t[:2]) * 60 + int(t[3:5])
         except Exception:
@@ -279,17 +291,22 @@ def _codes_announced_before_close(rows: list[tuple[str, str, str]]) -> tuple[set
         # 数えると「朝に訂正だけ出し本物は引け後」の銘柄を誤除外する。
         if hm < 15 * 60 + 30 and "決算短信" in title and "訂正" not in title:
             codes.add(code)
+        if revisions_out is not None and hm < 15 * 60 + 30 and _is_revision_title(title):
+            revisions_out.append({"code": code, "name": name, "time": t,
+                                  "kind": "業績予想修正" if "業績予想" in title else "配当予想修正"})
     return codes, parsed
 
 
 def fetch_tdnet_announced(ymd: str, max_pages: int = 30,
-                          deadline_sec: float = 120.0) -> set[str] | None:
+                          deadline_sec: float = 120.0,
+                          revisions_out: list[dict] | None = None) -> set[str] | None:
     """当日「大引け前に」決算短信を発表した銘柄の4桁コード集合。
 
     取得不能はNone＝呼び出し側で習性ルール(前回場中は全部弾く)に退行する（保守側）。
     平日午後のTDnetに開示ゼロはあり得ないため、1ページ目が非200/0行/全行時刻パース不能
     の場合も「故障」とみなしNoneを返す（空集合=正常・発表なし、と区別する）。
-    deadline超過も同様（遅いだけの成功で配信を遅らせない）。"""
+    deadline超過も同様（遅いだけの成功で配信を遅らせない）。
+    revisions_out: 28軸目。Noneを返す時は呼び出し側で必ず破棄すること（部分取得＝不完全）。"""
     import time as _time
 
     import urllib3
@@ -316,7 +333,7 @@ def fetch_tdnet_announced(ymd: str, max_pages: int = 30,
                     print("  [tdnet] 1ページ目パース0行(構造変更?) → 退行")
                     return None
                 break
-            c, p = _codes_announced_before_close(rows)
+            c, p = _codes_announced_before_close(rows, revisions_out=revisions_out)
             codes |= c
             parsed_total += p
             if len(rows) < 100:
@@ -652,8 +669,13 @@ def build_candidates(codes: list[dict], all_data: dict,
             ok, evol = vol_pass(tk)
             lt = last_disc_time(times, tk, today_str)
             is_announced = x["code"] in announced
-            if not ok or not disc_time_pass(lt, announced_today=is_announced,
-                                            tdnet_ok=tdnet_ok, now_min=now_min):
+            # 📝修正イベント玉(28軸目・2026-08-11)は「本日開示済み」こそが買う理由なので、
+            # 当日発表済み除外・場中習性除外は適用しない（ボラゲートとルールAは同じ）。
+            # 当日短信も出した銘柄は上流(main)で修正候補から外している。
+            is_rev = bool(x.get("is_revision"))
+            if not ok or (not is_rev
+                          and not disc_time_pass(lt, announced_today=is_announced,
+                                                 tdnet_ok=tdnet_ok, now_min=now_min)):
                 # 弾いた銘柄は必ず残す。後から「弾かなければどうだったか」を検証するため。
                 why = "vol" if not ok else ("announced" if is_announced else "preclose")
                 rejected.append({"ticker": tk, "name": x["name"], "vol": evol,
@@ -668,7 +690,9 @@ def build_candidates(codes: list[dict], all_data: dict,
                         "rsi": round(float(rsi), 1), "runup5": round(runup5, 1),
                         "tov20": tov20, "evol": evol,
                         "last_time": lt[:5] if lt else None,
-                        "last_bucket": time_bucket(lt)})
+                        "last_bucket": time_bucket(lt),
+                        **({"is_revision": True, "rev_time": x.get("rev_time")}
+                           if x.get("is_revision") else {})})
     if rejected:
         v = [r for r in rejected if r["why"] == "vol"]
         a = [r for r in rejected if r["why"] == "announced"]
@@ -823,7 +847,9 @@ def embed_signals(picks: list[dict], n_scheduled: int, today: date, tier: dict,
         shares = calc_shares(r["price"], tier["size"])
         amount = shares * r["price"] / 10000
         lb, lt = r.get("last_bucket", "履歴なし"), r.get("last_time")
-        if lb == "場中":
+        if r.get("is_revision"):
+            t_note = f"📝本日{r.get('rev_time', '?')}に修正開示済み（今夜の決算またぎではない）"
+        elif lb == "場中":
             t_note = f"⚠️ 前回発表 {lt}（場中型＝本日すでに発表済みの可能性）"
         elif lt:
             t_note = f"前回発表 {lt}（今夜型）"
@@ -973,15 +999,44 @@ def main() -> None:
         wait_until_min(TDNET_WAIT_MIN)
     chk = datetime.now(JST)
     chk_min = chk.hour * 60 + chk.minute
-    announced = fetch_tdnet_announced(today.strftime("%Y%m%d"))
+    revisions: list[dict] = []
+    announced = fetch_tdnet_announced(today.strftime("%Y%m%d"), revisions_out=revisions)
     if announced is None:
+        revisions = []   # 部分取得は不完全＝フェイルクローズ（修正候補なし・従来フロー無傷）
         print(f"[earnings_hold] TDnet取得不能 → 習性ルール(前回場中は除外)に退行")
     else:
         print(f"[earnings_hold] TDnet({chk.strftime('%H:%M')}時点): "
-              f"本日ここまでに決算短信 {len(announced)}銘柄")
-    cands_all = build_candidates(todays, all_data, times,
+              f"本日ここまでに決算短信 {len(announced)}銘柄 / 予想修正 {len(revisions)}件")
+
+    # ── 3b. 📝修正イベント候補（28軸目・2026-08-11・BT根拠=_bt_earnings_revision_axis.py）──
+    # 本日場中にTDnetへ出た業績/配当予想の修正を、JPX予定表の銘柄と同じルールAで判定して
+    # 候補に加える。10年BTで本番実像616万→732万(+19%)・勝ち年9/11→10/11・両期間改善。
+    # 機構=場中開示済みの修正を引け前に知って買う→翌朝ドリフト（決算持ち越しと同型）。
+    # ここが丸ごと失敗しても従来候補には触れない（try全包み＝フェイルクローズ）。
+    rev_rows: list[dict] = []
+    try:
+        if revisions:
+            sched_codes = {x["code"] for x in todays}
+            seen: set[str] = set()
+            for rv in revisions:
+                c = rv["code"]
+                if c in seen or c in sched_codes or c in (announced or set()):
+                    continue   # 本日決算予定/当日短信済みの銘柄は従来経路・同一銘柄の重複開示は1回
+                seen.add(c)
+                rev_rows.append({"code": c, "name": rv["name"],
+                                 "type": f"📝{rv['kind']}", "is_revision": True,
+                                 "rev_time": rv["time"]})
+            if rev_rows:
+                print(f"[earnings_hold] 📝修正イベント候補 {len(rev_rows)}件: "
+                      + " ".join(f"{r['code']}({r['rev_time']})" for r in rev_rows[:10]))
+    except Exception as e:
+        rev_rows = []
+        print(f"[earnings_hold] 修正イベント候補の生成失敗（従来候補は無傷）: {e}")
+
+    cands_all = build_candidates(todays + rev_rows, all_data, times,
                                  announced=announced, now_min=chk_min)
-    print(f"[earnings_hold] 全候補 {len(cands_all)}件（価格帯カット前）")
+    print(f"[earnings_hold] 全候補 {len(cands_all)}件（価格帯カット前・うち📝修正 "
+          f"{sum(1 for c in cands_all if c.get('is_revision'))}件）")
 
     # ── 4. 階層ループ: 決済記帳 → 当日シグナル → 配信 → 保存 ──
     for tier in TIERS:
@@ -1030,6 +1085,8 @@ def main() -> None:
                     "shares": calc_shares(p["price"], tier["size"]),
                     "rsi": p["rsi"], "runup5": p["runup5"],
                     "status": "pending",
+                    # 📝修正イベント玉(28軸目)は後で層別検証できるようフラグを残す
+                    **({"is_revision": True} if p.get("is_revision") else {}),
                 })
             store["last_signal_date"] = today.strftime("%Y-%m-%d")
             save_positions(store, tier["positions_file"])
