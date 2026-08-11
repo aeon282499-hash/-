@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-10",
+ "last_run_date": "2026-08-12",
  "positions": [
   {
    "ticker": "6134.T",
@@ -10,9 +10,12 @@
    "d0_close": 7445.0,
    "d1_close": 8143.0,
    "exit_date": "2026-08-10",
-   "status": "held",
+   "status": "closed",
    "entry": 8143.0,
-   "entry_kind": "D1大引け"
+   "entry_kind": "D1大引け",
+   "exit": 8061.0,
+   "pnl_pct": -1.01,
+   "pnl_yen": -10070
   },
   {
    "ticker": "4062.T",
@@ -66,6 +69,18 @@
    "status": "held",
    "entry": 3565.0,
    "entry_kind": "D1大引け"
+  },
+  {
+   "ticker": "6098.T",
+   "name": "リクルートホールディング",
+   "d0": "2026-08-07",
+   "d1": "2026-08-10",
+   "gap_pct": 22.79,
+   "d0_close": 13165.0,
+   "d1_close": 16165.0,
+   "exit_date": "2026-08-17",
+   "status": "pending_d2",
+   "chase_date": "2026-08-12"
   }
  ],
  "last_signal_date": "2026-08-10"
