@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-11 08:11:05",
+  "generated_at": "2026-08-11 09:37:51",
   "date": "2026-08-11",
   "tier_summary": {
-    "S": 3,
-    "A": 16,
+    "S": 4,
+    "A": 15,
     "B": 66,
     "C": 56
   },
@@ -12,7 +12,6 @@
     "AMD": -2.86,
     "AMZN": 1.32,
     "ASML": -0.43,
-    "AVGO": -1.25,
     "CRWD": 5.01,
     "GEV": 0.05,
     "GOOGL": 0.91,
@@ -71,7 +70,7 @@
         "AMZN"
       ],
       "policy": "",
-      "us_tailwind": -0.13
+      "us_tailwind": 0.15
     },
     {
       "theme": "ゲーム_エンタメ",
@@ -327,7 +326,7 @@
         "AMD"
       ],
       "policy": "後工程拠点の国内回帰・補助",
-      "us_tailwind": -1.83
+      "us_tailwind": -2.03
     },
     {
       "theme": "宇宙",
@@ -407,7 +406,7 @@
         "AMD"
       ],
       "policy": "半導体材料の国産化・サプライチェーン強靭化補助",
-      "us_tailwind": -1.83
+      "us_tailwind": -2.03
     },
     {
       "theme": "EV_二次電池",
@@ -488,7 +487,7 @@
         "AVGO"
       ],
       "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_tailwind": -2.21
+      "us_tailwind": -2.54
     },
     {
       "theme": "コンデンサ_電子部品",
@@ -668,6 +667,49 @@
       }
     },
     {
+      "ticker": "5803.T",
+      "name": "フジクラ",
+      "role": "光ファイバ/コネクタ(AI DC本命・急騰実績)",
+      "theme": "光通信_データセンター",
+      "theme_heat": 58.3,
+      "policy": "",
+      "us_drivers": [
+        "NVDA",
+        "AVGO",
+        "MSFT",
+        "GOOGL",
+        "AMZN"
+      ],
+      "us_tailwind": 0.15,
+      "score": 96.3,
+      "tier": "S",
+      "init_stars": 1,
+      "overextended": true,
+      "potential": 81.3,
+      "blast": 74.9,
+      "laggard": 17.6,
+      "mom_pts": 70.0,
+      "ctx_pts": 26.3,
+      "vr": 2.48,
+      "dev": 18.55,
+      "rsi": 60.26,
+      "r1": 0.07618129218900682,
+      "r5": 0.3006993006993006,
+      "r20": 0.08349514563106797,
+      "close": 5580.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 20,
+        "thrust_pts": 20,
+        "r1_pts": 10,
+        "trend_pts": 18,
+        "pos_pts": 2,
+        "heat_pts": 23.3,
+        "policy_pts": 0.0,
+        "us_pts": 3.0
+      }
+    },
+    {
       "ticker": "4565.T",
       "name": "ネクセラファーマ",
       "role": "創薬(旧そーせい・GPCR)",
@@ -742,9 +784,9 @@
       }
     },
     {
-      "ticker": "5803.T",
-      "name": "フジクラ",
-      "role": "光ファイバ/コネクタ(AI DC本命・急騰実績)",
+      "ticker": "5801.T",
+      "name": "古河電気工業",
+      "role": "光ファイバ/電線",
       "theme": "光通信_データセンター",
       "theme_heat": 58.3,
       "policy": "",
@@ -755,33 +797,33 @@
         "GOOGL",
         "AMZN"
       ],
-      "us_tailwind": -0.13,
+      "us_tailwind": 0.15,
       "score": 88.3,
       "tier": "A",
-      "init_stars": 1,
-      "overextended": true,
-      "potential": 81.3,
-      "blast": 74.9,
-      "laggard": 16.6,
-      "mom_pts": 70.0,
-      "ctx_pts": 18.3,
-      "vr": 2.48,
-      "dev": 18.55,
-      "rsi": 60.26,
-      "r1": 0.07618129218900682,
-      "r5": 0.3006993006993006,
-      "r20": 0.08349514563106797,
-      "close": 5580.0,
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 68.3,
+      "blast": 58.8,
+      "laggard": 54.3,
+      "mom_pts": 62.0,
+      "ctx_pts": 26.3,
+      "vr": 1.91,
+      "dev": 13.29,
+      "rsi": 55.67,
+      "r1": 0.024896265560165887,
+      "r5": 0.2350000000000001,
+      "r20": 0.0609395973154363,
+      "close": 3952.0,
       "above_ma25": true,
       "_detail": {
-        "vol_pts": 20,
+        "vol_pts": 12,
         "thrust_pts": 20,
-        "r1_pts": 10,
+        "r1_pts": 6,
         "trend_pts": 18,
-        "pos_pts": 2,
+        "pos_pts": 6,
         "heat_pts": 23.3,
         "policy_pts": 0.0,
-        "us_pts": -5.0
+        "us_pts": 3.0
       }
     },
     {
@@ -893,49 +935,6 @@
         "heat_pts": 21.6,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "5801.T",
-      "name": "古河電気工業",
-      "role": "光ファイバ/電線",
-      "theme": "光通信_データセンター",
-      "theme_heat": 58.3,
-      "policy": "",
-      "us_drivers": [
-        "NVDA",
-        "AVGO",
-        "MSFT",
-        "GOOGL",
-        "AMZN"
-      ],
-      "us_tailwind": -0.13,
-      "score": 80.3,
-      "tier": "A",
-      "init_stars": 2,
-      "overextended": false,
-      "potential": 68.3,
-      "blast": 58.8,
-      "laggard": 51.3,
-      "mom_pts": 62.0,
-      "ctx_pts": 18.3,
-      "vr": 1.91,
-      "dev": 13.29,
-      "rsi": 55.67,
-      "r1": 0.024896265560165887,
-      "r5": 0.2350000000000001,
-      "r20": 0.0609395973154363,
-      "close": 3952.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 12,
-        "thrust_pts": 20,
-        "r1_pts": 6,
-        "trend_pts": 18,
-        "pos_pts": 6,
-        "heat_pts": 23.3,
-        "policy_pts": 0.0,
-        "us_pts": -5.0
       }
     },
     {
@@ -1076,7 +1075,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 75.0,
       "tier": "A",
       "init_stars": 2,
@@ -2036,7 +2035,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 57.6,
       "tier": "B",
       "init_stars": 3,
@@ -2313,7 +2312,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 56.6,
       "tier": "B",
       "init_stars": 2,
@@ -2811,7 +2810,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 53.0,
       "tier": "B",
       "init_stars": 3,
@@ -3542,7 +3541,7 @@
         "AMD",
         "AVGO"
       ],
-      "us_tailwind": -2.21,
+      "us_tailwind": -2.54,
       "score": 49.2,
       "tier": "B",
       "init_stars": 2,
@@ -3658,7 +3657,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 47.0,
       "tier": "B",
       "init_stars": 3,
@@ -4459,6 +4458,49 @@
       }
     },
     {
+      "ticker": "5802.T",
+      "name": "住友電気工業",
+      "role": "光部品/電線",
+      "theme": "光通信_データセンター",
+      "theme_heat": 58.3,
+      "policy": "",
+      "us_drivers": [
+        "NVDA",
+        "AVGO",
+        "MSFT",
+        "GOOGL",
+        "AMZN"
+      ],
+      "us_tailwind": 0.15,
+      "score": 40.3,
+      "tier": "C",
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 27.2,
+      "blast": 27.6,
+      "laggard": 38.3,
+      "mom_pts": 14.0,
+      "ctx_pts": 26.3,
+      "vr": 0.94,
+      "dev": -7.21,
+      "rsi": 41.89,
+      "r1": 0.014792204742897441,
+      "r5": 0.047757575757575665,
+      "r20": -0.16305189775367934,
+      "close": 2161.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 8,
+        "r1_pts": 6,
+        "trend_pts": 0,
+        "pos_pts": 0,
+        "heat_pts": 23.3,
+        "policy_pts": 0.0,
+        "us_pts": 3.0
+      }
+    },
+    {
       "ticker": "4661.T",
       "name": "オリエンタルランド",
       "role": "TDR(観光レジャー)",
@@ -4705,7 +4747,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 36.0,
       "tier": "C",
       "init_stars": 2,
@@ -4825,7 +4867,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 32.6,
       "tier": "C",
       "init_stars": 2,
@@ -4851,49 +4893,6 @@
         "pos_pts": 4,
         "heat_pts": 7.6,
         "policy_pts": 8.0,
-        "us_pts": -5.0
-      }
-    },
-    {
-      "ticker": "5802.T",
-      "name": "住友電気工業",
-      "role": "光部品/電線",
-      "theme": "光通信_データセンター",
-      "theme_heat": 58.3,
-      "policy": "",
-      "us_drivers": [
-        "NVDA",
-        "AVGO",
-        "MSFT",
-        "GOOGL",
-        "AMZN"
-      ],
-      "us_tailwind": -0.13,
-      "score": 32.3,
-      "tier": "C",
-      "init_stars": 2,
-      "overextended": false,
-      "potential": 27.2,
-      "blast": 27.6,
-      "laggard": 35.3,
-      "mom_pts": 14.0,
-      "ctx_pts": 18.3,
-      "vr": 0.94,
-      "dev": -7.21,
-      "rsi": 41.89,
-      "r1": 0.014792204742897441,
-      "r5": 0.047757575757575665,
-      "r20": -0.16305189775367934,
-      "close": 2161.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 8,
-        "r1_pts": 6,
-        "trend_pts": 0,
-        "pos_pts": 0,
-        "heat_pts": 23.3,
-        "policy_pts": 0.0,
         "us_pts": -5.0
       }
     },
@@ -5066,7 +5065,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 29.0,
       "tier": "C",
       "init_stars": 2,
@@ -5303,7 +5302,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": -1.83,
+      "us_tailwind": -2.03,
       "score": 24.0,
       "tier": "C",
       "init_stars": 3,
