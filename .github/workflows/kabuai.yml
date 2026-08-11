@@ -33,7 +33,12 @@ on:
 # 同時実行を1本に制限（Pages デプロイの競合回避）
 concurrency:
   group: kabuai-pages
-  cancel-in-progress: false
+  # 2026-08-12: false→true。8/10 09:01のrunがGitHub側の不調で「queued」のまま2日間
+  # グループを握り、後続が全部pending→次cronにキャンセルされる連鎖でサイトが金曜断面で
+  # 凍結した（本人「売りデイトレ切り替わってない」で発覚）。trueなら新しい便が来た時点で
+  # 詰まった古い便を自動キャンセル＝ゾンビに自己修復する。正常時も「最新データの便が勝つ」
+  # だけなので実害なし（サイトはデプロイ成功まで前回分で生き続ける）。
+  cancel-in-progress: true
 
 permissions:
   contents: read
