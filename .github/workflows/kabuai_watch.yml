@@ -1,0 +1,31 @@
+name: モメンタムチンパン 鮮度監視
+
+# 2026-08-12 新設。8/10のqueuedゾンビでサイトが2日間凍結したのに気づけなかった穴を塞ぐ。
+# 平日昼にサイトのdata_dateを確認し、前営業日に届いていなければチンパン専用chへ警報1通。
+# 正常時は無音。GitHub cron遅延(40-50分)込みで13時台着弾を想定。
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 3 * * 1-5'   # 12:35 JST 月-金
+
+concurrency:
+  group: kabuai-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KABUAI_DISCORD_WEBHOOK: ${{ secrets.KABUAI_DISCORD_WEBHOOK }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: 依存インストール（最小）
+        run: pip install jpholiday
+      - name: 鮮度チェック
+        run: python kabuai/freshness_watch.py
