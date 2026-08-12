@@ -55,6 +55,8 @@ jobs:
       # 月次は月初前夜の21時にこのワークフローから出るので両方必要。
       DISCORD_WEBHOOK_SHADOW_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MONTHLY_URL }}
       DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
+      # 友達用フェード（板の厚い玉のみ・2026-08-12・未設定なら無言スキップ）
+      DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       NOTE_URL: ${{ secrets.NOTE_URL }}
@@ -109,7 +111,7 @@ jobs:
             today_signals.json today_sell_signals.json today_signals_kiwami.json \
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
-            day_signals.json last_day_run.json positions_day_paper.json \
+            day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json \
             kiwami_sell.json; do
             [ -f "$f" ] && git add "$f"

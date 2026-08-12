@@ -218,6 +218,15 @@ def _fetch_data(tickers, today):
 
 FADE_CAND_MIN = 5.0        # 候補プールの下限（GO閾値 DAILY_PICK_GAIN_MIN より緩く取り、表示用に残す）
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
+
+# ── 友達用フェード（2026-08-12・板インパクト対策） ──────────────
+# 本人+友達3人が同じ薄い玉（サンコール等・代金3〜5億）へ寄成を重ねると板が動くため、
+# 友達用は**代金10億以上だけで別選定**する。BT(10年・1玉50万×1番):
+# PF1.45・勝率58.7%・年+29.0万・勝ち年10/11・4人×50万でも代金比0.2%＝板は動かない。
+# 15億フロアは勝ち年8/11に凹む＝10億が山（rebase100 A5＋2026-08-12拡張測定）。
+FRIENDS_TOV_MIN = 1e9
+FRIENDS_SIZE = 500_000
+FRIENDS_FILE = "friends_fade.json"
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
 
 # 出来高比の上限（2026-07-28検証）。20日平均のこの倍数を超えた急騰は候補から外す。
@@ -393,7 +402,8 @@ def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
 
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None, alert_map: dict | None = None,
-                    excluded_out: list | None = None) -> list[dict]:
+                    excluded_out: list | None = None,
+                    tov_min: float | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を乖離+ATRの順位平均で返す（各GO/NO-GO判定付き・空なら[]）。
     候補＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) × 出来高6倍未満 × 代金3億以上。
     GO判定: 前日+7%(DAILY_PICK_GAIN_MIN) × ATR5%以上 × 25MA乖離12%以上。未達はNO-GO（理由付きで後ろ）。
@@ -471,7 +481,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         if vol_avg < 100_000:
             continue
         tov20 = float((c * v).tail(20).median())
-        if tov20 < FADE_TOV_MIN:
+        if tov20 < (tov_min if tov_min is not None else FADE_TOV_MIN):
             continue
         gain = (last_c - prev_c) / prev_c * 100
         if gain < FADE_CAND_MIN:
@@ -1226,8 +1236,118 @@ def run(today=None, signals=None, dry=False):
         except Exception as e:
             print(f"[paper] {_lab}サマリー失敗（本処理は継続）: {e}")
 
+    # 友達用フェード（板の厚い玉だけ・別チャンネル）。失敗しても本人向けは無傷。
+    try:
+        if data and not fetch_failed:
+            run_friends(data, today, _LAST_ISS, ratio_map, alert_map, dry=dry)
+    except Exception as e:
+        print(f"[paper] 友達用フェード失敗（本人向けは無傷）: {e}")
+
     if not dry:
         save_book(book)
+
+
+def run_friends(data: dict, today, iss_map: dict,
+                ratio_map: dict | None, alert_map: dict | None, dry: bool = False) -> None:
+    """友達用フェード配信（2026-08-12・板インパクト対策）。
+
+    本人版と同じ機械で**代金10億以上だけ**から選定し、**1番のみ・1玉50万**で
+    専用チャンネル(DISCORD_WEBHOOK_DAY_FRIENDS_URL)へ配信。webhook未設定なら無言スキップ
+    （他チャンネルへのフォールバックはしない＝誤爆防止）。状態は friends_fade.json。"""
+    today_str = today.strftime("%Y-%m-%d")
+    st = {}
+    if os.path.exists(FRIENDS_FILE):
+        try:
+            st = json.load(open(FRIENDS_FILE, encoding="utf-8"))
+        except Exception:
+            st = {}
+    if st.get("last_date") == today_str:
+        return                                    # 二重配信ガード
+
+    # ── 前回分の答え合わせ（entry日の公式足が来ていれば決済） ──
+    results = []
+    pend = []
+    for p in st.get("picks", []):
+        df = data.get(p["ticker"])
+        row = None
+        if df is not None:
+            m = df.index.strftime("%Y-%m-%d") == p["date"]
+            if m.any():
+                row = df[m].iloc[0]
+        if row is None:
+            if p["date"] >= today_str:
+                pend.append(p)                    # まだ足が無い＝持ち越し（通常は無い）
+            continue
+        o, c = float(row["Open"]), float(row["Close"])
+        if not (o > 0):
+            continue
+        sh = max(100, int(FRIENDS_SIZE / o / 100) * 100)
+        results.append({"name": p["name"], "ticker": p["ticker"],
+                        "o": o, "c": c, "pnl_pct": (o - c) / o * 100,
+                        "yen": int(sh * (o - c)), "sh": sh})
+
+    # ── 今日の選定（代金10億フロア・GOの1番だけ） ──
+    picks = daily_top_fades(data, today, iss_map, ratio_map=ratio_map,
+                            alert_map=alert_map, tov_min=FRIENDS_TOV_MIN)
+    go = [p for p in picks if p.get("verdict") == "GO"][:1]
+
+    date_str = today.strftime("%Y年%m月%d日")
+    sep = "─" * 24
+    lines = []
+    if go:
+        p = go[0]
+        sh = max(100, int(FRIENDS_SIZE / p["min_entry_price"] / 100) * 100)
+        amt = sh * p["min_entry_price"]
+        tk = p["ticker"].replace(".T", "")
+        s_info = p.get("short") or shortability(p["ticker"], iss_map)
+        reg = f" {p['reg_note']}" if p.get("reg_note") else ""
+        lines += [
+            "🎯 **9:00 寄り成行（信用売り）**で発注・1玉50万円",
+            "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
+            sep,
+            (f"**#1 {p.get('name', tk)}** ({tk}) 前日{p['prev_close']:,.0f}円 "
+             f"→ **寄り成行** {sh:,}株/約{amt / 1e4:.0f}万"),
+            "   " + "・".join([f"前日+{p['daily_gain']:.0f}%",
+                               f"出来高×{p.get('vol_ratio', 0):.0f}",
+                               f"貸借{s_info['mark']}{reg}"]),
+        ]
+    else:
+        lines.append("本日は条件を満たす銘柄がありません（撃たない日がある設計です）。")
+    if results:
+        lines.append("")
+        lines.append("**📓 前日結果**")
+        for r in results:
+            mk = "✅" if r["yen"] > 0 else ("❌" if r["yen"] < 0 else "➖")
+            lines.append(f"{mk}🔴売 {r['name']}（{r['ticker'].replace('.T', '')}）"
+                         f"寄{r['o']:,.0f}→引{r['c']:,.0f}"
+                         f"｜**{r['yen']:+,}円**（{r['pnl_pct']:+.2f}%）")
+
+    payload = {"embeds": [{
+        "title": f"🩳【デイトレ売り】{date_str} — {'売り1銘柄' if go else 'シグナルなし'}",
+        "description": "\n".join(lines).rstrip(),
+        "color": 0x43A047 if go else 0x757575,
+        "footer": {"text": "寄り成行→引け成行・当日決済・1玉50万"},
+    }]}
+    if dry:
+        print("[friends] dry: " + json.dumps(payload, ensure_ascii=False)[:200])
+    else:
+        hook = os.getenv("DISCORD_WEBHOOK_DAY_FRIENDS_URL", "").strip()
+        if not hook:
+            print("[friends] webhook未設定 → 配信スキップ（選定と状態記録は継続）")
+        else:
+            import requests
+            r = requests.post(hook, json=payload, timeout=15)
+            print(f"[friends] Discord HTTP {r.status_code}")
+        # 状態保存（配信の成否に関わらず記録＝答え合わせを途切れさせない）
+        hist = (st.get("history") or [])
+        hist.extend({"date": st.get("last_date"), "ticker": r["ticker"],
+                     "yen": r["yen"], "pnl_pct": round(r["pnl_pct"], 2)} for r in results)
+        json.dump({"last_date": today_str,
+                   "picks": pend + [{"ticker": p["ticker"], "name": p.get("name", ""),
+                                     "date": today_str, "prev_close": p.get("prev_close")}
+                                    for p in go],
+                   "history": hist[-200:]},
+                  open(FRIENDS_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
 def _jq_token():
