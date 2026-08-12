@@ -221,11 +221,13 @@ FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BT�
 
 # ── 友達用フェード（2026-08-12・板インパクト対策） ──────────────
 # 本人+友達3人が同じ薄い玉（サンコール等・代金3〜5億）へ寄成を重ねると板が動くため、
-# 友達用は**代金10億以上だけで別選定**する。BT(10年・1玉50万×1番):
-# PF1.45・勝率58.7%・年+29.0万・勝ち年10/11・4人×50万でも代金比0.2%＝板は動かない。
+# 友達用は**代金10億以上だけで別選定**する。本人指定で1玉100万×1番+2番。
+# BT(10年・100万×2本・10億フロア): PF1.32・勝率57.5%・年+64.3万・勝ち年10/11。
 # 15億フロアは勝ち年8/11に凹む＝10億が山（rebase100 A5＋2026-08-12拡張測定）。
+# 板インパクト: 1銘柄あたり4人×100万=400万でも代金比0.4%＝許容圏（人数が増えたら要再考）。
 FRIENDS_TOV_MIN = 1e9
-FRIENDS_SIZE = 500_000
+FRIENDS_SIZE = 1_000_000
+FRIENDS_PICKS = 2
 FRIENDS_FILE = "friends_fade.json"
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
 
@@ -1286,31 +1288,32 @@ def run_friends(data: dict, today, iss_map: dict,
                         "o": o, "c": c, "pnl_pct": (o - c) / o * 100,
                         "yen": int(sh * (o - c)), "sh": sh})
 
-    # ── 今日の選定（代金10億フロア・GOの1番だけ） ──
+    # ── 今日の選定（代金10億フロア・GOの上位2本） ──
     picks = daily_top_fades(data, today, iss_map, ratio_map=ratio_map,
                             alert_map=alert_map, tov_min=FRIENDS_TOV_MIN)
-    go = [p for p in picks if p.get("verdict") == "GO"][:1]
+    go = [p for p in picks if p.get("verdict") == "GO"][:FRIENDS_PICKS]
 
     date_str = today.strftime("%Y年%m月%d日")
     sep = "─" * 24
     lines = []
     if go:
-        p = go[0]
-        sh = max(100, int(FRIENDS_SIZE / p["min_entry_price"] / 100) * 100)
-        amt = sh * p["min_entry_price"]
-        tk = p["ticker"].replace(".T", "")
-        s_info = p.get("short") or shortability(p["ticker"], iss_map)
-        reg = f" {p['reg_note']}" if p.get("reg_note") else ""
         lines += [
-            "🎯 **9:00 寄り成行（信用売り）**で発注・1玉50万円",
+            f"🎯 **9:00 寄り成行（信用売り）**で発注・1玉{FRIENDS_SIZE // 10000}万円",
             "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
             sep,
-            (f"**#1 {p.get('name', tk)}** ({tk}) 前日{p['prev_close']:,.0f}円 "
-             f"→ **寄り成行** {sh:,}株/約{amt / 1e4:.0f}万"),
-            "   " + "・".join([f"前日+{p['daily_gain']:.0f}%",
-                               f"出来高×{p.get('vol_ratio', 0):.0f}",
-                               f"貸借{s_info['mark']}{reg}"]),
         ]
+        for i, p in enumerate(go, 1):
+            sh = max(100, int(FRIENDS_SIZE / p["min_entry_price"] / 100) * 100)
+            amt = sh * p["min_entry_price"]
+            tk = p["ticker"].replace(".T", "")
+            s_info = p.get("short") or shortability(p["ticker"], iss_map)
+            reg = f" {p['reg_note']}" if p.get("reg_note") else ""
+            lines.append(f"**#{i} {p.get('name', tk)}** ({tk}) 前日{p['prev_close']:,.0f}円 "
+                         f"→ **寄り成行** {sh:,}株/約{amt / 1e4:.0f}万")
+            lines.append("   " + "・".join([f"前日+{p['daily_gain']:.0f}%",
+                                            f"出来高×{p.get('vol_ratio', 0):.0f}",
+                                            f"貸借{s_info['mark']}{reg}"]))
+            lines.append("")
     else:
         lines.append("本日は条件を満たす銘柄がありません（撃たない日がある設計です）。")
     if results:
@@ -1323,10 +1326,10 @@ def run_friends(data: dict, today, iss_map: dict,
                          f"｜**{r['yen']:+,}円**（{r['pnl_pct']:+.2f}%）")
 
     payload = {"embeds": [{
-        "title": f"🩳【デイトレ売り】{date_str} — {'売り1銘柄' if go else 'シグナルなし'}",
+        "title": f"🩳【デイトレ売り】{date_str} — {f'売り{len(go)}銘柄' if go else 'シグナルなし'}",
         "description": "\n".join(lines).rstrip(),
         "color": 0x43A047 if go else 0x757575,
-        "footer": {"text": "寄り成行→引け成行・当日決済・1玉50万"},
+        "footer": {"text": f"寄り成行→引け成行・当日決済・1玉{FRIENDS_SIZE // 10000}万"},
     }]}
     if dry:
         print("[friends] dry: " + json.dumps(payload, ensure_ascii=False)[:200])
