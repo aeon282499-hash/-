@@ -16,5 +16,20 @@
   "exec_date": "2026-08-07",
   "exec_open": 5590.0,
   "exec_close": 5460.0
+ },
+ {
+  "ticker": "3103.T",
+  "code": "3103",
+  "name": "ユニチカ",
+  "d0": "2026-08-12",
+  "close": 1102.0,
+  "r1": -7.32,
+  "volx": 2.15,
+  "runup": 43.1,
+  "tov_oku": 63.8,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
