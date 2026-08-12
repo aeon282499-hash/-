@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-12",
+ "last_run_date": "2026-08-13",
  "positions": [
   {
    "ticker": "6134.T",
@@ -26,10 +26,13 @@
    "d0_close": 16330.0,
    "d1_close": 20330.0,
    "exit_date": "2026-08-12",
-   "status": "held",
+   "status": "closed",
    "chase_date": "2026-08-06",
    "entry": 19980.0,
-   "entry_kind": "D2寄り追撃"
+   "entry_kind": "D2寄り追撃",
+   "exit": 20480.0,
+   "pnl_pct": 2.5,
+   "pnl_yen": 25025
   },
   {
    "ticker": "7272.T",
@@ -40,9 +43,12 @@
    "d0_close": 1511.0,
    "d1_close": 1805.0,
    "exit_date": "2026-08-12",
-   "status": "held",
+   "status": "closed",
    "entry": 1805.0,
-   "entry_kind": "D1大引け"
+   "entry_kind": "D1大引け",
+   "exit": 1900.0,
+   "pnl_pct": 5.26,
+   "pnl_yen": 52632
   },
   {
    "ticker": "5301.T",
@@ -79,8 +85,35 @@
    "d0_close": 13165.0,
    "d1_close": 16165.0,
    "exit_date": "2026-08-17",
+   "status": "held",
+   "chase_date": "2026-08-12",
+   "entry": 16565.0,
+   "entry_kind": "D2寄り追撃"
+  },
+  {
+   "ticker": "6862.T",
+   "name": "ミナトホールディングス",
+   "d0": "2026-08-10",
+   "d1": "2026-08-12",
+   "gap_pct": 20.42,
+   "d0_close": 2448.0,
+   "d1_close": 2948.0,
+   "exit_date": "2026-08-18",
    "status": "pending_d2",
-   "chase_date": "2026-08-12"
+   "chase_date": "2026-08-13"
+  },
+  {
+   "ticker": "9684.T",
+   "name": "スクウェア・エニックス・",
+   "d0": "2026-08-10",
+   "d1": "2026-08-12",
+   "gap_pct": 14.94,
+   "d0_close": 2871.0,
+   "d1_close": 2974.0,
+   "exit_date": "2026-08-18",
+   "status": "held",
+   "entry": 2974.0,
+   "entry_kind": "D1大引け"
   }
  ],
  "last_signal_date": "2026-08-12"
