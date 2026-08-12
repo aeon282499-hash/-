@@ -1,4 +1,19 @@
 {
-  "date": "2026-08-12",
-  "signals": []
+  "date": "2026-08-13",
+  "signals": [
+    {
+      "ticker": "3288.T",
+      "name": "オープンハウスグループ",
+      "direction": "BUY",
+      "prev_close": 8278.0,
+      "limit_price": 8360
+    },
+    {
+      "ticker": "9401.T",
+      "name": "ＴＢＳホールディングス",
+      "direction": "BUY",
+      "prev_close": 5903.0,
+      "limit_price": 5960
+    }
+  ]
 }
