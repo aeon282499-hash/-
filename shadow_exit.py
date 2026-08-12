@@ -636,10 +636,11 @@ def send_discord(today: date) -> bool:
                  "prev_close": r.get("prev_close", 0), "limit_price": r.get("limit_price")}
                 for r in rows_main if r.get("signal_date") == today_str]
 
-    # 通常版に出ている銘柄と極みで保有中の銘柄は出さない（本人2026-08-04
-    # 「通常の銘柄はいらない・見れるから」「わかりずらい・通常版と同じ感じでいい」）。
-    # 印(🟢⚪📌)・枠表示・共通行は全部廃止＝通常版と完全に同じ見た目で
-    # 「極みだけの銘柄」を#1から並べるだけ。台帳の3枠記帳は内部でそのまま続く。
+    # 【2026-08-12 本人指示で全銘柄表示に再変更】8/4の「極みだけの銘柄」差分表示は、
+    # 「通常版に出て極みに出ない夜どうするの？」の混乱を生んだ（極みch単体で完結しない）。
+    # → 通常版と共通の銘柄も含む「極みの完全な買いリスト」を出す。台帳が枠内に取った玉を
+    #   先頭に並べ、ヘッダで「#1〜#Nが枠内」と明示＝このチャンネルだけ見れば発注できる。
+    #   8/4に嫌われた🟢⚪📌の行内マークは復活させない（並び順+ヘッダ1行で表現）。
     reg_set: set = set()
     try:
         if os.path.exists(TIER_FILES["main"][0]):
@@ -649,7 +650,11 @@ def send_discord(today: date) -> bool:
                 reg_set = {s["ticker"] for s in _rp.get("signals", [])}
     except Exception:
         pass
-    extras = [s for s in sigs if s["ticker"] not in reg_set and s["ticker"] not in holding]
+    shown = [s for s in sigs if s["ticker"] not in holding]   # 保有中の再候補は二重建て防止で非表示
+    # 台帳が今日枠内に記帳した玉を先頭に（＝実際に買う分）。以降は枠あふれ分。
+    extras = ([s for s in shown if s["ticker"] in recorded]
+              + [s for s in shown if s["ticker"] not in recorded])
+    n_in = sum(1 for s in extras if s["ticker"] in recorded)
 
     if extras:
         size = TIER_FILES["main"][2]
@@ -658,11 +663,18 @@ def send_discord(today: date) -> bool:
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
         except Exception:
             exit_str = "3営業日後"
+        if n_in <= 0:
+            waku = "📦 **3枠満杯＝今夜の新規なし**（下は参考・決済で枠が空いたら次回から）"
+        elif n_in == len(extras):
+            waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄すべて枠内）"
+        else:
+            waku = f"📦 **#1〜#{n_in} を買う**（枠内{n_in}／#{n_in+1}以降は枠あふれ分＝見送り）"
         lines = [
             f"🎯 **寄指（寄付限定指値）**で発注・1件{size//10000}万円",
             "　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
             f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
             f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_str}**",
+            waku,
             "─" * 24,
         ]
         for i, s in enumerate(extras, 1):
@@ -686,6 +698,8 @@ def send_discord(today: date) -> bool:
                 parts.append(f"値幅/ATR={s['range_ratio']:.1f}")
             if s.get("turnover"):
                 parts.append(f"代金{s['turnover']/1e8:.0f}億")
+            if s["ticker"] not in reg_set:
+                parts.append("極み帯")   # 通常版に無い買残0.8-1.2帯の追加銘柄
             lines.append(head)
             if parts:
                 lines.append("   " + "・".join(parts))
@@ -694,9 +708,9 @@ def send_discord(today: date) -> bool:
             "title": f"⚡【スイング極み】{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
-            "footer": {"text": "通常版の銘柄も極み対象（あちらを参照）。ここは極みだけの銘柄"},
+            "footer": {"text": "極みの完全リスト（通常版と共通の銘柄も含む）。「極み帯」=買残1.2帯の極み専用銘柄"},
         })
-    sigs = extras   # 後段の0件判定は「極みだけの銘柄」基準
+    sigs = extras   # 後段の0件判定はこのリスト基準
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
     settled = []
@@ -732,8 +746,8 @@ def send_discord(today: date) -> bool:
     if not sigs:
         # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
         embeds.insert(0, {
-            "title": f"⚡【スイング極み】{today.strftime('%Y年%m月%d日')} — 追加銘柄なし",
-            "description": "**本日、極みだけの追加銘柄はありません。**（通常版の銘柄はあちらを参照）",
+            "title": f"⚡【スイング極み】{today.strftime('%Y年%m月%d日')} — シグナルなし",
+            "description": "**本日の極みの買いシグナルはありません。**（0銘柄＝見送り）",
             "color": _COLOR_INFO,
         })
     if not embeds:
