@@ -1,19 +1,12 @@
 {
-  "date": "2026-08-13",
+  "date": "2026-08-14",
   "signals": [
     {
-      "ticker": "3288.T",
-      "name": "オープンハウスグループ",
+      "ticker": "1414.T",
+      "name": "ショーボンドホールディングス",
       "direction": "BUY",
-      "prev_close": 8278.0,
-      "limit_price": 8360
-    },
-    {
-      "ticker": "9401.T",
-      "name": "ＴＢＳホールディングス",
-      "direction": "BUY",
-      "prev_close": 5903.0,
-      "limit_price": 5960
+      "prev_close": 1270.0,
+      "limit_price": 1282
     }
   ]
 }

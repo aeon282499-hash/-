@@ -1,4 +1,12 @@
 {
-  "date": "2026-08-13",
-  "signals": []
+  "date": "2026-08-14",
+  "signals": [
+    {
+      "ticker": "1414.T",
+      "name": "ショーボンドホールディングス",
+      "direction": "BUY",
+      "prev_close": 1270.0,
+      "limit_price": 1282
+    }
+  ]
 }

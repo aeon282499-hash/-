@@ -1097,5 +1097,21 @@
     "unrealized_pnl": 1.626,
     "exit_type": "MAXHOLD",
     "exit_date": "2026-08-07"
+  },
+  {
+    "signal_date": "2026-08-14",
+    "entry_date": "2026-08-14",
+    "ticker": "1414.T",
+    "name": "ショーボンドホールディングス",
+    "direction": "BUY",
+    "prev_close": 1270.0,
+    "limit_price": 1282,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
   }
 ]

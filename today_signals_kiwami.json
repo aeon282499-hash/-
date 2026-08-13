@@ -1,31 +1,18 @@
 {
-  "date": "2026-08-13",
+  "date": "2026-08-14",
   "signals": [
     {
-      "ticker": "3288.T",
-      "name": "オープンハウスグループ",
+      "ticker": "1414.T",
+      "name": "ショーボンドホールディングス",
       "direction": "BUY",
-      "prev_close": 8278.0,
-      "limit_price": 8360,
-      "days_cover": 0.6822239431932681,
-      "rsi": 44.61,
-      "deviation": -2.84,
-      "vol_ratio": 2.77,
-      "range_ratio": 2.12,
-      "turnover": 5257384200.0
-    },
-    {
-      "ticker": "9401.T",
-      "name": "ＴＢＳホールディングス",
-      "direction": "BUY",
-      "prev_close": 5903.0,
-      "limit_price": 5960,
-      "days_cover": 0.14255078245220615,
-      "rsi": 42.62,
-      "deviation": -4.4,
-      "vol_ratio": 1.49,
-      "range_ratio": 1.7,
-      "turnover": 2725954000.0
+      "prev_close": 1270.0,
+      "limit_price": 1282,
+      "days_cover": 0.7123841994626473,
+      "rsi": 44.44,
+      "deviation": -1.52,
+      "vol_ratio": 2.1,
+      "range_ratio": 1.32,
+      "turnover": 2381560500.0
     }
   ]
 }

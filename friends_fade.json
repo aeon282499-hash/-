@@ -1,0 +1,19 @@
+{
+ "last_date": "2026-08-14",
+ "last_weekly": null,
+ "picks": [
+  {
+   "ticker": "3103.T",
+   "name": "ユニチカ",
+   "date": "2026-08-14",
+   "prev_close": 1350.0
+  },
+  {
+   "ticker": "3778.T",
+   "name": "さくらインターネット",
+   "date": "2026-08-14",
+   "prev_close": 3685.0
+  }
+ ],
+ "history": []
+}

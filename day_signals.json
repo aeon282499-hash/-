@@ -10,5 +10,18 @@
     "vol_ratio": 6.34,
     "atr_pct": 4.92,
     "min_entry_price": 1359.0
+  },
+  {
+    "signal_date": "2026-08-14",
+    "entry_date": "2026-08-17",
+    "ticker": "7059.T",
+    "name": "コプロ・ホールディングス",
+    "direction": "BUY",
+    "prev_close": 928.0,
+    "high_20": 823.0,
+    "vol_ratio": 10.26,
+    "close_position": 1.0,
+    "atr_pct": 2.29,
+    "max_entry_price": 987.6
   }
 ]
