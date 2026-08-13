@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-13",
+ "last_run_date": "2026-08-14",
  "positions": [
   {
    "ticker": "6134.T",
@@ -59,9 +59,12 @@
    "d0_close": 1622.0,
    "d1_close": 1757.0,
    "exit_date": "2026-08-13",
-   "status": "held",
+   "status": "closed",
    "entry": 1757.0,
-   "entry_kind": "D1大引け"
+   "entry_kind": "D1大引け",
+   "exit": 1812.5,
+   "pnl_pct": 3.16,
+   "pnl_yen": 31588
   },
   {
    "ticker": "4483.T",
@@ -72,9 +75,12 @@
    "d0_close": 3070.0,
    "d1_close": 3565.0,
    "exit_date": "2026-08-13",
-   "status": "held",
+   "status": "closed",
    "entry": 3565.0,
-   "entry_kind": "D1大引け"
+   "entry_kind": "D1大引け",
+   "exit": 3415.0,
+   "pnl_pct": -4.21,
+   "pnl_yen": -42076
   },
   {
    "ticker": "6098.T",
@@ -99,8 +105,9 @@
    "d0_close": 2448.0,
    "d1_close": 2948.0,
    "exit_date": "2026-08-18",
-   "status": "pending_d2",
-   "chase_date": "2026-08-13"
+   "status": "dropped",
+   "chase_date": "2026-08-13",
+   "drop_reason": "2日連続張り付き"
   },
   {
    "ticker": "9684.T",

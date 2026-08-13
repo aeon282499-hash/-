@@ -1,11 +1,11 @@
 {
-  "date": "2026-08-13",
-  "fetched_at": "2026-08-12 23:11:25",
+  "date": "2026-08-14",
+  "fetched_at": "2026-08-13 23:11:30",
   "signals": [],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 3,
-    "earnings_skip": 1,
+    "raw_buy": 2,
+    "earnings_skip": 0,
     "sector_pass": 0,
     "theme_pass": 0,
     "or_pass": 0,
