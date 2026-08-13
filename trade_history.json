@@ -1079,6 +1079,26 @@
       "close": 1493.5,
       "pnl": 1.19,
       "win": true
+    },
+    {
+      "date": "2026-08-13",
+      "ticker": "3288.T",
+      "name": "オープンハウスグループ",
+      "direction": "BUY",
+      "open": 8206.0,
+      "close": 8228.0,
+      "pnl": 0.27,
+      "win": true
+    },
+    {
+      "date": "2026-08-13",
+      "ticker": "9401.T",
+      "name": "ＴＢＳホールディングス",
+      "direction": "BUY",
+      "open": 5888.0,
+      "close": 5823.0,
+      "pnl": -1.1,
+      "win": false
     }
   ]
 }
