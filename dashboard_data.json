@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-08-13 08:16:31",
+  "generated_at": "2026-08-13 09:41:50",
   "date": "2026-08-13",
   "tier_summary": {
     "S": 1,
     "A": 12,
-    "B": 94,
-    "C": 47
+    "B": 92,
+    "C": 49
   },
   "driver_returns": {
     "AMAT": 4.29,
@@ -28,7 +28,7 @@
     "PANW": 0.84,
     "PLTR": -2.23,
     "PLUG": 3.15,
-    "QBTS": 2.52,
+    "QBTS": -19.87,
     "RGTI": 1.82,
     "S": -0.71,
     "SOX": 2.49,
@@ -366,7 +366,7 @@
         "QBTS"
       ],
       "policy": "",
-      "us_tailwind": 2.8
+      "us_tailwind": -4.67
     },
     {
       "theme": "EV_二次電池",
@@ -1819,47 +1819,6 @@
       }
     },
     {
-      "ticker": "6702.T",
-      "name": "富士通",
-      "role": "量子シミュレータ(大型)",
-      "theme": "量子コンピューティング",
-      "theme_heat": 15.5,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 2.8,
-      "score": 62.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 33.0,
-      "blast": 20.7,
-      "laggard": 43.2,
-      "mom_pts": 44.0,
-      "ctx_pts": 18.2,
-      "vr": 0.69,
-      "dev": 6.64,
-      "rsi": 59.57,
-      "r1": -0.0048400107555794936,
-      "r5": 0.07712456344586727,
-      "r20": 0.11880290205562272,
-      "close": 3701.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 14,
-        "r1_pts": 0,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 6.2,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
-      }
-    },
-    {
       "ticker": "7832.T",
       "name": "バンダイナムコホールディングス",
       "role": "玩具/IP/ゲーム",
@@ -2201,47 +2160,6 @@
         "heat_pts": 14.4,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "6701.T",
-      "name": "NEC",
-      "role": "量子アニーリング/量子暗号(大型)",
-      "theme": "量子コンピューティング",
-      "theme_heat": 15.5,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 2.8,
-      "score": 59.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 33.0,
-      "blast": 20.7,
-      "laggard": 43.2,
-      "mom_pts": 41.0,
-      "ctx_pts": 18.2,
-      "vr": 1.0,
-      "dev": 8.56,
-      "rsi": 65.08,
-      "r1": 0.005114566284779132,
-      "r5": 0.06850804697694657,
-      "r20": 0.1322885457478682,
-      "close": 4913.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 14,
-        "r1_pts": 3,
-        "trend_pts": 18,
-        "pos_pts": 6,
-        "heat_pts": 6.2,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
       }
     },
     {
@@ -3716,47 +3634,6 @@
       }
     },
     {
-      "ticker": "3687.T",
-      "name": "フィックスターズ",
-      "role": "量子計算ソフト最適化",
-      "theme": "量子コンピューティング",
-      "theme_heat": 15.5,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 2.8,
-      "score": 49.2,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 43.2,
-      "mom_pts": 31.0,
-      "ctx_pts": 18.2,
-      "vr": 0.6,
-      "dev": 1.26,
-      "rsi": 50.05,
-      "r1": 0.011389521640091216,
-      "r5": 0.009549795361528002,
-      "r20": -0.025888547608600265,
-      "close": 2220.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 3,
-        "r1_pts": 6,
-        "trend_pts": 10,
-        "pos_pts": 12,
-        "heat_pts": 6.2,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
-      }
-    },
-    {
       "ticker": "6752.T",
       "name": "パナソニックホールディングス",
       "role": "車載電池(テスラ向け)",
@@ -4687,6 +4564,47 @@
       }
     },
     {
+      "ticker": "6702.T",
+      "name": "富士通",
+      "role": "量子シミュレータ(大型)",
+      "theme": "量子コンピューティング",
+      "theme_heat": 15.5,
+      "policy": "",
+      "us_drivers": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "us_tailwind": -4.67,
+      "score": 45.2,
+      "tier": "B",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 33.0,
+      "blast": 20.7,
+      "laggard": 31.2,
+      "mom_pts": 44.0,
+      "ctx_pts": 1.2,
+      "vr": 0.69,
+      "dev": 6.64,
+      "rsi": 59.57,
+      "r1": -0.0048400107555794936,
+      "r5": 0.07712456344586727,
+      "r20": 0.11880290205562272,
+      "close": 3701.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 14,
+        "r1_pts": 0,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 6.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
       "ticker": "8316.T",
       "name": "三井住友フィナンシャルグループ",
       "role": "メガバンク",
@@ -4880,47 +4798,6 @@
       }
     },
     {
-      "ticker": "6613.T",
-      "name": "QDレーザー",
-      "role": "量子ドットレーザー/網膜投影(小型・急騰株)",
-      "theme": "量子コンピューティング",
-      "theme_heat": 15.5,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 2.8,
-      "score": 44.2,
-      "tier": "C",
-      "init_stars": 1,
-      "overextended": false,
-      "potential": 6.8,
-      "blast": 4.6,
-      "laggard": 34.2,
-      "mom_pts": 26.0,
-      "ctx_pts": 18.2,
-      "vr": 1.57,
-      "dev": -8.06,
-      "rsi": 44.75,
-      "r1": -0.11479591836734693,
-      "r5": 0.06703567035670366,
-      "r20": -0.3182711198428291,
-      "close": 1735.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 12,
-        "thrust_pts": 14,
-        "r1_pts": 0,
-        "trend_pts": 0,
-        "pos_pts": 0,
-        "heat_pts": 6.2,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
-      }
-    },
-    {
       "ticker": "9616.T",
       "name": "共立メンテナンス",
       "role": "ホテル(ドーミーイン)",
@@ -5037,6 +4914,47 @@
         "heat_pts": 11.8,
         "policy_pts": 0.0,
         "us_pts": 0.0
+      }
+    },
+    {
+      "ticker": "6701.T",
+      "name": "NEC",
+      "role": "量子アニーリング/量子暗号(大型)",
+      "theme": "量子コンピューティング",
+      "theme_heat": 15.5,
+      "policy": "",
+      "us_drivers": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "us_tailwind": -4.67,
+      "score": 42.2,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 33.0,
+      "blast": 20.7,
+      "laggard": 31.2,
+      "mom_pts": 41.0,
+      "ctx_pts": 1.2,
+      "vr": 1.0,
+      "dev": 8.56,
+      "rsi": 65.08,
+      "r1": 0.005114566284779132,
+      "r5": 0.06850804697694657,
+      "r20": 0.1322885457478682,
+      "close": 4913.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 14,
+        "r1_pts": 3,
+        "trend_pts": 18,
+        "pos_pts": 6,
+        "heat_pts": 6.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
       }
     },
     {
@@ -5749,6 +5667,47 @@
       }
     },
     {
+      "ticker": "3687.T",
+      "name": "フィックスターズ",
+      "role": "量子計算ソフト最適化",
+      "theme": "量子コンピューティング",
+      "theme_heat": 15.5,
+      "policy": "",
+      "us_drivers": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "us_tailwind": -4.67,
+      "score": 32.2,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 31.2,
+      "mom_pts": 31.0,
+      "ctx_pts": 1.2,
+      "vr": 0.6,
+      "dev": 1.26,
+      "rsi": 50.05,
+      "r1": 0.011389521640091216,
+      "r5": 0.009549795361528002,
+      "r20": -0.025888547608600265,
+      "close": 2220.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 3,
+        "r1_pts": 6,
+        "trend_pts": 10,
+        "pos_pts": 12,
+        "heat_pts": 6.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
       "ticker": "6994.T",
       "name": "指月電機製作所",
       "role": "フィルムコンデンサ/パワエレ",
@@ -6210,6 +6169,47 @@
         "heat_pts": 7.2,
         "policy_pts": 0.0,
         "us_pts": 0.0
+      }
+    },
+    {
+      "ticker": "6613.T",
+      "name": "QDレーザー",
+      "role": "量子ドットレーザー/網膜投影(小型・急騰株)",
+      "theme": "量子コンピューティング",
+      "theme_heat": 15.5,
+      "policy": "",
+      "us_drivers": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "us_tailwind": -4.67,
+      "score": 27.2,
+      "tier": "C",
+      "init_stars": 1,
+      "overextended": false,
+      "potential": 6.8,
+      "blast": 4.6,
+      "laggard": 22.2,
+      "mom_pts": 26.0,
+      "ctx_pts": 1.2,
+      "vr": 1.57,
+      "dev": -8.06,
+      "rsi": 44.75,
+      "r1": -0.11479591836734693,
+      "r5": 0.06703567035670366,
+      "r20": -0.3182711198428291,
+      "close": 1735.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 12,
+        "thrust_pts": 14,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 0,
+        "heat_pts": 6.2,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
       }
     },
     {
