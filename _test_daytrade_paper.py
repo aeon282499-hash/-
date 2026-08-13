@@ -486,7 +486,8 @@ def test_fetch_failed_is_not_miokuri():
     d_fail, d_ok = _desc(True), _desc(False)
     check("fetch失敗は「判定不能」表示", "データ取得に失敗" in d_fail and "判定不能" in d_fail)
     check("fetch失敗は「撃つ銘柄なし」を出さない", "撃つ銘柄なし" not in d_fail)
-    check("通常の0件は従来どおり「見送り」", "撃つ銘柄なし" in d_ok)
+    # 2026-08-10 スイング書体への刷新で0件文言が変更（「撃つ銘柄なし」→下記）
+    check("通常の0件は従来どおり「見送り」", "条件を満たす銘柄がありません" in d_ok)
 
     # run()レベル: fetch失敗→fetch_failed=Trueで配信・last_report_dateを立てない＝再試行可能
     book = {"positions": [], "expired": [], "last_report_date": None}
