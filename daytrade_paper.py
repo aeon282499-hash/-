@@ -1333,6 +1333,27 @@ def run_friends(data: dict, today, iss_map: dict,
         "color": 0x43A047 if go else 0x757575,
         "footer": {"text": f"寄り成行→引け成行・当日決済・1玉{FRIENDS_SIZE // 10000}万"},
     }]}
+
+    # ── 友達専用の週次（週明け最初の配信で前週分・2026-08-13本人指示「友達は友達専用の結果だけ」）──
+    # 本人版の週次/月次はこのチャンネルへ流さない。ここの数字は友達版(7.5億フロア)の記録のみ。
+    hist_new = [{"date": st.get("last_date"), "ticker": r2["ticker"],
+                 "yen": r2["yen"], "pnl_pct": round(r2["pnl_pct"], 2)} for r2 in results]
+    if today.weekday() == 0 and st.get("history") is not None:
+        prev_mon = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+        prev_fri = (today - timedelta(days=3)).strftime("%Y-%m-%d")
+        if st.get("last_weekly") != prev_mon:
+            wk_rows = [h for h in (st.get("history", []) + hist_new)
+                       if h.get("date") and prev_mon <= h["date"] <= prev_fri]
+            if wk_rows:
+                total = sum(h["yen"] for h in wk_rows)
+                wins = sum(1 for h in wk_rows if h["yen"] > 0)
+                payload["embeds"].append({
+                    "title": f"📅【週次】デイトレ売り｜{prev_mon[5:].replace('-', '/')}週",
+                    "description": (f"確定 {len(wk_rows)}件 勝率{wins}/{len(wk_rows)}"
+                                    f" ＝ **{total:+,}円**（1玉{FRIENDS_SIZE // 10000}万換算）"),
+                    "color": 0x43A047 if total >= 0 else 0xE53935,
+                })
+                st["last_weekly"] = prev_mon
     if dry:
         print("[friends] dry: " + json.dumps(payload, ensure_ascii=False)[:200])
     else:
@@ -1344,10 +1365,9 @@ def run_friends(data: dict, today, iss_map: dict,
             r = requests.post(hook, json=payload, timeout=15)
             print(f"[friends] Discord HTTP {r.status_code}")
         # 状態保存（配信の成否に関わらず記録＝答え合わせを途切れさせない）
-        hist = (st.get("history") or [])
-        hist.extend({"date": st.get("last_date"), "ticker": r["ticker"],
-                     "yen": r["yen"], "pnl_pct": round(r["pnl_pct"], 2)} for r in results)
+        hist = (st.get("history") or []) + hist_new
         json.dump({"last_date": today_str,
+                   "last_weekly": st.get("last_weekly"),
                    "picks": pend + [{"ticker": p["ticker"], "name": p.get("name", ""),
                                      "date": today_str, "prev_close": p.get("prev_close")}
                                     for p in go],
