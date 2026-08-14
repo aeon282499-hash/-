@@ -1,19 +1,32 @@
 {
- "last_date": "2026-08-14",
- "last_weekly": null,
+ "last_date": "2026-08-17",
+ "last_weekly": "2026-08-10",
  "picks": [
   {
-   "ticker": "3103.T",
-   "name": "ユニチカ",
-   "date": "2026-08-14",
-   "prev_close": 1350.0
+   "ticker": "6522.T",
+   "name": "アスタリスク",
+   "date": "2026-08-17",
+   "prev_close": 2165.0
   },
   {
-   "ticker": "3778.T",
-   "name": "さくらインターネット",
-   "date": "2026-08-14",
-   "prev_close": 3685.0
+   "ticker": "4022.T",
+   "name": "ラサ工業",
+   "date": "2026-08-17",
+   "prev_close": 2370.0
   }
  ],
- "history": []
+ "history": [
+  {
+   "date": "2026-08-14",
+   "ticker": "3103.T",
+   "yen": -92400,
+   "pnl_pct": -10.69
+  },
+  {
+   "date": "2026-08-14",
+   "ticker": "3778.T",
+   "yen": -42000,
+   "pnl_pct": -5.74
+  }
+ ]
 }

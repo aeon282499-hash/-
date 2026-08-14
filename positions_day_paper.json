@@ -627,8 +627,15 @@
       "basis_date": "2026-08-13",
       "prev_close": 928.0,
       "limit_price": 987.6,
-      "status": "pending",
-      "high_20": 823.0
+      "status": "closed",
+      "high_20": 823.0,
+      "entry_session": "2026-08-14",
+      "entry_open": 928.0,
+      "entry_close": 923.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.539,
+      "pnl_yen": -5000,
+      "win": false
     },
     {
       "ticker": "3103.T",
@@ -638,7 +645,7 @@
       "basis_date": "2026-08-13",
       "prev_close": 1350.0,
       "limit_price": 1350.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 22.5,
       "short": {
         "mark": "○",
@@ -650,7 +657,14 @@
       "dev25": 43.2,
       "atr_pct": 9.69,
       "vol_ratio": 5.0,
-      "range_pct": 20.4
+      "range_pct": 20.4,
+      "entry_session": "2026-08-14",
+      "entry_open": 1440.0,
+      "entry_close": 1594.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -10.694,
+      "pnl_yen": -107800,
+      "win": false
     },
     {
       "ticker": "3778.T",
@@ -660,7 +674,7 @@
       "basis_date": "2026-08-13",
       "prev_close": 3685.0,
       "limit_price": 3685.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.12,
       "short": {
         "mark": "○",
@@ -672,11 +686,62 @@
       "dev25": 19.9,
       "atr_pct": 6.27,
       "vol_ratio": 1.1,
-      "range_pct": 5.8
+      "range_pct": 5.8,
+      "entry_session": "2026-08-14",
+      "entry_open": 3660.0,
+      "entry_close": 3870.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -5.738,
+      "pnl_yen": -42000,
+      "win": false
+    },
+    {
+      "ticker": "6522.T",
+      "name": "アスタリスク",
+      "direction": "SELL",
+      "signal_date": "2026-08-17",
+      "basis_date": "2026-08-14",
+      "prev_close": 2165.0,
+      "limit_price": 2165.0,
+      "status": "pending",
+      "daily_gain": 13.89,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "dev25": 27.6,
+      "atr_pct": 9.74,
+      "vol_ratio": 3.3,
+      "range_pct": 17.5
+    },
+    {
+      "ticker": "3156.T",
+      "name": "レスター",
+      "direction": "SELL",
+      "signal_date": "2026-08-17",
+      "basis_date": "2026-08-14",
+      "prev_close": 5510.0,
+      "limit_price": 5510.0,
+      "status": "pending",
+      "daily_gain": 9.11,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "dev25": 34.8,
+      "atr_pct": 5.48,
+      "vol_ratio": 1.5,
+      "range_pct": 9.3
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-14",
+  "last_report_date": "2026-08-17",
   "last_monthly_report": "2026-07",
-  "last_weekly_report": "2026-W32"
+  "last_weekly_report": "2026-W33"
 }
