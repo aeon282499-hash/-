@@ -427,7 +427,9 @@ def test_daily_top_fades():
           dp.daily_top_fades({"3333.T": _flat_then(20, base=9000)}, today, {"3333": "2"}) == [])
     check("100万境界: 終値6,600円は対象内(50万時代は除外だった帯)",
           len(dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"})) == 1)
-    check("CAPITAL_PER_TRADEは100万", dp.CAPITAL_PER_TRADE == 1_000_000)
+    # 2026-08-15 本人決定の一時措置=70万（現金余力20万との整合・現金40万到達で100万へ復帰予定。
+    # 復帰時はこの1行を 1_000_000 に戻すだけ。友達用FRIENDS_SIZEは100万のまま独立）
+    check("CAPITAL_PER_TRADEは70万(一時措置)", dp.CAPITAL_PER_TRADE == 700_000)
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
@@ -528,13 +530,18 @@ def test_premium_pershare_line():
                 "short": {"mark": "○", "iss": "2", "note": ""},
                 "reg_note": "🚫売り禁" if jsf else ""}
 
-    # アスタリスク実例: 2,165円→400株。分岐は 11円/36円
-    # （2026-08-15再導出 GAPDN0.45%=4,500円/MAIN1.46%=14,600円 ÷400株）
+    # アスタリスク実例: 2,165円。期待バンドは定数から動的に計算＝玉サイズ変更(70万⇔100万)に追従
+    # （2026-08-15再導出 GAPDN0.45%/MAIN1.46%。例: 100万=400株なら11円/36円・70万=300株なら10円/34円）
+    cap = dp.CAPITAL_PER_TRADE
+    sh_a = int(cap / 2165 / 100) * 100
+    ok = int(dp.FADE_EDGE_PCT_GAPDN / 100 * cap // sh_a)
+    lim = int(dp.FADE_EDGE_PCT_MAIN / 100 * cap // sh_a)
     d = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 5510, False)])
     check("売り禁玉に円/株の判断行が出る", "SBIのプレミアム料を見て" in d)
-    check("成行のままの上限=11円/株", "〜11円/株→成行のまま" in d)
-    check("寄指切替帯=12〜36円", "12〜36円→寄指¥2,165に変更" in d)
-    check("37円〜は撃たない→#2へ", "37円〜→撃たない→#2に100万" in d)
+    check(f"成行のままの上限={ok}円/株", f"〜{ok}円/株→成行のまま" in d)
+    check(f"寄指切替帯={ok + 1}〜{lim}円", f"{ok + 1}〜{lim}円→寄指¥2,165に変更" in d)
+    check(f"{lim + 1}円〜は撃たない→#2へ",
+          f"{lim + 1}円〜→撃たない→#2に{cap // 10000}万" in d)
     check("貸借○の玉には出さない（1回だけ）", d.count("SBIのプレミアム料") == 1)
 
     # 超低位株（多株数）: 50円→20,000株なら1円/株でもエッジ超え＝原則見送り
@@ -618,9 +625,11 @@ def test_monthly_era_capital():
     with contextlib.redirect_stdout(buf):
         dp.send_monthly(b, "2026-08", dry=True)
     d = _json.loads(buf.getvalue())["embeds"][0]["description"]
+    mr8 = 30000 / dp.CAPITAL_PER_TRADE * 100     # 8月は現行定数が分母（サイズ変更に追従）
+    ann = -3.0 + mr8
     check("7月-1.5万は50万分母で月利-3.0%", "`2026-07`" in d and "月利-3.0%" in d)
-    check("8月+3.0万は100万分母で月利+3.0%", "月利+3.0%" in d)
-    check("年間%は月利の和（-3.0+3.0=+0.0%）", "合計: +0.0%" in d)
+    check("8月+3.0万は現行定数分母", f"月利+{mr8:.1f}%" in d)
+    check("年間%は月利の和", f"合計: {'+' if ann >= 0 else ''}{ann:.1f}%" in d)
 
 
 def test_monthly_send_guard():
