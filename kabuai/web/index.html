@@ -1279,7 +1279,8 @@ let QUIZ=null,QUIZ_LOADING=false,QZ=null;
 async function loadQuiz(){
   if(QUIZ||QUIZ_LOADING)return QUIZ;
   QUIZ_LOADING=true;
-  const cands=["../data/quiz_daytrade.json","data/quiz_daytrade.json","./data/quiz_daytrade.json"];
+  // 問題データは静的コンテンツ＝web/直下（kabuai/dataはCI生成専用でgitignore＝置くと本番404になる）
+  const cands=["quiz_daytrade.json","./quiz_daytrade.json","web/quiz_daytrade.json"];
   for(const u of cands){
     try{const r=await fetch(u,{cache:"no-store"});if(r.ok){QUIZ=await r.json();break;}}catch(e){}
   }

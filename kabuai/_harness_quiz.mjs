@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const html = fs.readFileSync("web/index.html", "utf8");
 const LATEST = JSON.parse(fs.readFileSync("data/latest.json", "utf8"));
-const QUIZRAW = JSON.parse(fs.readFileSync("data/quiz_daytrade.json", "utf8"));
+const QUIZRAW = JSON.parse(fs.readFileSync("web/quiz_daytrade.json", "utf8"));
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
 const appScript = scripts.find(s => s.includes("function render"));
 if (!appScript) { console.error("FAIL: app script not found"); process.exit(1); }
