@@ -959,7 +959,9 @@ def monthly_stats(book: dict, ym: str) -> dict:
 def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
     """月次サマリー。**スイング月次と同一の書体**（2026-08-09改装・本人「一緒にして」）:
     `YYYY-MM` N件 勝率 月利%（万円）の月別行＋年間合計。1番のみ（実弾対象）の円も併記。
-    月利%は1玉100万に対する率。ym は送信トリガー用（その年の全月を表にする）。"""
+    月利%は**その月の玉サイズ**に対する率（2026-08-05に50万→100万へ変更したため、
+    2026-07以前の月を現行100万で割ると月利が半分に薄まる＝監査第6弾の指摘を2026-08-15修正）。
+    ym は送信トリガー用（その年の全月を表にする）。"""
     year = ym[:4]
     rows_all = [p for p in (book.get("positions") or [])
                 if p.get("status") == "closed" and p.get("pnl_yen") is not None
@@ -974,20 +976,31 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         by_m.setdefault(p["signal_date"][:7], []).append(p)
 
     capital = CAPITAL_PER_TRADE
+
+    def _cap_of(month: str) -> int:
+        # 玉サイズの変遷（台帳の記帳サイズと一致させる）: 〜2026-07=50万 / 2026-08〜=100万
+        return 500_000 if month < "2026-08" else CAPITAL_PER_TRADE
+
     L = []
     for m in sorted(by_m):
         v = by_m[m]
         yen = sum(int(p["pnl_yen"]) for p in v)
         wins = sum(1 for p in v if p["pnl_yen"] > 0)
-        r1 = sum(int(p["pnl_yen"]) for p in v if (p.get("rank") or 1) == 1)
-        mr = yen / capital * 100
+        # ①1番のみ＝実弾対象のフェード1番。rank無しの旧記帳はSELLなら1番扱い・
+        # BUYブレイク玉(rank無し・レア系統)は①に混ぜない（2026-08-15修正）
+        r1 = sum(int(p["pnl_yen"]) for p in v
+                 if (p.get("rank") or 1) == 1 and p.get("direction") != "BUY")
+        mr = yen / _cap_of(m) * 100
         sign = "+" if mr >= 0 else ""
         L.append(f"`{m}` {len(v)}件 勝率{wins}/{len(v)} **月利{sign}{mr:.1f}%**"
                  f"（{sign}{yen / 10000:.1f}万円・①1番のみ{r1 / 10000:+.1f}万）")
 
     total = sum(int(p["pnl_yen"]) for p in rows_all)
-    r1_total = sum(int(p["pnl_yen"]) for p in rows_all if (p.get("rank") or 1) == 1)
-    ann = total / capital * 100
+    r1_total = sum(int(p["pnl_yen"]) for p in rows_all
+                   if (p.get("rank") or 1) == 1 and p.get("direction") != "BUY")
+    # 年間%は月利の単純和（月ごとに拘束する玉サイズが分母＝サイズ変更を跨いでも一貫）
+    ann = sum(sum(int(p["pnl_yen"]) for p in v) / _cap_of(m) * 100
+              for m, v in by_m.items())
     a_sign = "+" if ann >= 0 else ""
     L.append("")
     L.append(f"**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{total / 10000:.1f}万円）**"
@@ -1108,7 +1121,8 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         yen = int(p["pnl_yen"])
         entry_total += round(sh * eo)
         exit_total += round(sh * ec)
-        if (p.get("rank") or 1) == 1:
+        # ①1番のみ＝実弾対象のフェード1番（BUYブレイク玉は②以下扱い・月次と同じ規則）
+        if (p.get("rank") or 1) == 1 and p.get("direction") != "BUY":
             rank1_yen += yen
         else:
             other_yen += yen
@@ -1278,9 +1292,12 @@ def run_friends(data: dict, today, iss_map: dict,
                 ratio_map: dict | None, alert_map: dict | None, dry: bool = False) -> None:
     """友達用フェード配信（2026-08-12・板インパクト対策）。
 
-    本人版と同じ機械で**代金10億以上だけ**から選定し、**1番のみ・1玉50万**で
+    本人版と同じ機械で**代金7.5億以上だけ**から別選定（FRIENDS_TOV_MIN・2026-08-13に
+    10億→7.5億へ本人指定）し、**1玉100万×#1+#2表示（売るのは#1だけ・建てられない時のみ#2）**で
     専用チャンネル(DISCORD_WEBHOOK_DAY_FRIENDS_URL)へ配信。webhook未設定なら無言スキップ
-    （他チャンネルへのフォールバックはしない＝誤爆防止）。状態は friends_fade.json。"""
+    （他チャンネルへのフォールバックはしない＝誤爆防止）。状態は friends_fade.json。
+    実際のサイズ/フロアは定数 FRIENDS_SIZE/FRIENDS_TOV_MIN が単一の真実（docstringに数字を
+    再掲して古くなった前科あり＝監査第6弾の指摘を2026-08-15修正）。"""
     today_str = today.strftime("%Y-%m-%d")
     st = {}
     if os.path.exists(FRIENDS_FILE):

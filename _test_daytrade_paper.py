@@ -600,6 +600,29 @@ def test_monthly_stats():
     check("月次: 該当なしの月はn=0", e["n"] == 0)
 
 
+def test_monthly_era_capital():
+    """2026-08-15: 月利%は各月の玉サイズが分母（〜2026-07=50万/2026-08〜=100万）。
+    現行100万で過去月を割ると月利が半分に薄まる＝監査第6弾の指摘の修正を固定する。"""
+    import io
+    import contextlib
+    import json as _json
+    b = {"positions": [
+        {"status": "closed", "exit_type": "CLOSE", "signal_date": "2026-07-10",
+         "direction": "SELL", "ticker": "1111.T", "name": "七月玉",
+         "pnl_yen": -15000, "pnl_pct": -3.0, "rank": 1},
+        {"status": "closed", "exit_type": "CLOSE", "signal_date": "2026-08-05",
+         "direction": "SELL", "ticker": "2222.T", "name": "八月玉",
+         "pnl_yen": 30000, "pnl_pct": 3.0, "rank": 1},
+    ], "expired": []}
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        dp.send_monthly(b, "2026-08", dry=True)
+    d = _json.loads(buf.getvalue())["embeds"][0]["description"]
+    check("7月-1.5万は50万分母で月利-3.0%", "`2026-07`" in d and "月利-3.0%" in d)
+    check("8月+3.0万は100万分母で月利+3.0%", "月利+3.0%" in d)
+    check("年間%は月利の和（-3.0+3.0=+0.0%）", "合計: +0.0%" in d)
+
+
 def test_monthly_send_guard():
     b = _book_for_monthly()
     sent = []
@@ -678,7 +701,8 @@ def run_all():
                test_rank_within_go_and_raw_gain, test_fetch_failed_is_not_miokuri,
                test_premium_pershare_line,
                test_common_stock_code_guard, test_borrow_grade,
-               test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
+               test_monthly_stats, test_monthly_era_capital,
+               test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")
         fn()
