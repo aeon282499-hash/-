@@ -1099,6 +1099,16 @@
       "close": 5823.0,
       "pnl": -1.1,
       "win": false
+    },
+    {
+      "date": "2026-08-14",
+      "ticker": "1414.T",
+      "name": "ショーボンドホールディングス",
+      "direction": "BUY",
+      "open": 1261.5,
+      "close": 1267.5,
+      "pnl": 0.48,
+      "win": true
     }
   ]
 }
