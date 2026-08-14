@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-13",
+ "last_signal_date": "2026-08-14",
  "positions": [
   {
    "ticker": "6521.T",
@@ -452,11 +452,16 @@
    "shares": 100,
    "rsi": 43.5,
    "runup5": -7.3,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 3188.0,
    "entry": 3188.0,
    "gap_pct": 10.19,
-   "ext_exit_date": "2026-08-13"
+   "ext_exit_date": "2026-08-13",
+   "exit_date": "2026-08-13",
+   "exit": 3557.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 11.57,
+   "pnl_yen": 36900
   },
   {
    "ticker": "2801.T",
@@ -467,11 +472,16 @@
    "shares": 300,
    "rsi": 44.8,
    "runup5": -9.1,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 1594.0,
    "entry": 1594.0,
    "gap_pct": 11.04,
-   "ext_exit_date": "2026-08-13"
+   "ext_exit_date": "2026-08-13",
+   "exit_date": "2026-08-13",
+   "exit": 1779.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 11.61,
+   "pnl_yen": 55500
   },
   {
    "ticker": "6544.T",
