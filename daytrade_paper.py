@@ -825,9 +825,28 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 parts.append(p["borrow"])
             lines.append(line1)
             lines.append("   " + "・".join(parts))
-            # 💰プレミアム料の損益分岐行は 2026-08-10 本人指示「よくわからん・いらない」で廃止
-            # （2026-08-03に売り禁玉のみへ縮小→今回で表示ゼロ）。しきい値の定数
-            # FADE_EDGE_PCT_GAPDN/MAIN は残置＝復活はここに1行足すだけ。
+            # 💰プレミアム料の判断行（売り禁＝ハイカラ在庫で売る玉だけ・2026-08-15復活）。
+            # 旧版(〜8/10廃止)は「総額◯円まで」表記で、SBIの画面は**円/株**表示のため毎回
+            # 暗算が必要＝2回「わかりずらい」で死んだ。今回はこの銘柄の株数で割った円/株を
+            # 出す＝画面の数字とそのまま見比べるだけ（本人 2026-08-15「わかりやすく配信して・
+            # 成行でいいと思ってた」＝アスタリスク8円/株が中間帯だった実例が発端）。
+            # 貸借○の玉はプレミアム料が無い（貸株料のみ≒ゼロ）ので出さない。
+            if i < n_shoot and p.get("jsf_stop") and shares > 0:
+                ok_ps = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE // shares)
+                lim_ps = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE // shares)
+                tail = (f"撃たない→#2に{CAPITAL_PER_TRADE // 10000}万"
+                        if (rk == 1 and n_shoot >= 2) else "撃たない（見送り）")
+                yb = f"寄指¥{p['min_entry_price']:,.0f}"
+                if lim_ps < 1:
+                    band = f"1円/株でもエッジ超え → {tail}"
+                elif ok_ps < 1:
+                    band = f"成行は使わない ／ 〜{lim_ps}円/株→{yb}で発注 ／ {lim_ps + 1}円〜→{tail}"
+                elif lim_ps > ok_ps:
+                    band = (f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}〜{lim_ps}円→{yb}に変更 ／ "
+                            f"{lim_ps + 1}円〜→{tail}")
+                else:
+                    band = f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}円〜→{tail}"
+                lines.append(f"   💰 SBIのプレミアム料を見て: {band}")
             lines.append("")
         if any(p["prev_close"] < 300 for p in go_picks[:n_shoot]):
             lines.append("⚠️ 低位株あり（300円未満）＝一日信用の売り在庫だけ要確認")

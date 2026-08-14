@@ -506,6 +506,45 @@ def test_fetch_failed_is_not_miokuri():
           book.get("last_report_date") is None)
 
 
+def test_premium_pershare_line():
+    """2026-08-15: 売り禁玉だけに出すプレミアム料の円/株判断行（アスタリスク8円/株が発端）。
+    SBI画面の円/株とそのまま見比べられること・貸借○の玉には出ないことを確認する。"""
+    import io
+    import contextlib
+    import json as _json
+    stats = dp.cumulative_stats({"positions": [], "expired": []})
+
+    def _desc(picks):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            dp.send_report([], [], picks, stats, date(2026, 8, 17), dry=True)
+        return _json.loads(buf.getvalue())["embeds"][0]["description"]
+
+    def _pick(rank, ticker, price, jsf):
+        return {"verdict": "GO", "rank": rank, "ticker": ticker, "name": ticker[:4],
+                "prev_close": float(price), "min_entry_price": float(price),
+                "daily_gain": 13.9, "vol_ratio": 3.3, "range_pct": 17.5,
+                "dev25": 27.6, "atr_pct": 9.7, "jsf_stop": jsf,
+                "short": {"mark": "○", "iss": "2", "note": ""},
+                "reg_note": "🚫売り禁" if jsf else ""}
+
+    # アスタリスク実例: 2,165円→400株。分岐は 6円/12円（GAPDN2,540円/MAIN5,090円÷400株）
+    d = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 5510, False)])
+    check("売り禁玉に円/株の判断行が出る", "SBIのプレミアム料を見て" in d)
+    check("成行のままの上限=6円/株", "〜6円/株→成行のまま" in d)
+    check("寄指切替帯=7〜12円", "7〜12円→寄指¥2,165に変更" in d)
+    check("13円〜は撃たない→#2へ", "13円〜→撃たない→#2に100万" in d)
+    check("貸借○の玉には出さない（1回だけ）", d.count("SBIのプレミアム料") == 1)
+
+    # 低位株（多株数）: 100円→10,000株なら1円/株でもエッジ超え＝原則見送り
+    d2 = _desc([_pick(1, "9999.T", 100, True)])
+    check("低位株はバンドでなく原則見送り表示", "1円/株でもエッジ超え" in d2)
+
+    # 売り禁が2番のとき: tailは「#2へ」でなく見送り
+    d3 = _desc([_pick(1, "3156.T", 5510, False), _pick(2, "6522.T", 2165, True)])
+    check("2番が売り禁なら超過帯は「見送り」表示", "撃たない（見送り）" in d3)
+
+
 def test_common_stock_code_guard():
     """2026-08-02: 優先株式(5桁目≠0)の4桁衝突ガード。94345/94346(ソフトバンク優先株式)が
     94340(本体)を後勝ちで上書きし、伊藤園/インフロニア/ゼンショー/JAL/ANA/ソフトバンクの
@@ -636,6 +675,7 @@ def run_all():
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion,
                test_rank_within_go_and_raw_gain, test_fetch_failed_is_not_miokuri,
+               test_premium_pershare_line,
                test_common_stock_code_guard, test_borrow_grade,
                test_monthly_stats, test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
