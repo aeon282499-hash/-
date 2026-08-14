@@ -179,6 +179,9 @@
   <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
   <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
   <a href="#/daytrade" id="nav-daytrade"><span class="i">⚡</span>デイトレ</a>
+  <!-- 🎓問題=デイトレ検定100問（2026-08-15本人依頼「勉強したい・問題100問」）。学習専用＝
+       シグナルは出さない(EODアプリでデイトレの売買判断はしない方針はfeedback_kabuai_no_daytradeのまま) -->
+  <a href="#/quiz" id="nav-quiz"><span class="i">🎓</span>問題</a>
   <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
@@ -1269,12 +1272,125 @@ function viewTheme(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── 🎓 デイトレ検定100問（2026-08-15 本人依頼「勉強したい・問題を100問作って」）──
+// 全問、家の10年BTと実運用の実話から出題（data/quiz_daytrade.json を遅延fetch）。
+// 学習専用タブ＝売買シグナルは一切出さない。正解位置の偏り対策で選択肢は出題時にシャッフル。
+let QUIZ=null,QUIZ_LOADING=false,QZ=null;
+async function loadQuiz(){
+  if(QUIZ||QUIZ_LOADING)return QUIZ;
+  QUIZ_LOADING=true;
+  const cands=["../data/quiz_daytrade.json","data/quiz_daytrade.json","./data/quiz_daytrade.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){QUIZ=await r.json();break;}}catch(e){}
+  }
+  QUIZ_LOADING=false;
+  return QUIZ;
+}
+function quizReload(hash){loadQuiz().then(()=>{if((location.hash||"#/")===hash)render();});}
+function quizStats(){try{return JSON.parse(localStorage.getItem("dtquiz")||"{}")}catch(e){return {}}}
+function quizSaveStats(s){try{localStorage.setItem("dtquiz",JSON.stringify(s))}catch(e){}}
+function quizResetStats(){quizSaveStats({});render();}
+function quizStart(mode,cat){
+  if(!QUIZ)return;
+  let qs=QUIZ.questions.slice();
+  if(cat)qs=qs.filter(q=>q.cat===cat);
+  for(let i=qs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[qs[i],qs[j]]=[qs[j],qs[i]];}
+  if(mode==="quick")qs=qs.slice(0,10);
+  // 選択肢の表示順をシャッフルし、正解indexを付け替える（元データは正解位置が偏っているため必須）
+  qs=qs.map(q=>{
+    const idx=q.c.map((_,i)=>i);
+    for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+    return {...q,c:idx.map(i=>q.c[i]),a:idx.indexOf(q.a)};
+  });
+  QZ={qs,i:0,ok:0,picked:null,done:false};
+  render();
+}
+function quizAnswer(k){
+  if(!QZ||QZ.picked!=null)return;
+  QZ.picked=k;
+  const q=QZ.qs[QZ.i];
+  const st=quizStats();st.n=(st.n||0)+1;
+  if(k===q.a){QZ.ok++;st.ok=(st.ok||0)+1;}
+  quizSaveStats(st);render();
+}
+function quizNext(){if(!QZ)return;if(QZ.i+1>=QZ.qs.length)QZ.done=true;else{QZ.i++;QZ.picked=null;}render();}
+function quizExit(){QZ=null;}
+function quizGrade(ok,n){
+  const r=n?ok/n:0;
+  if(r>=0.9)return "🏆 免許皆伝。あとはルール通り発注するだけ";
+  if(r>=0.7)return "💪 合格ライン。間違えた問題の解説だけ読み直し";
+  if(r>=0.5)return "📖 まだ危ない。解説を読んでからもう1周";
+  return "🚨 このまま実弾は事故る。全問の解説を読むこと";
+}
+function quizRunView(){
+  const q=QZ.qs[QZ.i],p=QZ.picked;
+  const opts=q.c.map((c,k)=>{
+    let st="display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line,rgba(128,128,128,.35));background:transparent;color:inherit;font-size:13px;line-height:1.5";
+    let mark="";
+    if(p!=null){
+      if(k===q.a){st+=";border-color:#3fb950;background:rgba(63,185,80,.12)";mark=" ✅";}
+      else if(k===p){st+=";border-color:#ea3943;background:rgba(234,57,67,.10)";mark=" ❌";}
+      else st+=";opacity:.55";
+    }
+    return `<button style="${st}" onclick="quizAnswer(${k})">${esc(c)}${mark}</button>`;
+  }).join("");
+  const fb=p==null?"":`
+    <div class="card" style="border-left:3px solid ${p===q.a?"#3fb950":"#ea3943"}">
+      <b>${p===q.a?"⭕ 正解":"❌ 不正解"}</b>
+      <div style="font-size:12.5px;line-height:1.8;margin-top:6px">${esc(q.why)}</div>
+      <button style="margin-top:10px;padding:10px 18px;border-radius:10px;border:0;background:var(--acc,#f0b90b);color:#111;font-weight:700" onclick="quizNext()">${QZ.i+1>=QZ.qs.length?"結果を見る":"次の問題 ▶"}</button>
+    </div>`;
+  return `
+    <h2>🎓 デイトレ検定 <span class="muted" style="font-weight:400;font-size:12px">${QZ.i+1} / ${QZ.qs.length}問・正解${QZ.ok}</span></h2>
+    <div class="card">
+      <div class="muted" style="font-size:11px;margin-bottom:6px">Q${q.id}【${esc(q.cat)}】</div>
+      <div style="font-size:14px;font-weight:700;line-height:1.6">${esc(q.q)}</div>
+      <div style="margin-top:10px">${opts}</div>
+    </div>
+    ${fb}
+    <div class="muted" style="font-size:11px;margin-top:8px"><a href="#/quiz" onclick="quizExit()">← やめてメニューへ</a></div>`;
+}
+function viewQuiz(){
+  if(!QUIZ){quizReload("#/quiz");return `<h2>🎓 デイトレ検定</h2><div class="card muted">読み込み中…</div>`;}
+  if(QZ&&!QZ.done)return quizRunView();
+  if(QZ&&QZ.done){
+    const out=`
+      <h2>🎓 結果</h2>
+      <div class="card" style="text-align:center">
+        <div style="font-size:36px;font-weight:800">${QZ.ok} / ${QZ.qs.length}</div>
+        <div class="muted" style="margin-top:4px">${quizGrade(QZ.ok,QZ.qs.length)}</div>
+      </div>
+      <div class="card"><a href="#/quiz" onclick="quizExit()">← メニューに戻る</a></div>`;
+    return out;
+  }
+  const cats=[...new Set(QUIZ.questions.map(q=>q.cat))];
+  const st=quizStats();
+  const rate=st.n?Math.round((st.ok||0)/st.n*100):null;
+  const btn=(label,call)=>`<button style="display:block;width:100%;margin:6px 0;padding:12px;border-radius:12px;border:0;background:var(--acc,#f0b90b);color:#111;font-weight:800;font-size:14px" onclick="${call}">${label}</button>`;
+  return `
+    <h2>🎓 デイトレ検定100問</h2>
+    <div class="card muted" style="font-size:12px;line-height:1.8">${esc(QUIZ.note||"")}</div>
+    <div class="card">
+      ${btn("▶ 10問クイック（ランダム）","quizStart('quick')")}
+      ${btn("▶ 全100問に挑戦","quizStart('all')")}
+      <div class="muted" style="font-size:11px;margin:8px 0 4px">カテゴリ別（各10〜20問）</div>
+      <div class="chips">${cats.map(c=>`<a class="chip" href="#/quiz" onclick="quizStart('all','${esc(c)}')">${esc(c)}</a>`).join("")}</div>
+    </div>
+    <div class="card">
+      <div class="hh" style="font-size:13px">📊 通算成績</div>
+      ${st.n?`回答 ${st.n}問 / 正解 ${st.ok||0}問（正答率 ${rate}%）`:`<span class="muted">まだ回答なし</span>`}
+      ${st.n?`<div style="margin-top:8px"><a class="chip" href="#/quiz" onclick="quizResetStats()">リセット</a></div>`:""}
+    </div>
+    <div class="card muted" style="font-size:11px;line-height:1.7">⚠️ このタブは学習専用。デイトレの売買シグナルは⚡デイトレタブ（毎晩配信と同じ内容）だけを見る。ここの知識は「ルールを守るため」に使う。</div>`;
+}
+
 // ── ルーター ──
 function setNav(h){
   // v4: 4タブ=モメンタム(ホーム)/売り/探検/使い方。検索・詳細はホーム系として点灯。
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
   $("#nav-daytrade").classList.toggle("on",h.startsWith("#/daytrade"));
+  $("#nav-quiz").classList.toggle("on",h.startsWith("#/quiz"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1287,6 +1403,7 @@ function render(){
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/sell")) $("#view").innerHTML=viewSell();
     else if(h.startsWith("#/daytrade")) $("#view").innerHTML=viewDaytrade();
+    else if(h.startsWith("#/quiz")) $("#view").innerHTML=viewQuiz();
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/explore")) $("#view").innerHTML=viewExplore();
