@@ -43,7 +43,8 @@ const QZ = () => vm.runInContext("QZ", sandbox);
 console.log("▶ menu（チャート演習のみ＝知識100問は2026-08-15導線撤去）");
 sandbox.render();
 ok("メニュー=チャート演習", view().includes("チャート演習") && view().includes("10問やる"));
-ok("知識100問の導線が無い", !view().includes("10問クイック") && !view().includes("全100問"));
+// 「全100問」はチャート演習の正規ボタンにも含まれるため、知識専用の呼び出し名で判定する
+ok("知識100問の導線が無い", !view().includes("10問クイック") && !view().includes("quizStart('"));
 ok("学習専用の注意書き", view().includes("学習専用"));
 ok("表示エラーなし", !view().includes("表示エラー"));
 
