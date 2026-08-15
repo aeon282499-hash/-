@@ -235,10 +235,11 @@ def build_embed(new_e: list, closed: list, chased: list, dropped: list,
         lines.append(f"保有{len(held)}/追撃待ち{len(pend)}（枠{SLOTS}）")
     lines.append(f"**通算: {st['n']}件 勝率{(st['win']/st['n']*100 if st['n'] else 0):.0f}% "
                  f"PF{st['pf']:.2f} {st['yen']:+,}円**（名目100万×5枠）")
-    return {"title": f"🧪 PEAD紙・答え合わせ {today.strftime('%m/%d')}",
+    # 名前は「決算追撃」（2026-08-16 本人命名・専用ch新設）。紙表記は昇格判断まで外さない。
+    return {"title": f"🎯 決算追撃（紙）・答え合わせ {today.strftime('%m/%d')}",
             "description": "\n".join(lines), "color": 0x9B59B6,
             "footer": {"text": "紙運用＝実弾禁止。2026-07-12実弾見送り判定のforward検証。"
-                               "BT正直版=年+79万/PF1.67が本物か8月〜で確認する"}}
+                               "2026年YTDシム=+169万/PF2.07（ユニチカ1玉が58%）が実弾で再現するか確認中"}}
 
 
 def fetch_today_opens(tickers: list[str]) -> dict:
@@ -321,7 +322,7 @@ def build_signal_embed(sigs: list[dict], today) -> dict:
                   "⚠️ **これは紙シグナル＝実弾禁止**。記帳は明朝、公式終値で自動"]
     else:
         lines = ["本日の買いシグナルなし（gap+12%超の該当なし or 枠フル）"]
-    return {"title": f"🧪 PEAD紙・買いシグナル {today.strftime('%m/%d')}",
+    return {"title": f"🎯 決算追撃（紙）・買いシグナル {today.strftime('%m/%d')}",
             "description": "\n".join(lines), "color": 0x9B59B6,
             "footer": {"text": "紙運用＝実弾禁止。forward検証がBT(年+79万/PF1.67)通りなら実弾昇格を判断"}}
 
@@ -347,7 +348,9 @@ def run_signal(dry: bool = False, force: bool = False) -> None:
     if dry:
         print(json.dumps(embed, ensure_ascii=False, indent=1))
     else:
-        url = os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "").strip()
+        # 専用ch「決算追撃」優先（2026-08-16 本人指定webhook）。未設定なら従来のEARNINGSchへ
+        url = (os.getenv("DISCORD_WEBHOOK_PEAD_URL", "")
+               or os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "")).strip()
         if url:
             eh.send_discord([embed], url, "pead-signal")
         book["last_signal_date"] = ts
@@ -377,7 +380,8 @@ def run(dry: bool = False, force: bool = False) -> None:
     if dry:
         print(json.dumps(embed, ensure_ascii=False, indent=1))
     else:
-        url = os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "").strip()
+        url = (os.getenv("DISCORD_WEBHOOK_PEAD_URL", "")
+               or os.getenv("DISCORD_WEBHOOK_EARNINGS_URL", "")).strip()
         if url:
             eh.send_discord([embed], url, "pead-paper")
         book["last_run_date"] = ts
