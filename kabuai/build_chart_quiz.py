@@ -70,12 +70,14 @@ def sample(df, n):
         return df
     return df.iloc[RNG.choice(len(df), size=n, replace=False)]
 
-rows = []
-rows += [(r, "SELL", "") for r in sample(go[go.pnl > 0], 30).itertuples()]
-rows += [(r, "SELL", "") for r in sample(go[go.pnl <= 0], 20).itertuples()]
-for key, df, why in nogo_sets:
-    rows += [(r, "PASS", why) for r in sample(df, 10).itertuples()]
-print(f"[cases] GO50 + NOGO{len(rows)-50}")
+# 各バケツをtarget+8で多めに引いておき、価格キャッシュで足が取れない行をスキップしても
+# 合計がぴったり100になるまで詰める（2026-08-15: 99止まり→100丁度へ・本人「チャート100問」）
+buckets = [
+    (go[go.pnl > 0], 30, "SELL", ""),
+    (go[go.pnl <= 0], 20, "SELL", ""),
+] + [(df, 10, "PASS", why) for key, df, why in nogo_sets]
+rows = [(list(sample(df, n + 8).itertuples()), n, sys_v, why) for df, n, sys_v, why in buckets]
+print(f"[cases] 目標 GO50 + NOGO50 = 100（各バケツ+8の予備つき）")
 
 # キャッシュは {all_data: {ticker: df}, name_map, ...} 構造。10年ローリング窓のため
 # 古いシグナル日は 2016-2021 スナップにフォールバックする。
@@ -100,15 +102,15 @@ def bars_upto(ticker, sig):
 
 cases = []
 skip = 0
-for r, sys_v, why_tpl in rows:
+
+
+def build_case(r, sys_v, why_tpl):
     upto = bars_upto(r.ticker, r.sig)
     if upto is None:
-        skip += 1
-        continue
+        return None
     w = upto.tail(BARS)
     if abs(float(w["Close"].iloc[-1]) - float(r.px)) / r.px > 0.02:
-        skip += 1          # キャッシュとプールの終値が合わない行は使わない（分割等）
-        continue
+        return None        # キャッシュとプールの終値が合わない行は使わない（分割等）
     bars = [[round(float(a), 1) for a in t]
             for t in zip(w["Open"], w["High"], w["Low"], w["Close"])]
     vols = [int(v) for v in w["Volume"].fillna(0)]
@@ -116,8 +118,7 @@ for r, sys_v, why_tpl in rows:
     yen = int(round(r.pnl / 100 * sh * r.o1))
     why = why_tpl.format(atr=r.atr, dev=r.dev, gain=r.gain, rng=r.rng, vr=r.vr) if why_tpl else \
         f"前日+{r.gain:.1f}%×ATR{r.atr:.1f}%×乖離{r.dev:.1f}%×出来高{r.vr:.1f}倍×レンジ{r.rng:.1f}%＝全条件クリア"
-    cases.append({
-        "id": len(cases) + 1,
+    return {
         "bars": bars, "vols": vols,
         "meta": {"gain": round(float(r.gain), 1), "atr": round(float(r.atr), 1),
                  "dev": round(float(r.dev), 1), "vr": round(float(r.vr), 1),
@@ -127,7 +128,22 @@ for r, sys_v, why_tpl in rows:
                 "o1": round(float(r.o1), 1), "c1": round(float(r.c1), 1)},
         "reveal": {"code": r.ticker.replace(".T", ""), "date": r.sig,
                    "name": names.get(r.ticker, "")},
-    })
+    }
+
+
+for cand_rows, target, sys_v, why_tpl in rows:
+    made = 0
+    for r in cand_rows:
+        if made >= target:
+            break
+        c = build_case(r, sys_v, why_tpl)
+        if c is None:
+            skip += 1
+            continue
+        cases.append(c)
+        made += 1
+    if made < target:
+        print(f"[warn] バケツ不足 {sys_v}: {made}/{target}")
 
 RNG.shuffle(cases)
 for i, c in enumerate(cases):

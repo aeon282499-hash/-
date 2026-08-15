@@ -1340,11 +1340,11 @@ async function loadQuizCharts(){
   return QZC;
 }
 function qzcStats(){try{return JSON.parse(localStorage.getItem("dtquizc")||"{}")}catch(e){return {}}}
-function quizChartStart(){
-  if(!QZC){loadQuizCharts().then(()=>{if(QZC)quizChartStart();});return;}
+function quizChartStart(mode){
+  if(!QZC){loadQuizCharts().then(()=>{if(QZC)quizChartStart(mode);});return;}
   const cs=QZC.cases.slice();
   for(let i=cs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cs[i],cs[j]]=[cs[j],cs[i]];}
-  QZCS={qs:cs.slice(0,10),i:0,ok:0,picked:null,done:false};
+  QZCS={qs:mode==="all"?cs:cs.slice(0,10),i:0,ok:0,picked:null,done:false};
   render();
 }
 function quizChartAnswer(k){          // 0=買い 1=空売り 2=見送り
@@ -1490,6 +1490,7 @@ function viewQuiz(){
       結果は別掲（正しい判断でも負ける日が約4割ある＝それを体で覚えるのが目的）。</div>
     <div class="card">
       ${btn("▶ 10問やる（ランダム出題）","quizChartStart()")}
+      ${btn("▶ 全100問に挑戦","quizChartStart('all')")}
     </div>
     <div class="card">
       <div class="hh" style="font-size:13px">📊 通算成績</div>

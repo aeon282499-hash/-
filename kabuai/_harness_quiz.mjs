@@ -99,8 +99,13 @@ ok("チャート成績は別枠(dtquizc)", JSON.parse(lsData["dtquizc"]).n === 1
 sandbox.quizExit(); sandbox.render();
 ok("メニューに通算成績", view().includes("通算成績") && view().includes("回答 10問"));
 
+console.log("▶ 全問モード");
+sandbox.quizChartStart("all");
+ok("全100問セッション", QZCS() && QZCS().qs.length === 100);
+sandbox.quizExit(); sandbox.render();
+
 console.log("▶ 生成データの健全性");
-ok("ケース数≥90", CHARTS.cases.length >= 90);
+ok("ケース数=100ぴったり", CHARTS.cases.length === 100);
 ok("全ケース30本の足", CHARTS.cases.every(c => c.bars.length === 30));
 ok("GO/NOGO両方いる", CHARTS.cases.some(c => c.sys === "SELL") && CHARTS.cases.some(c => c.sys === "PASS"));
 ok("最終足の終値と前日比が整合", CHARTS.cases.every(c => {
