@@ -40,17 +40,15 @@ const view = () => $get("#view").innerHTML;
 // vm内の let 変数(QZ等)は sandbox のプロパティにならない＝式評価で読む
 const QZ = () => vm.runInContext("QZ", sandbox);
 
-console.log("▶ menu");
-sandbox.render();                       // QUIZ未ロード=読み込み中→quizReloadが走る
-await new Promise(r => setTimeout(r, 20));   // 遅延fetchのマイクロタスクを全部流す
+console.log("▶ menu（チャート演習のみ＝知識100問は2026-08-15導線撤去）");
 sandbox.render();
-ok("メニューが出る", view().includes("デイトレ検定100問"));
-ok("クイックボタン", view().includes("10問クイック"));
-ok("カテゴリchips", view().includes("機械") && view().includes("検証"));
+ok("メニュー=チャート演習", view().includes("チャート演習") && view().includes("10問やる"));
+ok("知識100問の導線が無い", !view().includes("10問クイック") && !view().includes("全100問"));
 ok("学習専用の注意書き", view().includes("学習専用"));
 ok("表示エラーなし", !view().includes("表示エラー"));
 
-console.log("▶ shuffle整合");
+console.log("▶ 残置の知識クイズ関数（復活用に生きているか）");
+await sandbox.loadQuiz();               // UIからは呼ばれない＝ハーネスが直接ロード
 sandbox.quizStart("all");
 const byId = Object.fromEntries(QUIZRAW.questions.map(q => [q.id, q]));
 const bad = QZ().qs.filter(q => q.c[q.a] !== byId[q.id].c[byId[q.id].a]);
@@ -75,11 +73,10 @@ sandbox.quizNext();
 ok("結果画面", view().includes("🎓 結果") && view().includes("/ 10"));
 ok("成績がlocalStorageに載る", JSON.parse(lsData["dtquiz"]).n === 10);
 sandbox.quizExit(); sandbox.render();
-ok("メニューに通算成績", view().includes("通算成績") && view().includes("回答 10問"));
 
 console.log("▶ チャート演習");
 locationShim.hash = "#/quiz"; sandbox.render();
-ok("メニューにチャート演習", view().includes("チャート演習") && view().includes("quizChartStart"));
+ok("メニューに開始ボタン", view().includes("quizChartStart"));
 const QZCS = () => vm.runInContext("QZCS", sandbox);
 sandbox.quizChartStart();                    // 初回は遅延ロード→自動で再スタート
 await new Promise(r => setTimeout(r, 30));
@@ -100,7 +97,7 @@ sandbox.quizChartNext();
 ok("チャート演習の結果画面", view().includes("チャート演習 結果"));
 ok("チャート成績は別枠(dtquizc)", JSON.parse(lsData["dtquizc"]).n === 10);
 sandbox.quizExit(); sandbox.render();
-ok("メニューに両方の通算", view().includes("🎓知識") && view().includes("📈チャート"));
+ok("メニューに通算成績", view().includes("通算成績") && view().includes("回答 10問"));
 
 console.log("▶ 生成データの健全性");
 ok("ケース数≥90", CHARTS.cases.length >= 90);

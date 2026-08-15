@@ -179,9 +179,10 @@
   <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
   <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
   <a href="#/daytrade" id="nav-daytrade"><span class="i">⚡</span>デイトレ</a>
-  <!-- 🎓問題=デイトレ検定100問（2026-08-15本人依頼「勉強したい・問題100問」）。学習専用＝
-       シグナルは出さない(EODアプリでデイトレの売買判断はしない方針はfeedback_kabuai_no_daytradeのまま) -->
-  <a href="#/quiz" id="nav-quiz"><span class="i">🎓</span>問題</a>
+  <!-- 📈演習=チャート演習（実データで買いか売りか・2026-08-15）。学習専用＝シグナルは出さない。
+       知識100問は同日本人「いらない」で導線撤去（quizStart系関数とweb/quiz_daytrade.jsonは残置＝
+       復活はviewQuizのメニューにボタンを戻すだけ）。hashは#/quizのまま＝配信済みリンクを壊さない -->
+  <a href="#/quiz" id="nav-quiz"><span class="i">📈</span>演習</a>
   <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
@@ -1456,7 +1457,8 @@ function quizRunView(){
     <div class="muted" style="font-size:11px;margin-top:8px"><a href="#/quiz" onclick="quizExit()">← やめてメニューへ</a></div>`;
 }
 function viewQuiz(){
-  if(!QUIZ){quizReload("#/quiz");return `<h2>🎓 デイトレ検定</h2><div class="card muted">読み込み中…</div>`;}
+  // 知識100問(QUIZ/QZ系)は2026-08-15本人「いらない」で導線撤去。関数・データは残置＝
+  // 復活はメニューに quizStart のボタンを戻すだけ（その際は下のQUIZ遅延ロードも戻す）。
   if(QZ&&!QZ.done)return quizRunView();
   if(QZ&&QZ.done){
     const out=`
@@ -1478,34 +1480,22 @@ function viewQuiz(){
       </div>
       <div class="card"><a href="#/quiz" onclick="quizExit()">← メニューに戻る</a></div>`;
   }
-  const cats=[...new Set(QUIZ.questions.map(q=>q.cat))];
-  const st=quizStats();
-  const rate=st.n?Math.round((st.ok||0)/st.n*100):null;
   const stc=qzcStats();
   const btn=(label,call)=>`<button style="display:block;width:100%;margin:6px 0;padding:12px;border-radius:12px;border:0;background:var(--acc,#f0b90b);color:#111;font-weight:800;font-size:14px" onclick="${call}">${label}</button>`;
   return `
-    <h2>🎓 デイトレ検定100問</h2>
-    <div class="card muted" style="font-size:12px;line-height:1.8">${esc(QUIZ.note||"")}</div>
+    <h2>📈 チャート演習</h2>
+    <div class="card muted" style="font-size:12px;line-height:1.8">
+      過去10年の<b>本物の急騰チャート99ケース</b>。ローソク30本と指標を見て 買い/空売り/見送り を判断→
+      翌日の実際の値動きと損益で答え合わせ。正解は「システムと同じ判断ができたか」＝
+      結果は別掲（正しい判断でも負ける日が約4割ある＝それを体で覚えるのが目的）。</div>
     <div class="card">
-      ${btn("▶ 10問クイック（ランダム）","quizStart('quick')")}
-      ${btn("▶ 全100問に挑戦","quizStart('all')")}
-      <div class="muted" style="font-size:11px;margin:8px 0 4px">カテゴリ別（各10〜20問）</div>
-      <div class="chips">${cats.map(c=>`<a class="chip" href="#/quiz" onclick="quizStart('all','${esc(c)}')">${esc(c)}</a>`).join("")}</div>
-    </div>
-    <div class="card">
-      <div class="hh" style="font-size:13px">📈 チャート演習（実データ・買いか売りか）</div>
-      <div class="muted" style="font-size:11.5px;line-height:1.7;margin-bottom:6px">
-        過去10年の本物の急騰チャート30本を見て 買い/空売り/見送り を判断→翌日の実際の値動きと損益で答え合わせ。
-        正解は「システムと同じ判断ができたか」＝結果は別掲（正しくても負ける日がある）。</div>
-      ${btn("▶ チャート演習 10問（ランダム）","quizChartStart()")}
+      ${btn("▶ 10問やる（ランダム出題）","quizChartStart()")}
     </div>
     <div class="card">
       <div class="hh" style="font-size:13px">📊 通算成績</div>
-      <div>🎓知識: ${st.n?`回答 ${st.n}問 / 正解 ${st.ok||0}問（正答率 ${rate}%）`:`<span class="muted">まだ回答なし</span>`}</div>
-      <div style="margin-top:4px">📈チャート: ${stc.n?`回答 ${stc.n}問 / 正解 ${stc.ok||0}問（正答率 ${Math.round((stc.ok||0)/stc.n*100)}%）`:`<span class="muted">まだ回答なし</span>`}</div>
-      ${st.n?`<div style="margin-top:8px"><a class="chip" href="#/quiz" onclick="quizResetStats()">知識の成績をリセット</a></div>`:""}
+      ${stc.n?`回答 ${stc.n}問 / 正解 ${stc.ok||0}問（正答率 ${Math.round((stc.ok||0)/stc.n*100)}%）`:`<span class="muted">まだ回答なし</span>`}
     </div>
-    <div class="card muted" style="font-size:11px;line-height:1.7">⚠️ このタブは学習専用。デイトレの売買シグナルは⚡デイトレタブ（毎晩配信と同じ内容）だけを見る。ここの知識は「ルールを守るため」に使う。</div>`;
+    <div class="card muted" style="font-size:11px;line-height:1.7">⚠️ このタブは学習専用。デイトレの売買シグナルは⚡デイトレタブ（毎晩配信と同じ内容）だけを見る。</div>`;
 }
 
 // ── ルーター ──
