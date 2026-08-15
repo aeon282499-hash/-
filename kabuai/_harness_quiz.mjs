@@ -6,6 +6,7 @@ import vm from "node:vm";
 const html = fs.readFileSync("web/index.html", "utf8");
 const LATEST = JSON.parse(fs.readFileSync("data/latest.json", "utf8"));
 const QUIZRAW = JSON.parse(fs.readFileSync("web/quiz_daytrade.json", "utf8"));
+const CHARTS = JSON.parse(fs.readFileSync("web/quiz_charts.json", "utf8"));
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
 const appScript = scripts.find(s => s.includes("function render"));
 if (!appScript) { console.error("FAIL: app script not found"); process.exit(1); }
@@ -16,7 +17,8 @@ const ok = (label, cond) => { if (cond) { PASS++; console.log("  ok  " + label);
 const store = {};
 const lsData = {};
 const mkEl = id => ({ _id: id, _html: "", set innerHTML(v){ this._html = v; }, get innerHTML(){ return this._html; },
-  textContent: "", classList: { toggle(){}, add(){}, remove(){} }, querySelector(){ return mkEl("c"); } });
+  textContent: "", clientWidth: 340, classList: { toggle(){}, add(){}, remove(){} }, querySelector(){ return mkEl("c"); },
+  getContext(){ return { clearRect(){}, beginPath(){}, moveTo(){}, lineTo(){}, stroke(){}, fillRect(){}, fillText(){} }; } });
 const $get = sel => store[sel] || (store[sel] = mkEl(sel));
 const locationShim = { hash: "#/quiz" };
 const sandbox = {
@@ -25,7 +27,8 @@ const sandbox = {
   location: locationShim,
   localStorage: { getItem: k => (k in lsData ? lsData[k] : null), setItem(k,v){ lsData[k]=String(v); }, removeItem(k){ delete lsData[k]; } },
   Chart: function(){ return {}; }, console,
-  fetch: async u => ({ ok: true, json: async () => (String(u).includes("quiz_daytrade") ? QUIZRAW : LATEST) }),
+  fetch: async u => ({ ok: true, json: async () => (String(u).includes("quiz_charts") ? CHARTS
+    : String(u).includes("quiz_daytrade") ? QUIZRAW : LATEST) }),
   setTimeout, clearTimeout, requestAnimationFrame: fn => fn(),
 };
 sandbox.globalThis = sandbox;
@@ -73,6 +76,42 @@ ok("結果画面", view().includes("🎓 結果") && view().includes("/ 10"));
 ok("成績がlocalStorageに載る", JSON.parse(lsData["dtquiz"]).n === 10);
 sandbox.quizExit(); sandbox.render();
 ok("メニューに通算成績", view().includes("通算成績") && view().includes("回答 10問"));
+
+console.log("▶ チャート演習");
+locationShim.hash = "#/quiz"; sandbox.render();
+ok("メニューにチャート演習", view().includes("チャート演習") && view().includes("quizChartStart"));
+const QZCS = () => vm.runInContext("QZCS", sandbox);
+sandbox.quizChartStart();                    // 初回は遅延ロード→自動で再スタート
+await new Promise(r => setTimeout(r, 30));
+ok("セッション開始 10問", QZCS() && QZCS().qs.length === 10);
+sandbox.render();
+ok("run画面: 設問と選択肢", view().includes("明日の寄り、どうする？") && view().includes("空売り→引け買戻し"));
+await new Promise(r => setTimeout(r, 10));   // setTimeout(qzcDraw)を流して例外が出ないこと
+let cc = QZCS().qs[0];
+const correct0 = cc.sys === "SELL" ? 1 : 2;
+sandbox.quizChartAnswer(correct0);
+ok("プロセス一致で正解", view().includes("⭕ 正解") && view().includes("翌日の現実"));
+ok("正体の開示", view().includes("正体:") && view().includes(cc.reveal.code));
+sandbox.quizChartNext();
+sandbox.quizChartAnswer(0);                  // 買いは常に不正解
+ok("買いは常に不正解＋PF0.60の解説", view().includes("❌ 不正解") && view().includes("PF0.60"));
+for (let i = 2; i <= 9; i++) { sandbox.quizChartNext(); sandbox.quizChartAnswer(QZCS().qs[i].sys === "SELL" ? 1 : 2); }
+sandbox.quizChartNext();
+ok("チャート演習の結果画面", view().includes("チャート演習 結果"));
+ok("チャート成績は別枠(dtquizc)", JSON.parse(lsData["dtquizc"]).n === 10);
+sandbox.quizExit(); sandbox.render();
+ok("メニューに両方の通算", view().includes("🎓知識") && view().includes("📈チャート"));
+
+console.log("▶ 生成データの健全性");
+ok("ケース数≥90", CHARTS.cases.length >= 90);
+ok("全ケース30本の足", CHARTS.cases.every(c => c.bars.length === 30));
+ok("GO/NOGO両方いる", CHARTS.cases.some(c => c.sys === "SELL") && CHARTS.cases.some(c => c.sys === "PASS"));
+ok("最終足の終値と前日比が整合", CHARTS.cases.every(c => {
+  const cl = c.bars[29][3], pv = c.bars[28][3];
+  return Math.abs((cl - pv) / pv * 100 - c.meta.gain) < 1.5;
+}));
+ok("SELLケースは全フィルタ通過", CHARTS.cases.filter(c => c.sys === "SELL").every(c =>
+  c.meta.gain >= 7 && c.meta.atr >= 5 && c.meta.dev >= 12 && c.meta.vr < 6 && c.meta.rng > 5));
 
 console.log("▶ 他タブが壊れていないか");
 for (const h of ["#/", "#/sell", "#/daytrade", "#/explore", "#/about"]) {

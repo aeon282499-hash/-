@@ -1315,13 +1315,117 @@ function quizAnswer(k){
   quizSaveStats(st);render();
 }
 function quizNext(){if(!QZ)return;if(QZ.i+1>=QZ.qs.length)QZ.done=true;else{QZ.i++;QZ.picked=null;}render();}
-function quizExit(){QZ=null;}
+function quizExit(){QZ=null;QZCS=null;}
 function quizGrade(ok,n){
   const r=n?ok/n:0;
   if(r>=0.9)return "🏆 免許皆伝。あとはルール通り発注するだけ";
   if(r>=0.7)return "💪 合格ライン。間違えた問題の解説だけ読み直し";
   if(r>=0.5)return "📖 まだ危ない。解説を読んでからもう1周";
   return "🚨 このまま実弾は事故る。全問の解説を読むこと";
+}
+// ── 📈 チャート演習（2026-08-15 本人「テクニカルでこれは買いか売りかをやって欲しかった」）──
+// 実在の急騰100ケース(10年プールから抽出・web/quiz_charts.json)のチャート30本を見て
+// 買い/空売り/見送りを判断→翌日の実際の値動きで答え合わせ。採点は「システム判定との一致」＝
+// プロセスの採点で、実際の損益は正誤と別に必ず表示（正しい判断でも負ける日がある、を体で覚える）。
+let QZC=null,QZC_LOADING=false,QZCS=null;
+async function loadQuizCharts(){
+  if(QZC||QZC_LOADING)return QZC;
+  QZC_LOADING=true;
+  const cands=["quiz_charts.json","./quiz_charts.json","web/quiz_charts.json"];
+  for(const u of cands){
+    try{const r=await fetch(u,{cache:"no-store"});if(r.ok){QZC=await r.json();break;}}catch(e){}
+  }
+  QZC_LOADING=false;
+  return QZC;
+}
+function qzcStats(){try{return JSON.parse(localStorage.getItem("dtquizc")||"{}")}catch(e){return {}}}
+function quizChartStart(){
+  if(!QZC){loadQuizCharts().then(()=>{if(QZC)quizChartStart();});return;}
+  const cs=QZC.cases.slice();
+  for(let i=cs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cs[i],cs[j]]=[cs[j],cs[i]];}
+  QZCS={qs:cs.slice(0,10),i:0,ok:0,picked:null,done:false};
+  render();
+}
+function quizChartAnswer(k){          // 0=買い 1=空売り 2=見送り
+  if(!QZCS||QZCS.picked!=null)return;
+  QZCS.picked=k;
+  const c=QZCS.qs[QZCS.i],correct=(c.sys==="SELL")?1:2;
+  const st=qzcStats();st.n=(st.n||0)+1;
+  if(k===correct){QZCS.ok++;st.ok=(st.ok||0)+1;}
+  try{localStorage.setItem("dtquizc",JSON.stringify(st))}catch(e){}
+  render();
+}
+function quizChartNext(){if(!QZCS)return;if(QZCS.i+1>=QZCS.qs.length)QZCS.done=true;else{QZCS.i++;QZCS.picked=null;}render();}
+function qzcDraw(){
+  const el=document.getElementById("qzchart");
+  if(!el||!QZCS||QZCS.done)return;
+  const c=QZCS.qs[QZCS.i],bars=c.bars,vols=c.vols||[];
+  const W=el.width=(el.clientWidth||340),H=el.height=220;
+  const ctx=el.getContext&&el.getContext("2d");if(!ctx)return;
+  ctx.clearRect(0,0,W,H);
+  const n=bars.length,step=W/(n+1),bw=Math.max(2,step*0.6);
+  const hi=Math.max(...bars.map(b=>b[1])),lo=Math.min(...bars.map(b=>b[2]));
+  const ph=H*0.72,py=v=>ph-(v-lo)/(hi-lo||1)*(ph-8)+4;
+  const vmax=Math.max(...vols,1);
+  for(let i=0;i<n;i++){
+    const[o,h,l,cl]=bars[i],x=step*(i+1),up=cl>=o;
+    ctx.fillStyle=ctx.strokeStyle=up?"#3fb950":"#ea3943";
+    if(vols[i]!=null){ctx.globalAlpha=.35;ctx.fillRect(x-bw/2,H-(vols[i]/vmax)*(H*0.22),bw,(vols[i]/vmax)*(H*0.22));ctx.globalAlpha=1;}
+    ctx.beginPath();ctx.moveTo(x,py(h));ctx.lineTo(x,py(l));ctx.stroke();
+    const t=py(Math.max(o,cl)),b=py(Math.min(o,cl));
+    ctx.fillRect(x-bw/2,t,bw,Math.max(1,b-t));
+  }
+  ctx.fillStyle="#f0b90b";ctx.font="10px sans-serif";
+  ctx.fillText("▲今日",step*n-14,py(bars[n-1][1])-6);
+}
+function quizChartRunView(){
+  setTimeout(qzcDraw,0);
+  const c=QZCS.qs[QZCS.i],p=QZCS.picked,m=c.meta;
+  const correct=(c.sys==="SELL")?1:2;
+  const labels=["🟢 買い（順張り）","🔴 空売り→引け買戻し","⏸️ 見送り"];
+  const opts=labels.map((L,k)=>{
+    let st="display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line,rgba(128,128,128,.35));background:transparent;color:inherit;font-size:13px";
+    let mk="";
+    if(p!=null){
+      if(k===correct){st+=";border-color:#3fb950;background:rgba(63,185,80,.12)";mk=" ✅";}
+      else if(k===p){st+=";border-color:#ea3943;background:rgba(234,57,67,.10)";mk=" ❌";}
+      else st+=";opacity:.55";
+    }
+    return `<button style="${st}" onclick="quizChartAnswer(${k})">${L}${mk}</button>`;
+  }).join("");
+  let fb="";
+  if(p!=null){
+    const o=c.out,r=c.reveal,win=o.pct>0;
+    const cap=(QZC.capital||700000)/10000;
+    const notes=[];
+    if(p===0)notes.push("⚠️ 買いはどのケースでも不正解＝急騰翌日の順張りデイ買いは10年PF0.60・11年連続マイナス。");
+    if(p===correct&&c.sys==="SELL"&&!win)notes.push("💡 判断は正しくて結果は負け。これが約4割ある＝それでも撃ち続けて10年+1,376万。プロセスと結果を分けて採点するのがシステム運用。");
+    if(p!==correct&&c.sys==="PASS"&&win)notes.push("💡 撃っていれば勝てたケースだが、この条件の玉は総体では損の塊＝結果オーライはプロセスの誤りを覆さない。");
+    const note=notes.map(t=>`<div style="margin-top:6px">${t}</div>`).join("");
+    fb=`<div class="card" style="border-left:3px solid ${p===correct?"#3fb950":"#ea3943"}">
+      <b>${p===correct?"⭕ 正解":"❌ 不正解"}</b>（システムの答え: ${c.sys==="SELL"?"🔴空売り":"⏸️見送り"}）
+      <div style="font-size:12.5px;line-height:1.8;margin-top:6px">🤖 ${esc(c.why)}</div>
+      <div style="font-size:12.5px;line-height:1.8;margin-top:4px">📊 翌日の現実: 寄${o.o1.toLocaleString()}→引${o.c1.toLocaleString()}円。
+      空売りなら <b>${o.pct>=0?"+":""}${o.pct}%（${o.yen>=0?"+":""}${o.yen.toLocaleString()}円/${cap}万建て）</b>${note}</div>
+      <div class="muted" style="font-size:11px;margin-top:6px">正体: ${esc(r.name||"")}（${esc(r.code)}）${esc(r.date)}</div>
+      <button style="margin-top:10px;padding:10px 18px;border-radius:10px;border:0;background:var(--acc,#f0b90b);color:#111;font-weight:700" onclick="quizChartNext()">${QZCS.i+1>=QZCS.qs.length?"結果を見る":"次のチャート ▶"}</button>
+    </div>`;
+  }
+  return `
+    <h2>📈 チャート演習 <span class="muted" style="font-weight:400;font-size:12px">${QZCS.i+1} / ${QZCS.qs.length}・正解${QZCS.ok}</span></h2>
+    <div class="card">
+      <div class="muted" style="font-size:11px;margin-bottom:6px">実在の銘柄（回答後に開示）。最終足＝急騰した「今日」の引け後という設定</div>
+      <canvas id="qzchart" style="width:100%;height:220px"></canvas>
+      <div class="chips" style="margin-top:8px">
+        <span class="chip">前日+${m.gain}%</span><span class="chip">ATR ${m.atr}%</span>
+        <span class="chip">乖離 ${m.dev}%</span><span class="chip">出来高×${m.vr}</span>
+        <span class="chip">レンジ ${m.rng}%</span><span class="chip">代金${m.tov_oku}億</span>
+      </div>
+      <div style="font-size:14px;font-weight:700;margin-top:10px">明日の寄り、どうする？</div>
+      <div style="margin-top:8px">${opts}</div>
+    </div>
+    ${fb}
+    <div class="muted" style="font-size:11px;margin-top:8px"><a href="#/quiz" onclick="quizExit()">← やめてメニューへ</a></div>`;
 }
 function quizRunView(){
   const q=QZ.qs[QZ.i],p=QZ.picked;
@@ -1364,9 +1468,20 @@ function viewQuiz(){
       <div class="card"><a href="#/quiz" onclick="quizExit()">← メニューに戻る</a></div>`;
     return out;
   }
+  if(QZCS&&!QZCS.done)return quizChartRunView();
+  if(QZCS&&QZCS.done){
+    return `
+      <h2>📈 チャート演習 結果</h2>
+      <div class="card" style="text-align:center">
+        <div style="font-size:36px;font-weight:800">${QZCS.ok} / ${QZCS.qs.length}</div>
+        <div class="muted" style="margin-top:4px">${quizGrade(QZCS.ok,QZCS.qs.length)}</div>
+      </div>
+      <div class="card"><a href="#/quiz" onclick="quizExit()">← メニューに戻る</a></div>`;
+  }
   const cats=[...new Set(QUIZ.questions.map(q=>q.cat))];
   const st=quizStats();
   const rate=st.n?Math.round((st.ok||0)/st.n*100):null;
+  const stc=qzcStats();
   const btn=(label,call)=>`<button style="display:block;width:100%;margin:6px 0;padding:12px;border-radius:12px;border:0;background:var(--acc,#f0b90b);color:#111;font-weight:800;font-size:14px" onclick="${call}">${label}</button>`;
   return `
     <h2>🎓 デイトレ検定100問</h2>
@@ -1378,9 +1493,17 @@ function viewQuiz(){
       <div class="chips">${cats.map(c=>`<a class="chip" href="#/quiz" onclick="quizStart('all','${esc(c)}')">${esc(c)}</a>`).join("")}</div>
     </div>
     <div class="card">
+      <div class="hh" style="font-size:13px">📈 チャート演習（実データ・買いか売りか）</div>
+      <div class="muted" style="font-size:11.5px;line-height:1.7;margin-bottom:6px">
+        過去10年の本物の急騰チャート30本を見て 買い/空売り/見送り を判断→翌日の実際の値動きと損益で答え合わせ。
+        正解は「システムと同じ判断ができたか」＝結果は別掲（正しくても負ける日がある）。</div>
+      ${btn("▶ チャート演習 10問（ランダム）","quizChartStart()")}
+    </div>
+    <div class="card">
       <div class="hh" style="font-size:13px">📊 通算成績</div>
-      ${st.n?`回答 ${st.n}問 / 正解 ${st.ok||0}問（正答率 ${rate}%）`:`<span class="muted">まだ回答なし</span>`}
-      ${st.n?`<div style="margin-top:8px"><a class="chip" href="#/quiz" onclick="quizResetStats()">リセット</a></div>`:""}
+      <div>🎓知識: ${st.n?`回答 ${st.n}問 / 正解 ${st.ok||0}問（正答率 ${rate}%）`:`<span class="muted">まだ回答なし</span>`}</div>
+      <div style="margin-top:4px">📈チャート: ${stc.n?`回答 ${stc.n}問 / 正解 ${stc.ok||0}問（正答率 ${Math.round((stc.ok||0)/stc.n*100)}%）`:`<span class="muted">まだ回答なし</span>`}</div>
+      ${st.n?`<div style="margin-top:8px"><a class="chip" href="#/quiz" onclick="quizResetStats()">知識の成績をリセット</a></div>`:""}
     </div>
     <div class="card muted" style="font-size:11px;line-height:1.7">⚠️ このタブは学習専用。デイトレの売買シグナルは⚡デイトレタブ（毎晩配信と同じ内容）だけを見る。ここの知識は「ルールを守るため」に使う。</div>`;
 }
