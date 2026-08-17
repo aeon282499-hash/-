@@ -23,5 +23,18 @@
     "close_position": 1.0,
     "atr_pct": 2.29,
     "max_entry_price": 987.6
+  },
+  {
+    "signal_date": "2026-08-18",
+    "entry_date": "2026-08-19",
+    "ticker": "6071.T",
+    "name": "ＩＢＪ",
+    "direction": "BUY",
+    "prev_close": 940.0,
+    "high_20": 890.0,
+    "vol_ratio": 15.06,
+    "close_position": 0.795,
+    "atr_pct": 2.48,
+    "max_entry_price": 1068.0
   }
 ]
