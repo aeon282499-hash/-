@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-17",
+ "last_run_date": "2026-08-18",
  "positions": [
   {
    "ticker": "6134.T",
@@ -91,10 +91,13 @@
    "d0_close": 13165.0,
    "d1_close": 16165.0,
    "exit_date": "2026-08-17",
-   "status": "held",
+   "status": "closed",
    "chase_date": "2026-08-12",
    "entry": 16565.0,
-   "entry_kind": "D2寄り追撃"
+   "entry_kind": "D2寄り追撃",
+   "exit": 16380.0,
+   "pnl_pct": -1.12,
+   "pnl_yen": -11168
   },
   {
    "ticker": "6862.T",
@@ -131,8 +134,10 @@
    "d0_close": 2521.5,
    "d1_close": 3022.0,
    "exit_date": "2026-08-20",
-   "status": "pending_d2",
-   "chase_date": "2026-08-17"
+   "status": "held",
+   "chase_date": "2026-08-17",
+   "entry": 3349.0,
+   "entry_kind": "D2寄り追撃"
   },
   {
    "ticker": "2585.T",
@@ -143,8 +148,10 @@
    "d0_close": 1487.0,
    "d1_close": 1787.0,
    "exit_date": "2026-08-20",
-   "status": "pending_d2",
-   "chase_date": "2026-08-17"
+   "status": "held",
+   "chase_date": "2026-08-17",
+   "entry": 1847.0,
+   "entry_kind": "D2寄り追撃"
   },
   {
    "ticker": "4180.T",
@@ -155,8 +162,10 @@
    "d0_close": 982.0,
    "d1_close": 1132.0,
    "exit_date": "2026-08-20",
-   "status": "pending_d2",
-   "chase_date": "2026-08-17"
+   "status": "held",
+   "chase_date": "2026-08-17",
+   "entry": 1274.0,
+   "entry_kind": "D2寄り追撃"
   }
  ],
  "last_signal_date": "2026-08-17"
