@@ -1,5 +1,5 @@
 {
- "last_run_date": "2026-08-18",
+ "last_run_date": "2026-08-19",
  "positions": [
   {
    "ticker": "6134.T",
@@ -121,9 +121,12 @@
    "d0_close": 2871.0,
    "d1_close": 2974.0,
    "exit_date": "2026-08-18",
-   "status": "held",
+   "status": "closed",
    "entry": 2974.0,
-   "entry_kind": "D1大引け"
+   "entry_kind": "D1大引け",
+   "exit": 2885.0,
+   "pnl_pct": -2.99,
+   "pnl_yen": -29926
   },
   {
    "ticker": "3659.T",
