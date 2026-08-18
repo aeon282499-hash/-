@@ -1,18 +1,4 @@
 {
-  "date": "2026-08-18",
-  "signals": [
-    {
-      "ticker": "1861.T",
-      "name": "熊谷組",
-      "direction": "BUY",
-      "prev_close": 1313.0,
-      "limit_price": 1326,
-      "days_cover": 0.8548113325308643,
-      "rsi": 33.28,
-      "deviation": -7.29,
-      "vol_ratio": 2.11,
-      "range_ratio": 0.77,
-      "turnover": 2447034000.0
-    }
-  ]
+  "date": "2026-08-19",
+  "signals": []
 }

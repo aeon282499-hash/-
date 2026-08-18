@@ -761,8 +761,15 @@
       "basis_date": "2026-08-17",
       "prev_close": 940.0,
       "limit_price": 1068.0,
-      "status": "pending",
-      "high_20": 890.0
+      "status": "closed",
+      "high_20": 890.0,
+      "entry_session": "2026-08-18",
+      "entry_open": 942.0,
+      "entry_close": 963.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 2.229,
+      "pnl_yen": 18900,
+      "win": true
     },
     {
       "ticker": "5803.T",
@@ -772,7 +779,7 @@
       "basis_date": "2026-08-17",
       "prev_close": 6078.0,
       "limit_price": 6080.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.29,
       "short": {
         "mark": "○",
@@ -784,7 +791,14 @@
       "dev25": 25.8,
       "atr_pct": 7.34,
       "vol_ratio": 1.2,
-      "range_pct": 5.9
+      "range_pct": 5.9,
+      "entry_session": "2026-08-18",
+      "entry_open": 6100.0,
+      "entry_close": 5902.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 3.246,
+      "pnl_yen": 19800,
+      "win": true
     },
     {
       "ticker": "5985.T",
@@ -794,7 +808,7 @@
       "basis_date": "2026-08-17",
       "prev_close": 2358.0,
       "limit_price": 2358.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 10.29,
       "short": {
         "mark": "○",
@@ -806,11 +820,40 @@
       "dev25": 60.3,
       "atr_pct": 7.25,
       "vol_ratio": 1.4,
-      "range_pct": 10.9
+      "range_pct": 10.9,
+      "entry_session": "2026-08-18",
+      "entry_open": 2386.0,
+      "entry_close": 2434.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -2.012,
+      "pnl_yen": -19200,
+      "win": false
+    },
+    {
+      "ticker": "3778.T",
+      "name": "さくらインターネット",
+      "direction": "SELL",
+      "signal_date": "2026-08-19",
+      "basis_date": "2026-08-18",
+      "prev_close": 4300.0,
+      "limit_price": 4300.0,
+      "status": "pending",
+      "daily_gain": 13.16,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 33.6,
+      "atr_pct": 6.16,
+      "vol_ratio": 3.5,
+      "range_pct": 14.9
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-18",
+  "last_report_date": "2026-08-19",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W33"
 }
