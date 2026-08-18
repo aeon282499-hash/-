@@ -228,10 +228,15 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
         if direction == "BUY":
             high_20         = sig.get("high_20", 0)
             max_entry_price = sig.get("max_entry_price", 0)
+            # 2026-08-18 本人「わけわからんかった」対応: 何者か+時間軸を配信自体に書く
             action_str = (
-                f"🟢 **MAX指値 ¥{max_entry_price:,.0f} で寄成買い**\n"
-                f"（寄り≦指値なら執行・超えたら見送り）\n"
-                f"→ 同日 **15:00 引成 返済売り** で決済"
+                f"📝 **紙シグナル（実弾対象外）** — 年数回だけ出る買い版デイトレ\n"
+                f"昨日、大出来高で20日ぶり高値を抜けた銘柄の「翌日もう一伸び」狙い\n"
+                f"─────────────\n"
+                f"🟢 **翌営業日の寄り付きで成行買い**（上限 ¥{max_entry_price:,.0f}＝"
+                f"これより上で寄ったら自動見送り）\n"
+                f"→ **同じ日の大引け（15:30）に引け成りで全部売る**\n"
+                f"（持ち越しなし・日中の損切りなし・損益＝引け値−寄り値）"
             )
             # 2026-08-18: 旧「信用400万1ポジ」設計(2026-05-14)のハードコードを撤去。
             # 紙台帳の記帳サイズ(daytrade_paper.CAPITAL_PER_TRADE)に統一＝表示と紙記帳の株数が一致。
@@ -243,15 +248,15 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
             else:
                 invest_str = f"**{_CAP / 1e4:.0f}万円目安**"
             embeds.append({
-                "title": f"🚀【デイトレv2 BUY】#{i}  {sig['name']}（{sig['ticker']}）",
+                "title": f"🚀【デイトレv2 BUY・紙】#{i}  {sig['name']}（{sig['ticker']}）",
                 "color": 0xE53935,
                 "fields": [
-                    {"name": "📌 アクション",     "value": action_str, "inline": False},
-                    {"name": "💰 MAX指値",        "value": f"**¥{max_entry_price:,.0f}**（20日高値+{int((max_entry_price/high_20-1)*100)}%）" if high_20 else f"¥{max_entry_price:,.0f}", "inline": True},
+                    {"name": "📌 これは何？いつ何をする？", "value": action_str, "inline": False},
+                    {"name": "💰 買値上限",       "value": f"**¥{max_entry_price:,.0f}**（20日高値+{round((max_entry_price/high_20-1)*100)}%）" if high_20 else f"¥{max_entry_price:,.0f}", "inline": True},
                     {"name": "🎯 20日高値",       "value": f"¥{high_20:,.0f}", "inline": True},
                     {"name": "📈 前日終値",       "value": f"¥{prev_close:,.0f}", "inline": True},
-                    {"name": "💴 推奨株数",       "value": invest_str, "inline": False},
-                    {"name": "⚠️ 当日決済必須",  "value": "**15:00 引成 返済売り**", "inline": False},
+                    {"name": "💴 参考株数（紙の記帳サイズ）", "value": invest_str, "inline": False},
+                    {"name": "⚠️ 当日決済必須",  "value": "**大引け（15:30）引け成りで返済売り**", "inline": False},
                     {"name": "📊 根拠",           "value": reason_text, "inline": False},
                 ],
                 "footer": {"text": f"配信時刻: {time_str}"},
