@@ -228,13 +228,15 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
         if direction == "BUY":
             high_20         = sig.get("high_20", 0)
             max_entry_price = sig.get("max_entry_price", 0)
-            # 2026-08-18 本人「わけわからんかった」対応: 何者か+時間軸を配信自体に書く
+            # 2026-08-18 本人「わけわからんかった」対応: 何者か+時間軸を配信自体に書く。
+            # 同日「成買いなら関係なくない?」指摘で用語を修正: 執行は成行でなく寄指
+            # （スイング買いと同一方式）。寄り≦指値なら寄り値で約定・超えたら不成立。
             action_str = (
                 f"📝 **紙シグナル（実弾対象外）** — 年数回だけ出る買い版デイトレ\n"
                 f"昨日、大出来高で20日ぶり高値を抜けた銘柄の「翌日もう一伸び」狙い\n"
                 f"─────────────\n"
-                f"🟢 **翌営業日の寄り付きで成行買い**（上限 ¥{max_entry_price:,.0f}＝"
-                f"これより上で寄ったら自動見送り）\n"
+                f"🟢 **寄指 ¥{max_entry_price:,.0f} で買い**（スイングと同じ寄付限定指値）\n"
+                f"　寄り≦¥{max_entry_price:,.0f} → その**寄り値**で約定 ／ 超えたら不成立＝自動見送り\n"
                 f"→ **同じ日の大引け（15:30）に引け成りで全部売る**\n"
                 f"（持ち越しなし・日中の損切りなし・損益＝引け値−寄り値）"
             )
@@ -252,7 +254,7 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
                 "color": 0xE53935,
                 "fields": [
                     {"name": "📌 これは何？いつ何をする？", "value": action_str, "inline": False},
-                    {"name": "💰 買値上限",       "value": f"**¥{max_entry_price:,.0f}**（20日高値+{round((max_entry_price/high_20-1)*100)}%）" if high_20 else f"¥{max_entry_price:,.0f}", "inline": True},
+                    {"name": "💰 寄指価格（買値上限）", "value": f"**¥{max_entry_price:,.0f}**（20日高値+{round((max_entry_price/high_20-1)*100)}%）" if high_20 else f"¥{max_entry_price:,.0f}", "inline": True},
                     {"name": "🎯 20日高値",       "value": f"¥{high_20:,.0f}", "inline": True},
                     {"name": "📈 前日終値",       "value": f"¥{prev_close:,.0f}", "inline": True},
                     {"name": "💴 参考株数（紙の記帳サイズ）", "value": invest_str, "inline": False},
