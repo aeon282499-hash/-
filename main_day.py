@@ -233,12 +233,15 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
                 f"（寄り≦指値なら執行・超えたら見送り）\n"
                 f"→ 同日 **15:00 引成 返済売り** で決済"
             )
+            # 2026-08-18: 旧「信用400万1ポジ」設計(2026-05-14)のハードコードを撤去。
+            # 紙台帳の記帳サイズ(daytrade_paper.CAPITAL_PER_TRADE)に統一＝表示と紙記帳の株数が一致。
+            from daytrade_paper import CAPITAL_PER_TRADE as _CAP
             if max_entry_price > 0:
-                shares     = max(100, int(4_000_000 / max_entry_price / 100) * 100)
+                shares     = max(100, int(_CAP / max_entry_price / 100) * 100)
                 invest_amt = shares * max_entry_price
                 invest_str = f"**{shares:,}株** × ¥{max_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円"
             else:
-                invest_str = "**400万円目安**"
+                invest_str = f"**{_CAP / 1e4:.0f}万円目安**"
             embeds.append({
                 "title": f"🚀【デイトレv2 BUY】#{i}  {sig['name']}（{sig['ticker']}）",
                 "color": 0xE53935,
@@ -263,12 +266,14 @@ def send_day_signals(signals: list[dict], today: date, macro: dict) -> None:
                 f"→ 同日 **15:00 引成 返済買い** で決済\n"
                 f"※ 信用売り規制チェック必須"
             )
+            # v2 SELLは2026-07-22配信停止中だが、BUY側と同じくサイズ表示を統一しておく
+            from daytrade_paper import CAPITAL_PER_TRADE as _CAP
             if min_entry_price > 0:
-                shares     = max(100, int(4_000_000 / min_entry_price / 100) * 100)
+                shares     = max(100, int(_CAP / min_entry_price / 100) * 100)
                 invest_amt = shares * min_entry_price
                 invest_str = f"**{shares:,}株** × ¥{min_entry_price:,.0f} = 約{invest_amt/1e4:.0f}万円"
             else:
-                invest_str = "**400万円目安**"
+                invest_str = f"**{_CAP / 1e4:.0f}万円目安**"
             embeds.append({
                 "title": f"🚀【デイトレv2 SELL】#{i}  {sig['name']}（{sig['ticker']}）",
                 "color": 0x1E88E5,
