@@ -427,9 +427,9 @@ def test_daily_top_fades():
           dp.daily_top_fades({"3333.T": _flat_then(20, base=9000)}, today, {"3333": "2"}) == [])
     check("100万境界: 終値6,600円は対象内(50万時代は除外だった帯)",
           len(dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"})) == 1)
-    # 2026-08-15 本人決定の一時措置=70万（現金余力20万との整合・現金40万到達で100万へ復帰予定。
-    # 復帰時はこの1行を 1_000_000 に戻すだけ。友達用FRIENDS_SIZEは50万で独立(2026-08-18移設)）
-    check("CAPITAL_PER_TRADEは70万(一時措置)", dp.CAPITAL_PER_TRADE == 700_000)
+    # 2026-08-18 100万へ復帰（入金で現金余力50万＝8/15の約束ライン40万を超過。
+    # 70万は8/15の一時措置だった。友達用FRIENDS_SIZEは50万で独立(2026-08-18移設)）
+    check("CAPITAL_PER_TRADEは100万(2026-08-18復帰)", dp.CAPITAL_PER_TRADE == 1_000_000)
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
