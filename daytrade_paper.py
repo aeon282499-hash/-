@@ -222,16 +222,18 @@ def _fetch_data(tickers, today):
 FADE_CAND_MIN = 5.0        # 候補プールの下限（GO閾値 DAILY_PICK_GAIN_MIN より緩く取り、表示用に残す）
 FADE_TOV_MIN = 3e8         # 流動性フロア（20日代金中央値3億・BTと同一）
 
-# ── 友達用フェード（2026-08-12・板インパクト対策） ──────────────
+# ── 友達用フェード（2026-08-12・板インパクト対策 / 2026-08-18・50万×#1のみへ移設） ──
 # 本人+友達が同じ薄い玉（サンコール等・代金3〜5億）へ寄成を重ねると板が動くため、
 # 友達用は**代金7.5億以上だけで別選定**する（2026-08-13 本人指定で10億→7.5億）。
-# 1玉100万×1番+2番表示・運用は「売るのは#1だけ・建てられない時のみ#2」。
-# BT(10年・100万・7.5億フロア): #1のみ=PF1.54・勝率59.4%・年+85.3万・勝ち年10/11
-# （2本合計=PF1.34・年+81.3万）。本人版(3億)との銘柄一致は約64%(直近76%)。
-# 板インパクト: 1銘柄4人×100万=400万で代金比0.53%＝寄り比約5%（人数が増えたら要再考）。
+# 2026-08-18 本人指示で **1玉50万×#1のみ・代打なし** に変更（スイング大100万との2本立て前提）。
+# BT(10年・50万・7.5億フロア・値がさカット50万連動・_bt_fade_friends50.py 流儀A):
+#   #1のみ=PF1.52・勝率59.2%・年+38.3万・勝ち年10/11・最悪月-18.2万・最悪1玉-12.6万。
+# #2は代打にしない: #2単独=PF0.95・年-4.0万（7.5億フロアでは質の崖が1順位早い＝2番からエッジなし）。
+# 値がさカットは FRIENDS_SIZE 連動（daily_top_fades の capital 引数）＝BTと同一の株価≤5,000円。
+# 一致の検証は _audit_friends50_parity.py（プール再現でBT公式値と突合）。
 FRIENDS_TOV_MIN = 7.5e8
-FRIENDS_SIZE = 1_000_000
-FRIENDS_PICKS = 2
+FRIENDS_SIZE = 500_000
+FRIENDS_PICKS = 1
 FRIENDS_FILE = "friends_fade.json"
 STICKY_RANGE_MIN = 0.05    # 張り付き除外: 信号日レンジ(高-安)/終値がこれ以下=ロックS高=踏み上げ危険で除外
 
@@ -414,7 +416,8 @@ def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
 def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None, alert_map: dict | None = None,
                     excluded_out: list | None = None,
-                    tov_min: float | None = None) -> list[dict]:
+                    tov_min: float | None = None,
+                    capital: float | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を乖離+ATRの順位平均で返す（各GO/NO-GO判定付き・空なら[]）。
     候補＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) × 出来高6倍未満 × 代金3億以上。
     GO判定: 前日+7%(DAILY_PICK_GAIN_MIN) × ATR5%以上 × 25MA乖離12%以上。未達はNO-GO（理由付きで後ろ）。
@@ -486,7 +489,9 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         last_c = float(c.iloc[-1]); prev_c = float(c.iloc[-2])
         if last_c <= 0 or prev_c <= 0 or last_c < FADE_PX_MIN:
             continue
-        if last_c * 100 > CAPITAL_PER_TRADE:   # 1単元(100株)が予算超=値がさで建てられない→除外
+        # 1単元(100株)が予算超=値がさで建てられない→除外。capital指定で建玉サイズ別に連動
+        # （友達用=FRIENDS_SIZE。BTの値がさカットと同一基準・省略時は本人CAPITAL_PER_TRADE）
+        if last_c * 100 > (capital if capital is not None else CAPITAL_PER_TRADE):
             continue
         vol_avg = float(v.iloc[:-1].tail(20).mean())
         if vol_avg < 100_000:
@@ -1294,14 +1299,16 @@ def run(today=None, signals=None, dry=False):
 
 def run_friends(data: dict, today, iss_map: dict,
                 ratio_map: dict | None, alert_map: dict | None, dry: bool = False) -> None:
-    """友達用フェード配信（2026-08-12・板インパクト対策）。
+    """友達用フェード配信（2026-08-12・板インパクト対策 / 2026-08-18・50万×#1のみへ移設）。
 
     本人版と同じ機械で**代金7.5億以上だけ**から別選定（FRIENDS_TOV_MIN・2026-08-13に
-    10億→7.5億へ本人指定）し、**1玉100万×#1+#2表示（売るのは#1だけ・建てられない時のみ#2）**で
+    10億→7.5億へ本人指定）し、**#1のみ表示・建てられない日は見送り（代打なし）**で
     専用チャンネル(DISCORD_WEBHOOK_DAY_FRIENDS_URL)へ配信。webhook未設定なら無言スキップ
     （他チャンネルへのフォールバックはしない＝誤爆防止）。状態は friends_fade.json。
-    実際のサイズ/フロアは定数 FRIENDS_SIZE/FRIENDS_TOV_MIN が単一の真実（docstringに数字を
-    再掲して古くなった前科あり＝監査第6弾の指摘を2026-08-15修正）。"""
+    実際のサイズ/フロア/本数は定数 FRIENDS_SIZE/FRIENDS_TOV_MIN/FRIENDS_PICKS が単一の真実
+    （docstringに数字を再掲して古くなった前科あり＝監査第6弾の指摘を2026-08-15修正）。
+    値がさカットは capital=FRIENDS_SIZE で連動・株数は前日終値基準＝BTの丸めと同一
+    （検証は _audit_friends50_parity.py）。"""
     today_str = today.strftime("%Y-%m-%d")
     st = {}
     if os.path.exists(FRIENDS_FILE):
@@ -1329,14 +1336,17 @@ def run_friends(data: dict, today, iss_map: dict,
         o, c = float(row["Open"]), float(row["Close"])
         if not (o > 0):
             continue
-        sh = max(100, int(FRIENDS_SIZE / o / 100) * 100)
+        # 株数は発注時と同じ前日終値基準（BTの丸めと同一）。旧picksにprev_closeが無ければ寄り値で代用
+        base = float(p.get("prev_close") or o)
+        sh = max(100, int(FRIENDS_SIZE / base / 100) * 100)
         results.append({"name": p["name"], "ticker": p["ticker"],
                         "o": o, "c": c, "pnl_pct": (o - c) / o * 100,
                         "yen": int(sh * (o - c)), "sh": sh})
 
-    # ── 今日の選定（代金10億フロア・GOの上位2本） ──
+    # ── 今日の選定（代金7.5億フロア・値がさは50万連動・GOの#1のみ） ──
     picks = daily_top_fades(data, today, iss_map, ratio_map=ratio_map,
-                            alert_map=alert_map, tov_min=FRIENDS_TOV_MIN)
+                            alert_map=alert_map, tov_min=FRIENDS_TOV_MIN,
+                            capital=FRIENDS_SIZE)
     go = [p for p in picks if p.get("verdict") == "GO"][:FRIENDS_PICKS]
 
     date_str = today.strftime("%Y年%m月%d日")
@@ -1345,13 +1355,13 @@ def run_friends(data: dict, today, iss_map: dict,
     if go:
         lines += [
             f"🎯 **9:00 寄り成行（信用売り）**で発注・1玉{FRIENDS_SIZE // 10000}万円",
-            "👉 **売るのは#1だけ**。#1が建てられない時（在庫なし等）だけ#2を代わりに",
+            "👉 撃つのはこの1銘柄だけ。建てられない日（売り禁で在庫なし等）は**見送り**",
             "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
             sep,
         ]
         for i, p in enumerate(go, 1):
-            sh = max(100, int(FRIENDS_SIZE / p["min_entry_price"] / 100) * 100)
-            amt = sh * p["min_entry_price"]
+            sh = max(100, int(FRIENDS_SIZE / p["prev_close"] / 100) * 100)   # 前日終値基準=BTと同一
+            amt = sh * p["prev_close"]
             tk = p["ticker"].replace(".T", "")
             s_info = p.get("short") or shortability(p["ticker"], iss_map)
             reg = f" {p['reg_note']}" if p.get("reg_note") else ""
@@ -1400,7 +1410,7 @@ def run_friends(data: dict, today, iss_map: dict,
                 })
                 st["last_weekly"] = prev_mon
     if dry:
-        print("[friends] dry: " + json.dumps(payload, ensure_ascii=False)[:200])
+        print("[friends] dry: " + json.dumps(payload, ensure_ascii=False)[:400])
     else:
         hook = os.getenv("DISCORD_WEBHOOK_DAY_FRIENDS_URL", "").strip()
         if not hook:
