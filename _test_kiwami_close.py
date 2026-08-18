@@ -111,17 +111,22 @@ emb = KC.build_embeds(
               "current_price": 3950.0, "today_hold": 2, "note": None}],
     today=date(2026, 7, 27), positions=pos)
 blob = json.dumps(emb, ensure_ascii=False)
-check(any("処分" in e["title"] for e in emb), "処分対象の見出しが出る")
-check(any("保有継続" in e["title"] for e in emb), "保有継続の見出しが出る")
+# 2026-08-09改装（本人指示「売買シグナルと一緒の書体にして」・戻さない）に合わせて
+# 2026-08-18にピンを更新: ⚡処分指示embed＋🔍大引けチェックembedの2枚構成。
+# 「保有継続」は本文へ・旧「取り違え注意」行は廃止・OCO約定済みは✅行でチェック側に載る。
+check(any("処分指示" in e["title"] for e in emb), "処分対象の見出しが出る")
+check(any("保有継続" in e.get("description", "") for e in emb), "保有継続が本文に出る")
 check("-2.0%" in blob, "保有継続に銘柄別の損切り幅が載る")
-check("取り違え" in blob, "通常版との取り違え注意が載る")
+check(any("大引けチェック" in e["title"] for e in emb), "チェック側は通常版書体のタイトル")
 
 emb2 = KC.build_embeds(targets=[], checked=[
     {"ticker": "1721.T", "name": "コムシス", "note": "本日OCO **-5.6%損切**で決済済み",
      "rsi_now": None, "current_price": None, "today_hold": 2}],
     today=date(2026, 7, 27), positions=pos)
-check(any("OCO約定済み" in e["title"] for e in emb2), "OCO約定済みが分離表示される")
-check(not any("処分" in e["title"] for e in emb2), "約定済みだけの日は処分見出しを出さない")
+blob2 = json.dumps(emb2, ensure_ascii=False)
+check("✅" in blob2 and "決済済み" in blob2, "OCO約定済みが✅行で載る")
+check(not any(e["title"].startswith("⚡") for e in emb2), "約定済みだけの日は処分指示embedを出さない")
+check(any("処分対象なし" in e["title"] for e in emb2), "タイトルに『処分対象なし』が付く")
 
 print(f"\n==== 結果: {ok}/{ok + ng} OK ====")
 print("ALL PASS" if ng == 0 else f"{ng} FAILED")

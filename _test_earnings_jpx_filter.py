@@ -11,6 +11,7 @@ predict_next_earnings.py の「直近4回の平均間隔」推定に頼ってお
 """
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import tempfile
@@ -131,7 +132,10 @@ class TestMergedCalendar(unittest.TestCase):
         if not self.have_schedule:
             self.skipTest("jpx_earnings_schedule.json 未取得")
         sched = json.load(open(SCHEDULE_PATH, encoding="utf-8"))["schedule"]
-        future = sorted(d for d in sched if d >= "2026-07-31")
+        # 「今日以降」の予定日で測る（2026-08-18修正: 旧 '2026-07-31' 固定はその日付が
+        # 過去に回った時点で実績側も100%捕捉になり assertGreater が時限式に落ちていた）
+        today_s = datetime.date.today().isoformat()
+        future = sorted(d for d in sched if d >= today_s)
         if not future:
             self.skipTest("予定表に未来日が無い")
         target = future[0]
@@ -148,7 +152,8 @@ class TestMergedCalendar(unittest.TestCase):
               f"({hit_hist/len(codes)*100:.0f}%) / JPXマージ後 {hit_merged}社 "
               f"({hit_merged/len(codes)*100:.0f}%)")
         self.assertEqual(hit_merged, len(codes), "予定表にある銘柄は全部除外されるはず")
-        self.assertGreater(hit_merged, hit_hist)
+        # 実績側が偶然±3日窓で拾う銘柄はあり得るので「マージで減らない」を固定（>=）
+        self.assertGreaterEqual(hit_merged, hit_hist)
 
 
 if __name__ == "__main__":
