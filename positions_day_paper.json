@@ -837,7 +837,7 @@
       "basis_date": "2026-08-18",
       "prev_close": 4300.0,
       "limit_price": 4300.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 13.16,
       "short": {
         "mark": "○",
@@ -849,11 +849,18 @@
       "dev25": 33.6,
       "atr_pct": 6.16,
       "vol_ratio": 3.5,
-      "range_pct": 14.9
+      "range_pct": 14.9,
+      "entry_session": "2026-08-19",
+      "entry_open": 4175.0,
+      "entry_close": 3915.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 6.228,
+      "pnl_yen": 52000,
+      "win": true
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-19",
+  "last_report_date": "2026-08-20",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W33"
 }
