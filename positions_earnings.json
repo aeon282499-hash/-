@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-18",
+ "last_signal_date": "2026-08-19",
  "positions": [
   {
    "ticker": "6521.T",
@@ -528,11 +528,16 @@
    "shares": 100,
    "rsi": 38.7,
    "runup5": -15.3,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 3490.0,
    "entry": 3490.0,
    "gap_pct": 10.03,
-   "ext_exit_date": "2026-08-18"
+   "ext_exit_date": "2026-08-18",
+   "exit_date": "2026-08-18",
+   "exit": 3940.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 12.89,
+   "pnl_yen": 45000
   }
  ],
  "last_reminder_date": "2026-08-12"
