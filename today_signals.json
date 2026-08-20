@@ -1,4 +1,19 @@
 {
-  "date": "2026-08-20",
-  "signals": []
+  "date": "2026-08-21",
+  "signals": [
+    {
+      "ticker": "3288.T",
+      "name": "オープンハウスグループ",
+      "direction": "BUY",
+      "prev_close": 8113.0,
+      "limit_price": 8190
+    },
+    {
+      "ticker": "8591.T",
+      "name": "オリックス",
+      "direction": "BUY",
+      "prev_close": 6021.0,
+      "limit_price": 6080
+    }
+  ]
 }

@@ -1,7 +1,14 @@
 {
- "last_date": "2026-08-20",
+ "last_date": "2026-08-21",
  "last_weekly": "2026-08-10",
- "picks": [],
+ "picks": [
+  {
+   "ticker": "4478.T",
+   "name": "フリー",
+   "date": "2026-08-21",
+   "prev_close": 3855.0
+  }
+ ],
  "history": [
   {
    "date": "2026-08-14",

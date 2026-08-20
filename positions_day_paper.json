@@ -857,10 +857,54 @@
       "pnl_pct": 6.228,
       "pnl_yen": 52000,
       "win": true
+    },
+    {
+      "ticker": "5707.T",
+      "name": "東邦亜鉛",
+      "direction": "SELL",
+      "signal_date": "2026-08-21",
+      "basis_date": "2026-08-20",
+      "prev_close": 1154.0,
+      "limit_price": 1154.0,
+      "status": "pending",
+      "daily_gain": 9.38,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 25.0,
+      "atr_pct": 6.88,
+      "vol_ratio": 2.3,
+      "range_pct": 7.9
+    },
+    {
+      "ticker": "4813.T",
+      "name": "ＡＣＣＥＳＳ",
+      "direction": "SELL",
+      "signal_date": "2026-08-21",
+      "basis_date": "2026-08-20",
+      "prev_close": 447.0,
+      "limit_price": 447.0,
+      "status": "pending",
+      "daily_gain": 9.02,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "dev25": 19.5,
+      "atr_pct": 8.28,
+      "vol_ratio": 0.7,
+      "range_pct": 8.5
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-20",
+  "last_report_date": "2026-08-21",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W33"
 }
