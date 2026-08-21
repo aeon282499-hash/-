@@ -1,31 +1,4 @@
 {
-  "date": "2026-08-21",
-  "signals": [
-    {
-      "ticker": "3288.T",
-      "name": "オープンハウスグループ",
-      "direction": "BUY",
-      "prev_close": 8113.0,
-      "limit_price": 8190,
-      "days_cover": 0.6158749630271778,
-      "rsi": 42.75,
-      "deviation": -3.31,
-      "vol_ratio": 2.0,
-      "range_ratio": 0.8,
-      "turnover": 5002140000.0
-    },
-    {
-      "ticker": "8591.T",
-      "name": "オリックス",
-      "direction": "BUY",
-      "prev_close": 6021.0,
-      "limit_price": 6080,
-      "days_cover": 0.3256293883126164,
-      "rsi": 36.8,
-      "deviation": -5.91,
-      "vol_ratio": 1.23,
-      "range_ratio": 1.64,
-      "turnover": 25184536800.0
-    }
-  ]
+  "date": "2026-08-24",
+  "signals": []
 }

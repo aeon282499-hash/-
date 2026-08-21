@@ -866,7 +866,7 @@
       "basis_date": "2026-08-20",
       "prev_close": 1154.0,
       "limit_price": 1154.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.38,
       "short": {
         "mark": "○",
@@ -878,7 +878,14 @@
       "dev25": 25.0,
       "atr_pct": 6.88,
       "vol_ratio": 2.3,
-      "range_pct": 7.9
+      "range_pct": 7.9,
+      "entry_session": "2026-08-21",
+      "entry_open": 1141.0,
+      "entry_close": 1145.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.351,
+      "pnl_yen": -3200,
+      "win": false
     },
     {
       "ticker": "4813.T",
@@ -888,7 +895,7 @@
       "basis_date": "2026-08-20",
       "prev_close": 447.0,
       "limit_price": 447.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.02,
       "short": {
         "mark": "○",
@@ -900,11 +907,40 @@
       "dev25": 19.5,
       "atr_pct": 8.28,
       "vol_ratio": 0.7,
-      "range_pct": 8.5
+      "range_pct": 8.5,
+      "entry_session": "2026-08-21",
+      "entry_open": 446.0,
+      "entry_close": 452.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -1.345,
+      "pnl_yen": -13200,
+      "win": false
+    },
+    {
+      "ticker": "3664.T",
+      "name": "ＷＩＺＥ",
+      "direction": "SELL",
+      "signal_date": "2026-08-24",
+      "basis_date": "2026-08-21",
+      "prev_close": 27.0,
+      "limit_price": 27.0,
+      "status": "pending",
+      "daily_gain": 22.73,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 19.5,
+      "atr_pct": 7.14,
+      "vol_ratio": 2.2,
+      "range_pct": 25.9
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-21",
+  "last_report_date": "2026-08-24",
   "last_monthly_report": "2026-07",
-  "last_weekly_report": "2026-W33"
+  "last_weekly_report": "2026-W34"
 }
