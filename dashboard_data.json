@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-21 08:16:38",
+  "generated_at": "2026-08-21 09:41:56",
   "date": "2026-08-21",
   "tier_summary": {
     "S": 0,
@@ -8,7 +8,7 @@
     "C": 58
   },
   "driver_returns": {
-    "AMAT": 0.01,
+    "AMAT": 0.11,
     "AMD": 0.65,
     "AMZN": -2.16,
     "ASML": -0.08,
@@ -20,7 +20,7 @@
     "KLAC": -0.75,
     "LRCX": 1.09,
     "META": -0.04,
-    "MSFT": -0.65,
+    "MSFT": -0.47,
     "MU": 3.97,
     "NRG": -4.33,
     "NVDA": -0.33,
@@ -159,7 +159,7 @@
         "GOOGL"
       ],
       "policy": "",
-      "us_tailwind": -0.71
+      "us_tailwind": -0.67
     },
     {
       "theme": "量子コンピューティング",
@@ -300,7 +300,7 @@
         "AMZN"
       ],
       "policy": "",
-      "us_tailwind": -0.78
+      "us_tailwind": -0.74
     },
     {
       "theme": "商社_資源",
@@ -567,7 +567,7 @@
         "NVDA"
       ],
       "policy": "",
-      "us_tailwind": -0.87
+      "us_tailwind": -0.83
     },
     {
       "theme": "半導体_前工程装置",
@@ -589,7 +589,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": 0.2
+      "us_tailwind": 0.22
     }
   ],
   "stocks": [
@@ -796,7 +796,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 79.6,
       "tier": "A",
       "init_stars": 1,
@@ -1097,7 +1097,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 68.6,
       "tier": "B",
       "init_stars": 2,
@@ -2115,7 +2115,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 51.6,
       "tier": "B",
       "init_stars": 2,
@@ -2353,7 +2353,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 48.6,
       "tier": "B",
       "init_stars": 3,
@@ -2395,7 +2395,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 48.6,
       "tier": "B",
       "init_stars": 3,
@@ -2714,7 +2714,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 45.6,
       "tier": "B",
       "init_stars": 3,
@@ -3712,7 +3712,7 @@
         "GOOGL",
         "AMZN"
       ],
-      "us_tailwind": -0.78,
+      "us_tailwind": -0.74,
       "score": 35.4,
       "tier": "C",
       "init_stars": 3,
@@ -4331,7 +4331,7 @@
         "GOOGL",
         "AMZN"
       ],
-      "us_tailwind": -0.78,
+      "us_tailwind": -0.74,
       "score": 26.4,
       "tier": "C",
       "init_stars": 3,
@@ -4646,7 +4646,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -0.71,
+      "us_tailwind": -0.67,
       "score": 23.6,
       "tier": "C",
       "init_stars": 3,
