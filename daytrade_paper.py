@@ -41,7 +41,10 @@ DAY_SIGNALS_FILE = "day_signals.json"
 # 2026-08-18に 70万→100万へ復帰（入金で現金余力50万＝8/15に決めた「現金40万到達で復帰」の
 # 約束ラインを超過）。70万は2026-08-15の一時措置（当時現金20万に対し最悪1玉-33万を現金で
 # 受けられない不足金リスク）。実弾はフェード+スイング(極み)の2本体制・信用枠500万は余裕。
-# 2026-08-05の段階運用プラン（8月=1番だけ・8月末在庫実測→9月2本目判断）は生きている。
+# 【2026-08-21 本人決断「腹くくった」】#1+#2の2本実弾（各100万・初回=8/24月曜分）。
+# 8/5の段階運用プラン（8月=1番だけ→月末在庫実測で9月判断）は本人判断で前倒し決着。
+# 根拠: #2単独10年+310万(年+31万・PF1.29・勝ち年7/11)・-20万超月8→5回・2026年は#2が+104万。
+# リスク側も提示済み: 最悪日-51.4万(2026-03-10 JDI#2が-43.9%)・最悪月-45.5万を本人了承。
 # 10年BT(_bt_fade_100man_monthly.py・値がさ1万円プール):
 #   100万×2本 年+153.4万 / PF1.49 / 最悪月-45.5万 / 最悪1件-48.0万 / 勝ち11/11年
 #    50万×2本 年 +71.8万 / PF1.50 / 最悪月-21.3万 / 最悪1件-24.0万
@@ -846,7 +849,7 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             if i < n_shoot and p.get("jsf_stop") and shares > 0:
                 ok_ps = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE // shares)
                 lim_ps = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE // shares)
-                tail = (f"撃たない→#2に{CAPITAL_PER_TRADE // 10000}万"
+                tail = ("撃たない（今日は#2だけ）"
                         if (rk == 1 and n_shoot >= 2) else "撃たない（見送り）")
                 yb = f"寄指¥{p['min_entry_price']:,.0f}"
                 if lim_ps < 1:
@@ -965,7 +968,7 @@ def monthly_stats(book: dict, ym: str) -> dict:
 
 def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
     """月次サマリー。**スイング月次と同一の書体**（2026-08-09改装・本人「一緒にして」）:
-    `YYYY-MM` N件 勝率 月利%（万円）の月別行＋年間合計。1番のみ（実弾対象）の円も併記。
+    `YYYY-MM` N件 勝率 月利%（万円）の月別行＋年間合計。1番のみの円も併記（rank別の分離分析用）。
     月利%は**その月の玉サイズ**に対する率（2026-08-05に50万→100万へ変更したため、
     2026-07以前の月を現行100万で割ると月利が半分に薄まる＝監査第6弾の指摘を2026-08-15修正）。
     ym は送信トリガー用（その年の全月を表にする）。"""
@@ -1020,7 +1023,7 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（8月実弾は①1番のみ）｜"
+        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
@@ -1106,7 +1109,7 @@ def _trade_shares_of(p: dict) -> int:
 
 def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
     """週次サマリー。**スイング週次と同一の書体**（2026-08-09改装・本人「一緒にして」）。
-    明細行＝株数/売建/買戻/損益円。①=1番（8月の実弾対象）・②=2番（紙のみ）を行頭で区別し、
+    明細行＝株数/売建/買戻/損益円。①=1番・②=2番を行頭で区別し（2026-08-24〜は両方実弾）、
     合計にも1番のみの内訳を併記する。"""
     s = weekly_stats(book, wk)
     mon, fri = week_range(wk)
@@ -1129,8 +1132,8 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         yen = int(p["pnl_yen"])
         entry_total += round(sh * eo)
         exit_total += round(sh * ec)
-        # ①1番のみ＝実弾対象のフェード1番（BUYブレイク玉は②以下扱い・月次と同じ規則）
-        if (p.get("rank") or 1) == 1 and p.get("direction") != "BUY":
+        # ①+②＝実弾対象（2026-08-24〜2本実弾・本人8/21決断）。BUYブレイク玉は紙のみのまま
+        if (p.get("rank") or 1) <= 2 and p.get("direction") != "BUY":
             rank1_yen += yen
         else:
             other_yen += yen
@@ -1141,7 +1144,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
             f" {sh:,}株｜売建 {eo:,.0f}円 → 買戻 {ec:,.0f}円"
             f"｜**{yen:+,}円**（{p.get('pnl_pct', 0):+.2f}%）{jsf}")
     L.append(f"💰 売建合計 {entry_total:,}円 → 買戻合計 {exit_total:,}円 ＝ **{s['yen']:+,.0f}円**")
-    L.append(f"\n📊 うち ①1番のみ（実弾対象）: **{rank1_yen:+,}円** ／ ②以下（紙のみ）: {other_yen:+,}円")
+    L.append(f"\n📊 うち ①+②（実弾対象）: **{rank1_yen:+,}円** ／ その他（紙のみ・BUY等）: {other_yen:+,}円")
     if s.get("n_skip"):
         L.append(f"※ 条件を満たさず見送った記録が別に{s['n_skip']}件（成績には含めない）")
 
@@ -1151,7 +1154,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"寄成→引成・紙の理論値（8月実弾は1番のみ）｜通算{cum['n']}件 "
+        "footer": {"text": f"寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜）｜通算{cum['n']}件 "
                            f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
