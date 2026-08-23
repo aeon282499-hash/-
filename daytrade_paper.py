@@ -840,6 +840,13 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 parts.append(p["borrow"])
             lines.append(line1)
             lines.append("   " + "・".join(parts))
+            # 51単元(5,100株)以上の空売りは価格規制で成行が出せない（低位株の解禁で初めて
+            # 実弾到達・2026-08-24 WIZE 27円=370単元が初例）。トリガー外(前日比-10%未満の
+            # 下落なし)なら指値に価格制限は無いので、1円下の指値で寄り板寄せに参加すれば
+            # 寄り値≥指値の限り寄り値で約定＝BTの執行前提(板寄せ)と同じ。
+            if i < n_shoot and shares > 5_000:
+                lines.append(f"   ⚠️ {shares:,}株＝{shares // 100}単元。**51単元以上は成行の空売り不可**（価格規制）"
+                             f"→ 寄り前に**指値{p['prev_close'] - 1:,.0f}円**で発注（寄りがそれ以上なら寄り値で約定）")
             # 💰プレミアム料の判断行（売り禁＝ハイカラ在庫で売る玉だけ・2026-08-15復活）。
             # 旧版(〜8/10廃止)は「総額◯円まで」表記で、SBIの画面は**円/株**表示のため毎回
             # 暗算が必要＝2回「わかりずらい」で死んだ。今回はこの銘柄の株数で割った円/株を
@@ -1372,6 +1379,10 @@ def run_friends(data: dict, today, iss_map: dict,
             lines.append("   " + "・".join([f"前日+{p['daily_gain']:.0f}%",
                                             f"出来高×{p.get('vol_ratio', 0):.0f}",
                                             f"貸借{s_info['mark']}{reg}"]))
+            # 51単元以上は成行の空売り不可（本人版と同じ注記・低位株のみ該当）
+            if sh > 5_000:
+                lines.append(f"   ⚠️ {sh:,}株＝{sh // 100}単元。**51単元以上は成行の空売り不可**（価格規制）"
+                             f"→ 寄り前に**指値{p['prev_close'] - 1:,.0f}円**で発注（寄りがそれ以上なら寄り値で約定）")
             lines.append("")
     else:
         lines.append("本日は条件を満たす銘柄がありません（撃たない日がある設計です）。")
