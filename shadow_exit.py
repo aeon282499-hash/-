@@ -55,6 +55,16 @@ USE_ATR_STOP  = False
 # 枠が埋まっている日のシグナルは見送る（＝通常版には出るが極みには入らない）。
 MAX_SLOTS     = 3
 
+# ── 極みの1玉サイズ（2026-08-24 本人決定・100万→150万 / 買い売り両方）──────────
+# 買い: BTは%ベースでサイズに線形（10年+311万→×1.5で+466万・最悪年-37.8→-56.7万も×1.5）。
+# 売り: BT公式(+116.9万)は元々150万×3枠のシム＝これで実弾とBT構成が初めて一致する。
+# 台帳には記帳時の size を刻む。size の無い旧玉は LEGACY_SIZE=100万で円換算（時代分け・
+# フェード月次と同じ流儀）。本番vs影の「判定割れ」表示だけは従来どおり100万換算のまま
+# （サイズ差と判定差を混ぜない）。候補集合はサイズ非連動なので選定・銘柄は一切変わらない。
+# 100万へ戻すのは KIWAMI_SIZE の1行。
+KIWAMI_SIZE = 1_500_000
+LEGACY_SIZE = 1_000_000   # size未記録の旧玉（2026-08-23以前）の円換算用
+
 # ── 極みの売り（2026-07-29 実装・_bt_sell_improve.py の8軸グリッド）─────────────
 # 踏み上げ損切りを通常版の+3.0%から+2.5%へ。10年・150万×3枠・業種cap2・スコア降順の
 # 円シムで PF1.54→1.60・10年+109.5万→+116.9万・勝ち年5/10→7/10、**両期間とも改善**
@@ -200,6 +210,7 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
             "entry_date":  sig_date,              # 当日寄り付きエントリー（本番と同じ）
             "ticker":      tk,
             "name":        s.get("name", tk),
+            "size":        KIWAMI_SIZE if key == "main" else TIER_FILES[key][2],
             "prev_close":  s.get("prev_close", 0),
             "limit_price": s.get("limit_price"),
             "atr_pct":     atr,
@@ -283,6 +294,7 @@ def record_sell_signals(today: date) -> int:
             "ticker":      tk,
             "name":        s.get("name", tk),
             "direction":   "SELL",
+            "size":        KIWAMI_SIZE,
             "prev_close":  s.get("prev_close", 0),
             "stop_pct":    SELL_STOP_PCT,
             "live_stop":   LIVE_STOP,
@@ -657,7 +669,7 @@ def send_discord(today: date) -> bool:
     n_in = sum(1 for s in extras if s["ticker"] in recorded)
 
     if extras:
-        size = TIER_FILES["main"][2]
+        size = KIWAMI_SIZE
         try:
             from notifier import _nth_trading_day
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
@@ -715,6 +727,7 @@ def send_discord(today: date) -> bool:
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
     settled = []
     for key in NOTIFY_KEYS:
+        # 判定割れの差額円は従来どおり100万換算のまま（サイズ差と判定差を混ぜない・2026-08-24）
         _, _, size, label = TIER_FILES[key]
         live = _live_closed(key)
         for r in load_ledger(key):
@@ -830,7 +843,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
     from datetime import timedelta
     from notifier import _pf_str
 
-    size = TIER_FILES["main"][2]           # 1件100万
+    size = LEGACY_SIZE                     # size未記録の旧玉の既定（新玉は台帳のsizeを使う）
     rows = copy.deepcopy(load_ledger("main"))
     if all_data:
         advance(rows, today + timedelta(days=1), all_data)   # 当日引けまで反映（非破壊）
@@ -850,7 +863,8 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
 
     def _shares(p):
         base = p.get("prev_close") or p.get("entry_open") or 0
-        return max(100, int(size / base / 100) * 100) if base > 0 else 100
+        sz = p.get("size") or size
+        return max(100, int(sz / base / 100) * 100) if base > 0 else 100
 
     def block(week: list[dict], label: str, emoji: str, *, sell: bool) -> str:
         nonlocal week_yen_total
@@ -908,7 +922,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "title": f"📅【週次レポート】売買シグナル極み｜{rng}",
         "description": "\n".join(lines),
         "color": _COLOR_WIN if week_yen_total >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{size // 10000}万・買い3枠/売り3枠・"
+        "footer": {"text": f"1件{KIWAMI_SIZE // 10000}万(2026-08-24〜・旧玉は100万で換算)・買い3枠/売り3枠・"
                            "損切り 買い-3%(通常版と同じ)/売り+2.5%・利確+5%"},
     }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
 
@@ -917,18 +931,21 @@ def monthly_report(today: date) -> bool:
     """月初営業日に出す極みの月別・年間損益。**通常版 _build_monthly_embed と同一の表示形式**で
     買い・売りを別embedにして1通で送る（2026-08-09改装・本人「通常版の表示に合わせて」）。
 
-    枠は極みの実構成＝買い3枠×100万・売り3枠×100万で集計する（旧版は通常版比較用に
+    枠は極みの実構成＝買い3枠・売り3枠で集計する（旧版は通常版比較用に
     5枠換算だったが、本人の実弾と一致しない金額になるため実構成へ変更）。
+    円は玉単位で正確（台帳のsize・旧玉は100万）。月利%は月の時代サイズ基準の概算＝
+    フェード月次と同じ時代分け（〜2026-08=100万/2026-09〜=150万・8月末の150万玉だけ僅かに概算）。
     台帳は記帳時に3枠制限済みだが、7/25以前のbackfill分は無制限で入っているので
     買いだけ _slot_funded(3枠) で資金枠を再適用する。
     """
     from collections import defaultdict
     from notifier import _slot_funded
 
-    size = TIER_FILES["main"][2]
     slots = 3
-    capital, weight = size * slots, 1 / slots
     year = str(today.year)
+
+    def _cap_month(ym: str) -> int:
+        return slots * (KIWAMI_SIZE if ym >= "2026-09" else LEGACY_SIZE)
 
     def _embed(rows: list[dict], *, sell: bool, funded: set | None) -> dict | None:
         monthly = defaultdict(list)
@@ -939,31 +956,34 @@ def monthly_report(today: date) -> bool:
                 continue
             ym = (r.get("exit_date") or "")[:7]
             if ym:
-                monthly[ym].append(r["pnl_pct"])
+                monthly[ym].append((r["pnl_pct"], r.get("size") or LEGACY_SIZE))
         ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
         if not ym_year:
             return None
         lines = []
+        ann_yen, ann = 0.0, 0.0
         for ym in sorted(ym_year):
             p = ym_year[ym]
-            mr = sum(p) * weight
-            wins = sum(1 for x in p if x > 0)
+            yen = sum(pct / 100 * sz for pct, sz in p)
+            mr = yen / _cap_month(ym) * 100
+            ann_yen += yen
+            ann += mr
+            wins = sum(1 for pct, _ in p if pct > 0)
             sign = "+" if mr >= 0 else ""
             lines.append(f"`{ym}` {len(p)}件 勝率{wins}/{len(p)} "
-                         f"**月利{sign}{mr:.1f}%**（{sign}{mr / 100 * capital / 10000:.1f}万円）")
-        allp = [x for v in ym_year.values() for x in v]
-        ann = sum(allp) * weight
+                         f"**月利{sign}{mr:.1f}%**（{sign}{yen / 10000:.1f}万円）")
         a_sign = "+" if ann >= 0 else ""
         desc = "\n".join(lines)
-        desc += f"\n\n**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{ann / 100 * capital / 10000:.1f}万円）**"
+        desc += f"\n\n**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{ann_yen / 10000:.1f}万円）**"
         kind = "空売り" if sell else "スイング"
         return {
             "title": f"📉 {year}年 月別・年間損益（極み・{kind}）" if sell
                      else f"📈 {year}年 月別・年間損益（極み・{kind}）",
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
-            "footer": {"text": f"※資金{capital // 10000}万・{slots}枠(1件{size // 10000}万)・"
-                               f"資金枠に収まる分のみ集計・損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
+            "footer": {"text": f"※{slots}枠×1件{KIWAMI_SIZE // 10000}万(2026-08-24〜・旧玉100万で換算)・"
+                               f"年間%は月利の和・資金枠に収まる分のみ集計・"
+                               f"損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
         }
 
     buy_rows = load_ledger("main")
