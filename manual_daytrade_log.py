@@ -84,7 +84,7 @@ def report(_args) -> None:
     for t in sorted({r["type"] for r in rows}):
         xs = [r["yen"] for r in rows if r["type"] == t]
         w = sum(1 for x in xs if x > 0)
-        label = {"A": "ギャップフェード", "B": "VWAP乖離S", "X": "型外(校則違反)"}.get(t, t)
+        label = {"A": "ギャップフェード", "B": "VWAP乖離S", "S": "スキャル買い実験", "X": "型外(校則違反)"}.get(t, t)
         print(f"  型{t} {label}: {len(xs)}回 勝率{w}/{len(xs)} PF{pf(xs):.2f} {sum(xs):+,}円")
     total = sum(r["yen"] for r in rows)
     print(f"\n通算 {total:+,}円 / 授業料残り {TUITION + total:,}円")
@@ -107,7 +107,8 @@ def main() -> None:
     a = sub.add_parser("add", help="1トレード記帳")
     a.add_argument("ticker")
     a.add_argument("yen", help="確定損益円（例 +12000 / -8500）")
-    a.add_argument("--type", default="X", choices=["A", "B", "X"], help="A=ギャップフェード B=VWAP乖離S X=型外")
+    a.add_argument("--type", default="X", choices=["A", "B", "S", "X"],
+                   help="A=ギャップフェード B=VWAP乖離S S=スキャル買い実験(最小単元) X=型外")
     a.add_argument("--date", default=date.today().strftime("%Y-%m-%d"))
     a.add_argument("--note", default="")
     a.set_defaults(func=add)
