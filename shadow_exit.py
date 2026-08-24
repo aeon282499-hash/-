@@ -65,6 +65,14 @@ MAX_SLOTS     = 3
 KIWAMI_SIZE = 1_500_000
 LEGACY_SIZE = 1_000_000   # size未記録の旧玉（2026-08-23以前）の円換算用
 
+# ── 値がさカット（2026-08-24 実測で追加・BT公式ベースと本番を一致させる）─────────
+# BT公式(dc1.2×1万円)は株価1万円超を除外して測られているが、本番には上限が無く、
+# しかも株数計算の max(100株) 床が「100株で予算超過」の買い（例: 4.6万円株=469万）を
+# 作り得た。150万実構成で実測: BT公式(≤1万円)+478.4万 / ≤1.5万円+467.5万 /
+# 上限なし+100株床=+364.7万(-113.7万・前半マイナス転落・予算超過玉46個/10年)。
+# ＝1万円カットが正しい。サイズ非連動の明示定数にする（サイズ変更で帯がずれない）。
+KIWAMI_PX_CAP = 10_000
+
 # ── 極みの売り（2026-07-29 実装・_bt_sell_improve.py の8軸グリッド）─────────────
 # 踏み上げ損切りを通常版の+3.0%から+2.5%へ。10年・150万×3枠・業種cap2・スコア降順の
 # 円シムで PF1.54→1.60・10年+109.5万→+116.9万・勝ち年5/10→7/10、**両期間とも改善**
@@ -192,6 +200,11 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
             continue
         tk = s["ticker"]
         sig_date = today.strftime("%Y-%m-%d")
+        # 値がさカット（極みのみ・2026-08-24）: BT公式は1万円超を除外して測っている。
+        # 本番のmax(100株)床は予算超過買い(10年-113.7万の実害)を作るのでBTに合わせて見送る。
+        if key == "main" and (s.get("prev_close") or 0) > KIWAMI_PX_CAP:
+            print(f"[shadow-{key}] {tk} は値がさ{s.get('prev_close'):,.0f}円>1万円 → BT対象外で見送り")
+            continue
         if (tk, sig_date) in seen:
             continue
         if tk in still_open:
@@ -693,7 +706,11 @@ def send_discord(today: date) -> bool:
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
             lp = s.get("limit_price") or 0
-            if pc > 0:
+            if pc > KIWAMI_PX_CAP:
+                # 値がさ玉は発注情報を出さない（100株でも予算超過・BT検証外＝買わない）
+                head = (f"#{i}（対象外・値がさ1万円超＝BT検証外・買わない） "
+                        f"{s.get('name', tk)} ({tk}) 前日{pc:,.0f}円")
+            elif pc > 0:
                 shares = max(100, int(size / pc / 100) * 100)
                 head = (f"**#{i} {s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
                         f"→ **寄指 {lp:,.0f}円** {shares:,}株/約{shares*pc/1e4:.0f}万")
