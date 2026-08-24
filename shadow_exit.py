@@ -55,14 +55,15 @@ USE_ATR_STOP  = False
 # 枠が埋まっている日のシグナルは見送る（＝通常版には出るが極みには入らない）。
 MAX_SLOTS     = 3
 
-# ── 極みの1玉サイズ（2026-08-24 本人決定・100万→150万 / 買い売り両方）──────────
-# 買い: BTは%ベースでサイズに線形（10年+311万→×1.5で+466万・最悪年-37.8→-56.7万も×1.5）。
-# 売り: BT公式(+116.9万)は元々150万×3枠のシム＝これで実弾とBT構成が初めて一致する。
-# 台帳には記帳時の size を刻む。size の無い旧玉は LEGACY_SIZE=100万で円換算（時代分け・
-# フェード月次と同じ流儀）。本番vs影の「判定割れ」表示だけは従来どおり100万換算のまま
-# （サイズ差と判定差を混ぜない）。候補集合はサイズ非連動なので選定・銘柄は一切変わらない。
-# 100万へ戻すのは KIWAMI_SIZE の1行。
-KIWAMI_SIZE = 1_500_000
+# ── 極みの1玉サイズ（2026-08-25 本人決定・150万→100万へ戻し / 買い売り両方）─────
+# 8/24の150万化は現金バッファ80万に対し攻めすぎ（フェード最悪月-45.5万＋極み最悪月-40.5万の
+# 同月直撃-85万>80万）なので1日で撤回。150万時代(8/25分のみ)はシグナル0件＝150万玉は実在しない。
+# ★復帰ライン: 現金バッファ120万到達で 1_500_000 へ戻す（2026-08-25 本人合意・戻すのはこの1行。
+#   期待値どおりなら11月頃。地雷側は現金40万割れでフェード各70万へ一時縮小＝daytrade_paper側）。
+# 買いBTは%ベースでサイズに線形（100万=10年+311万/最悪年-37.8万・150万=+466万/-56.7万）。
+# 台帳には記帳時の size を刻む。size の無い旧玉は LEGACY_SIZE=100万で円換算。
+# 候補集合はサイズ非連動なので選定・銘柄は一切変わらない。
+KIWAMI_SIZE = 1_000_000
 LEGACY_SIZE = 1_000_000   # size未記録の旧玉（2026-08-23以前）の円換算用
 
 # ── 値がさカット（2026-08-24 実測で追加・BT公式ベースと本番を一致させる）─────────
@@ -82,7 +83,7 @@ KIWAMI_PX_CAP = 10_000
 # 売買代金/地合いゲート強度）はすべて棄却＝現行がピンポイントで正しい位置にある。
 # 特にATR上限2.5→3.0でPF0.91に転落、ゲート撤廃でPF0.97＝この2つは崖。
 SELL_STOP_PCT  = 2.5    # 極みだけ。通常版は tracker.STOP_LOSS=3.0 のまま（触らない）
-SELL_MAX_SLOTS = 3      # 買いと独立の3枠（BT測定と同じ構成・150万×3枠=450万）
+SELL_MAX_SLOTS = 3      # 買いと独立の3枠（BT公式+116.9万は150万×3枠シム＝100万玉は×2/3で年+7.8万）
 KIWAMI_SELL_LEDGER = "kiwami_sell.json"
 SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
 
@@ -939,7 +940,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "title": f"📅【週次レポート】売買シグナル極み｜{rng}",
         "description": "\n".join(lines),
         "color": _COLOR_WIN if week_yen_total >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{KIWAMI_SIZE // 10000}万(2026-08-24〜・旧玉は100万で換算)・買い3枠/売り3枠・"
+        "footer": {"text": f"1件{KIWAMI_SIZE // 10000}万・買い3枠/売り3枠・"
                            "損切り 買い-3%(通常版と同じ)/売り+2.5%・利確+5%"},
     }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
 
@@ -950,8 +951,8 @@ def monthly_report(today: date) -> bool:
 
     枠は極みの実構成＝買い3枠・売り3枠で集計する（旧版は通常版比較用に
     5枠換算だったが、本人の実弾と一致しない金額になるため実構成へ変更）。
-    円は玉単位で正確（台帳のsize・旧玉は100万）。月利%は月の時代サイズ基準の概算＝
-    フェード月次と同じ時代分け（〜2026-08=100万/2026-09〜=150万・8月末の150万玉だけ僅かに概算）。
+    円は玉単位で正確（台帳のsize・旧玉は100万）。月利%は3枠×KIWAMI_SIZE基準の概算
+    （150万時代は8/25の1日だけでシグナル0件＝時代分け不要・全期間100万）。
     台帳は記帳時に3枠制限済みだが、7/25以前のbackfill分は無制限で入っているので
     買いだけ _slot_funded(3枠) で資金枠を再適用する。
     """
@@ -962,7 +963,7 @@ def monthly_report(today: date) -> bool:
     year = str(today.year)
 
     def _cap_month(ym: str) -> int:
-        return slots * (KIWAMI_SIZE if ym >= "2026-09" else LEGACY_SIZE)
+        return slots * KIWAMI_SIZE
 
     def _embed(rows: list[dict], *, sell: bool, funded: set | None) -> dict | None:
         monthly = defaultdict(list)
@@ -998,7 +999,7 @@ def monthly_report(today: date) -> bool:
                      else f"📈 {year}年 月別・年間損益（極み・{kind}）",
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
-            "footer": {"text": f"※{slots}枠×1件{KIWAMI_SIZE // 10000}万(2026-08-24〜・旧玉100万で換算)・"
+            "footer": {"text": f"※{slots}枠×1件{KIWAMI_SIZE // 10000}万・"
                                f"年間%は月利の和・資金枠に収まる分のみ集計・"
                                f"損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
         }
