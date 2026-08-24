@@ -926,6 +926,18 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
     import requests
     r = requests.post(url, json=payload, timeout=15)
     print(f"[paper] Discord通知 HTTP {r.status_code}")
+    # 友達ミラー配信（2026-08-24 本人指示「やっぱり友達も俺専用の売りフェードと同じ内容で」）:
+    # 本人版embedをそのまま友達webhookへも送る＝銘柄・株数(100万計算)・プレミアム料行・
+    # 51単元警告まで完全同一。旧・友達専用選定(7.5億フロア×50万×#1)は run_friends ごと休眠
+    # （コードと friends_fade.json は残置＝呼び出しを戻せば復活可）。友達がいくらで撃つかは
+    # 友達の自由（半分サイズなら株数を半分に読み替え）。
+    furl = os.getenv("DISCORD_WEBHOOK_DAY_FRIENDS_URL", "").strip()
+    if furl and furl != url:
+        try:
+            fr = requests.post(furl, json=payload, timeout=15)
+            print(f"[paper] 友達ミラー HTTP {fr.status_code}")
+        except Exception as e:
+            print(f"[paper] 友達ミラー失敗（本人向けは無傷）: {e}")
 
 
 def monthly_stats(book: dict, ym: str) -> dict:
@@ -1295,12 +1307,15 @@ def run(today=None, signals=None, dry=False):
         except Exception as e:
             print(f"[paper] {_lab}サマリー失敗（本処理は継続）: {e}")
 
-    # 友達用フェード（板の厚い玉だけ・別チャンネル）。失敗しても本人向けは無傷。
-    try:
-        if data and not fetch_failed:
-            run_friends(data, today, _LAST_ISS, ratio_map, alert_map, dry=dry)
-    except Exception as e:
-        print(f"[paper] 友達用フェード失敗（本人向けは無傷）: {e}")
+    # 友達用フェード（旧・7.5億フロア別選定）は2026-08-24に休眠＝本人指示
+    # 「友達も俺専用の売りフェードと同じ内容で」→本人版embedのミラー配信（notify内）へ移行。
+    # 復活はこのifを外すだけ（run_friends/friends_fade.json/定数は全部残置）。
+    if False:
+        try:
+            if data and not fetch_failed:
+                run_friends(data, today, _LAST_ISS, ratio_map, alert_map, dry=dry)
+        except Exception as e:
+            print(f"[paper] 友達用フェード失敗（本人向けは無傷）: {e}")
 
     if not dry:
         save_book(book)
