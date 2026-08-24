@@ -2289,9 +2289,9 @@
     "limit_price": 8190,
     "entry_open": 8113.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.283,
+    "unrealized_pnl": -0.518,
     "exit_type": null,
     "exit_date": null
   },
@@ -2305,9 +2305,9 @@
     "limit_price": 6080,
     "entry_open": 6007.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 1.798,
+    "unrealized_pnl": 3.363,
     "exit_type": null,
     "exit_date": null
   }

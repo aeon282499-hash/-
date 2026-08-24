@@ -1,7 +1,14 @@
 {
- "last_date": "2026-08-24",
+ "last_date": "2026-08-25",
  "last_weekly": "2026-08-17",
- "picks": [],
+ "picks": [
+  {
+   "ticker": "6330.T",
+   "name": "東洋エンジニアリング",
+   "date": "2026-08-25",
+   "prev_close": 2496.0
+  }
+ ],
  "history": [
   {
    "date": "2026-08-14",

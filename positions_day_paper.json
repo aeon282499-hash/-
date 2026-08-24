@@ -924,7 +924,7 @@
       "basis_date": "2026-08-21",
       "prev_close": 27.0,
       "limit_price": 27.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 22.73,
       "short": {
         "mark": "○",
@@ -936,11 +936,62 @@
       "dev25": 19.5,
       "atr_pct": 7.14,
       "vol_ratio": 2.2,
-      "range_pct": 25.9
+      "range_pct": 25.9,
+      "entry_session": "2026-08-24",
+      "entry_open": 27.0,
+      "entry_close": 27.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "6330.T",
+      "name": "東洋エンジニアリング",
+      "direction": "SELL",
+      "signal_date": "2026-08-25",
+      "basis_date": "2026-08-24",
+      "prev_close": 2496.0,
+      "limit_price": 2496.0,
+      "status": "pending",
+      "daily_gain": 7.22,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 17.0,
+      "atr_pct": 7.66,
+      "vol_ratio": 1.2,
+      "range_pct": 9.7
+    },
+    {
+      "ticker": "8237.T",
+      "name": "松屋",
+      "direction": "SELL",
+      "signal_date": "2026-08-25",
+      "basis_date": "2026-08-24",
+      "prev_close": 2702.0,
+      "limit_price": 2702.0,
+      "status": "pending",
+      "daily_gain": 10.29,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "dev25": 34.7,
+      "atr_pct": 5.38,
+      "vol_ratio": 2.2,
+      "range_pct": 6.5
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-24",
+  "last_report_date": "2026-08-25",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W34"
 }
