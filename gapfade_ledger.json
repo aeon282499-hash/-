@@ -562,5 +562,41 @@
     "exit_px": 4652.0,
     "pnl": 1.11,
     "yen": 5550
+  },
+  {
+    "date": "2026-08-25",
+    "ticker": "2782.T",
+    "gap": 4.45,
+    "open": 4460.0,
+    "prev_close": 4270.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-08-25",
+    "ticker": "6460.T",
+    "gap": 3.33,
+    "open": 2934.5,
+    "prev_close": 2840.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-08-25",
+    "ticker": "9020.T",
+    "gap": 3.28,
+    "open": 3651.0,
+    "prev_close": 3535.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
   }
 ]
