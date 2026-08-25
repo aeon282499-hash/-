@@ -953,7 +953,7 @@
       "basis_date": "2026-08-24",
       "prev_close": 2496.0,
       "limit_price": 2496.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.22,
       "short": {
         "mark": "○",
@@ -965,7 +965,14 @@
       "dev25": 17.0,
       "atr_pct": 7.66,
       "vol_ratio": 1.2,
-      "range_pct": 9.7
+      "range_pct": 9.7,
+      "entry_session": "2026-08-25",
+      "entry_open": 2500.0,
+      "entry_close": 2630.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -5.2,
+      "pnl_yen": -52000,
+      "win": false
     },
     {
       "ticker": "8237.T",
@@ -975,7 +982,7 @@
       "basis_date": "2026-08-24",
       "prev_close": 2702.0,
       "limit_price": 2702.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 10.29,
       "short": {
         "mark": "○",
@@ -987,11 +994,62 @@
       "dev25": 34.7,
       "atr_pct": 5.38,
       "vol_ratio": 2.2,
-      "range_pct": 6.5
+      "range_pct": 6.5,
+      "entry_session": "2026-08-25",
+      "entry_open": 2705.0,
+      "entry_close": 2864.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -5.878,
+      "pnl_yen": -47700,
+      "win": false
+    },
+    {
+      "ticker": "3103.T",
+      "name": "ユニチカ",
+      "direction": "SELL",
+      "signal_date": "2026-08-26",
+      "basis_date": "2026-08-25",
+      "prev_close": 1543.0,
+      "limit_price": 1543.0,
+      "status": "pending",
+      "daily_gain": 13.71,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 36.2,
+      "atr_pct": 12.78,
+      "vol_ratio": 1.4,
+      "range_pct": 13.2
+    },
+    {
+      "ticker": "5985.T",
+      "name": "サンコール",
+      "direction": "SELL",
+      "signal_date": "2026-08-26",
+      "basis_date": "2026-08-25",
+      "prev_close": 2400.0,
+      "limit_price": 2400.0,
+      "status": "pending",
+      "daily_gain": 9.09,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "dev25": 40.9,
+      "atr_pct": 9.34,
+      "vol_ratio": 1.4,
+      "range_pct": 11.0
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-25",
+  "last_report_date": "2026-08-26",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W34"
 }
