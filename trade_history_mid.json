@@ -629,6 +629,16 @@
       "close": 1267.5,
       "pnl": 0.48,
       "win": true
+    },
+    {
+      "date": "2026-08-26",
+      "ticker": "8060.T",
+      "name": "キヤノンマーケティングジャパン",
+      "direction": "BUY",
+      "open": 3514.0,
+      "close": 3500.0,
+      "pnl": -0.4,
+      "win": false
     }
   ]
 }
