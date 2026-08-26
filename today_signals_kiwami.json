@@ -1,18 +1,4 @@
 {
-  "date": "2026-08-26",
-  "signals": [
-    {
-      "ticker": "8060.T",
-      "name": "キヤノンマーケティングジャパン",
-      "direction": "BUY",
-      "prev_close": 3514.0,
-      "limit_price": 3545,
-      "days_cover": 0.1338602239754697,
-      "rsi": 42.87,
-      "deviation": -2.36,
-      "vol_ratio": 3.3,
-      "range_ratio": 1.68,
-      "turnover": 3643816000.0
-    }
-  ]
+  "date": "2026-08-27",
+  "signals": []
 }

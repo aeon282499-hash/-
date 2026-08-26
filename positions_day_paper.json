@@ -1011,7 +1011,7 @@
       "basis_date": "2026-08-25",
       "prev_close": 1543.0,
       "limit_price": 1543.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 13.71,
       "short": {
         "mark": "○",
@@ -1023,7 +1023,14 @@
       "dev25": 36.2,
       "atr_pct": 12.78,
       "vol_ratio": 1.4,
-      "range_pct": 13.2
+      "range_pct": 13.2,
+      "entry_session": "2026-08-26",
+      "entry_open": 1537.0,
+      "entry_close": 1455.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 5.335,
+      "pnl_yen": 49200,
+      "win": true
     },
     {
       "ticker": "5985.T",
@@ -1033,7 +1040,7 @@
       "basis_date": "2026-08-25",
       "prev_close": 2400.0,
       "limit_price": 2400.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.09,
       "short": {
         "mark": "○",
@@ -1045,11 +1052,40 @@
       "dev25": 40.9,
       "atr_pct": 9.34,
       "vol_ratio": 1.4,
-      "range_pct": 11.0
+      "range_pct": 11.0,
+      "entry_session": "2026-08-26",
+      "entry_open": 2352.0,
+      "entry_close": 2225.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 5.4,
+      "pnl_yen": 50800,
+      "win": true
+    },
+    {
+      "ticker": "6027.T",
+      "name": "弁護士ドットコム",
+      "direction": "SELL",
+      "signal_date": "2026-08-27",
+      "basis_date": "2026-08-26",
+      "prev_close": 5050.0,
+      "limit_price": 5050.0,
+      "status": "pending",
+      "daily_gain": 16.23,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "dev25": 65.4,
+      "atr_pct": 8.0,
+      "vol_ratio": 2.0,
+      "range_pct": 6.2
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-26",
+  "last_report_date": "2026-08-27",
   "last_monthly_report": "2026-07",
   "last_weekly_report": "2026-W34"
 }
