@@ -327,11 +327,38 @@ check("home: 🔻売りタブへの導線", hv.includes("#/sell"));
   locationShim.hash="#/theme"; sandbox.render();
   const tv=$get("#view").innerHTML;
   check("theme撤去: #/themeはホーム(モメンタム)へフォールバック", clean(tv)&&tv.includes("強さ・過熱ランキング"));
-  check("nav: 5タブ（モメンタム/売り/デイトレ/探検/使い方）",
-    html.includes('id="nav-home"')&&html.includes('id="nav-sell"')&&html.includes('id="nav-daytrade"')&&
+  check("nav: 5タブ（モメンタム/売り/極み/探検/使い方・2026-08-28デイトレ→極み）",
+    html.includes('id="nav-home"')&&html.includes('id="nav-sell"')&&html.includes('id="nav-kiwami"')&&
     html.includes('id="nav-explore"')&&html.includes('id="nav-about"')&&
+    !html.includes('id="nav-daytrade"')&&!html.includes('id="nav-quiz"')&&
     !html.includes('id="nav-momentum"')&&!html.includes('id="nav-search"'));
   check("nav: 今日の買いタブが無い", !html.match(/<a[^>]*>[^<]*<span class="i">✅<\/span>今日の買い<\/a>/));
+}
+
+// ── 7.4) 👑 極み（2026-08-28 デイトレタブと入替） ──
+{
+  const save=DATA.kiwami;
+  // データなし
+  DATA.kiwami=null;
+  locationShim.hash="#/kiwami"; sandbox.render();
+  let kv=$get("#view").innerHTML;
+  check("kiwami: データなしでも安全描画", clean(kv)&&kv.includes("シグナルデータがまだありません"));
+  // fresh=これから執行する分（買い1・売り1）
+  DATA.kiwami={date:"2099-01-04",fresh:true,
+    buy:[{code:"7203",name:"トヨタ自動車",price:3000,limit:3120,rsi:41.2,dev:-5.3,turnover_oku:500}],
+    sell:[{code:"8309",name:"三井住友トラスト",price:6734,status:"open"}],
+    plan_buy:"寄指で買い",plan_sell:"寄り成行で空売り"};
+  sandbox.render(); kv=$get("#view").innerHTML;
+  check("kiwami: fresh日=買い/売り行が描画・過去分警告なし",
+    clean(kv)&&kv.includes("トヨタ自動車")&&kv.includes("寄指上限 ¥3,120")&&kv.includes("三井住友トラスト")&&!kv.includes("過去分"));
+  // 過去分の断面
+  DATA.kiwami={date:"2020-01-06",fresh:false,buy:[],sell:[],plan_buy:"p",plan_sell:"p"};
+  sandbox.render(); kv=$get("#view").innerHTML;
+  check("kiwami: 過去分は⚠️明示＋該当なしカード", clean(kv)&&kv.includes("過去分")&&kv.includes("この日の該当なし"));
+  DATA.kiwami=save;
+  // デイトレは導線撤去でも直リンク生存（コード残置の確認）
+  locationShim.hash="#/daytrade"; sandbox.render();
+  check("daytrade: タブ撤去後も#/daytrade直リンクは描画OK", clean($get("#view").innerHTML));
 }
 
 // ── 7.5) ⚡ 裁量デイトレ・ウォッチ（2026-07-24） ──
