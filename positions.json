@@ -2320,11 +2320,11 @@
     "prev_close": 3514.0,
     "limit_price": 3545,
     "entry_open": 3514.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": 1.821,
     "unrealized_pnl": -0.398,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-08-27"
   }
 ]
