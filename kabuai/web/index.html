@@ -178,7 +178,9 @@
        🔻売り=モメンタム終了検出＋セクターローテSELLの新タブ。viewHomeは残置=タブを戻せば復活。 -->
   <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
   <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
-  <a href="#/daytrade" id="nav-daytrade"><span class="i">⚡</span>デイトレ</a>
+  <!-- ⚡デイトレタブは2026-08-28本人指示で撤去（viewDaytrade/daytrade_watchデータは残置・
+       #/daytrade直リンクは今も動く＝このタブとsetNavの1行を戻せば復活）。代わりに👑極み。 -->
+  <a href="#/kiwami" id="nav-kiwami"><span class="i">👑</span>極み</a>
   <!-- 📈演習タブは2026-08-28本人指示で撤去（viewQuiz/quiz系関数/web/quiz_charts.json/
        web/quiz_daytrade.jsonは残置・#/quiz直リンクは今も動く＝このタブとsetNavの1行を戻せば復活） -->
 
@@ -1245,6 +1247,36 @@ function viewDaytrade(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── 👑 売買シグナル極み（スイング実弾版の当日銘柄・2026-08-28本人依頼でタブ化）──
+// データはCIビルドが親リポの today_signals_kiwami.json / kiwami_sell.json から注入（latest.json.kiwami）。
+// 前夜18:35頃の配信コミット→19:45保険ビルドで同夜反映。執行・OCO・手仕舞いの正はDiscord配信＝
+// このタブは「その日の銘柄一覧の控え」。dateは執行する寄りの日・freshでないときは過去分と明示。
+function viewKiwami(){
+  const k=DATA.kiwami;
+  if(!k){
+    return `<h2>👑 極み</h2>
+      <div class="card muted">シグナルデータがまだありません（次のビルドで反映されます）。最新はDiscord配信を確認してください。</div>
+      <p class="disc">${DATA.disclaimer}</p>`;
+  }
+  const row=(m,side)=>`<a class="pickrow" href="#/detail/${m.code}">
+    <div class="pk-nm"><b>${esc(m.name)}</b>
+      <small>${m.code} ・ 前日終値 ¥${(m.price||0).toLocaleString()}${side==="buy"&&m.limit?` ・ 寄指上限 ¥${(m.limit||0).toLocaleString()}`:""}${m.turnover_oku?` ・ 代金${m.turnover_oku}億`:""}</small>
+      ${side==="buy"?`<div class="chips">${m.rsi!=null?`<span class="chip">RSI ${Math.round(m.rsi)}</span>`:""}${m.dev!=null?`<span class="chip">乖離 ${fmtPct(m.dev)}</span>`:""}</div>`:""}</div>
+    <div class="m-px" style="color:var(${side==="buy"?"--up":"--dn"})">${side==="buy"?"買い":"空売り"}</div></a>`;
+  const secn=(title,color,arr,side,plan)=>`
+    <div class="hh" style="margin-top:4px;color:var(${color})">${title}</div>
+    <div class="warnbar">${plan}</div>
+    ${arr.length?`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${arr.map(m=>row(m,side)).join("")}</div></div>`
+      :`<div class="card muted">この日の該当なし。</div>`}`;
+  return `
+    <h2>👑 極み <span class="muted" style="font-weight:400;font-size:12px">${esc(k.date||"")} 寄り分</span></h2>
+    ${k.fresh?"":`<div class="warnbar">⚠️ これは過去分（${esc(k.date||"")}）の断面です。最新のシグナルはDiscord配信を確認してください。</div>`}
+    <div class="card muted" style="font-size:12px;line-height:1.7">売買シグナル「極み」＝スイング実弾版のその日の銘柄。買い=買残回転1.2選定・売り=損切り+2.5%の独立3枠。<b style="color:var(--tx)">執行・OCO・手仕舞いの正はDiscord配信</b>（ここは一覧の控え）。</div>
+    ${secn("🟢 買い","--up",k.buy||[],"buy",esc(k.plan_buy||""))}
+    ${secn("🔴 売り","--dn",k.sell||[],"sell",esc(k.plan_sell||""))}
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 // ── 🔥 テーマ（勢いに乗る・攻め）＝継続型モメンタム。バーベルを正直に ──
 // 「上がってる勢いに乗る」欲求の正しい居場所。bt_exit（2026-06-01）で blast>=70 ×翌寄り→8日・
 // 損切り-12%・利確なし = +2.36%/件・PF1.62・勝率53.7%（バーベル）。下げ相場では自然に沈黙。
@@ -1503,7 +1535,7 @@ function setNav(h){
   // v4: 4タブ=モメンタム(ホーム)/売り/探検/使い方。検索・詳細はホーム系として点灯。
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
-  $("#nav-daytrade").classList.toggle("on",h.startsWith("#/daytrade"));
+  $("#nav-kiwami").classList.toggle("on",h.startsWith("#/kiwami"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1516,6 +1548,7 @@ function render(){
     else if(h.startsWith("#/detail/")) $("#view").innerHTML=viewDetail(decodeURIComponent(h.split("/")[2]));
     else if(h.startsWith("#/sell")) $("#view").innerHTML=viewSell();
     else if(h.startsWith("#/daytrade")) $("#view").innerHTML=viewDaytrade();
+    else if(h.startsWith("#/kiwami")) $("#view").innerHTML=viewKiwami();
     else if(h.startsWith("#/quiz")) $("#view").innerHTML=viewQuiz();
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));

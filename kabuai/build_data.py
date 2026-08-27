@@ -668,6 +668,48 @@ def build() -> dict:
         except Exception as e:
             print(f"[build] セクターローテ読込スキップ: {e}")
 
+    # ── 👑極み（売買シグナル極み=スイング実弾版の当日銘柄・2026-08-28本人依頼でタブ化）──
+    # 親リポの main.py(前夜/朝ラン)がコミットする today_signals_kiwami.json（買い・買残回転1.2選定・
+    # 寄指上限つき）と shadow_exit.py の kiwami_sell.json（売り台帳・損切り+2.5%/独立3枠）から
+    # 「最新断面のentry分」を取り込む。前夜18:35頃の配信コミット→19:45保険ビルドで同夜反映・
+    # 朝7:00/8:40ビルドで当日分を維持。dateは「執行する寄りの日」なので is_today でなく
+    # fresh(=date>=今日＝これから執行する分か)で正直に区別する。執行・OCO・手仕舞いの正はDiscord配信。
+    kiwami = None
+    kb_path = HERE.parent / "today_signals_kiwami.json"
+    ks_path = HERE.parent / "kiwami_sell.json"
+    try:
+        today_jst_str = datetime.now(JST).strftime("%Y-%m-%d")
+        k_date, k_buy = None, []
+        if kb_path.exists():
+            with open(kb_path, encoding="utf-8") as f:
+                kj = json.load(f)
+            k_date = kj.get("date")
+            for s in kj.get("signals", []):
+                k_buy.append({"code": str(s.get("ticker", "")).replace(".T", ""),
+                              "name": s.get("name", ""), "price": s.get("prev_close"),
+                              "limit": s.get("limit_price"), "rsi": s.get("rsi"),
+                              "dev": s.get("deviation"),
+                              "turnover_oku": round(float(s.get("turnover", 0) or 0) / 1e8, 1)})
+        k_sell = []
+        if ks_path.exists():
+            with open(ks_path, encoding="utf-8") as f:
+                srows = json.load(f)
+            sdates = [r.get("entry_date", "") for r in srows if r.get("entry_date")]
+            sel_date = k_date or (max(sdates) if sdates else None)
+            k_sell = [{"code": str(r.get("ticker", "")).replace(".T", ""),
+                       "name": r.get("name", ""), "price": r.get("prev_close"),
+                       "status": r.get("status")}
+                      for r in srows if r.get("entry_date") == sel_date]
+            k_date = k_date or sel_date
+        if k_date:
+            kiwami = {"date": k_date, "fresh": k_date >= today_jst_str,
+                      "buy": k_buy, "sell": k_sell,
+                      "plan_buy": "寄指（上限=表内の指値・寄りがそれ以下なら寄り値で約定/超えたら見送り）で買い → 以降はDiscord配信のOCO・15時判定どおり",
+                      "plan_sell": "寄り成行で空売り → 損切り+2.5%・買いと独立の3枠 → 手仕舞いはDiscord配信どおり"}
+            print(f"[build] 極み: {k_date} 分 BUY{len(k_buy)}/SELL{len(k_sell)} (fresh={kiwami['fresh']})")
+    except Exception as e:
+        print(f"[build] 極み読込スキップ: {e}")
+
     # ── v4(2026-07-18): 🔻売り・モメンタム終了検出 ──
     # 「直近1ヶ月走った銘柄の上昇が終わった」をEODで検出する情報タブ（空売り推奨ではない・
     # デイトレ化しない=本人確定指示）。実データ検証: 高速7504/ベクトル6058は7/16夕方時点で
@@ -1027,6 +1069,7 @@ def build() -> dict:
         "picks_scoreboard": picks_scoreboard,   # ④ 直近の調子メーター
         "theme_blast": theme_blast,
         "sector_today": sector_today,
+        "kiwami": kiwami,
         "sector_heat": sector_heat,
         "signals": signals,
         "signal_track": track,
