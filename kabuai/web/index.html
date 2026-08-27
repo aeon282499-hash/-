@@ -179,10 +179,9 @@
   <a href="#/" id="nav-home" class="on"><span class="i">🐵</span>モメンタム</a>
   <a href="#/sell" id="nav-sell"><span class="i">🔻</span>売り</a>
   <a href="#/daytrade" id="nav-daytrade"><span class="i">⚡</span>デイトレ</a>
-  <!-- 📈演習=チャート演習（実データで買いか売りか・2026-08-15）。学習専用＝シグナルは出さない。
-       知識100問は同日本人「いらない」で導線撤去（quizStart系関数とweb/quiz_daytrade.jsonは残置＝
-       復活はviewQuizのメニューにボタンを戻すだけ）。hashは#/quizのまま＝配信済みリンクを壊さない -->
-  <a href="#/quiz" id="nav-quiz"><span class="i">📈</span>演習</a>
+  <!-- 📈演習タブは2026-08-28本人指示で撤去（viewQuiz/quiz系関数/web/quiz_charts.json/
+       web/quiz_daytrade.jsonは残置・#/quiz直リンクは今も動く＝このタブとsetNavの1行を戻せば復活） -->
+
   <!-- 🔥テーマは2026-07-15本人指示で一旦撤去（viewTheme/データは残置・このタブを戻せば復活） -->
   <a href="#/explore" id="nav-explore"><span class="i">🧭</span>探検</a>
   <a href="#/about" id="nav-about"><span class="i">❓</span>使い方</a>
@@ -1505,7 +1504,6 @@ function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
   $("#nav-daytrade").classList.toggle("on",h.startsWith("#/daytrade"));
-  $("#nav-quiz").classList.toggle("on",h.startsWith("#/quiz"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
