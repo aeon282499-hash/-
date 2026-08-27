@@ -1,5 +1,12 @@
 # evening-signal-trigger デプロイ手順（所要5分）
 
+> **✅ 2026-08-28 デプロイ完了済み（Claude Codeセッションからwrangler CLIで実施）**
+> - Worker: `https://evening-signal-trigger.aeon282499.workers.dev`
+> - 起動は **cron-job.org でなく Cloudflare内蔵cron**（`wrangler.evening.toml` の `[triggers] crons = ["5 9 * * 1-5"]` = 18:05 JST 月-金）＝下記手順3は不要になった
+> - `GITHUB_PAT` は `gh auth token`（gh CLIのトークン）を投入済み。**ghの認証を切り替え/失効させたら再投入が必要**: `gh auth token | npx wrangler secret put GITHUB_PAT -c wrangler.evening.toml`
+> - 動作確認済み: Worker URLへのGET → `OK: dispatched schedule_evening.yml on main` → Actionsにworkflow_dispatch実行が発生
+> 以下は再構築時用の元手順。
+
 ## なぜ必要か
 
 2026-08-27夜、`schedule_evening.yml`（スイング前夜配信＝通常版＋極み＋売りフェードの3系統）の

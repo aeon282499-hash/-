@@ -3,6 +3,10 @@ main = "evening-signal-trigger.js"
 compatibility_date = "2025-04-30"
 workers_dev = true
 
+# Cloudflare内蔵cron（cron-job.org不要・UTC指定）: 09:05 UTC = 18:05 JST 月-金
+[triggers]
+crons = ["5 9 * * 1-5"]
+
 [vars]
 GITHUB_OWNER = "aeon282499-hash"
 GITHUB_REPO = "-"
