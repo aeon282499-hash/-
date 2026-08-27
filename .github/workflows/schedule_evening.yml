@@ -11,20 +11,23 @@ name: スイング前夜配信
 # - 夜ランが失敗/データ未公開/起動せず → 何もコミットされず、翌朝8:05ランが
 #   従来どおりフル実行＝配信が消えることはない。
 #
-# 起動: GitHub cronは実測40〜50分遅延（最悪3h45m）するので、19:30 JSTと20:05 JSTの
-# 二段構えで早めに起動し、20:35 JSTまで待ってから実行する（スクリーニング約25分
-# → Discord着弾がほぼ21:00）。二重起動はconcurrency直列化＋送信済みガードで1配信のみ。
-# 分単位の正確な21:00着弾が欲しくなったら、cron-job.org→Cloudflare Workerに
-# 20:35のjobを足して workflow_dispatch で叩く（朝8:05と同じ確実発火経路）。
+# 起動（2026-08-28に21:00→18:50着弾へ前倒し・本人依頼「ハイカラ在庫が19時スタート」）:
+# 本命は cron-job.org → Cloudflare Worker `evening-signal-trigger`（18:05 JST・分単位で正確）
+# → workflow_dispatch。スイング着弾≒18:35・フェード着弾≒18:45-50 → 19:00のHYPER在庫解禁に間に合う。
+# GitHub cron（実測40〜50分遅延・2026-08-27には全本無発火の夜あり）は保険に格下げ。
+# 二重起動はconcurrency直列化＋送信済みガードで1配信のみ。
+# データ根拠: 四本値は当日16:30頃公開（公式仕様）＝18時台でも朝ランと同一銘柄。
+# 売り禁(margin-alert)の当日公表分だけ18時台は未反映の可能性 → 前日分へ自動フォールバック
+# （バッジ/プレミアム料行のみ影響・実測はランのログ「alert_map: <日付> 公表分」で確認）。
 
 on:
-  workflow_dispatch:           # Cloudflare Worker接続用の口（現状は手動テスト用）
+  workflow_dispatch:           # Cloudflare Worker `evening-signal-trigger` から叩く本命経路
   schedule:
-    - cron: '30 10 * * 1-5'   # 19:30 JST 月-金（本命・遅延込みで20時台着を狙う）
-    - cron: '5 11 * * 1-5'    # 20:05 JST 月-金（保険の二段目）
+    - cron: '10 9 * * 1-5'    # 18:10 JST 月-金（保険一段目・遅延込みで19時前後着を狙う）
+    - cron: '0 10 * * 1-5'    # 19:00 JST 月-金（保険の二段目）
     - cron: '15 12 * * 1-5'   # 21:15 JST 月-金（保険の三段目。2026-08-27にGitHubが
-                              # 上2本とも黙ってスキップ＝無発火の夜が実際に起きたため、
-                              # 時間帯を1時間以上離して追加。送信済みガードで二重配信なし）
+                              # 全cronを黙ってスキップ＝無発火の夜が実際に起きたため、
+                              # 時間帯を大きく離して維持。送信済みガードで二重配信なし）
 
 concurrency:
   group: ${{ github.workflow }}
@@ -78,14 +81,14 @@ jobs:
       - name: パッケージインストール
         run: pip install -r requirements.txt
 
-      - name: 20:35 JSTまで待つ（着弾≒21:00に合わせる）
+      - name: 18:05 JSTまで待つ（着弾≒18:50・19時のハイカラ在庫解禁に合わせる）
         run: |
-          # 昼〜20:35の間に起動した場合のみ待機。深夜0時台まで遅延した異常時は
-          # 待たずに進み、main.py側の時間ガード(19時未満はスキップ)に任せる。
+          # 昼〜18:05の間に起動した場合のみ待機。深夜まで遅延した異常時は
+          # 待たずに進み、main.py側の時間ガード(17時未満はスキップ)に任せる。
           NOW=$(TZ=Asia/Tokyo date +%H%M)
-          if [ "$NOW" -ge "1200" ] && [ "$NOW" -lt "2035" ]; then
-            echo "現在 $NOW JST → 20:35 まで待機"
-            while [ "$(TZ=Asia/Tokyo date +%H%M)" -lt "2035" ]; do sleep 60; done
+          if [ "$NOW" -ge "1200" ] && [ "$NOW" -lt "1805" ]; then
+            echo "現在 $NOW JST → 18:05 まで待機"
+            while [ "$(TZ=Asia/Tokyo date +%H%M)" -lt "1805" ]; do sleep 60; done
           else
             echo "現在 $NOW JST → 待機なしで実行"
           fi

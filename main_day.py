@@ -323,7 +323,10 @@ def main() -> None:
     # 成功時は last_day_run.json の日付が翌営業日になるため、翌朝の main_day は自然スキップ。
     evening = os.getenv("EVENING_RUN", "").strip() == "1"
     if evening:
-        if now.hour < 19:
+        # 17時ガード: 判定材料は当日終値まで＝16:30公開で揃う。18:50着弾化に伴い19→17へ緩和
+        # （2026-08-28・ハイカラ在庫19時解禁対応）。売り禁(margin-alert)の当日公表分が
+        # 18時台に未反映の場合は fetch_alert_map が前日分へ自動フォールバック（バッジのみ影響）。
+        if now.hour < 17:
             print(f"[main_day] 前夜配信モードだが時間外（{now.strftime('%H:%M')} JST）→ スキップ")
             sys.exit(0)
         if not is_trading_day(today):

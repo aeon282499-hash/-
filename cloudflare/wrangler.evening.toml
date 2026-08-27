@@ -1,0 +1,10 @@
+name = "evening-signal-trigger"
+main = "evening-signal-trigger.js"
+compatibility_date = "2025-04-30"
+workers_dev = true
+
+[vars]
+GITHUB_OWNER = "aeon282499-hash"
+GITHUB_REPO = "-"
+WORKFLOW_FILE = "schedule_evening.yml"
+GIT_REF = "main"

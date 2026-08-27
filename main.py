@@ -218,7 +218,9 @@ def main() -> None:
     # 金曜夜のランは「翌営業日=月曜(祝なら火曜)」分を出す。休場日の夜は新しい終値がないので何もしない。
     evening = os.getenv("EVENING_RUN", "").strip() == "1"
     if evening:
-        if now.hour < 19:
+        # 17時ガード: 四本値は16:30公開（公式仕様）なので17時以降なら朝ランと同一データ。
+        # 2026-08-28に19→17へ緩和（ハイカラ在庫が19時解禁＝18:50着弾に前倒し・本人依頼）。
+        if now.hour < 17:
             print(f"[main] 前夜配信モードだが時間外（{now.strftime('%H:%M')} JST）→ スキップします")
             sys.exit(0)
         if not is_trading_day(today):
