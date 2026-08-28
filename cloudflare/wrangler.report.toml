@@ -2,7 +2,7 @@ name = "report-signal-trigger"
 main = "report-signal-trigger.js"
 compatibility_date = "2025-04-30"
 # 公開URLは持たない（botのGET=誤dispatch防止・evening-signal-triggerと同方針）
-workers_dev = false
+workers_dev = true   # 2026-08-28 鍵付きURLで復活（cron-job.org用）
 
 # Cloudflare内蔵cron（UTC指定）: 07:40 UTC = 16:40 JST 月-金
 # （J-Quants当日四本値の公開16:30の後・従来の実測着弾時刻と同じ帯）

@@ -18,7 +18,15 @@
 //   GIT_REF          — "main"
 
 export default {
+  // 2026-08-28: 内蔵cronが鳴らない日があった（8/28は18:05/16:40とも無発火・Cloudflare側の
+  // invocationsゼロ）ので、実績のある cron-job.org → URL 経路を鍵付きで復活。
+  // ?key=<TRIGGER_KEY> か X-Trigger-Key ヘッダが一致した時だけ dispatch（botのGETは403で無害）。
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const key = url.searchParams.get("key") || request.headers.get("X-Trigger-Key") || "";
+    if (!env.TRIGGER_KEY || key !== env.TRIGGER_KEY) {
+      return new Response("forbidden", { status: 403 });
+    }
     return await dispatchWorkflow(env);
   },
 
