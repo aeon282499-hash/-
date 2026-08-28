@@ -52,7 +52,8 @@ jobs:
           git add \
             trade_history.json trade_history_sell.json \
             trade_history_mid.json trade_history_sell_mid.json \
-            trade_history_small.json trade_history_sell_small.json || true
+            trade_history_small.json trade_history_sell_small.json \
+            last_report_run.json || true
           git diff --cached --quiet && exit 0
           git commit -m "chore: update trade_history (3 tiers) [skip ci]"
           # 8/7(金)に他workflowのpushと競合し1発pushが non-fast-forward で失敗

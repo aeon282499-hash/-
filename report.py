@@ -352,6 +352,20 @@ def main() -> None:
     today_jst = now.date()
     today_str = today_jst.strftime("%Y-%m-%d")
 
+    # 同日送信済みガード（2026-08-28追加）。Worker外部トリガー(16:40)とGitHub cron保険(15:40設計・
+    # 実測16:30前後着)の二本体制になったため、先に走った方だけが配信する。マーカーは main() 完走時のみ
+    # 書く＝途中で死んだ日は保険便が再挑戦できる。ファイルは report.yml がコミットして翌日に持ち越す。
+    _MARKER = "last_report_run.json"
+    if os.path.exists(_MARKER):
+        try:
+            with open(_MARKER, encoding="utf-8") as _mf:
+                _m = json.load(_mf)
+            if _m.get("date") == today_str:
+                print(f"[report] 本日分({today_str})は送信済み({_m.get('sent_at','?')}) → スキップします")
+                return
+        except Exception:
+            pass
+
     # 全階層のsignalsをまずロードしてticker集合を作る
     tier_signals = {}
     union_tickers = set()
@@ -391,6 +405,11 @@ def main() -> None:
     # 実現損益は positions_*.json から集計（trade_historyは初日スナップなので使わない）。
     if _is_week_last_trading_day(today_jst):
         _send_weekly_reports(today_jst)
+
+    # 完走した日だけ送信済みマーカーを立てる（report.ymlがコミット）。
+    with open("last_report_run.json", "w", encoding="utf-8") as _mf:
+        json.dump({"date": today_str,
+                   "sent_at": datetime.now(JST).strftime("%H:%M")}, _mf, ensure_ascii=False)
 
 
 def _send_weekly_reports(today_jst: date) -> None:
