@@ -28,6 +28,7 @@ import os
 from datetime import date, timedelta
 
 from screener import batch_download_jquants, _jquants_id_token, calc_rsi, RSI_WARMUP_CAL_DAYS
+import close_decisions
 
 POSITIONS_FILE      = "positions.json"
 SELL_POSITIONS_FILE = "positions_sell.json"
@@ -127,6 +128,7 @@ def update_positions(positions: list[dict], today: date,
     closed_today  = []
     expired_today = []
     still_open    = []
+    _decisions    = close_decisions._load()
 
     updated = []
     for pos in positions:
@@ -224,6 +226,9 @@ def update_positions(positions: list[dict], today: date,
                 (direction == "BUY"  and rsi_now >= 50) or
                 (direction == "SELL" and rsi_now <= 50)
             )
+            # 14:55通知の判定を正とする（close_decisions.py 参照・2026-08-28）
+            rsi_exit = close_decisions.apply(rsi_exit, check_date_str, "main",
+                                             direction, ticker, _decisions)
             pnl = ((day_close - entry_open) / entry_open * 100 if direction == "BUY"
                    else (entry_open - day_close) / entry_open * 100)
 

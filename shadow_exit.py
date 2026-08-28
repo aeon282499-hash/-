@@ -34,6 +34,8 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 
+import close_decisions
+
 # ── 検証で確定したパラメータ（BT: _bt_atr_exit_kt.py の最終形）───────────────
 ATR_MULT      = 2.0     # 損切り幅 = ATR% × これ
 STOP_FLOOR    = 2.0     # 下限%（これ未満は板の値幅の中でBTが約定を再現できない）
@@ -333,6 +335,7 @@ def advance_sell(rows: list[dict], today: date, all_data: dict) -> int:
     SELL分岐と同じ判定順・同じ約定前提で、踏み上げ損切り幅だけ stop_pct を使う。
     週次はdeepcopyに対してこれを呼ぶ＝帳簿を汚さずに当日引けまで反映できる。"""
     from screener import calc_rsi
+    _decisions = close_decisions._load()
 
     today_str = today.strftime("%Y-%m-%d")
     closed = 0
@@ -381,6 +384,8 @@ def advance_sell(rows: list[dict], today: date, all_data: dict) -> int:
                 break
             rsi_now = calc_rsi(df[df.index <= dt_idx]["Close"].dropna())
             rsi_exit = rsi_now is not None and rsi_now <= 50      # SELLは50以下で手仕舞い
+            rsi_exit = close_decisions.apply(rsi_exit, d_str, "kiwami", "SELL",
+                                             pos["ticker"], _decisions)   # 14:55判定優先
             if rsi_exit or pos["hold_days"] >= MAX_HOLD:
                 pos.update(pnl_pct=round((eo - cl) / eo * 100, 3),
                            exit_type="RSI" if rsi_exit else "MAXHOLD",
@@ -411,6 +416,7 @@ def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
     週次レポートは deepcopy に対してこれを呼ぶ＝帳簿を汚さずに当日引けまで反映できる
     （report._send_weekly_reports のドライランと同じ手口）。"""
     from screener import calc_rsi
+    _decisions = close_decisions._load()
 
     today_str = today.strftime("%Y-%m-%d")
     closed = expired = 0
@@ -461,6 +467,8 @@ def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
                 break
             rsi_now = calc_rsi(df[df.index <= dt_idx]["Close"].dropna())
             rsi_exit = rsi_now is not None and rsi_now >= 50
+            rsi_exit = close_decisions.apply(rsi_exit, d_str, "kiwami", "BUY",
+                                             pos["ticker"], _decisions)   # 14:55判定優先
             if rsi_exit or pos["hold_days"] >= MAX_HOLD:
                 pos.update(pnl_pct=round((cl - eo) / eo * 100, 3),
                            exit_type="RSI" if rsi_exit else "MAXHOLD",

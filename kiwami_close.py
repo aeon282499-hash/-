@@ -262,6 +262,9 @@ def main() -> None:
         try:
             tg, ck = CC.collect_targets(pos, direction, today, data)
             print(f"[kiwami_close] {label}: 処分対象 {len(tg)}件 / 判定済み {len(ck)}件")
+            if not dry:   # 14:55判定を記録＝翌朝の shadow_exit.advance がこれに従う（2026-08-28）
+                import close_decisions
+                close_decisions.record(today, "kiwami", direction, tg, ck)
             emb = build_embeds(tg, ck, today, pos, sell=is_sell)
             if not emb:
                 continue

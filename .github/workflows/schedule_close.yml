@@ -116,7 +116,7 @@ jobs:
           # last_close_check.json すら未ステージのまま git pull --rebase が
           # 「You have unstaged changes」で落ちてジョブが exit 128 になっていた
           # （schedule.yml 側は元からこのループ方式で回避していた）。
-          for f in last_close_check.json kiwami_close_last_run.json; do
+          for f in last_close_check.json kiwami_close_last_run.json close_decisions.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0

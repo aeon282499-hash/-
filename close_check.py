@@ -514,6 +514,10 @@ def main():
 
         buy_targets,  buy_checked  = collect_targets(buy_open,  "BUY",  today, historical_data)
         sell_targets, sell_checked = collect_targets(sell_open, "SELL", today, historical_data)
+        # 14:55判定を記録（翌朝の帳簿確定がこれに従う・close_decisions.py・2026-08-28）
+        import close_decisions
+        close_decisions.record(today, "main", "BUY",  buy_targets,  buy_checked)
+        close_decisions.record(today, "main", "SELL", sell_targets, sell_checked)
 
         # 対象ありは処分指示、対象なしでも保有銘柄があれば「保有継続」確認を送る
         # （無音だと故障と区別できない・2026-06-12の問い合わせを受けて2026-06-13追加）

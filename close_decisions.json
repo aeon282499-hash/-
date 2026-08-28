@@ -1,0 +1,14 @@
+{
+  "2026-08-27": {
+    "main:BUY:8060.T": {
+      "decision": "HOLD",
+      "rsi": 47.3,
+      "price": 3546.0
+    },
+    "kiwami:BUY:8060.T": {
+      "decision": "HOLD",
+      "rsi": 47.9,
+      "price": 3551.0
+    }
+  }
+}
