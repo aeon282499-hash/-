@@ -81,11 +81,22 @@ def _post(url: str, payload: dict, log_tag: str) -> None:
         print(f"[notifier-{log_tag}] failed: {e}")
 
 
+# 通常版（大/中/小の買い/売りch）の配信停止スイッチ（2026-08-28 本人「極みがあるし止めていい」）。
+# 極み（shadow_exit / kiwami_close）が俺専用サーバーに大/中/小×買い/売りで揃ったため、
+# 通常版のシグナル・15時判定・週次・月次の各chへの投稿を止める。帳簿(positions_*.json)・
+# trade_history・BT・アプリ用JSONは無変更で動き続ける。戻すときはここを True にするだけ。
+# 環境変数 NOTIFY_TIER_CHANNELS=1 で一時的に復活できる（手動テスト用）。
+TIER_CHANNELS_ENABLED = os.getenv("NOTIFY_TIER_CHANNELS", "").strip() == "1"
+
+
 def _dispatch(payload: dict, *, tier: dict, side: str, public_url: str = "") -> None:
     """送信本体。tierのwebhookに送り、public_mirror=Trueなら公開チャンネルにもミラー。"""
     url     = tier["buy_webhook"] if side == "BUY" else tier["sell_webhook"]
     log_tag = f"{tier['label']}-{side}"
-    _post(url, payload, log_tag)
+    if not TIER_CHANNELS_ENABLED:
+        print(f"[notifier-{log_tag}] 通常版chは停止中（2026-08-28・極みへ統合）→ 送信スキップ")
+    else:
+        _post(url, payload, log_tag)
     if tier.get("public_mirror") and public_url:
         _post(public_url, payload, f"public-{side}")
 
