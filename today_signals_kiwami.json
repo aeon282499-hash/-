@@ -1,4 +1,57 @@
 {
-  "date": "2026-08-28",
-  "signals": []
+  "date": "2026-08-31",
+  "signals": [
+    {
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 750.0,
+      "limit_price": 757,
+      "days_cover": 0.37055518091687606,
+      "rsi": 42.43,
+      "deviation": -2.77,
+      "vol_ratio": 2.49,
+      "range_ratio": 0.68,
+      "turnover": 3412548800.0
+    },
+    {
+      "ticker": "9842.T",
+      "name": "アークランズ",
+      "direction": "BUY",
+      "prev_close": 1834.0,
+      "limit_price": 1852,
+      "days_cover": 0.15370740975820887,
+      "rsi": 35.55,
+      "deviation": -3.86,
+      "vol_ratio": 4.51,
+      "range_ratio": 1.11,
+      "turnover": 2886089800.0
+    },
+    {
+      "ticker": "2157.T",
+      "name": "コシダカホールディングス",
+      "direction": "BUY",
+      "prev_close": 1016.0,
+      "limit_price": 1026,
+      "days_cover": 1.182741527017335,
+      "rsi": 43.95,
+      "deviation": -2.39,
+      "vol_ratio": 4.77,
+      "range_ratio": 1.69,
+      "turnover": 3593473800.0
+    },
+    {
+      "ticker": "2685.T",
+      "name": "アンドエスティＨＤ",
+      "direction": "BUY",
+      "prev_close": 3400.0,
+      "limit_price": 3430,
+      "days_cover": 0.1452317152903804,
+      "rsi": 42.53,
+      "deviation": -1.82,
+      "vol_ratio": 2.85,
+      "range_ratio": 0.75,
+      "turnover": 3053179500.0
+    }
+  ]
 }

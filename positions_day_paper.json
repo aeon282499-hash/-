@@ -1098,7 +1098,7 @@
       "basis_date": "2026-08-27",
       "prev_close": 2567.0,
       "limit_price": 2567.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 24.19,
       "short": {
         "mark": "○",
@@ -1110,7 +1110,14 @@
       "dev25": 39.5,
       "atr_pct": 8.14,
       "vol_ratio": 3.0,
-      "range_pct": 15.9
+      "range_pct": 15.9,
+      "entry_session": "2026-08-28",
+      "entry_open": 2454.0,
+      "entry_close": 2335.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 4.849,
+      "pnl_yen": 35700,
+      "win": true
     },
     {
       "ticker": "3103.T",
@@ -1120,7 +1127,7 @@
       "basis_date": "2026-08-27",
       "prev_close": 1589.0,
       "limit_price": 1589.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.21,
       "short": {
         "mark": "○",
@@ -1132,11 +1139,40 @@
       "dev25": 34.3,
       "atr_pct": 11.12,
       "vol_ratio": 0.8,
-      "range_pct": 9.1
+      "range_pct": 9.1,
+      "entry_session": "2026-08-28",
+      "entry_open": 1573.0,
+      "entry_close": 1686.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -7.184,
+      "pnl_yen": -67800,
+      "win": false
+    },
+    {
+      "ticker": "2492.T",
+      "name": "インフォマート",
+      "direction": "SELL",
+      "signal_date": "2026-08-31",
+      "basis_date": "2026-08-28",
+      "prev_close": 685.0,
+      "limit_price": 685.0,
+      "status": "pending",
+      "daily_gain": 13.22,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 18.2,
+      "atr_pct": 5.9,
+      "vol_ratio": 1.5,
+      "range_pct": 6.0
     }
   ],
   "expired": [],
-  "last_report_date": "2026-08-28",
+  "last_report_date": "2026-08-31",
   "last_monthly_report": "2026-07",
-  "last_weekly_report": "2026-W34"
+  "last_weekly_report": "2026-W35"
 }

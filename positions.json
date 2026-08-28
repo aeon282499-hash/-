@@ -2325,5 +2325,53 @@
     "pnl_pct": 5.0,
     "exit_type": "TP",
     "exit_date": "2026-08-28"
+  },
+  {
+    "signal_date": "2026-08-31",
+    "entry_date": "2026-08-31",
+    "ticker": "3387.T",
+    "name": "クリエイト・レストランツ・ホールディングス",
+    "direction": "BUY",
+    "prev_close": 750.0,
+    "limit_price": 757,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-08-31",
+    "entry_date": "2026-08-31",
+    "ticker": "9842.T",
+    "name": "アークランズ",
+    "direction": "BUY",
+    "prev_close": 1834.0,
+    "limit_price": 1852,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-08-31",
+    "entry_date": "2026-08-31",
+    "ticker": "2685.T",
+    "name": "アンドエスティＨＤ",
+    "direction": "BUY",
+    "prev_close": 3400.0,
+    "limit_price": 3430,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "unrealized_pnl": null,
+    "exit_type": null,
+    "exit_date": null
   }
 ]
