@@ -26,6 +26,11 @@ jobs:
         env:
           DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
           DISCORD_WEBHOOK_SHADOW_WEEKLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_WEEKLY_URL }}
+          DISCORD_WEBHOOK_SHADOW_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MID_URL }}
+          DISCORD_WEBHOOK_SHADOW_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SMALL_URL }}
+          DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
+          DISCORD_WEBHOOK_SHADOW_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_MID_URL }}
+          DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
           TARGET_DATE: ${{ inputs.date }}
         run: |
@@ -48,7 +53,10 @@ jobs:
           k_sell = copy.deepcopy(load_sell_ledger())
           if k_sell and all_data:
               advance_sell(k_sell, today, all_data)
-          ok = weekly_report(today, all_data, k_sell or None)
-          print(f"[kiwami_weekly] {today} 送信{'OK' if ok else 'NG'}")
+          ok = True
+          for k in ("main", "mid", "small"):
+              r = weekly_report(today, all_data, k_sell or None, key=k)
+              print(f"[kiwami_weekly] {today} {k} 送信{'OK' if r else 'NG'}")
+              ok = ok and r
           raise SystemExit(0 if ok else 1)
           PY

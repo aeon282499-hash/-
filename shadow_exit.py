@@ -892,10 +892,16 @@ def _md(d: str | None) -> str:
     return f"{d[5:7]}/{d[8:10]}" if d and len(d) >= 10 else "?"
 
 
-def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict] | None = None) -> bool:
+def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict] | None = None,
+                  key: str = "main") -> bool:
     """金曜引け後の極み週次。**通常版 notifier.send_weekly_report と同一の表示形式**
     （2026-08-09改装・本人「通常版の方が見やすい・売りの損切りが合計に入らない」）。
-    明細行＝株数/建値/決済値/損益円、買い＋空売りの2ブロック、週間合計は買売込み。
+    明細行＝株数/建値/決済値/損益円。
+
+    【2026-08-28 本人指示「週次は大は大・中は中・小で流して・売りも同じように」】
+    階層 key ごとに呼び、買いの週次はその階層の買いch・空売りの週次は売りchへ**別々に**送る。
+    買い台帳は階層別(shadow_exit_{key}.json)、売り台帳は1本(kiwami_sell.json)なので
+    売りの株数は階層サイズで換算する。
 
     帳簿は翌朝 run_shadow が確定するため、金曜15:40時点では当日決済分が open のまま。
     通常版と同じくコピーに対して当日引けまでドライランしてから集計する（保存はしない）。
@@ -905,8 +911,9 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
     from datetime import timedelta
     from notifier import _pf_str
 
-    size = LEGACY_SIZE                     # size未記録の旧玉の既定（新玉は台帳のsizeを使う）
-    rows = copy.deepcopy(load_ledger("main"))
+    tier_size = TIER_FILES[key][2]
+    size = LEGACY_SIZE if key == "main" else tier_size   # size未記録の旧玉の既定
+    rows = copy.deepcopy(load_ledger(key))
     if all_data:
         advance(rows, today + timedelta(days=1), all_data)   # 当日引けまで反映（非破壊）
 
@@ -918,28 +925,29 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
     sell_week = [p for p in (sell_positions or []) if p.get("status") == "closed"
                  and p.get("pnl_pct") is not None and p.get("direction") == "SELL"
                  and ws <= (p.get("exit_date") or "") <= ts]
-    holds = ([r for r in rows if r.get("status") in ("pending", "open")]
-             + [p for p in (sell_positions or []) if p.get("status") in ("pending", "open")])
+    # 金曜夜の前夜配信で記帳済みの「来週分(signal_date>今日)」は持ち越しではないので除く
+    buy_holds = [r for r in rows if r.get("status") in ("pending", "open")
+                 and (r.get("signal_date") or "") <= ts]
+    sell_holds = [p for p in (sell_positions or []) if p.get("status") in ("pending", "open")
+                  and (p.get("signal_date") or "") <= ts]
 
-    week_yen_total = 0
-
-    def _shares(p):
+    def _shares(p, force=None):
         base = p.get("prev_close") or p.get("entry_open") or 0
-        sz = p.get("size") or size
+        sz = force or p.get("size") or size
         return max(100, int(sz / base / 100) * 100) if base > 0 else 100
 
-    def block(week: list[dict], label: str, emoji: str, *, sell: bool) -> str:
-        nonlocal week_yen_total
+    def block(week: list[dict], label: str, emoji: str, *, sell: bool) -> tuple[str, int]:
         if not week:
-            return f"{emoji} {label}: 今週は決済なし"
+            return f"{emoji} {label}: 今週は決済なし", 0
         pnls = [p["pnl_pct"] for p in week]
         wins = sum(1 for x in pnls if x > 0)
         head = (f"{emoji} {label}: {len(week)}件決済 勝率{wins}/{len(week)}"
                 f"（{round(wins / len(week) * 100)}%）・PF {_pf_str(pnls)}")
         in_label, out_label = ("売建", "買戻") if sell else ("買", "売")
         out_rows, entry_total, exit_total, pnl_total = [], 0, 0, 0
+        force = tier_size if (sell and key != "main") else None
         for p in sorted(week, key=lambda x: (x.get("exit_date") or "", x["ticker"])):
-            sh = _shares(p)
+            sh = _shares(p, force)
             ep = p.get("entry_open") or 0
             xp = ep * (1 - p["pnl_pct"] / 100 if sell else 1 + p["pnl_pct"] / 100)
             entry_amt = round(sh * ep)
@@ -954,39 +962,44 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
                 f"{mark} {p['name']} {_md(p.get('entry_date'))}→{_md(p.get('exit_date'))}"
                 f" {sh:,}株｜{in_label} {ep:,.0f}円 → {out_label} {xp:,.0f}円"
                 f"｜**{pnl_yen:+,}円**（{p['pnl_pct']:+.1f}% {el}）")
-        week_yen_total += pnl_total
         in_total, out_total = ("売建合計", "買戻合計") if sell else ("買付合計", "売却合計")
         total_line = (f"💰 {in_total} {entry_total:,}円 → {out_total} {exit_total:,}円"
                       f" ＝ **{pnl_total:+,}円**")
-        return "\n".join([head, *out_rows, total_line])
+        return "\n".join([head, *out_rows, total_line]), pnl_total
 
-    lines = [block(buy_week, "BUY", "📈", sell=False)]
-    if sell_week:
-        lines.append(block(sell_week, "空売り", "📉", sell=True))
+    def _hold_line(holds: list[dict]) -> str:
+        if not holds:
+            return "💼 保有中（持ち越し）: なし"
 
-    if holds:
         def _hold_str(p: dict) -> str:
-            tag = "空売り " if p.get("direction") == "SELL" else ""
             if p.get("status") == "pending":
-                return f"{p['name']}（{tag}約定未確認）"
-            return f"{p['name']}（{tag}損切り-{p.get('stop_pct', LIVE_STOP):.1f}%）"
+                return f"{p['name']}（約定未確認）"
+            return f"{p['name']}（損切り{'+' if p.get('direction') == 'SELL' else '-'}{p.get('stop_pct', LIVE_STOP):.1f}%）"
         names = "、".join(_hold_str(p) for p in holds[:5])
         more = f" ほか{len(holds) - 5}件" if len(holds) > 5 else ""
-        lines.append(f"💼 保有中（持ち越し）: {len(holds)}件 — {names}{more}")
-    else:
-        lines.append("💼 保有中（持ち越し）: なし")
-
-    # 通常版に無い明示の合計行（本人「合計値がわからん」対応＝買い＋空売りの週間損益）
-    lines.append(f"\n📊 週間合計（買い＋空売り）: **{week_yen_total:+,}円**")
+        return f"💼 保有中（持ち越し）: {len(holds)}件 — {names}{more}"
 
     rng = f"{week_start.strftime('%m/%d')}–{today.strftime('%m/%d')}"
-    return _shadow_post([{
-        "title": f"📅【週次レポート】売買シグナル極み｜{rng}",
-        "description": "\n".join(lines),
-        "color": _COLOR_WIN if week_yen_total >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{KIWAMI_SIZE // 10000}万・買い3枠/売り3枠・"
-                           "損切り 買い-3%(通常版と同じ)/売り+2.5%・利確+5%"},
-    }], env=_report_env(SHADOW_WEEKLY_WEBHOOK_ENV))
+    sfx = _tier_sfx(key)
+
+    buy_txt, buy_yen = block(buy_week, "BUY", "📈", sell=False)
+    ok_buy = _shadow_post([{
+        "title": f"📅【週次レポート】売買シグナル極み{sfx}｜買い｜{rng}",
+        "description": "\n".join([buy_txt, _hold_line(buy_holds),
+                                  f"\n📊 週間合計（買い）: **{buy_yen:+,}円**"]),
+        "color": _COLOR_WIN if buy_yen >= 0 else _COLOR_LOSE,
+        "footer": {"text": f"1件{tier_size // 10000}万・3枠・損切り-3%(通常版と同じ)・利確+5%・RSI≥50/3日で決済"},
+    }], env=SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
+
+    sell_txt, sell_yen = block(sell_week, "空売り", "📉", sell=True)
+    ok_sell = _shadow_post([{
+        "title": f"📅【週次レポート】売買シグナル極み{sfx}｜空売り｜{rng}",
+        "description": "\n".join([sell_txt, _hold_line(sell_holds),
+                                  f"\n📊 週間合計（空売り）: **{sell_yen:+,}円**"]),
+        "color": _COLOR_WIN if sell_yen >= 0 else _COLOR_LOSE,
+        "footer": {"text": f"1件{tier_size // 10000}万・3枠・踏み上げ損切り+2.5%(通常版+3%)・利確-5%・RSI≤50/3日で決済"},
+    }], env=SHADOW_SELL_TIER_WEBHOOK_ENV.get(key, SHADOW_SELL_WEBHOOK_ENV))
+    return ok_buy and ok_sell
 
 
 def monthly_report(today: date) -> bool:
