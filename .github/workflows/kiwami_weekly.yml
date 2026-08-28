@@ -1,0 +1,54 @@
+name: 極みの週次レポート（手動再送）
+
+# 2026-08-28: report.py便の極み週次は成功時にログが出ず「届いたか」を確認できなかったため、
+# 本人指示「俺専用にも週次は出してね」を確実にする手動再送経路。帳簿は読むだけ（保存しない）。
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '週の最終営業日（YYYY-MM-DD・空=今日JST）'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: 極み週次を送信
+        env:
+          DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
+          DISCORD_WEBHOOK_SHADOW_WEEKLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_WEEKLY_URL }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          TARGET_DATE: ${{ inputs.date }}
+        run: |
+          python - <<'PY'
+          import os, copy
+          from datetime import datetime, date, timezone, timedelta
+          from shadow_exit import weekly_report, load_sell_ledger, load_ledger, advance_sell
+          JST = timezone(timedelta(hours=9))
+          d = os.environ.get("TARGET_DATE", "").strip()
+          today = date.fromisoformat(d) if d else datetime.now(JST).date()
+          all_data = None
+          rows = load_ledger("main") + load_sell_ledger()
+          if any(r.get("status") in ("pending", "open") for r in rows):
+              # 未確定玉があれば report.py と同じく当日引けまでドライラン用の価格を取る
+              from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
+              vt = today + timedelta(days=1)
+              all_data = batch_download_jquants(_jquants_id_token(),
+                  start=(vt - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d"),
+                  end=vt.strftime("%Y-%m-%d"))
+          k_sell = copy.deepcopy(load_sell_ledger())
+          if k_sell and all_data:
+              advance_sell(k_sell, today, all_data)
+          ok = weekly_report(today, all_data, k_sell or None)
+          print(f"[kiwami_weekly] {today} 送信{'OK' if ok else 'NG'}")
+          raise SystemExit(0 if ok else 1)
+          PY
