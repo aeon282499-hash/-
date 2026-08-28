@@ -1019,10 +1019,14 @@ def monthly_report(today: date) -> bool:
     slots = 3
     year = str(today.year)
 
-    def _cap_month(ym: str) -> int:
-        return slots * KIWAMI_SIZE
+    def _embed(rows: list[dict], *, sell: bool, funded: set | None,
+               key: str = "main") -> dict | None:
+        tier_size = TIER_FILES[key][2]
+        sfx = _tier_sfx(key)
 
-    def _embed(rows: list[dict], *, sell: bool, funded: set | None) -> dict | None:
+        def _cap_month(ym: str) -> int:
+            return slots * tier_size
+
         monthly = defaultdict(list)
         for r in rows:
             if r.get("status") != "closed" or r.get("pnl_pct") is None:
@@ -1031,7 +1035,7 @@ def monthly_report(today: date) -> bool:
                 continue
             ym = (r.get("exit_date") or "")[:7]
             if ym:
-                monthly[ym].append((r["pnl_pct"], r.get("size") or LEGACY_SIZE))
+                monthly[ym].append((r["pnl_pct"], r.get("size") or (LEGACY_SIZE if key == "main" else tier_size)))
         ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
         if not ym_year:
             return None
@@ -1052,28 +1056,34 @@ def monthly_report(today: date) -> bool:
         desc += f"\n\n**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{ann_yen / 10000:.1f}万円）**"
         kind = "空売り" if sell else "スイング"
         return {
-            "title": f"📉 {year}年 月別・年間損益（極み・{kind}）" if sell
-                     else f"📈 {year}年 月別・年間損益（極み・{kind}）",
+            "title": f"📉 {year}年 月別・年間損益（極み{sfx}・{kind}）" if sell
+                     else f"📈 {year}年 月別・年間損益（極み{sfx}・{kind}）",
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
-            "footer": {"text": f"※{slots}枠×1件{KIWAMI_SIZE // 10000}万・"
+            "footer": {"text": f"※{slots}枠×1件{tier_size // 10000}万・"
                                f"年間%は月利の和・資金枠に収まる分のみ集計・"
                                f"損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
         }
 
-    buy_rows = load_ledger("main")
-    buy_embed = _embed(buy_rows, sell=False, funded=_slot_funded(buy_rows, slots))
+    # 2026-08-28 本人指示: 月次chは1本＝大/中/小の買い＋売り(大)をまとめて1通で送る
+    embeds = []
+    for _k in NOTIFY_KEYS:
+        rows_k = load_ledger(_k)
+        e = _embed(rows_k, sell=False, funded=_slot_funded(rows_k, slots), key=_k)
+        if e:
+            embeds.append(e)
     sell_embed = _embed(load_sell_ledger(), sell=True, funded=None)   # 売り台帳は記帳時3枠制限済み
+    if sell_embed:
+        embeds.append(sell_embed)
 
-    if not buy_embed and not sell_embed:
+    if not embeds:
         print("[shadow] 月次: 今年の確定分なし → 送信しない")
         return False
 
     # 通常版との差の併記（📊通算 通常vs極み）は 2026-08-09 本人指示
     # 「合計差とかの案内いらない」で廃止。必要になれば _pairs("main") から再計算できる。
 
-    return _shadow_post([e for e in (buy_embed, sell_embed) if e],
-                        env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
+    return _shadow_post(embeds, env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
 
 
 def backfill(days: int = 120) -> None:
