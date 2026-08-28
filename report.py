@@ -340,7 +340,16 @@ def _process_signals(signals: list[dict], ohlc: dict, signal_date: str,
 
 
 def main() -> None:
-    today_jst = datetime.now(JST).date()
+    # 実行許可窓 15:30〜23:59 JST（2026-08-28追加）。GitHub cronが11時間遅延して
+    # 木曜15:40便が金曜2:52に発火→「今日=金曜」と誤認し週の最終営業日判定が立ち、
+    # 金曜の取引前に週次レポートを送った実障害（run 33100664996）。日付を跨いだ遅延便は
+    # 当日分の意味を持たないので捨てる（main.py朝ランの配信許可窓と同じ流儀）。
+    now = datetime.now(JST)
+    if not (now.hour > 15 or (now.hour == 15 and now.minute >= 30)):
+        print(f"[report] 実行時間外（{now.strftime('%H:%M')} JST・15:30〜24:00のみ）→ スキップします")
+        return
+
+    today_jst = now.date()
     today_str = today_jst.strftime("%Y-%m-%d")
 
     # 全階層のsignalsをまずロードしてticker集合を作る

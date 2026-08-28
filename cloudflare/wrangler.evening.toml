@@ -1,7 +1,11 @@
 name = "evening-signal-trigger"
 main = "evening-signal-trigger.js"
 compatibility_date = "2025-04-30"
-workers_dev = true
+# 2026-08-28: true→false。公開URLを残すとbotのGETが即workflow_dispatchになる
+# （2026-08-28 02:58 JSTに実際にbot起動が発生・ガードで無害スキップ済み）。
+# このWorkerは内蔵cron([triggers])だけで動くのでURLは不要。手動テストは
+# `gh workflow run schedule_evening.yml` を使う。
+workers_dev = false
 
 # Cloudflare内蔵cron（cron-job.org不要・UTC指定）: 09:05 UTC = 18:05 JST 月-金
 [triggers]
