@@ -55,6 +55,19 @@ DAY_SIGNALS_FILE = "day_signals.json"
 #   歴代ワースト月は2022-11 -45.5万 / 2025-11 -40.1万＝11月に集中。極み側の復帰ラインは
 #   現金120万→KIWAMI_SIZE=150万（shadow_exit.py参照）。
 CAPITAL_PER_TRADE = 1_000_000
+# ★ランク傾斜（2026-08-28 本人決定「100/50で行こう」・初回=8/31月曜分）: ①100万 / ②50万。
+# 根拠=_bt_fade_rank1_200.py＋傾斜グリッド11通り(10年グロス): 100/50=10年+1,513万・年+138万(資金150万・92%)
+# ・PF1.53・最悪日-32万・最悪月-39万・-40万超月0回・DD-96万＝最もマイルド。現行100/100(年+154万・最悪日-51万
+# ・DD-131万)から稼ぎ-16万で傷を浅くする選択。200/0(年+260万・最悪月-85万・-20万超月17回)は本人「耐えれん」で却下。
+# ②は値がさ5,000円超だと100株が50万に収まらない→BT同様に見送り(株数0)。①は従来どおり。
+CAPITAL_BY_RANK = {1: CAPITAL_PER_TRADE, 2: 500_000}
+
+
+def capital_for_rank(rank) -> int:
+    try:
+        return CAPITAL_BY_RANK.get(int(rank or 1), CAPITAL_PER_TRADE)
+    except (TypeError, ValueError):
+        return CAPITAL_PER_TRADE
 EXPIRE_DAYS = 14
 # フェードのGO閾値（前日上昇率）。2026-07-28に +12% → +6% へ。
 # 「ほぼ毎日撃ちたい」という本人要望に対し、10年検証で約定日率 50%→92% に上がり、
@@ -633,10 +646,13 @@ def fade_min_entry_price(prev_close: float) -> float:
     return float(-(-raw // tick) * tick)          # ceil を整数演算で
 
 
-def _shares_for(limit_price: float) -> int:
+def _shares_for(limit_price: float, rank=1) -> int:
     if not limit_price or limit_price <= 0:
         return 0
-    return max(100, int(CAPITAL_PER_TRADE / limit_price / 100) * 100)
+    cap = capital_for_rank(rank)
+    if int(rank or 1) >= 2 and limit_price * 100 > cap:
+        return 0                         # ②は1玉に収まらなければ見送り（BTの100/50と同じ扱い）
+    return max(100, int(cap / limit_price / 100) * 100)
 
 
 # ------------------------------------------------------------------ 決済
@@ -696,7 +712,9 @@ def settle(book: dict, data: dict, today) -> list[dict]:
             else:
                 exit_type, pnl = "CLOSE", (o - c) / o * 100
 
-        shares = _shares_for(limit or o)
+        shares = _shares_for(limit or o, p.get("rank", 1))
+        if shares == 0 and exit_type == "CLOSE":
+            exit_type, pnl = "SKIP", 0.0      # ②の値がさ玉＝建てていない（2026-08-28 100/50化）
         pnl_yen = int(round(shares * o * pnl / 100)) if exit_type == "CLOSE" else 0
 
         p.update({
@@ -819,19 +837,22 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
     # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
         lines += [
-            f"🎯 **9:00 寄り成行（信用売り）**で発注・1玉{CAPITAL_PER_TRADE // 10000}万円",
+            f"🎯 **9:00 寄り成行（信用売り）**で発注・①{CAPITAL_BY_RANK[1] // 10000}万円 / ②{CAPITAL_BY_RANK[2] // 10000}万円",
             "✅ 約定したらすぐ**引成（大引け成行の買戻し）**を予約・持ち越しなし",
             sep,
         ]
         for i, p in enumerate(go_picks):
             sh = p.get("short") or shortability(p["ticker"], _LAST_ISS)
-            shares = _shares_for(p["min_entry_price"])
-            amt = shares * p["min_entry_price"]
             rk = p.get("rank", i + 1)
+            shares = _shares_for(p["min_entry_price"], rk)
+            amt = shares * p["min_entry_price"]
             ticker = p["ticker"].replace(".T", "")
             name = p.get("name", ticker)
             reg = f" {p['reg_note']}" if p.get("reg_note") else ""
-            if i < n_shoot:
+            if i < n_shoot and shares == 0:
+                line1 = (f"#{rk}（値がさ{capital_for_rank(rk) // 100:,}円超＝②の{capital_for_rank(rk) // 10000}万に収まらない・撃たない） "
+                         f"{name} ({ticker}) 前日{p['prev_close']:,.0f}円")
+            elif i < n_shoot:
                 line1 = (f"**#{rk} {name}** ({ticker}) 前日{p['prev_close']:,.0f}円 "
                          f"→ **寄り成行** {shares:,}株/約{amt / 1e4:.0f}万")
             else:
@@ -858,8 +879,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             # 成行でいいと思ってた」＝アスタリスク8円/株が中間帯だった実例が発端）。
             # 貸借○の玉はプレミアム料が無い（貸株料のみ≒ゼロ）ので出さない。
             if i < n_shoot and p.get("jsf_stop") and shares > 0:
-                ok_ps = int(FADE_EDGE_PCT_GAPDN / 100 * CAPITAL_PER_TRADE // shares)
-                lim_ps = int(FADE_EDGE_PCT_MAIN / 100 * CAPITAL_PER_TRADE // shares)
+                ok_ps = int(FADE_EDGE_PCT_GAPDN / 100 * capital_for_rank(rk) // shares)
+                lim_ps = int(FADE_EDGE_PCT_MAIN / 100 * capital_for_rank(rk) // shares)
                 tail = ("撃たない（今日は#2だけ）"
                         if (rk == 1 and n_shoot >= 2) else "撃たない（見送り）")
                 yb = f"寄指¥{p['min_entry_price']:,.0f}"
@@ -1046,7 +1067,7 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜）｜"
+        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
@@ -1177,7 +1198,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜）｜通算{cum['n']}件 "
+        "footer": {"text": f"寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
                            f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
