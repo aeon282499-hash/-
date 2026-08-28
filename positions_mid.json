@@ -1124,10 +1124,9 @@
     "limit_price": 3545,
     "entry_open": 3514.0,
     "status": "closed",
-    "hold_days": 2,
-    "pnl_pct": 1.821,
-    "unrealized_pnl": -0.398,
-    "exit_type": "RSI",
-    "exit_date": "2026-08-27"
+    "hold_days": 3,
+    "pnl_pct": 5.0,
+    "exit_type": "TP",
+    "exit_date": "2026-08-28"
   }
 ]
