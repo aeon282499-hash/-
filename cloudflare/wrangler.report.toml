@@ -14,3 +14,7 @@ GITHUB_OWNER = "aeon282499-hash"
 GITHUB_REPO = "-"
 WORKFLOW_FILE = "report.yml"
 GIT_REF = "main"
+
+# 発火/ dispatch失敗をCloudflareダッシュボードのLogsで追えるようにする（2026-08-28）
+[observability]
+enabled = true

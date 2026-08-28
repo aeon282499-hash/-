@@ -473,7 +473,8 @@ def _send_weekly_reports(today_jst: date) -> None:
         k_sell = copy.deepcopy(load_sell_ledger())
         if k_sell:
             advance_sell(k_sell, today_jst, all_data)
-        kiwami_weekly(today_jst, all_data, k_sell or main_sim_sell)
+        ok = kiwami_weekly(today_jst, all_data, k_sell or main_sim_sell)
+        print(f"[report] 極みの週次{'送信OK' if ok else '送信NG（webhook未設定/HTTP失敗）'}")
     except Exception as e:
         print(f"[report] 極みの週次スキップ（通常版に影響なし）: {e}")
 
