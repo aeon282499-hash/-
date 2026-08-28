@@ -76,6 +76,11 @@ LEGACY_SIZE = 1_000_000   # size未記録の旧玉（2026-08-23以前）の円�
 # ＝1万円カットが正しい。サイズ非連動の明示定数にする（サイズ変更で帯がずれない）。
 KIWAMI_PX_CAP = 10_000
 
+
+def kiwami_px_cap(key: str) -> int:
+    """値がさカット＝100株が1玉サイズに収まる上限（大1万円/中5千円/小3千円）。"""
+    return KIWAMI_PX_CAP if key == "main" else TIER_FILES[key][2] // 100
+
 # ── 極みの売り（2026-07-29 実装・_bt_sell_improve.py の8軸グリッド）─────────────
 # 踏み上げ損切りを通常版の+3.0%から+2.5%へ。10年・150万×3枠・業種cap2・スコア降順の
 # 円シムで PF1.54→1.60・10年+109.5万→+116.9万・勝ち年5/10→7/10、**両期間とも改善**
@@ -174,14 +179,15 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
     sig_file = TIER_FILES[key][0]
     # 極み(main)は買残回転1.2の専用ファイルを優先（2026-08-02・10年+194万→+311万の採用）。
     # 当日分が無ければ従来の today_signals.json へフォールバック＝移行期・障害時も取りこぼさない。
-    if key == "main" and os.path.exists(KIWAMI_SIG_FILE):
+    # 2026-08-28: 中/小も極み選定を使う（本人指示）。値がさカットだけ資金別。
+    if os.path.exists(KIWAMI_SIG_FILE):
         try:
             with open(KIWAMI_SIG_FILE, encoding="utf-8") as f:
                 _kp = json.load(f)
             if _kp.get("date") == today.strftime("%Y-%m-%d"):
                 sig_file = KIWAMI_SIG_FILE
         except Exception as e:
-            print(f"[shadow-main] 極みシグナル読込失敗({e}) → 通常版にフォールバック")
+            print(f"[shadow-{key}] 極みシグナル読込失敗({e}) → 通常版にフォールバック")
     if not os.path.exists(sig_file):
         return 0
     with open(sig_file, encoding="utf-8") as f:
@@ -205,8 +211,8 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         sig_date = today.strftime("%Y-%m-%d")
         # 値がさカット（極みのみ・2026-08-24）: BT公式は1万円超を除外して測っている。
         # 本番のmax(100株)床は予算超過買い(10年-113.7万の実害)を作るのでBTに合わせて見送る。
-        if key == "main" and (s.get("prev_close") or 0) > KIWAMI_PX_CAP:
-            print(f"[shadow-{key}] {tk} は値がさ{s.get('prev_close'):,.0f}円>1万円 → BT対象外で見送り")
+        if (s.get("prev_close") or 0) > kiwami_px_cap(key):
+            print(f"[shadow-{key}] {tk} は値がさ{s.get('prev_close'):,.0f}円>{kiwami_px_cap(key):,}円 → 1玉に収まらず見送り")
             continue
         if (tk, sig_date) in seen:
             continue
@@ -505,10 +511,11 @@ def run_shadow(tiers, today: date, get_data) -> None:
         print(f"[shadow] 極み売り台帳の更新スキップ（買いと通常版に影響なし）: {e}")
 
     # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
-    try:
-        send_discord(today)          # 極み・買い（ATR連動の損切り）
-    except Exception as e:
-        print(f"[shadow] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
+    for _k in NOTIFY_KEYS:           # 極み・買い（大/中/小・2026-08-28から3階層）
+        try:
+            send_discord(today, _k)
+        except Exception as e:
+            print(f"[shadow-{_k}] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
     try:
         send_discord_sell(today)     # 極み・売り（中身は通常版と同一）
     except Exception as e:
@@ -594,7 +601,13 @@ def report() -> None:
 #  極み  : 検証を通った改善を先に入れる本人専用版。買い=ATR連動の損切り／売り=通常と同一
 #          （SELLのATR連動は2026-07-26に10年検証でt=-0.19＝効果ゼロと確定したため入れない）。
 #  通常  : 友達用の安定版。従来のチャンネルへ従来のまま配信（この配信は一切変更しない）。
-SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"           # 極み・買い
+SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"           # 極み・買い（大資金）
+# 中/小資金の極み買い（2026-08-28 本人「中小資金も極みシグナルと同じようにして」）
+SHADOW_TIER_WEBHOOK_ENV = {
+    "main":  SHADOW_WEBHOOK_ENV,
+    "mid":   "DISCORD_WEBHOOK_SHADOW_MID_URL",
+    "small": "DISCORD_WEBHOOK_SHADOW_SMALL_URL",
+}
 SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り
 # 週次/月次レポートの専用チャンネル（2026-08-09 本人がwebhook新設・secretsに登録済み）。
 # 未設定なら従来どおり買いチャンネルへフォールバック（ローカル等でも壊れない）。
@@ -607,7 +620,7 @@ def _report_env(preferred: str) -> str:
     return preferred if os.getenv(preferred, "").strip() else SHADOW_WEBHOOK_ENV
 # 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
 # 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
-NOTIFY_KEYS = ("main",)
+NOTIFY_KEYS = ("main", "mid", "small")   # 2026-08-28 中/小も極み配信
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
 
 
@@ -638,7 +651,7 @@ def _price_str(v: float | None) -> str:
     return f"{v:,.1f}".rstrip("0").rstrip(".") if v else "—"
 
 
-def send_discord(today: date) -> bool:
+def send_discord(today: date, key: str = "main") -> bool:
     """今朝の極みシグナル・決済・通算スコアを専用チャンネルへ1通で送る。
     送るものが何も無い日は送信しない（ハートビートは本番チャンネル側にあるため不要）。
 
@@ -658,7 +671,7 @@ def send_discord(today: date) -> bool:
                 sigs = [s for s in _kp.get("signals", []) if s.get("direction") == "BUY"]
         except Exception as e:
             print(f"[shadow] 極みシグナル読込失敗: {e}")
-    rows_main = load_ledger("main")
+    rows_main = load_ledger(key)
     recorded = {r["ticker"] for r in rows_main if r.get("signal_date") == today_str}
     n_open = sum(1 for r in rows_main if r.get("status") in ("pending", "open"))
     # 昨日以前から保有中の銘柄が今日また候補に入った場合＝再エントリー不可（📌表示）。
@@ -677,6 +690,7 @@ def send_discord(today: date) -> bool:
     #   8/4に嫌われた🟢⚪📌の行内マークは復活させない（並び順+ヘッダ1行で表現）。
     reg_set: set = set()
     try:
+        # 「極み帯」判定は通常版・大の採用リスト基準（中/小の通常版は値がさ除外で欠けるため）
         if os.path.exists(TIER_FILES["main"][0]):
             with open(TIER_FILES["main"][0], encoding="utf-8") as f:
                 _rp = json.load(f)
@@ -691,7 +705,7 @@ def send_discord(today: date) -> bool:
     n_in = sum(1 for s in extras if s["ticker"] in recorded)
 
     if extras:
-        size = KIWAMI_SIZE
+        size = TIER_FILES[key][2]
         try:
             from notifier import _nth_trading_day
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
@@ -715,9 +729,9 @@ def send_discord(today: date) -> bool:
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
             lp = s.get("limit_price") or 0
-            if pc > KIWAMI_PX_CAP:
-                # 値がさ玉は発注情報を出さない（100株でも予算超過・BT検証外＝買わない）
-                head = (f"#{i}（対象外・値がさ1万円超＝BT検証外・買わない） "
+            if pc > kiwami_px_cap(key):
+                # 値がさ玉は発注情報を出さない（100株でも1玉に収まらない＝買わない）
+                head = (f"#{i}（対象外・値がさ{kiwami_px_cap(key):,}円超＝1玉に収まらない・買わない） "
                         f"{s.get('name', tk)} ({tk}) 前日{pc:,.0f}円")
             elif pc > 0:
                 shares = max(100, int(size / pc / 100) * 100)
@@ -737,13 +751,15 @@ def send_discord(today: date) -> bool:
             if s.get("turnover"):
                 parts.append(f"代金{s['turnover']/1e8:.0f}億")
             if s["ticker"] not in reg_set:
-                parts.append("極み帯")   # 通常版に無い買残0.8-1.2帯の追加銘柄
+                # 通常版に無い買残0.8-1.2帯の追加銘柄＝目立たせる（2026-08-28 本人指示）
+                head = head.replace(f"#{i} ", f"#{i} 🔥【極み帯】", 1)
+                parts.append("🔥極み帯＝通常版に出ない極み専用銘柄")
             lines.append(head)
             if parts:
                 lines.append("   " + "・".join(parts))
             lines.append("")
         embeds.append({
-            "title": f"⚡【スイング極み】{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
+            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
             "footer": {"text": "極みの完全リスト（通常版と共通の銘柄も含む）。「極み帯」=買残1.2帯の極み専用銘柄"},
@@ -752,11 +768,11 @@ def send_discord(today: date) -> bool:
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
     settled = []
-    for key in NOTIFY_KEYS:
-        # 判定割れの差額円は従来どおり100万換算のまま（サイズ差と判定差を混ぜない・2026-08-24）
-        _, _, size, label = TIER_FILES[key]
-        live = _live_closed(key)
-        for r in load_ledger(key):
+    for _k in (key,):
+        # 判定割れの差額円は階層サイズ換算（サイズ差と判定差を混ぜない・2026-08-24）
+        _, _, size, label = TIER_FILES[_k]
+        live = _live_closed(_k)
+        for r in load_ledger(_k):
             if r.get("exit_date") != today_str or r["status"] not in ("closed", "expired"):
                 continue
             lp = live.get((r["ticker"], r["signal_date"]))
@@ -785,14 +801,18 @@ def send_discord(today: date) -> bool:
     if not sigs:
         # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
         embeds.insert(0, {
-            "title": f"⚡【スイング極み】{today.strftime('%Y年%m月%d日')} — シグナルなし",
+            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — シグナルなし",
             "description": "**本日の極みの買いシグナルはありません。**（0銘柄＝見送り）",
             "color": _COLOR_INFO,
         })
     if not embeds:
-        print("[shadow] 配信対象なし → 送信しない")
+        print(f"[shadow-{key}] 配信対象なし → 送信しない")
         return False
-    return _shadow_post(embeds)
+    return _shadow_post(embeds, SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
+
+
+def _tier_sfx(key: str) -> str:
+    return "" if key == "main" else "・" + TIER_FILES[key][3]
 
 
 def send_discord_sell(today: date) -> bool:

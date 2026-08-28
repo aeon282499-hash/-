@@ -52,6 +52,8 @@ jobs:
       DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
       # 「売買シグナル極み」＝本人専用（shadow_exit.py）。main.py内で通常版と一緒に動く。
       DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
+      DISCORD_WEBHOOK_SHADOW_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MID_URL }}
+      DISCORD_WEBHOOK_SHADOW_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SMALL_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
       # デイトレ売りフェード（main_day.py→daytrade_paper）。この2本が無いと
       # フォールバックでスイング買いチャンネルへ誤爆する作りなので必須。

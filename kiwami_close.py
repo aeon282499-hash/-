@@ -44,11 +44,17 @@ SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL"
 _COLOR_ACT, _COLOR_OK, _COLOR_DONE = 0xE67E22, 0x95A5A6, 0x2ECC71
 
 
-def load_open() -> list[dict]:
+TIER_LEDGERS = {"main": ("大資金", "shadow_exit_main.json",  "DISCORD_WEBHOOK_SHADOW_URL"),
+                "mid":   ("中資金", "shadow_exit_mid.json",   "DISCORD_WEBHOOK_SHADOW_MID_URL"),
+                "small": ("小資金", "shadow_exit_small.json", "DISCORD_WEBHOOK_SHADOW_SMALL_URL")}
+
+
+def load_open(key: str = "main") -> list[dict]:
     """極み帳簿の保有中（pending/open）だけを close_check が読める形に整えて返す。"""
-    if not os.path.exists(LEDGER):
+    ledger = LEDGER if key == "main" else TIER_LEDGERS[key][1]   # mainは従来のLEDGER定数（テスト互換）
+    if not os.path.exists(ledger):
         return []
-    with open(LEDGER, encoding="utf-8") as f:
+    with open(ledger, encoding="utf-8") as f:
         rows = json.load(f)
     out = []
     for r in rows:
@@ -235,9 +241,10 @@ def main() -> None:
 
     # 買いと売りは独立に判定する。片方が0件でももう片方は必ず処理する
     # （旧: 買いが0件だと return していて、売りだけ保有している日に処分指示が消えていた）
-    positions = load_open()
+    positions = load_open("main")
+    tier_pos = {k2: load_open(k2) for k2 in ("mid", "small")}   # 2026-08-28 中/小も判定
     sells = load_open_sell()
-    if not positions and not sells:
+    if not positions and not sells and not any(tier_pos.values()):
         print("[kiwami_close] 極みの保有玉なし（買い0/売り0）→ 無送信")
         return
     print(f"[kiwami_close] 保有 買い{len(positions)}件 / 売り{len(sells)}件")
@@ -256,6 +263,8 @@ def main() -> None:
     sent = False
     for label, pos, direction, env, is_sell in (
             ("買い", positions, "BUY", WEBHOOK_ENV, False),
+            ("買い・中資金", tier_pos["mid"], "BUY", TIER_LEDGERS["mid"][2], False),
+            ("買い・小資金", tier_pos["small"], "BUY", TIER_LEDGERS["small"][2], False),
             ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True)):
         if not pos:
             continue
