@@ -516,10 +516,11 @@ def run_shadow(tiers, today: date, get_data) -> None:
             send_discord(today, _k)
         except Exception as e:
             print(f"[shadow-{_k}] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
-    try:
-        send_discord_sell(today)     # 極み・売り（中身は通常版と同一）
-    except Exception as e:
-        print(f"[shadow] 極み売りの配信スキップ（通常版に影響なし）: {e}")
+    for _k in NOTIFY_KEYS:           # 極み・売り（大/中/小・2026-08-28から3階層）
+        try:
+            send_discord_sell(today, _k)
+        except Exception as e:
+            print(f"[shadow-{_k}] 極み売りの配信スキップ（通常版に影響なし）: {e}")
     try:
         from main import is_month_first_trading_day
         if is_month_first_trading_day(today):    # 月初営業日だけ（通常版と同じタイミング）
@@ -608,7 +609,14 @@ SHADOW_TIER_WEBHOOK_ENV = {
     "mid":   "DISCORD_WEBHOOK_SHADOW_MID_URL",
     "small": "DISCORD_WEBHOOK_SHADOW_SMALL_URL",
 }
-SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り
+SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り（大資金）
+# 中/小資金の極み売り（2026-08-28 本人「売りもチャンネルを統合」）。台帳(kiwami_sell.json)は1本のまま、
+# 配信だけ資金別に株数を付けて各chへ。
+SHADOW_SELL_TIER_WEBHOOK_ENV = {
+    "main":  SHADOW_SELL_WEBHOOK_ENV,
+    "mid":   "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL",
+    "small": "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL",
+}
 # 週次/月次レポートの専用チャンネル（2026-08-09 本人がwebhook新設・secretsに登録済み）。
 # 未設定なら従来どおり買いチャンネルへフォールバック（ローカル等でも壊れない）。
 SHADOW_WEEKLY_WEBHOOK_ENV  = "DISCORD_WEBHOOK_SHADOW_WEEKLY_URL"
@@ -815,7 +823,7 @@ def _tier_sfx(key: str) -> str:
     return "" if key == "main" else "・" + TIER_FILES[key][3]
 
 
-def send_discord_sell(today: date) -> bool:
+def send_discord_sell(today: date, key: str = "main") -> bool:
     """極みの売りを専用チャンネルへ。銘柄選定は通常版と同一、**出口だけ違う**。
 
     2026-07-29: 踏み上げ損切りを +3.0% → **+2.5%** に変更（極みのみ）。
@@ -835,13 +843,15 @@ def send_discord_sell(today: date) -> bool:
     if payload.get("date") != today_str:
         return False
     sigs = [s for s in payload.get("signals", []) if s.get("direction") == "SELL"]
+    size = TIER_FILES[key][2]
+    env  = SHADOW_SELL_TIER_WEBHOOK_ENV.get(key, SHADOW_SELL_WEBHOOK_ENV)
     if not sigs:
         return _shadow_post([{
-            "title": f"⚡ 売買シグナル極み（売り）— {today_str}",
+            "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
             "description": ("**本日の空売りシグナルはありません。**\n"
                             "売りは日経25MA以下のときだけ出る設計で、年26件程度の希少シグナル。"),
             "color": _COLOR_INFO,
-        }], env=SHADOW_SELL_WEBHOOK_ENV)
+        }], env=env)
 
     # 極みは3枠まで。すでに保有中の玉があれば、その分だけ今日は建てられない。
     open_now = [r for r in load_sell_ledger() if r.get("status") in ("pending", "open")]
@@ -850,23 +860,29 @@ def send_discord_sell(today: date) -> bool:
     for i, s in enumerate(sigs):
         pc = s.get("prev_close") or 0
         mark = "" if i < free else "　⏭️ **枠満杯で見送り**"
+        if pc > kiwami_px_cap(key):
+            lines.append(f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
+                         f"　❌ 値がさ{kiwami_px_cap(key):,}円超＝100株が1玉{size//10000}万に収まらない・建てない")
+            continue
+        shares = max(100, int(size / pc / 100) * 100) if pc > 0 else 100
         lines.append(
-            f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}\n"
+            f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
+            f"　**{shares:,}株**/約{shares * pc / 1e4:.0f}万\n"
             f"　翌寄り成行で空売り → 損切り **+{SELL_STOP_PCT}%**"
             f"（{_price_str(pc * (1 + SELL_STOP_PCT / 100))}）/ "
             f"利確 **-5.0%**（{_price_str(pc * 0.95)}）/ RSI50以下 or 最大3日{mark}")
     slot_note = (f"\n\n📊 **枠 {len(open_now)}/{SELL_MAX_SLOTS} 使用中**"
                  f"（あと{free}枠）" if open_now else "")
     return _shadow_post([{
-        "title": f"⚡ 売買シグナル極み（売り）— {today_str}",
-        "description": ("**俺専用版**。銘柄の選び方は通常版と同一だが、"
+        "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
+        "description": (f"**俺専用版・1件{size//10000}万円**。銘柄の選び方は通常版と同一だが、"
                         f"**踏み上げ損切りが +{SELL_STOP_PCT}%**（通常版は+3.0%）。\n"
                         "10年BTで PF1.54→1.60・勝ち年5/10→7/10・両期間改善。"
                         f"同時保有は{SELL_MAX_SLOTS}枠まで。" + slot_note + "\n\n"
                         + "\n\n".join(lines[:10])),
         "color": _COLOR_LOSE,
         "footer": {"text": "貸借区分・在庫はSBIの発注画面で最終確認すること"},
-    }], env=SHADOW_SELL_WEBHOOK_ENV)
+    }], env=env)
 
 
 _EXIT_LABEL = {"TP": "利確", "STOP": "損切", "RSI": "RSI回復", "MAXHOLD": "期限", "NOFILL": "寄指不成立"}

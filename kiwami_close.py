@@ -265,7 +265,9 @@ def main() -> None:
             ("買い", positions, "BUY", WEBHOOK_ENV, False),
             ("買い・中資金", tier_pos["mid"], "BUY", TIER_LEDGERS["mid"][2], False),
             ("買い・小資金", tier_pos["small"], "BUY", TIER_LEDGERS["small"][2], False),
-            ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True)):
+            ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True),
+            ("売り・中資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL", True),
+            ("売り・小資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL", True)):
         if not pos:
             continue
         try:
