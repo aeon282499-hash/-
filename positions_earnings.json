@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-28",
+ "last_signal_date": "2026-08-31",
  "positions": [
   {
    "ticker": "6521.T",
@@ -538,6 +538,17 @@
    "exit_kind": "PEAD延長",
    "pnl_pct": 12.89,
    "pnl_yen": 45000
+  },
+  {
+   "ticker": "4369.T",
+   "name": "トリケミカル研究所",
+   "type": "第２四半期",
+   "date": "2026-08-31",
+   "signal_price": 3075.0,
+   "shares": 100,
+   "rsi": 41.4,
+   "runup5": -4.2,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-08-12"
