@@ -1,19 +1,12 @@
 {
-  "date": "2026-08-31",
+  "date": "2026-09-01",
   "signals": [
     {
-      "ticker": "3387.T",
-      "name": "クリエイト・レストランツ・ホールディングス",
+      "ticker": "4536.T",
+      "name": "参天製薬",
       "direction": "BUY",
-      "prev_close": 750.0,
-      "limit_price": 757
-    },
-    {
-      "ticker": "9842.T",
-      "name": "アークランズ",
-      "direction": "BUY",
-      "prev_close": 1834.0,
-      "limit_price": 1852
+      "prev_close": 1875.5,
+      "limit_price": 1894
     }
   ]
 }
