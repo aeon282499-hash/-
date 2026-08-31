@@ -529,6 +529,26 @@
       "close": 1267.5,
       "pnl": 0.48,
       "win": true
+    },
+    {
+      "date": "2026-08-31",
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "open": 746.0,
+      "close": 753.0,
+      "pnl": 0.94,
+      "win": true
+    },
+    {
+      "date": "2026-08-31",
+      "ticker": "9842.T",
+      "name": "アークランズ",
+      "direction": "BUY",
+      "open": 1829.0,
+      "close": 1854.0,
+      "pnl": 1.37,
+      "win": true
     }
   ]
 }

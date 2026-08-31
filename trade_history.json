@@ -1139,6 +1139,36 @@
       "close": 3500.0,
       "pnl": -0.4,
       "win": false
+    },
+    {
+      "date": "2026-08-31",
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "open": 746.0,
+      "close": 753.0,
+      "pnl": 0.94,
+      "win": true
+    },
+    {
+      "date": "2026-08-31",
+      "ticker": "9842.T",
+      "name": "アークランズ",
+      "direction": "BUY",
+      "open": 1829.0,
+      "close": 1854.0,
+      "pnl": 1.37,
+      "win": true
+    },
+    {
+      "date": "2026-08-31",
+      "ticker": "2685.T",
+      "name": "アンドエスティＨＤ",
+      "direction": "BUY",
+      "open": 3410.0,
+      "close": 3380.0,
+      "pnl": -0.88,
+      "win": false
     }
   ]
 }
