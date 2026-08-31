@@ -52,5 +52,20 @@
   "exec_date": "2026-08-24",
   "exec_open": 1107.0,
   "exec_close": 995.0
+ },
+ {
+  "ticker": "8237.T",
+  "code": "8237",
+  "name": "松屋",
+  "d0": "2026-08-28",
+  "close": 2762.0,
+  "r1": -9.0,
+  "volx": 2.04,
+  "runup": 72.7,
+  "tov_oku": 11.8,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
