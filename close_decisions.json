@@ -10,5 +10,32 @@
       "rsi": 47.9,
       "price": 3551.0
     }
+  },
+  "2026-08-31": {
+    "main:BUY:3387.T": {
+      "decision": "HOLD",
+      "rsi": 43.35,
+      "price": 752.0
+    },
+    "main:BUY:9842.T": {
+      "decision": "HOLD",
+      "rsi": 42.91,
+      "price": 1863.0
+    },
+    "main:BUY:2685.T": {
+      "decision": "HOLD",
+      "rsi": 41.85,
+      "price": 3385.0
+    },
+    "kiwami:BUY:3387.T": {
+      "decision": "HOLD",
+      "rsi": 43.35,
+      "price": 752.0
+    },
+    "kiwami:BUY:9842.T": {
+      "decision": "HOLD",
+      "rsi": 43.34,
+      "price": 1865.0
+    }
   }
 }
