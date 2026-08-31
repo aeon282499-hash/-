@@ -1022,7 +1022,9 @@ def monthly_report(today: date) -> bool:
     def _embed(rows: list[dict], *, sell: bool, funded: set | None,
                key: str = "main") -> dict | None:
         tier_size = TIER_FILES[key][2]
-        sfx = _tier_sfx(key)
+        # 月次だけは大資金にもラベルを付ける（2026-09-01 本人「大資金中資金小資金わかりやすく」。
+        # シグナル/週次は従来どおり _tier_sfx＝大資金無印のまま）。
+        sfx = "・" + TIER_FILES[key][3]
 
         def _cap_month(ym: str) -> int:
             return slots * tier_size

@@ -633,6 +633,38 @@ def test_monthly_era_capital():
     check("年間%は月利の和", f"合計: {'+' if ann >= 0 else ''}{ann:.1f}%" in d)
 
 
+def test_monthly_combo_september():
+    """2026-09-01 本人指示: 9月からは月次の本表を「①100万+②50万」の実弾構成にする。
+    ①分母は150万（拘束資金①+②）・②BUYブレイク紙玉は本表から除外して脚注へ。"""
+    import io
+    import contextlib
+    import json as _json
+    b = {"positions": [
+        {"status": "closed", "exit_type": "CLOSE", "signal_date": "2026-09-02",
+         "direction": "SELL", "ticker": "1111.T", "name": "九月①",
+         "pnl_yen": 30000, "pnl_pct": 3.0, "rank": 1},
+        {"status": "closed", "exit_type": "CLOSE", "signal_date": "2026-09-02",
+         "direction": "SELL", "ticker": "2222.T", "name": "九月②",
+         "pnl_yen": -10000, "pnl_pct": -2.0, "rank": 2},
+        {"status": "closed", "exit_type": "CLOSE", "signal_date": "2026-09-10",
+         "direction": "BUY", "ticker": "3333.T", "name": "紙BUY",
+         "pnl_yen": 50000, "pnl_pct": 5.0},
+    ], "expired": []}
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        dp.send_monthly(b, "2026-09", dry=True)
+    e = _json.loads(buf.getvalue())["embeds"][0]
+    d = e["description"]
+    combo_cap = dp.CAPITAL_BY_RANK[1] + dp.CAPITAL_BY_RANK[2]
+    mr9 = (30000 - 10000) / combo_cap * 100
+    check("9月分母は①+②の150万", combo_cap == 1_500_000
+          and f"月利+{mr9:.1f}%" in d)
+    check("9月はSELL①+②の2件だけ（BUY紙玉は本表外）", "`2026-09` 2件" in d)
+    check("BUY紙玉は脚注に出る", "BUYブレイク紙玉1件（+5.0万）" in d)
+    check("年間合計もBUY紙玉抜き", "合計: +1.3%（+2.0万円）" in d)
+    check("footerに9月体制を明記", "①100万+②50万" in e["footer"]["text"])
+
+
 def test_monthly_send_guard():
     b = _book_for_monthly()
     sent = []
@@ -712,6 +744,7 @@ def run_all():
                test_premium_pershare_line,
                test_common_stock_code_guard, test_borrow_grade,
                test_monthly_stats, test_monthly_era_capital,
+               test_monthly_combo_september,
                test_monthly_send_guard, test_monthly_no_data_no_send,
                test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
         print(f"\n▶ {fn.__name__}")

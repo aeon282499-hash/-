@@ -675,7 +675,10 @@ def _build_monthly_embed(positions: list[dict], today: date, tier: dict, *, sell
     desc += f"\n\n**{current_year}年合計: {a_sign}{annual_pct:.1f}%（{a_sign}{annual_yen/10000:.1f}万円）**"
 
     kind  = "空売り" if sell else "スイング"
-    title = f"{_tier_title_prefix(tier)}{'📉' if sell else '📈'} {current_year}年 月別・年間損益（{kind}）"
+    # 月次は大資金にもラベルを付ける（2026-09-01 本人「大資金中資金小資金わかりやすく」。
+    # シグナル系は従来どおり大資金無印＝_tier_title_prefix のまま触らない）。
+    prefix = f"{tier.get('emoji') or '🔴'}【{tier['label']}】"
+    title = f"{prefix}{'📉' if sell else '📈'} {current_year}年 月別・年間損益（{kind}）"
     if sell:
         color = 0x43A047 if annual_pct >= 0 else 0xFDD835
     else:
@@ -690,7 +693,8 @@ def _build_monthly_embed(positions: list[dict], today: date, tier: dict, *, sell
 
 
 def send_monthly_report(positions: list[dict], today: date,
-                        *, tier: dict | None = None) -> None:
+                        *, tier: dict | None = None,
+                        collect: list | None = None) -> None:
     tier = _tier(tier)
     if not any(p.get("status") == "closed" and p.get("pnl_pct") is not None
                for p in positions):
@@ -699,12 +703,16 @@ def send_monthly_report(positions: list[dict], today: date,
     if embed:
         payload = {"embeds": [embed]}
         _dispatch(payload, tier=tier, side="BUY")
-        _mirror_monthly(payload, tier, "BUY")
+        if collect is not None:
+            collect.append(embed)   # 月次chへは send_monthly_bundle が1通でまとめて送る
+        else:
+            _mirror_monthly(payload, tier, "BUY")
         print(f"[notifier-{tier['label']}] 月別・年間損益送信")
 
 
 def send_sell_monthly_report(positions: list[dict], today: date,
-                             *, tier: dict | None = None) -> None:
+                             *, tier: dict | None = None,
+                             collect: list | None = None) -> None:
     tier = _tier(tier)
     if not any(p.get("status") == "closed" and p.get("pnl_pct") is not None
                for p in positions):
@@ -713,8 +721,42 @@ def send_sell_monthly_report(positions: list[dict], today: date,
     if embed:
         payload = {"embeds": [embed]}
         _dispatch(payload, tier=tier, side="SELL")
-        _mirror_monthly(payload, tier, "SELL")
+        if collect is not None:
+            collect.append(embed)
+        else:
+            _mirror_monthly(payload, tier, "SELL")
         print(f"[notifier-{tier['label']}] SELL月別・年間損益送信")
+
+
+def send_monthly_bundle(embeds: list[dict]) -> None:
+    """月次専用chへ全階層をまとめて送る（2026-09-01 本人「何回も来てるわかりずらい」）。
+
+    従来は階層×方向ごとに最大6通に分かれていた。呼び出し側（main.py の階層ループ）が
+    大買→大売→中買→中売→小買→小売の順で collect に積むので、その順のまま1通に束ねる。
+    Discordの上限は1メッセージ10 embed・全embed合計6000字＝超える時だけ2通目に割る
+    （12月時点でも6 embed×約900字で収まる想定・ガードは保険）。
+    """
+    if not embeds:
+        return
+    if not PUBLIC_MONTHLY:
+        print("[notifier] 月次まとめ: MONTHLY webhook未設定 → スキップ")
+        return
+
+    def _size(e: dict) -> int:
+        return (len(str(e.get("title", ""))) + len(str(e.get("description", "")))
+                + len(str((e.get("footer") or {}).get("text", ""))))
+
+    batch: list[dict] = []
+    used, n_sent = 0, 0
+    for e in embeds:
+        if batch and (len(batch) >= 10 or used + _size(e) > 5500):
+            _post(PUBLIC_MONTHLY, {"embeds": batch}, "public-MONTHLY-bundle")
+            n_sent += 1
+            batch, used = [], 0
+        batch.append(e)
+        used += _size(e)
+    _post(PUBLIC_MONTHLY, {"embeds": batch}, "public-MONTHLY-bundle")
+    print(f"[notifier] 月次まとめ {len(embeds)}embed → {n_sent + 1}通で送信")
 
 
 # ── 週次レポート（金曜＝その週の最終営業日の引け後）──────────────

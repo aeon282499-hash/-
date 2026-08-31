@@ -1025,16 +1025,29 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         print(f"[paper] {ym} の確定なし → 月次は無送信")
         return False
 
+    # 2026-09〜は本表を実弾構成「①100万+②50万」そのものにする（2026-09-01 本人指示）。
+    # 帳簿は2026-08-31から CAPITAL_BY_RANK でrank別サイズ記帳済み＝円はそのまま実弾構成の理論値。
+    # 実弾対象外のBUYブレイク紙玉(年数回)は9月以降の本表から外し、あった年だけ脚注に出す。
+    COMBO_START = "2026-09"
+    buy_paper = [p for p in rows_all if p.get("direction") == "BUY"
+                 and p["signal_date"][:7] >= COMBO_START]
+    _buy_ids = {id(p) for p in buy_paper}
+    rows_all = [p for p in rows_all if id(p) not in _buy_ids]
+
     by_m: dict[str, list[dict]] = {}
     for p in rows_all:
         by_m.setdefault(p["signal_date"][:7], []).append(p)
 
-    capital = CAPITAL_PER_TRADE
-
     def _cap_of(month: str) -> int:
-        # 玉サイズの変遷（台帳の記帳サイズと一致させる）: 〜2026-07=50万 / 2026-08〜=現行定数。
-        # 8月はサイズ変更(8/5に100万・8/15に70万・8/18に100万復帰)を月中で跨ぐため月利%は概算（円は正確）。
-        return 500_000 if month < "2026-08" else CAPITAL_PER_TRADE
+        # 月利%の分母＝その月の拘束資金（台帳の記帳サイズと一致させる）:
+        # 〜2026-07=50万 / 2026-08=100万 / 2026-09〜=①100万+②50万の150万。
+        # 8月はサイズ変更(8/5に100万・8/15に70万・8/18に100万復帰・8/31に②50万)を
+        # 月中で跨ぐため月利%は概算（円は正確）。
+        if month < "2026-08":
+            return 500_000
+        if month < COMBO_START:
+            return CAPITAL_PER_TRADE
+        return CAPITAL_BY_RANK[1] + CAPITAL_BY_RANK[2]
 
     L = []
     for m in sorted(by_m):
@@ -1060,6 +1073,10 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
     L.append("")
     L.append(f"**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{total / 10000:.1f}万円）**"
              f"　①1番のみ **{r1_total / 10000:+.1f}万円**")
+    if buy_paper:
+        bp_yen = sum(int(p["pnl_yen"]) for p in buy_paper)
+        L.append(f"※BUYブレイク紙玉{len(buy_paper)}件（{bp_yen / 10000:+.1f}万）は"
+                 f"実弾対象外＝2026-09以降は本表の集計外")
 
     cum = cumulative_stats(book)["all"]
     color = 0x43A047 if total >= 0 else 0xE53935
@@ -1067,7 +1084,9 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"1玉{capital // 10000}万・寄成→引成・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜"
+        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成・紙の理論値"
+                           f"（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜・"
+                           f"月利%分母:〜7月50万/8月100万/9月〜150万）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:

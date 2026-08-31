@@ -255,7 +255,8 @@ def main() -> None:
 
     from screener import run_screener, yose_limit_price, MAX_SIGNALS
     from notifier import (send_signals, send_results, send_error, send_monthly_report,
-                          send_sell_signals, send_sell_results, send_sell_monthly_report)
+                          send_sell_signals, send_sell_results, send_sell_monthly_report,
+                          send_monthly_bundle)
     from tracker import (load_positions, save_positions, update_positions, add_signals_to_positions,
                          load_sell_positions, save_sell_positions)
 
@@ -277,6 +278,9 @@ def main() -> None:
         # ユーザー指示 2026-06-26）。月初に前月が確定した形で月1回届く。同日の二重実行は
         # 上の today_signals.json 日付ガードで弾かれるので重複配信にはならない。
         send_monthly = is_month_first_trading_day(today)
+        # 月次chへは階層ごとに送らず、全階層のembedをここに集めてループ後に1通で送る
+        # （2026-09-01 本人「月次レポート何回も来てるわかりずらい」＝最大6通→1通）。
+        monthly_embeds: list[dict] = []
         if send_monthly:
             print("[main] 月初営業日 → 月別・年間損益レポートを配信")
 
@@ -329,7 +333,7 @@ def main() -> None:
                 # 月次はポジションゼロの朝でも送る（closed履歴から集計できる）。
                 # 旧: if active の内側にあり、月初の朝にフラットな階層は月次が欠落する穴だった
                 # （2026-07-19修正・7/1は3階層とも保有があったため実害は未発生）。
-                send_monthly_report(positions, today, tier=tier)
+                send_monthly_report(positions, today, tier=tier, collect=monthly_embeds)
 
             sell_closed_today = []
             sell_still_open   = []
@@ -341,7 +345,7 @@ def main() -> None:
             if send_monthly and sell_positions:
                 # SELLの月次は「取引履歴が1件でもあれば」送る（現状SELLは全期間0件=帳簿が
                 # 空なので送らない＝ゼロ行レポートのノイズ回避。初トレード後の月から出る）。
-                send_sell_monthly_report(sell_positions, today, tier=tier)
+                send_sell_monthly_report(sell_positions, today, tier=tier, collect=monthly_embeds)
 
             # 階層別シグナル選定（通常版は買残回転0.8を維持＝従来とトレード完全一致）
             from screener import MARGIN_DAYS_COVER_MAX
@@ -429,6 +433,10 @@ def main() -> None:
 
         print(f"[main] today_signals.json ({len(first_tier_signals)}件) / "
               f"today_sell_signals.json ({len(first_tier_sell_signals)}件) 保存")
+
+        # 月次まとめ送信（大買→大売→中買→中売→小買→小売の順で1通・上の collect 参照）
+        if monthly_embeds:
+            send_monthly_bundle(monthly_embeds)
 
         # ── ④ Twitter（大資金分のみ・既存挙動）──────────────────
         # TWITTER_PAUSED: 2026-05-21 ユーザー指示で一時停止（PEADフィルタB案BT中）。再開時はコメント解除。
