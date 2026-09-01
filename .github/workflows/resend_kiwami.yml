@@ -4,12 +4,15 @@ name: 極み再配信（手動）
 # その時点のHEADの文面ロジックで、当日分の極み買い/売りを再送するだけの手動専用ジョブ。
 # 台帳・JSONには一切書かない（shadow_exitのsend関数は読むだけ）。コミットもしない。
 # 定期実行なし＝workflow_dispatchのみ。送信済みガードは意図的に通らない（再送が目的）。
+#
+# target=check は全Discord webhookの生死診断（GET＝投稿しない）。2026-09-02の
+# 「チャンネル複製→元ch削除でwebhook全滅」事故の被害確定用。
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: "buy / sell / both（既定buy＝売りは0件日が多くノイズになるため）"
+        description: "buy / sell / both / check（既定buy＝売りは0件日が多くノイズになるため）"
         required: false
         default: "buy"
 
@@ -30,11 +33,33 @@ jobs:
       DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
       # ↓target=checkの生死診断だけで使う（再送では触らない）
       DISCORD_WEBHOOK_SHADOW_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MONTHLY_URL }}
+      DISCORD_WEBHOOK_SHADOW_WEEKLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_WEEKLY_URL }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
+      DISCORD_WEBHOOK_BUY_MID_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_MID_URL }}
+      DISCORD_WEBHOOK_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_MID_URL }}
+      DISCORD_WEBHOOK_BUY_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_BUY_SMALL_URL }}
+      DISCORD_WEBHOOK_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_SMALL_URL }}
       DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
+      DISCORD_WEBHOOK_URL_DAY: ${{ secrets.DISCORD_WEBHOOK_URL_DAY }}
       DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
       DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      DISCORD_WEBHOOK_EARNINGS_MID_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_MID_URL }}
+      DISCORD_WEBHOOK_EARNINGS_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_SMALL_URL }}
+      DISCORD_WEBHOOK_PEAD_URL: ${{ secrets.DISCORD_WEBHOOK_PEAD_URL }}
+      DISCORD_WEBHOOK_GAPFADE_URL: ${{ secrets.DISCORD_WEBHOOK_GAPFADE_URL }}
+      DISCORD_WEBHOOK_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_URL_PUBLIC }}
+      DISCORD_WEBHOOK_SELL_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_SELL_URL_PUBLIC }}
+      DISCORD_WEBHOOK_CLOSE_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_CLOSE_URL_PUBLIC }}
+      DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_MONTHLY_URL_PUBLIC }}
+      DISCORD_WEBHOOK_URL_SECTOR_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME }}
+      DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL: ${{ secrets.DISCORD_WEBHOOK_URL_SECTOR_THEME_SELL }}
+      DISCORD_WEBHOOK_URL_THEME: ${{ secrets.DISCORD_WEBHOOK_URL_THEME }}
+      DISCORD_WEBHOOK_URL_1570: ${{ secrets.DISCORD_WEBHOOK_URL_1570 }}
+      DISCORD_WEBHOOK_URL_PREMIUM: ${{ secrets.DISCORD_WEBHOOK_URL_PREMIUM }}
+      DISCORD_WEBHOOK_TEST_URL: ${{ secrets.DISCORD_WEBHOOK_TEST_URL }}
+      KABUAI_DISCORD_WEBHOOK: ${{ secrets.KABUAI_DISCORD_WEBHOOK }}
       TARGET: ${{ inputs.target }}
       PYTHONIOENCODING: utf-8
 
@@ -60,20 +85,20 @@ jobs:
           if target == 'check':
               # webhookの生死診断: GETは投稿せずname/channel_idが返る（トークンは出さない）
               import requests
-              for env in ('DISCORD_WEBHOOK_SHADOW_URL', 'DISCORD_WEBHOOK_SHADOW_MID_URL',
-                          'DISCORD_WEBHOOK_SHADOW_SMALL_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_URL',
-                          'DISCORD_WEBHOOK_SHADOW_SELL_MID_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL',
-                          'DISCORD_WEBHOOK_SHADOW_MONTHLY_URL', 'DISCORD_WEBHOOK_URL',
-                          'DISCORD_WEBHOOK_SELL_URL', 'DISCORD_WEBHOOK_DAY_URL',
-                          'DISCORD_WEBHOOK_DAY_FRIENDS_URL', 'DISCORD_WEBHOOK_DAY_MONTHLY_URL'):
+              envs = sorted(k for k in os.environ if 'DISCORD' in k and 'WEBHOOK' in k)
+              for env in envs:
                   u = os.getenv(env, '').strip()
                   if not u:
-                      print(env, ': 未設定'); continue
-                  r = requests.get(u, timeout=10)
-                  info = r.json() if r.status_code == 200 else r.text[:80]
-                  ch = info.get('channel_id') if isinstance(info, dict) else info
-                  nm = info.get('name') if isinstance(info, dict) else ''
-                  print(env, ':', r.status_code, 'name=', nm, 'channel=', ch)
+                      print(f'{env:45s}: 未設定'); continue
+                  try:
+                      r = requests.get(u, timeout=10)
+                  except Exception as e:
+                      print(f'{env:45s}: ERROR {e}'); continue
+                  if r.status_code == 200:
+                      j = r.json()
+                      print(f'{env:45s}: 200 name={j.get(\"name\")} channel={j.get(\"channel_id\")}')
+                  else:
+                      print(f'{env:45s}: {r.status_code}')
               raise SystemExit(0)
           for key in se.NOTIFY_KEYS:
               if target in ('both', 'buy'):
