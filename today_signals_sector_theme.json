@@ -1,16 +1,28 @@
 {
-  "date": "2026-09-01",
-  "fetched_at": "2026-08-31 23:11:36",
-  "signals": [],
+  "date": "2026-09-02",
+  "fetched_at": "2026-09-01 23:11:39",
+  "signals": [
+    {
+      "ticker": "3964.T",
+      "name": "オークネット",
+      "rsi": 44.44,
+      "deviation": -1.95,
+      "turnover_oku": 30.440964,
+      "prev_close": 1403.0,
+      "in_sector_top": false,
+      "in_theme": true,
+      "sector": "情報･通信業"
+    }
+  ],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 5,
+    "raw_buy": 3,
     "earnings_skip": 0,
     "sector_pass": 0,
-    "theme_pass": 0,
-    "or_pass": 0,
+    "theme_pass": 1,
+    "or_pass": 1,
     "both_pass": 0,
-    "raw_sell": 0,
+    "raw_sell": 2,
     "sell_earnings_skip": 0,
     "sell_sector_pass": 0
   }
