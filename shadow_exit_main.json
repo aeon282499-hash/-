@@ -1050,7 +1050,7 @@
     "live_stop": 3.0,
     "entry_open": 746.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null
@@ -1068,7 +1068,7 @@
     "live_stop": 3.0,
     "entry_open": 1829.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null
@@ -1086,7 +1086,7 @@
     "live_stop": 3.0,
     "entry_open": 1025.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null

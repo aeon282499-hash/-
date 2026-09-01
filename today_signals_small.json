@@ -1,12 +1,12 @@
 {
-  "date": "2026-09-01",
+  "date": "2026-09-02",
   "signals": [
     {
-      "ticker": "4536.T",
-      "name": "参天製薬",
+      "ticker": "3964.T",
+      "name": "オークネット",
       "direction": "BUY",
-      "prev_close": 1875.5,
-      "limit_price": 1894
+      "prev_close": 1403.0,
+      "limit_price": 1417
     }
   ]
 }

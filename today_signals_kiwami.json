@@ -1,31 +1,31 @@
 {
-  "date": "2026-09-01",
+  "date": "2026-09-02",
   "signals": [
     {
-      "ticker": "7599.T",
-      "name": "ＩＤＯＭ",
+      "ticker": "1419.T",
+      "name": "タマホーム",
       "direction": "BUY",
-      "prev_close": 1251.0,
-      "limit_price": 1263,
-      "days_cover": 0.9632334206711878,
-      "rsi": 39.49,
-      "deviation": -2.8,
-      "vol_ratio": 3.21,
-      "range_ratio": 0.94,
-      "turnover": 4062489600.0
+      "prev_close": 2909.0,
+      "limit_price": 2938,
+      "days_cover": 0.9968898006756618,
+      "rsi": 41.99,
+      "deviation": -2.63,
+      "vol_ratio": 13.0,
+      "range_ratio": 2.05,
+      "turnover": 3556837200.0
     },
     {
-      "ticker": "4536.T",
-      "name": "参天製薬",
+      "ticker": "3964.T",
+      "name": "オークネット",
       "direction": "BUY",
-      "prev_close": 1875.5,
-      "limit_price": 1894,
-      "days_cover": 0.08500689781867775,
-      "rsi": 42.85,
-      "deviation": -1.72,
-      "vol_ratio": 2.64,
-      "range_ratio": 0.69,
-      "turnover": 5437192500.0
+      "prev_close": 1403.0,
+      "limit_price": 1417,
+      "days_cover": 0.5134415544723886,
+      "rsi": 44.44,
+      "deviation": -1.95,
+      "vol_ratio": 3.19,
+      "range_ratio": 0.82,
+      "turnover": 3044096400.0
     }
   ]
 }
