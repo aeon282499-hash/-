@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-08-31",
+ "last_signal_date": "2026-09-01",
  "positions": [
   {
    "ticker": "6521.T",
@@ -548,8 +548,14 @@
    "shares": 100,
    "rsi": 41.4,
    "runup5": -4.2,
-   "status": "pending",
-   "prev_close": NaN
+   "status": "closed",
+   "prev_close": NaN,
+   "entry": 3080.0,
+   "exit_date": "2026-09-01",
+   "exit": 3010.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -2.27,
+   "pnl_yen": -7000
   }
  ],
  "last_reminder_date": "2026-09-01"
