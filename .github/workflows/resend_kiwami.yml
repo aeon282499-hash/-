@@ -1,0 +1,58 @@
+name: 極み再配信（手動）
+
+# 2026-09-02 本人依頼「売買シグナル再配信できる？新バージョンでばれない奴」で新設。
+# その時点のHEADの文面ロジックで、当日分の極み買い/売りを再送するだけの手動専用ジョブ。
+# 台帳・JSONには一切書かない（shadow_exitのsend関数は読むだけ）。コミットもしない。
+# 定期実行なし＝workflow_dispatchのみ。送信済みガードは意図的に通らない（再送が目的）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "buy / sell / both（既定buy＝売りは0件日が多くノイズになるため）"
+        required: false
+        default: "buy"
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  resend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
+      DISCORD_WEBHOOK_SHADOW_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MID_URL }}
+      DISCORD_WEBHOOK_SHADOW_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SMALL_URL }}
+      DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
+      DISCORD_WEBHOOK_SHADOW_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_MID_URL }}
+      DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
+      TARGET: ${{ inputs.target }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 極み再送（当日JST分・読むだけ）
+        run: |
+          python -X utf8 -c "
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import shadow_exit as se
+          today = datetime.now(ZoneInfo('Asia/Tokyo')).date()
+          target = (os.getenv('TARGET') or 'buy').strip().lower()
+          for key in se.NOTIFY_KEYS:
+              if target in ('both', 'buy'):
+                  print(key, 'buy  ->', se.send_discord(today, key))
+              if target in ('both', 'sell'):
+                  print(key, 'sell ->', se.send_discord_sell(today, key))
+          "
