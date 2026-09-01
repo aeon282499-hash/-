@@ -696,16 +696,6 @@ def send_discord(today: date, key: str = "main") -> bool:
     # → 通常版と共通の銘柄も含む「極みの完全な買いリスト」を出す。台帳が枠内に取った玉を
     #   先頭に並べ、ヘッダで「#1〜#Nが枠内」と明示＝このチャンネルだけ見れば発注できる。
     #   8/4に嫌われた🟢⚪📌の行内マークは復活させない（並び順+ヘッダ1行で表現）。
-    reg_set: set = set()
-    try:
-        # 「極み帯」判定は通常版・大の採用リスト基準（中/小の通常版は値がさ除外で欠けるため）
-        if os.path.exists(TIER_FILES["main"][0]):
-            with open(TIER_FILES["main"][0], encoding="utf-8") as f:
-                _rp = json.load(f)
-            if _rp.get("date") == today_str:
-                reg_set = {s["ticker"] for s in _rp.get("signals", [])}
-    except Exception:
-        pass
     shown = [s for s in sigs if s["ticker"] not in holding]   # 保有中の再候補は二重建て防止で非表示
     # 台帳が今日枠内に記帳した玉を先頭に（＝実際に買う分）。以降は枠あふれ分。
     extras = ([s for s in shown if s["ticker"] in recorded]
@@ -720,16 +710,18 @@ def send_discord(today: date, key: str = "main") -> bool:
         except Exception:
             exit_str = "3営業日後"
         if n_in <= 0:
-            waku = "📦 **3枠満杯＝今夜の新規なし**（下は参考・決済で枠が空いたら次回から）"
+            waku = "📦 **枠満杯＝今夜の新規なし**（下は参考・決済で枠が空いたら次回から）"
         elif n_in == len(extras):
             waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄すべて枠内）"
         else:
             waku = f"📦 **#1〜#{n_in} を買う**（枠内{n_in}／#{n_in+1}以降は枠あふれ分＝見送り）"
+        # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】文面から
+        # 指標値(RSI/乖離/出来高/代金)・🔥極み帯マーク・損切/利確/保有ルールの%表記・
+        # 前日終値(寄指÷前日で寄指係数が割れる)を全部撤去。判定・台帳・JSONは無変更＝表示のみ。
         lines = [
             f"🎯 **寄指（寄付限定指値）**で発注・1件{size//10000}万円",
             "　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
-            f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
-            f"📅 最大3営業日・RSI≥50で早期決済・処分期限 **{exit_str}**",
+            f"📅 処分期限 **{exit_str}**",
             waku,
             "─" * 24,
         ]
@@ -739,38 +731,19 @@ def send_discord(today: date, key: str = "main") -> bool:
             lp = s.get("limit_price") or 0
             if pc > kiwami_px_cap(key):
                 # 値がさ玉は発注情報を出さない（100株でも1玉に収まらない＝買わない）
-                head = (f"#{i}（対象外・値がさ{kiwami_px_cap(key):,}円超＝1玉に収まらない・買わない） "
-                        f"{s.get('name', tk)} ({tk}) 前日{pc:,.0f}円")
+                head = f"#{i}（対象外・1玉に収まらない・買わない） {s.get('name', tk)} ({tk})"
             elif pc > 0:
                 shares = max(100, int(size / pc / 100) * 100)
-                head = (f"**#{i} {s.get('name', tk)}** ({tk}) 前日{pc:,.0f}円 "
-                        f"→ **寄指 {lp:,.0f}円** {shares:,}株/約{shares*pc/1e4:.0f}万")
+                head = (f"**#{i} {s.get('name', tk)}** ({tk}) "
+                        f"**寄指 {lp:,.0f}円** {shares:,}株/約{shares*lp/1e4:.0f}万")
             else:
                 head = f"**#{i} {s.get('name', tk)}** ({tk})"
-            parts = []
-            if s.get("rsi") is not None:
-                parts.append(f"RSI={s['rsi']:.1f}")
-            if s.get("deviation") is not None:
-                parts.append(f"乖離{s['deviation']:+.1f}%")
-            if s.get("vol_ratio") is not None and s.get("vol_ratio", 0) >= 2.0:
-                parts.append(f"出来高×{s['vol_ratio']:.1f}")
-            elif s.get("range_ratio") is not None:
-                parts.append(f"値幅/ATR={s['range_ratio']:.1f}")
-            if s.get("turnover"):
-                parts.append(f"代金{s['turnover']/1e8:.0f}億")
-            if s["ticker"] not in reg_set:
-                # 通常版に無い買残0.8-1.2帯の追加銘柄＝目立たせる（2026-08-28 本人指示）
-                head = head.replace(f"#{i} ", f"#{i} 🔥【極み帯】", 1)
-                parts.append("🔥極み帯＝通常版に出ない極み専用銘柄")
             lines.append(head)
-            if parts:
-                lines.append("   " + "・".join(parts))
             lines.append("")
         embeds.append({
             "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
-            "footer": {"text": "極みの完全リスト（通常版と共通の銘柄も含む）。「極み帯」=買残1.2帯の極み専用銘柄"},
         })
     sigs = extras   # 後段の0件判定はこのリスト基準
 
@@ -848,12 +821,13 @@ def send_discord_sell(today: date, key: str = "main") -> bool:
     if not sigs:
         return _shadow_post([{
             "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
-            "description": ("**本日の空売りシグナルはありません。**\n"
-                            "売りは日経25MA以下のときだけ出る設計で、年26件程度の希少シグナル。"),
+            "description": "**本日の空売りシグナルはありません。**",
             "color": _COLOR_INFO,
         }], env=env)
 
     # 極みは3枠まで。すでに保有中の玉があれば、その分だけ今日は建てられない。
+    # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】損切/利確の%と換算値・
+    # 発生条件(日経25MA)・BT成績・枠総数を文面から撤去。判定・台帳は無変更＝表示のみ。
     open_now = [r for r in load_sell_ledger() if r.get("status") in ("pending", "open")]
     free = max(SELL_MAX_SLOTS - len(open_now), 0)
     lines = []
@@ -862,23 +836,17 @@ def send_discord_sell(today: date, key: str = "main") -> bool:
         mark = "" if i < free else "　⏭️ **枠満杯で見送り**"
         if pc > kiwami_px_cap(key):
             lines.append(f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
-                         f"　❌ 値がさ{kiwami_px_cap(key):,}円超＝100株が1玉{size//10000}万に収まらない・建てない")
+                         f"　❌ 1玉に収まらない・建てない")
             continue
         shares = max(100, int(size / pc / 100) * 100) if pc > 0 else 100
         lines.append(
             f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
             f"　**{shares:,}株**/約{shares * pc / 1e4:.0f}万\n"
-            f"　翌寄り成行で空売り → 損切り **+{SELL_STOP_PCT}%**"
-            f"（{_price_str(pc * (1 + SELL_STOP_PCT / 100))}）/ "
-            f"利確 **-5.0%**（{_price_str(pc * 0.95)}）/ RSI50以下 or 最大3日{mark}")
-    slot_note = (f"\n\n📊 **枠 {len(open_now)}/{SELL_MAX_SLOTS} 使用中**"
-                 f"（あと{free}枠）" if open_now else "")
+            f"　翌寄り成行で空売り{mark}")
+    slot_note = f"\n\n📊 **あと{free}枠**" if open_now else ""
     return _shadow_post([{
         "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
-        "description": (f"**俺専用版・1件{size//10000}万円**。銘柄の選び方は通常版と同一だが、"
-                        f"**踏み上げ損切りが +{SELL_STOP_PCT}%**（通常版は+3.0%）。\n"
-                        "10年BTで PF1.54→1.60・勝ち年5/10→7/10・両期間改善。"
-                        f"同時保有は{SELL_MAX_SLOTS}枠まで。" + slot_note + "\n\n"
+        "description": (f"**1件{size//10000}万円**。" + slot_note + "\n\n"
                         + "\n\n".join(lines[:10])),
         "color": _COLOR_LOSE,
         "footer": {"text": "貸借区分・在庫はSBIの発注画面で最終確認すること"},
