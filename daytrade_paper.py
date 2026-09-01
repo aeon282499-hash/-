@@ -857,14 +857,11 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                          f"→ **寄り成行** {shares:,}株/約{amt / 1e4:.0f}万")
             else:
                 line1 = f"#{rk}（予備・撃たない） {name} ({ticker})"
-            parts = [f"前日+{p['daily_gain']:.0f}%",
-                     f"出来高×{p.get('vol_ratio', 0):.0f}",
-                     f"レンジ{p.get('range_pct', 0):.0f}%",
-                     f"貸借{sh['mark']}{reg}"]
-            if p.get("borrow"):
-                parts.append(p["borrow"])
+            # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」＝極みと同方針】
+            # 選定材料の行(前日+X%/出来高×/レンジ%/信用倍率grade)を撤去。執行に要る
+            # 貸借マーク・規制注記だけ残す。判定・台帳・友達ミラーの仕組みは無変更＝表示のみ。
             lines.append(line1)
-            lines.append("   " + "・".join(parts))
+            lines.append(f"   貸借{sh['mark']}{reg}")
             # 51単元(5,100株)以上の空売りは価格規制で成行が出せない（低位株の解禁で初めて
             # 実弾到達・2026-08-24 WIZE 27円=370単元が初例）。トリガー外(前日比-10%未満の
             # 下落なし)なら指値に価格制限は無いので、1円下の指値で寄り板寄せに参加すれば
@@ -902,14 +899,13 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
         lines += ["**⚠️ データ取得に失敗＝今日は判定不能**",
                   "　条件未達の見送りではない。次のトリガーで自動再試行する", ""]
     else:
+        # nogo_reason の1番手表示は閾値がそのまま文面に出るため撤去（2026-09-02・上と同指示）
         lines.append("本日は条件を満たす銘柄がありません（撃たない日は設計上約5割）。")
-        if picks and picks[0].get("nogo_reason"):
-            lines.append(f"　1番手: {picks[0]['nogo_reason']}")
         lines.append("")
 
     # ── 🟢 ライブ買いシグナル（レア） ──
     if buy_fires:
-        lines.append(f"**🟢 買いシグナル {len(buy_fires)}件（出来高10倍ブレイク）**")
+        lines.append(f"**🟢 買いシグナル {len(buy_fires)}件**")
         for s in buy_fires:
             lines.append(f"・{s.get('name', s['ticker'])}（{s['ticker']}）"
                          f"MAX指値¥{s.get('max_entry_price', 0):,.0f}で寄成買い→引け")
