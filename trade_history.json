@@ -1169,6 +1169,16 @@
       "close": 3380.0,
       "pnl": -0.88,
       "win": false
+    },
+    {
+      "date": "2026-09-01",
+      "ticker": "4536.T",
+      "name": "参天製薬",
+      "direction": "BUY",
+      "open": 1850.0,
+      "close": 1906.5,
+      "pnl": 3.05,
+      "win": true
     }
   ]
 }
