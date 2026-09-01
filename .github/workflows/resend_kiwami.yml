@@ -28,6 +28,13 @@ jobs:
       DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_MID_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
+      # ↓target=checkの生死診断だけで使う（再送では触らない）
+      DISCORD_WEBHOOK_SHADOW_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MONTHLY_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SELL_URL }}
+      DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
+      DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
+      DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
       TARGET: ${{ inputs.target }}
       PYTHONIOENCODING: utf-8
 
@@ -55,7 +62,10 @@ jobs:
               import requests
               for env in ('DISCORD_WEBHOOK_SHADOW_URL', 'DISCORD_WEBHOOK_SHADOW_MID_URL',
                           'DISCORD_WEBHOOK_SHADOW_SMALL_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_URL',
-                          'DISCORD_WEBHOOK_SHADOW_SELL_MID_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL'):
+                          'DISCORD_WEBHOOK_SHADOW_SELL_MID_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL',
+                          'DISCORD_WEBHOOK_SHADOW_MONTHLY_URL', 'DISCORD_WEBHOOK_URL',
+                          'DISCORD_WEBHOOK_SELL_URL', 'DISCORD_WEBHOOK_DAY_URL',
+                          'DISCORD_WEBHOOK_DAY_FRIENDS_URL', 'DISCORD_WEBHOOK_DAY_MONTHLY_URL'):
                   u = os.getenv(env, '').strip()
                   if not u:
                       print(env, ': 未設定'); continue
