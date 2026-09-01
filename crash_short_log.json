@@ -65,6 +65,24 @@
   "tov_oku": 11.8,
   "ma5_up": true,
   "loanable": "○",
+  "result_pct": 15.154,
+  "result_yen": 45462,
+  "exec_date": "2026-08-31",
+  "exec_open": 2666.0,
+  "exec_close": 2262.0
+ },
+ {
+  "ticker": "278A.T",
+  "code": "278A",
+  "name": "Ｔｅｒｒａ　Ｄｒｏｎｅ",
+  "d0": "2026-08-31",
+  "close": 17770.0,
+  "r1": -17.81,
+  "volx": 7.05,
+  "runup": 105.1,
+  "tov_oku": 408.7,
+  "ma5_up": true,
+  "loanable": "×",
   "result_pct": null,
   "result_yen": null
  }
