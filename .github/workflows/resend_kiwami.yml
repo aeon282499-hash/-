@@ -50,6 +50,21 @@ jobs:
           import shadow_exit as se
           today = datetime.now(ZoneInfo('Asia/Tokyo')).date()
           target = (os.getenv('TARGET') or 'buy').strip().lower()
+          if target == 'check':
+              # webhookの生死診断: GETは投稿せずname/channel_idが返る（トークンは出さない）
+              import requests
+              for env in ('DISCORD_WEBHOOK_SHADOW_URL', 'DISCORD_WEBHOOK_SHADOW_MID_URL',
+                          'DISCORD_WEBHOOK_SHADOW_SMALL_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_URL',
+                          'DISCORD_WEBHOOK_SHADOW_SELL_MID_URL', 'DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL'):
+                  u = os.getenv(env, '').strip()
+                  if not u:
+                      print(env, ': 未設定'); continue
+                  r = requests.get(u, timeout=10)
+                  info = r.json() if r.status_code == 200 else r.text[:80]
+                  ch = info.get('channel_id') if isinstance(info, dict) else info
+                  nm = info.get('name') if isinstance(info, dict) else ''
+                  print(env, ':', r.status_code, 'name=', nm, 'channel=', ch)
+              raise SystemExit(0)
           for key in se.NOTIFY_KEYS:
               if target in ('both', 'buy'):
                   print(key, 'buy  ->', se.send_discord(today, key))
