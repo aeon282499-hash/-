@@ -35,3 +35,4 @@ test_universe.py
 tachibana_history*.pkl
 tachibana_snapshots/
 _tachibana_history_fetch.log
+_jsf_daily.pkl
