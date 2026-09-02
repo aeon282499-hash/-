@@ -61,6 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("-v", "--verbose", action="store_true")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    sub.add_parser("check", help="鍵ファイルの配置チェック（通信しない）")
     sub.add_parser("login")
     sub.add_parser("logout")
     sub.add_parser("status")
@@ -80,6 +81,23 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.DEBUG if a.verbose else logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     tc = TachibanaClient(demo=a.demo)
     try:
+        if a.cmd == "check":
+            d = tc.state_dir
+            ok = True
+            for name, alt in (("e_api_authid.txt", ("authid.txt",)), ("e_api_private_key.pem", ("e_api_private_key.der", "private_key.pem", "private_key.der"))):
+                found = [n for n in (name, *alt) if (d / n).exists()]
+                print(("OK  " if found else "NG  ") + f"{name}: " + (", ".join(found) if found else "見つかりません"))
+                ok &= bool(found)
+            if ok:
+                try:
+                    aid = tc.auth_id; tc.private_key
+                    print(f"OK  認証ID読込 {aid[:3]}***{aid[-3:]} / 秘密鍵の解析OK ({tc.private_key.key_size} bit)")
+                    print("次: 登録電話から認証電話番号へ発信 → 3分以内に  python -m tachibana.cli login")
+                except Exception as e:  # noqa: BLE001
+                    print("NG  読込失敗:", e); ok = False
+            else:
+                print(f"→ e支店Web「お客様情報→設定情報→e支店・API利用設定」でDLした2ファイルを {d} に置いてください（手順PDFは同フォルダ）")
+            return 0 if ok else 1
         if a.cmd == "login":
             info = tc.login()
             print("ログイン成功 / 仮想URL保存:", tc.session_file)
