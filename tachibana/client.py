@@ -435,7 +435,7 @@ class TachibanaClient:
     def date_info(self, day_key: str = "001") -> dict[str, Any]:
         """日付情報（001=当日基準, 002=翌日基準/夕場）。翌1〜10営業日・受渡日を含む。"""
         r = self.call("CLMStkGetDateZyouhou")
-        rows = r.get("aCLMDateZyouhou") or []
+        rows = r.get("aCLMStkDateZyouhou") or r.get("aCLMDateZyouhou") or []  # 実応答はaCLMStk…（マニュアル表記と相違）
         for row in rows:
             if row.get("sDayKey") == day_key:
                 return row
