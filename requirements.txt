@@ -10,3 +10,4 @@ xlrd>=2.0.1
 streamlit>=1.40.0
 curl_cffi>=0.6.0
 matplotlib>=3.7.0
+cryptography>=42.0.0

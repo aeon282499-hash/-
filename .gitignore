@@ -30,3 +30,6 @@ check_bt*.py
 debug_*.py
 test_universe.py
 .tachibana/
+
+# 立花API 取得データ（大きい・ローカル専用）
+tachibana_history*.pkl
