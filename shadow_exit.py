@@ -697,24 +697,28 @@ def send_discord(today: date, key: str = "main") -> bool:
     #   先頭に並べ、ヘッダで「#1〜#Nが枠内」と明示＝このチャンネルだけ見れば発注できる。
     #   8/4に嫌われた🟢⚪📌の行内マークは復活させない（並び順+ヘッダ1行で表現）。
     shown = [s for s in sigs if s["ticker"] not in holding]   # 保有中の再候補は二重建て防止で非表示
-    # 台帳が今日枠内に記帳した玉を先頭に（＝実際に買う分）。以降は枠あふれ分。
-    extras = ([s for s in shown if s["ticker"] in recorded]
-              + [s for s in shown if s["ticker"] not in recorded])
-    n_in = sum(1 for s in extras if s["ticker"] in recorded)
+    # 【2026-09-02 本人指示「3銘柄まで出せばいい」】台帳が今日枠内に記帳した玉（＝実際に買う分・
+    # 最大MAX_SLOTS）だけを出す。枠あふれ分・値がさ見送り分は文面に出さない（順位に1件あたりの
+    # 予測力が無いこと＝どれを取っても期待値同じ、を10年で再確認した上での簡素化・9/2 7軸追試も全棄却）。
+    # 判定・台帳・JSONは無変更＝BTパリティ維持。枠満杯の夜は「新規なし」だけを1行で出す。
+    extras = [s for s in shown if s["ticker"] in recorded]
+    n_in = len(extras)
+    slot_full = bool(shown) and n_in == 0
 
-    if extras:
+    if slot_full:
+        embeds.append({
+            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — 枠満杯",
+            "description": "📦 **枠満杯＝今夜の新規なし**（決済で枠が空いたら次回から）",
+            "color": _COLOR_INFO,
+        })
+    elif extras:
         size = TIER_FILES[key][2]
         try:
             from notifier import _nth_trading_day
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
         except Exception:
             exit_str = "3営業日後"
-        if n_in <= 0:
-            waku = "📦 **枠満杯＝今夜の新規なし**（下は参考・決済で枠が空いたら次回から）"
-        elif n_in == len(extras):
-            waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄すべて枠内）"
-        else:
-            waku = f"📦 **#1〜#{n_in} を買う**（枠内{n_in}／#{n_in+1}以降は枠あふれ分＝見送り）"
+        waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄・枠内）" if n_in > 1 else "📦 **#1 を買う**（枠内）"
         # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】文面から
         # 指標値(RSI/乖離/出来高/代金)・🔥極み帯マーク・保有ルール行・
         # 前日終値(寄指÷前日で寄指係数が割れる)を撤去。判定・台帳・JSONは無変更＝表示のみ。
@@ -747,7 +751,7 @@ def send_discord(today: date, key: str = "main") -> bool:
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
         })
-    sigs = extras   # 後段の0件判定はこのリスト基準
+    sigs = extras or (shown if slot_full else [])   # 後段の0件判定（枠満杯の夜は「シグナルなし」にしない）
 
     # ② 影台帳で今日決済された玉（本番と判定が割れたものを明示）
     settled = []
@@ -830,12 +834,22 @@ def send_discord_sell(today: date, key: str = "main") -> bool:
     # 極みは3枠まで。すでに保有中の玉があれば、その分だけ今日は建てられない。
     # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】損切/利確の%と換算値・
     # 発生条件(日経25MA)・BT成績・枠総数を文面から撤去。判定・台帳は無変更＝表示のみ。
-    open_now = [r for r in load_sell_ledger() if r.get("status") in ("pending", "open")]
+    # 【2026-09-02 本人指示「3銘柄まで出せばいい・売りも同じく」】台帳(kiwami_sell.json)が今日枠内に
+    # 記帳した玉だけを出す（＝実際に建てる分・最大SELL_MAX_SLOTS）。枠満杯で見送った玉は文面に出さない。
+    sell_rows = load_sell_ledger()
+    open_now = [r for r in sell_rows if r.get("status") in ("pending", "open")]
+    recorded = {r["ticker"] for r in sell_rows if r.get("signal_date") == today_str}
+    shown = [s for s in sigs if s["ticker"] in recorded]
+    if not shown:
+        return _shadow_post([{
+            "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
+            "description": "📦 **枠満杯＝今夜の新規なし**（決済で枠が空いたら次回から）",
+            "color": _COLOR_INFO,
+        }], env=env)
     free = max(SELL_MAX_SLOTS - len(open_now), 0)
     lines = []
-    for i, s in enumerate(sigs):
+    for s in shown:
         pc = s.get("prev_close") or 0
-        mark = "" if i < free else "　⏭️ **枠満杯で見送り**"
         if pc > kiwami_px_cap(key):
             lines.append(f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
                          f"　❌ 1玉に収まらない・建てない")
@@ -844,8 +858,8 @@ def send_discord_sell(today: date, key: str = "main") -> bool:
         lines.append(
             f"**{s.get('name', s['ticker'])}**（{s['ticker'][:4]}）前日終値 {_price_str(pc)}"
             f"　**{shares:,}株**/約{shares * pc / 1e4:.0f}万\n"
-            f"　翌寄り成行で空売り{mark}")
-    slot_note = f"\n\n📊 **あと{free}枠**" if open_now else ""
+            f"　翌寄り成行で空売り")
+    slot_note = f"\n\n📊 **あと{free}枠**" if free < SELL_MAX_SLOTS else ""
     return _shadow_post([{
         "title": f"⚡ 売買シグナル極み{_tier_sfx(key)}（売り）— {today_str}",
         "description": (f"**1件{size//10000}万円**。" + slot_note + "\n\n"
