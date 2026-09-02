@@ -559,6 +559,16 @@
       "close": 1906.5,
       "pnl": 3.05,
       "win": true
+    },
+    {
+      "date": "2026-09-02",
+      "ticker": "3964.T",
+      "name": "オークネット",
+      "direction": "BUY",
+      "open": 1389.0,
+      "close": 1350.0,
+      "pnl": -2.81,
+      "win": false
     }
   ]
 }
