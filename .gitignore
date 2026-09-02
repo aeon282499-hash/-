@@ -33,3 +33,5 @@ test_universe.py
 
 # 立花API 取得データ（大きい・ローカル専用）
 tachibana_history*.pkl
+tachibana_snapshots/
+_tachibana_history_fetch.log
