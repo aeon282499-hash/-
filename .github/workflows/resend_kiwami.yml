@@ -61,6 +61,7 @@ jobs:
       DISCORD_WEBHOOK_TEST_URL: ${{ secrets.DISCORD_WEBHOOK_TEST_URL }}
       KABUAI_DISCORD_WEBHOOK: ${{ secrets.KABUAI_DISCORD_WEBHOOK }}
       TARGET: ${{ inputs.target }}
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}   # target=fadeの再計算で使用
       PYTHONIOENCODING: utf-8
 
     steps:
@@ -99,6 +100,23 @@ jobs:
                       print(f'{env:45s}: 200 name={j.get(\"name\")} channel={j.get(\"channel_id\")}')
                   else:
                       print(f'{env:45s}: {r.status_code}')
+              raise SystemExit(0)
+          if target == 'fade':
+              # フェード再送: 当日分を再計算して配信だけやり直す。settle/record/save_bookは
+              # 呼ばない＝台帳・日付ガード無変更（朝8:05便が既に記帳済みの前提）。
+              import daytrade_paper as dp
+              data = dp._fetch_all(today)
+              tok = dp._jq_token()
+              iss = dp.fetch_iss_map(tok)
+              dp._LAST_ISS = iss
+              ratio = dp.fetch_ratio_map(tok)
+              alert = dp.fetch_alert_map(tok)
+              banned = []
+              picks = dp.daily_top_fades(data, today, iss, ratio_map=ratio,
+                                         alert_map=alert, excluded_out=banned)
+              stats = dp.cumulative_stats(dp.load_book())
+              dp.send_report([], [], picks, stats, today, dry=False, banned=banned)
+              print('fade resend done / picks:', [(p.get(\"ticker\"), p.get(\"verdict\")) for p in picks])
               raise SystemExit(0)
           for key in se.NOTIFY_KEYS:
               if target in ('both', 'buy'):
