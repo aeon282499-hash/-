@@ -29,3 +29,4 @@ bt_range_*.log
 check_bt*.py
 debug_*.py
 test_universe.py
+.tachibana/
