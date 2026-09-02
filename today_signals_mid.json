@@ -1,12 +1,33 @@
 {
-  "date": "2026-09-02",
+  "date": "2026-09-03",
   "signals": [
     {
-      "ticker": "3964.T",
-      "name": "オークネット",
+      "ticker": "8830.T",
+      "name": "住友不動産",
       "direction": "BUY",
-      "prev_close": 1403.0,
-      "limit_price": 1417
+      "prev_close": 3300.0,
+      "limit_price": 3330
+    },
+    {
+      "ticker": "1812.T",
+      "name": "鹿島建設",
+      "direction": "BUY",
+      "prev_close": 4881.0,
+      "limit_price": 4925
+    },
+    {
+      "ticker": "4403.T",
+      "name": "日油",
+      "direction": "BUY",
+      "prev_close": 2690.0,
+      "limit_price": 2716
+    },
+    {
+      "ticker": "3391.T",
+      "name": "ツルハホールディングス",
+      "direction": "BUY",
+      "prev_close": 2228.5,
+      "limit_price": 2250
     }
   ]
 }

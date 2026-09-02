@@ -1,31 +1,70 @@
 {
-  "date": "2026-09-02",
+  "date": "2026-09-03",
   "signals": [
     {
-      "ticker": "1419.T",
-      "name": "タマホーム",
+      "ticker": "8830.T",
+      "name": "住友不動産",
       "direction": "BUY",
-      "prev_close": 2909.0,
-      "limit_price": 2938,
-      "days_cover": 0.9968898006756618,
-      "rsi": 41.99,
-      "deviation": -2.63,
-      "vol_ratio": 13.0,
-      "range_ratio": 2.05,
-      "turnover": 3556837200.0
+      "prev_close": 3300.0,
+      "limit_price": 3330,
+      "days_cover": 0.48113460407706754,
+      "rsi": 37.8,
+      "deviation": -3.92,
+      "vol_ratio": 1.1,
+      "range_ratio": 1.57,
+      "turnover": 10765989000.0
     },
     {
-      "ticker": "3964.T",
-      "name": "オークネット",
+      "ticker": "1812.T",
+      "name": "鹿島建設",
       "direction": "BUY",
-      "prev_close": 1403.0,
-      "limit_price": 1417,
-      "days_cover": 0.5134415544723886,
-      "rsi": 44.44,
-      "deviation": -1.95,
-      "vol_ratio": 3.19,
-      "range_ratio": 0.82,
-      "turnover": 3044096400.0
+      "prev_close": 4881.0,
+      "limit_price": 4925,
+      "days_cover": 0.5442548386148919,
+      "rsi": 41.71,
+      "deviation": -2.22,
+      "vol_ratio": 1.06,
+      "range_ratio": 1.69,
+      "turnover": 12911184000.0
+    },
+    {
+      "ticker": "4403.T",
+      "name": "日油",
+      "direction": "BUY",
+      "prev_close": 2690.0,
+      "limit_price": 2716,
+      "days_cover": 0.3524850279886059,
+      "rsi": 43.12,
+      "deviation": -2.39,
+      "vol_ratio": 1.04,
+      "range_ratio": 1.57,
+      "turnover": 2455163450.0
+    },
+    {
+      "ticker": "4204.T",
+      "name": "積水化学工業",
+      "direction": "BUY",
+      "prev_close": 2601.0,
+      "limit_price": 2627,
+      "days_cover": 0.9648537462864745,
+      "rsi": 44.02,
+      "deviation": -2.02,
+      "vol_ratio": 0.95,
+      "range_ratio": 1.52,
+      "turnover": 3742457650.0
+    },
+    {
+      "ticker": "3391.T",
+      "name": "ツルハホールディングス",
+      "direction": "BUY",
+      "prev_close": 2228.5,
+      "limit_price": 2250,
+      "days_cover": 0.1757689393574932,
+      "rsi": 32.79,
+      "deviation": -6.86,
+      "vol_ratio": 2.32,
+      "range_ratio": 1.63,
+      "turnover": 5912773200.0
     }
   ]
 }
