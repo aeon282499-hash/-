@@ -42,6 +42,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # 2026-09-04監査: checkoutのSHAは起動時固定で、直前便のpushを見ずに同日ガードを素通り＋push競合で15日連続保存失敗していた
+      - name: 最新のマーカーと台帳を取り込む
+        run: git pull --rebase origin main || true
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'

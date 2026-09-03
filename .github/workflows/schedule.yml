@@ -36,8 +36,8 @@ jobs:
           # 「今日の0:30 UTC」だと過去になり待機ゼロで寄り前に叩いてしまう（実際に踏んだ）。
           # 次に来る 0:30 UTC を目標にする。
           NOW=$(date -u +%s)
-          TARGET=$(date -u -d 'today 00:32' +%s)   # 9:32 JST（2026-09-04: Yahooの当日足4本が9:31以降でないと揃わない）
-          [ "$TARGET" -le "$NOW" ] && TARGET=$(date -u -d 'tomorrow 00:32' +%s)
+          TARGET=$(date -u -d 'today 00:47' +%s)   # 9:47 JST（2026-09-04: 当日15分足4本=9:45確定後でないと全銘柄が足不足で候補0になる）
+          [ "$TARGET" -le "$NOW" ] && TARGET=$(date -u -d 'tomorrow 00:47' +%s)
           WAIT=$(( TARGET - NOW ))
           echo "現在 $(date -u +'%m/%d %H:%M') UTC / 目標 $(date -u -d "@$TARGET" +'%m/%d %H:%M') UTC (=9:30 JST)"
           if [ "$WAIT" -gt 0 ] && [ "$WAIT" -le 14400 ]; then

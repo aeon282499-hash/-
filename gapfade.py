@@ -81,8 +81,9 @@ SEND_MARKER = "gapfade_last_send.json"
 #   ②締切(=エントリー時刻)を過ぎたら、撃てと言わずに「遅延・本日見送り」として送る
 # 恒久解は cron-job.org → Cloudflare Worker → workflow_dispatch（他システムでは毎日
 # 8:05きっかりに着弾している実績あり）。本人のWorker登録が済むまでの防御がここ。
-EARLIEST_HM = "09:31"       # 2026-09-04監査: daily_frames は当日4本(9:00/9:15/9:30/現在値)必要＝9:31未満で取った銘柄は
-                            # 全部「足不足」で見えず、「該当なし」を送ってマーカーを消費していた（9/2 9:26開始→候補0）
+EARLIEST_HM = "09:46"       # 2026-09-04監査: daily_frames は当日の15分足4本(9:00/9:15/9:30/9:45)が必要。
+                            # 9:30便は7/7日で候補0→「該当なし」を送りマーカーを消費し、直後の本物の候補(8/27:4本 8/28:4本 8/31:2本)を
+                            # 「配信済み」で握り潰していた。エントリーは12:30なので9:46開始でも十分間に合う。
 DEADLINE_HM = "12:20"       # 後場寄り12:30に成行を仕込める最終ライン（10分前）
 
 
@@ -375,6 +376,10 @@ if __name__ == "__main__":
     except Exception:
         _n_targets = 0
     no_px = bool(_n_targets) and len(store) < 0.5 * _n_targets   # 2026-09-04監査: Yahoo障害で半分以上取れない＝判定不能
+    _today_s = datetime.now(JST).strftime("%Y-%m-%d")
+    _cov = (sum(1 for _per in frames.values() if _today_s in _per) / len(frames)) if frames else 0.0
+    if frames and _cov < 0.5:                       # 当日の足が半分の銘柄にも無い＝早すぎ/データ遅延＝判定不能（マーカー無し）
+        print(f"[guard] 当日足のある銘柄 {_cov*100:.0f}% <50% → 判定不能扱い（該当なしとは別）"); no_px = True
     if no_px:
         print(f"[guard] 価格取得 {len(store)}/{_n_targets} 銘柄＝判定不能（該当なしとは別・マーカーを立てない）")
     iss = _load_iss()

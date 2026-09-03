@@ -45,7 +45,7 @@ CAND = [{"ticker": "1234.T", "gap": 5.2, "open": 2000.0, "shares": 200},
         {"ticker": "5678.T", "gap": 3.8, "open": 1500.0, "shares": 300}]
 
 print("\n■ ① timing_state の境界")
-for hm, want in (("08:00", "early"), ("09:30", "early"), ("09:31", "ok"), ("11:30", "ok"),
+for hm, want in (("08:00", "early"), ("09:45", "early"), ("09:46", "ok"), ("11:30", "ok"),
                  ("12:20", "ok"), ("12:21", "late"), ("12:56", "late"), ("15:00", "late")):
     got = G.timing_state(hm)
     ok(got == want, f"{hm} → {got}（期待 {want}）")
@@ -74,7 +74,7 @@ ok("本日は見送りです" in b and "該当なし" in b,
    "late・候補ゼロ＝遅延を告げたうえで該当なしも伝える")
 
 print("\n■ ⑤ 定数")
-ok(G.EARLIEST_HM == "09:31", "寄り値の確定待ちは9:31（当日足4本が揃う時刻・2026-09-04）")
+ok(G.EARLIEST_HM == "09:46", "当日15分足4本の確定待ちは9:46（2026-09-04）")
 ok(G.DEADLINE_HM == "12:20", "締切は12:20（後場寄り12:30の10分前）")
 ok(G.ENTRY_HM == "12:30", "エントリー時刻は12:30のまま（ロジック無変更）")
 
