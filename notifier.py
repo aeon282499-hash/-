@@ -617,7 +617,9 @@ def _slot_funded(positions: list[dict], nslots: int = 5) -> set[int]:
       損益に中立 → entry日時順の処理で不偏。
     """
     FAR = "9999-12-31"
-    pos = [p for p in positions if p.get("entry_date")]
+    # expired(寄指不成立=ノーポジ)は資金を使っていないので枠を占有させない（2026-09-03監査: 6/23の4527等
+    # 決済済み勝ち玉が月次から落ちていた）
+    pos = [p for p in positions if p.get("entry_date") and p.get("status") != "expired"]
     order = sorted(range(len(pos)),
                    key=lambda i: (pos[i]["entry_date"], pos[i].get("exit_date") or FAR))
     open_exits: list[str] = []
@@ -645,7 +647,8 @@ def _build_monthly_embed(positions: list[dict], today: date, tier: dict, *, sell
         if ym:
             monthly[ym].append(p["pnl_pct"])
 
-    current_year = str(today.year)
+    # 月次は「前月まで」を月初に出すので、1月の配信は前年(12月分＋年間)を対象にする（2026-09-03監査）
+    current_year = str((today.replace(day=1) - timedelta(days=1)).year)
     year_months  = {ym: pnls for ym, pnls in monthly.items() if ym.startswith(current_year)}
     if not year_months:
         return None

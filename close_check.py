@@ -153,6 +153,31 @@ def _oco_fill(direction: str, entry_open: float | None,
     return None
 
 
+def _oco_boundary(direction: str, entry_open, day_high, day_low, stop_pct: float = 3.0) -> str | None:
+    """_oco_fill が「未約定」とした後に、誤差幅(eps)の内側で水準に触れていたら警告文を返す。
+    帳簿(翌朝・J-Quants公式高安・誤差幅なし)は約定として記帳しうるので、本人に口座確認を促す。"""
+    if not entry_open or day_high is None or day_low is None:
+        return None
+    s = stop_pct / 100
+    if direction == "BUY":
+        stop, tp = entry_open * (1 - s), entry_open * 1.05
+        if day_low <= stop:
+            return (f"⚠️ 損切りライン{stop:,.0f}円に到達の可能性（ザラ場安値{day_low:,.0f}円・誤差幅内）"
+                    f"→ 口座の約定履歴を確認。約定済みなら帳簿は-{stop_pct:.1f}%で記帳")
+        if day_high >= tp:
+            return (f"⚠️ 利確ライン{tp:,.0f}円に到達の可能性（ザラ場高値{day_high:,.0f}円・誤差幅内）"
+                    f"→ 口座の約定履歴を確認。約定済みなら帳簿は+5%で記帳")
+    else:
+        stop, tp = entry_open * (1 + s), entry_open * 0.95
+        if day_high >= stop:
+            return (f"⚠️ 損切りライン{stop:,.0f}円に到達の可能性（ザラ場高値{day_high:,.0f}円・誤差幅内）"
+                    f"→ 口座の約定履歴を確認。約定済みなら帳簿は-{stop_pct:.1f}%で記帳")
+        if day_low <= tp:
+            return (f"⚠️ 利確ライン{tp:,.0f}円に到達の可能性（ザラ場安値{day_low:,.0f}円・誤差幅内）"
+                    f"→ 口座の約定履歴を確認。約定済みなら帳簿は+5%で記帳")
+    return None
+
+
 def collect_targets(open_positions: list[dict], direction: str, today: date,
                     historical_data: dict) -> tuple[list[dict], list[dict]]:
     """指定directionのオープンポジションから大引け処分対象を抽出する。
@@ -175,13 +200,17 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
     targets = []
     checked = []
 
+    warn = None
+
     def _checked(note=None, rsi=None, price=None, hold=None):
         checked.append({
             "ticker": ticker, "name": name, "today_hold": hold,
             "rsi_now": rsi, "current_price": price, "note": note,
+            "warn": warn,
         })
 
     for pos in open_positions:
+        warn = None
         ticker = pos["ticker"]
         name = pos["name"]
         today_hold = calc_today_hold_day(pos, today)
@@ -242,6 +271,13 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
         # stop_pct は極みの玉だけが持つ（通常版のpositionsには無い→既定3.0＝従来どおり）
         fill = _oco_fill(direction, entry_open, day_high, day_low,
                          stop_pct=float(pos.get("stop_pct") or 3.0))
+        # 境界（誤差幅内で水準に触れた）は従来どおり未約定扱いで処分判定に回すが、警告を1行添える。
+        # 2026-09-02 オークネット: 公式安値1,347≤損切り1,347.33で帳簿はSTOP、14:55通知は「保有継続」
+        # のまま＝本人は損切り済みと知らずに保有し続けた（2026-09-03監査）。
+        warn = _oco_boundary(direction, entry_open, day_high, day_low,
+                             stop_pct=float(pos.get("stop_pct") or 3.0)) if not fill else None
+        if warn:
+            print(f"  [OCO] {ticker} 境界: {warn}")
         if fill:
             verb = "利確" if fill["kind"] == "TP" else "損切"
             act  = "買戻し" if direction == "SELL" else "決済"
@@ -267,6 +303,7 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 "rsi_now":       None,
                 "current_price": None,
                 "entry_open":    entry_open,
+                "warn":          warn,
             })
             continue
 
@@ -307,6 +344,7 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
                 "rsi_now":       rsi_now,
                 "current_price": current_price,
                 "entry_open":    entry_open,
+                "warn":          warn,
             })
         else:
             _checked(rsi=rsi_now, price=current_price, hold=today_hold)
@@ -516,8 +554,9 @@ def main():
         sell_targets, sell_checked = collect_targets(sell_open, "SELL", today, historical_data)
         # 14:55判定を記録（翌朝の帳簿確定がこれに従う・close_decisions.py・2026-08-28）
         import close_decisions
-        close_decisions.record(today, "main", "BUY",  buy_targets,  buy_checked)
-        close_decisions.record(today, "main", "SELL", sell_targets, sell_checked)
+        _scope = "main" if key == "main" else f"main_{key}"   # 階層別キー（2026-09-03監査: 上書き防止）
+        close_decisions.record(today, _scope, "BUY",  buy_targets,  buy_checked)
+        close_decisions.record(today, _scope, "SELL", sell_targets, sell_checked)
 
         # 対象ありは処分指示、対象なしでも保有銘柄があれば「保有継続」確認を送る
         # （無音だと故障と区別できない・2026-06-12の問い合わせを受けて2026-06-13追加）

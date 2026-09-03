@@ -76,6 +76,7 @@ jobs:
       DISCORD_WEBHOOK_SHADOW_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_URL }}
       DISCORD_WEBHOOK_SHADOW_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_MID_URL }}
       DISCORD_WEBHOOK_SHADOW_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SMALL_URL }}
+      DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}   # 2026-09-03監査: 欠けていて大の売りchに15時判定が一度も出ていなかった
       DISCORD_WEBHOOK_SHADOW_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_MID_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
@@ -106,6 +107,7 @@ jobs:
       # 極みは損切りが銘柄ごと（ATR連動）なので通常版の一律-3%判定では足りず、専用に実行する。
       # continue-on-error: ここが落ちても上の通常版の配信・マーカー保存は完了済みで無傷。
       - name: 極みの大引けチェック実行
+        if: always()          # 2026-09-03監査: 通常版(配信停止中)の close_check が落ちても実弾の極みは必ず回す
         continue-on-error: true
         run: python kiwami_close.py
 

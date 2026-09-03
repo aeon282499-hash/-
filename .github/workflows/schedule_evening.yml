@@ -123,7 +123,7 @@ jobs:
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json \
-            kiwami_sell.json; do
+            kiwami_sell.json kiwami_sent.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0

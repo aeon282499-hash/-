@@ -372,18 +372,24 @@ def batch_download_jquants(
     import jpholiday
     from datetime import date as _date, timedelta, datetime
 
+    def _tse_open(d) -> bool:
+        # 年末年始(12/31〜1/3)は東証休業だが jpholiday は1/1しか休日にしない（main.is_trading_day と同じ扱い・2026-09-03監査）
+        if d.weekday() >= 5 or jpholiday.is_holiday(d):
+            return False
+        return not ((d.month == 12 and d.day == 31) or (d.month == 1 and d.day <= 3))
+
     trading_days: list[str] = []
     if start and end:
         cur  = datetime.strptime(start, "%Y-%m-%d").date()
         end_ = datetime.strptime(end,   "%Y-%m-%d").date()
         while cur <= end_:
-            if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+            if _tse_open(cur):
                 trading_days.append(cur.strftime("%Y-%m-%d"))
             cur += timedelta(days=1)
     else:
         cur = _today_jst() - timedelta(days=1)   # JST基準（UTCランナーで1日ズレるのを防ぐ）
         while len(trading_days) < lookback_trading_days:
-            if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
+            if _tse_open(cur):
                 trading_days.append(cur.strftime("%Y-%m-%d"))
             cur -= timedelta(days=1)
         trading_days.reverse()

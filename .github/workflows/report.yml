@@ -5,6 +5,11 @@ on:
     - cron: '40 6 * * 1-5'   # 15:40 JST (06:40 UTC)
   workflow_dispatch:
 
+# 2026-09-03監査: Worker(16:40)とGitHub cron(15:40+遅延)が重なると極み週次が二重送信＋push競合するので直列化
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   run-report:
     runs-on: ubuntu-latest

@@ -168,6 +168,8 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                 pnl_now = (entry - price) / entry * 100 if sell else (price - entry) / entry * 100
                 line += f" / {pnl_now:+.2f}%"
             lines.append(line + _stop_note(t["ticker"]))
+            if t.get("warn"):            # OCO水準に誤差幅内で到達（2026-09-03監査・口座確認を促す）
+                lines.append(f"　{t['warn']}")
         title_kind = "空売り大引け処分指示" if sell else "大引け処分指示"
         embeds.append({
             "title": f"⚡【極み {title_kind}】{date_str}",
@@ -204,6 +206,9 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
             px_str = f"・現在 {price:,.0f}円" if price is not None else ""
             lines.append(f"📊 **{name}** ({ticker}) {hold}日目 — "
                          f"{rsi_str}{px_str}・{rest_str}{_stop_note(c['ticker'])}")
+            if c.get("warn"):
+                warn = True
+                lines.append(f"　{c['warn']}")
         title_kind = "売り保有チェック" if sell else "大引けチェック"
         suffix = "" if targets else f" — {action}対象なし"
         embeds.append({
@@ -261,13 +266,15 @@ def main() -> None:
                                   end=today.strftime("%Y-%m-%d"))
 
     sent = False
-    for label, pos, direction, env, is_sell in (
-            ("買い", positions, "BUY", WEBHOOK_ENV, False),
-            ("買い・中資金", tier_pos["mid"], "BUY", TIER_LEDGERS["mid"][2], False),
-            ("買い・小資金", tier_pos["small"], "BUY", TIER_LEDGERS["small"][2], False),
-            ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True),
-            ("売り・中資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL", True),
-            ("売り・小資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL", True)):
+    # scope=close_decisions の記録キー。階層別にしないと大/中/小が同じ銘柄の判定を上書きし合う
+    # （2026-09-03監査: 9/3に小資金の積水化学が kiwami:BUY:4204 として記録されていた）。売りは台帳1本。
+    for label, pos, direction, env, is_sell, scope in (
+            ("買い", positions, "BUY", WEBHOOK_ENV, False, "kiwami"),
+            ("買い・中資金", tier_pos["mid"], "BUY", TIER_LEDGERS["mid"][2], False, "kiwami_mid"),
+            ("買い・小資金", tier_pos["small"], "BUY", TIER_LEDGERS["small"][2], False, "kiwami_small"),
+            ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True, "kiwami"),
+            ("売り・中資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL", True, "kiwami"),
+            ("売り・小資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL", True, "kiwami")):
         if not pos:
             continue
         try:
@@ -275,7 +282,7 @@ def main() -> None:
             print(f"[kiwami_close] {label}: 処分対象 {len(tg)}件 / 判定済み {len(ck)}件")
             if not dry:   # 14:55判定を記録＝翌朝の shadow_exit.advance がこれに従う（2026-08-28）
                 import close_decisions
-                close_decisions.record(today, "kiwami", direction, tg, ck)
+                close_decisions.record(today, scope, direction, tg, ck)
             emb = build_embeds(tg, ck, today, pos, sell=is_sell)
             if not emb:
                 continue

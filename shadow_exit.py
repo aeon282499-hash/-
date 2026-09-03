@@ -411,12 +411,18 @@ def update_sell_ledger(today: date, all_data: dict) -> int:
 def update_ledger(key: str, today: date, all_data: dict) -> tuple[int, int]:
     """極み台帳の未決済を前日までのデータで進めて保存する。戻り値=(決済数, 失効数)。"""
     rows = load_ledger(key)
-    closed, expired = advance(rows, today, all_data)
+    # 14:55判定(close_decisions)の記録キーは階層別（2026-09-03監査: 大/中/小が同じキーを上書きしていた）
+    closed, expired = advance(rows, today, all_data, scope=decision_scope(key))
     save_ledger(key, rows)
     return closed, expired
 
 
-def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
+def decision_scope(key: str) -> str:
+    """close_decisions の scope。大="kiwami"（従来互換）・中/小="kiwami_mid"/"kiwami_small"。"""
+    return "kiwami" if key == "main" else f"kiwami_{key}"
+
+
+def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami") -> tuple[int, int]:
     """渡された台帳リストをその場で進める（保存はしない）。tracker.update_positions と
     同じ判定順・同じ約定前提で、損切り幅だけ銘柄ごとの stop_pct を使う。
     週次レポートは deepcopy に対してこれを呼ぶ＝帳簿を汚さずに当日引けまで反映できる
@@ -473,7 +479,7 @@ def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
                 break
             rsi_now = calc_rsi(df[df.index <= dt_idx]["Close"].dropna())
             rsi_exit = rsi_now is not None and rsi_now >= 50
-            rsi_exit = close_decisions.apply(rsi_exit, d_str, "kiwami", "BUY",
+            rsi_exit = close_decisions.apply(rsi_exit, d_str, scope, "BUY",
                                              pos["ticker"], _decisions)   # 14:55判定優先
             if rsi_exit or pos["hold_days"] >= MAX_HOLD:
                 pos.update(pnl_pct=round((cl - eo) / eo * 100, 3),
@@ -485,8 +491,11 @@ def advance(rows: list[dict], today: date, all_data: dict) -> tuple[int, int]:
     return closed, expired
 
 
-def run_shadow(tiers, today: date, get_data) -> None:
-    """main.py 末尾から呼ぶ唯一の入口。例外は呼び出し側で握り潰される前提。"""
+def run_shadow(tiers, today: date, get_data) -> bool:
+    """main.py 末尾から呼ぶ唯一の入口。例外は呼び出し側で握り潰される前提。
+    戻り値=Discord送信が全部通ったか（False なら main.py が kiwami_sent.json で再送を予約する・2026-09-03監査）。"""
+    global _POST_FAILED
+    _POST_FAILED = False
     keys = [t["key"] for t in tiers if t["key"] in TIER_FILES]
     if not keys:
         return
@@ -527,6 +536,50 @@ def run_shadow(tiers, today: date, get_data) -> None:
             monthly_report(today)
     except Exception as e:
         print(f"[shadow] 極み月次の配信スキップ（通常版に影響なし）: {e}")
+    write_sent_marker(today, not _POST_FAILED)
+    return not _POST_FAILED
+
+
+def write_sent_marker(today: date, sent: bool) -> None:
+    """極み配信の成否を kiwami_sent.json に残す（2026-09-03 監査: ガードは送信前に書かれるため、
+    Discord側の障害で配信が消えると保険ランが全部スキップしていた）。"""
+    try:
+        with open(KIWAMI_SENT_FILE, "w", encoding="utf-8") as f:
+            json.dump({"date": today.strftime("%Y-%m-%d"), "sent": bool(sent)}, f, ensure_ascii=False)
+        if not sent:
+            print(f"[shadow] ⚠️ 極み配信が失敗 → {KIWAMI_SENT_FILE} に sent=False（次の保険ランが極みだけ再送）")
+    except Exception as e:
+        print(f"[shadow] 送信マーカー書込失敗: {e}")
+
+
+def needs_resend(today: date) -> bool:
+    """送信済みガードが立っているのに極み配信だけ失敗した日か。"""
+    if not os.path.exists(KIWAMI_SENT_FILE):
+        return False
+    try:
+        with open(KIWAMI_SENT_FILE, encoding="utf-8") as f:
+            m = json.load(f)
+        return m.get("date") == today.strftime("%Y-%m-%d") and not m.get("sent", True)
+    except Exception:
+        return False
+
+
+def resend_only(today: date) -> bool:
+    """台帳は触らず、当日分の極み買い/売りを再送するだけ（保険ランのフォールバック）。"""
+    global _POST_FAILED
+    _POST_FAILED = False
+    for _k in NOTIFY_KEYS:
+        try:
+            send_discord(today, _k)
+        except Exception as e:
+            print(f"[shadow-{_k}] 再送失敗(買い): {e}")
+    for _k in NOTIFY_KEYS:
+        try:
+            send_discord_sell(today, _k)
+        except Exception as e:
+            print(f"[shadow-{_k}] 再送失敗(売り): {e}")
+    write_sent_marker(today, not _POST_FAILED)
+    return not _POST_FAILED
 
 
 # ────────────────────────────── レポート ──────────────────────────────
@@ -629,12 +682,15 @@ def _report_env(preferred: str) -> str:
 # 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
 # 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
 NOTIFY_KEYS = ("main", "mid", "small")   # 2026-08-28 中/小も極み配信
+_POST_FAILED = False                     # 2026-09-03 監査: Discord送信失敗をrun_shadowへ伝える
+KIWAMI_SENT_FILE = "kiwami_sent.json"    # {"date","sent"}: sent=False なら保険ランが極みだけ再送する
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
 
 
 def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
     """極みチャンネルへ送信。未設定/失敗でも例外を投げない（戻り値で成否だけ返す）。"""
     import requests
+    global _POST_FAILED
 
     url = os.getenv(env, "").strip()
     if not url:
@@ -652,6 +708,7 @@ def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
             print(f"[shadow] Discord HTTP {r.status_code} {r.text[:150]}（試行{attempt + 1}）")
         except Exception as e:
             print(f"[shadow] Discord送信失敗: {e}（試行{attempt + 1}）")
+    _POST_FAILED = True   # 3回とも失敗＝main.py が送信済みガードを立てないようにする（2026-09-03監査）
     return False
 
 
@@ -1001,7 +1058,7 @@ def monthly_report(today: date) -> bool:
     from notifier import _slot_funded
 
     slots = 3
-    year = str(today.year)
+    year = str((today.replace(day=1) - timedelta(days=1)).year)   # 1月は前年(12月＋年間)を出す（2026-09-03監査）
 
     def _embed(rows: list[dict], *, sell: bool, funded: set | None,
                key: str = "main") -> dict | None:

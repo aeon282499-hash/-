@@ -52,7 +52,7 @@ jobs:
                   end=vt.strftime("%Y-%m-%d"))
           k_sell = copy.deepcopy(load_sell_ledger())
           if k_sell and all_data:
-              advance_sell(k_sell, today, all_data)
+              advance_sell(k_sell, today + timedelta(days=1), all_data)
           ok = True
           for k in ("main", "mid", "small"):
               r = weekly_report(today, all_data, k_sell or None, key=k)

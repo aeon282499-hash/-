@@ -250,6 +250,19 @@ def main() -> None:
         with open("today_signals.json", encoding="utf-8") as _f:
             _saved = json.load(_f)
         if _saved.get("date") == today_str:
+            # 2026-09-03 監査: ガードは極み配信より前に書かれるので、Discord側の失敗で極みだけ
+            # 未達の日がある。その時は台帳を触らず当日分を再送するだけ（保険ランが自然に拾う）。
+            try:
+                from shadow_exit import needs_resend, resend_only
+                if needs_resend(today):
+                    print(f"[main] 本日分({today_str})は送信済みだが極み配信が未達 → 極みだけ再送")
+                    ok = resend_only(today)
+                    print("[main] 極み再送 " + ("成功" if ok else "失敗（次の保険ランで再試行）"))
+                    sys.exit(0)
+            except SystemExit:
+                raise
+            except Exception as _re:
+                print(f"[main] 極み再送チェック失敗: {_re}")
             print(f"[main] 本日分({today_str})は送信済みです → スキップ")
             sys.exit(0)
 
@@ -269,6 +282,10 @@ def main() -> None:
             # today_signals.json が昨日のままなので翌朝8:05ランがフルフォールバックする。
             print("[main] 前夜配信モード: 当日終値が未公開 → 何もせず終了（朝ランに委ねます）")
             sys.exit(0)
+        if not evening and not macro.get("data_ok", True):
+            # 2026-09-03 監査: 朝ランはここを見ておらず、J-Quants障害の日に「候補なし」を配信して
+            # ガードを立て、8:20の保険ランまで自分で塞いでいた。データ未取得はエラーとして落とす。
+            raise RuntimeError("当日データ未取得（J-Quants障害/公開遅延）: 配信せず終了＝保険ランに委ねる")
         print(f"[main] 全BUY候補 {len(all_buy)}件 / 全SELL候補 {len(all_sell)}件")
 
         # 大資金用 top5 はメインチャンネル用に保存
@@ -290,6 +307,10 @@ def main() -> None:
         # （保有ゼロの日はfetchしない）。窓の根拠は screener.RSI_WARMUP_CAL_DAYS 参照。
         from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
         _ledger_cache: dict = {}
+
+        def _decision_scope(key: str) -> str:
+            """close_decisions の scope（階層別・close_check.py と対で 2026-09-03）。"""
+            return "main" if key == "main" else f"main_{key}"
 
         def _ledger_data() -> dict:
             if "data" not in _ledger_cache:
@@ -328,7 +349,7 @@ def main() -> None:
                 # 日別の決済結果レポート(send_results)はユーザー指示(2026-06-26)で廃止＝成績は
                 # 週次/月次のみ。保有/処分期限とNOFILLは15時の大引けチェックで吸収される。
                 positions, closed_today, expired_today, still_open = update_positions(
-                    positions, today, all_data=_ledger_data())
+                    positions, today, all_data=_ledger_data(), scope=_decision_scope(key))
             if send_monthly:
                 # 月次はポジションゼロの朝でも送る（closed履歴から集計できる）。
                 # 旧: if active の内側にあり、月初の朝にフラットな階層は月次が欠落する穴だった
@@ -341,7 +362,7 @@ def main() -> None:
             if sell_active:
                 # 帳簿処理は継続・日別の決済結果レポート(send_sell_results)は廃止（同上）。
                 sell_positions, sell_closed_today, _sell_expired, sell_still_open = update_positions(
-                    sell_positions, today, all_data=_ledger_data())
+                    sell_positions, today, all_data=_ledger_data(), scope=_decision_scope(key))
             if send_monthly and sell_positions:
                 # SELLの月次は「取引履歴が1件でもあれば」送る（現状SELLは全期間0件=帳簿が
                 # 空なので送らない＝ゼロ行レポートのノイズ回避。初トレード後の月から出る）。
@@ -456,7 +477,9 @@ def main() -> None:
         # （デイトレ紙台帳 daytrade_paper.run_paper と同じパターン）。
         try:
             from shadow_exit import run_shadow
-            run_shadow(TIERS, today, _ledger_data)
+            _shadow_ok = run_shadow(TIERS, today, _ledger_data)
+            if _shadow_ok is False:
+                print("[main] ⚠️ 極み配信が失敗（kiwami_sent.json sent=False）→ 次の保険ランが極みだけ再送する")
         except Exception as _shadow_err:
             print(f"[shadow] スキップ（配信には影響なし）: {_shadow_err}")
 

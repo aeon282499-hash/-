@@ -99,7 +99,8 @@ def add_signals_to_positions(
 
 
 def update_positions(positions: list[dict], today: date,
-                     all_data: dict | None = None) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+                     all_data: dict | None = None,
+                     scope: str = "main") -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """
     オープンポジションを前日データで更新する。
 
@@ -227,7 +228,7 @@ def update_positions(positions: list[dict], today: date,
                 (direction == "SELL" and rsi_now <= 50)
             )
             # 14:55通知の判定を正とする（close_decisions.py 参照・2026-08-28）
-            rsi_exit = close_decisions.apply(rsi_exit, check_date_str, "main",
+            rsi_exit = close_decisions.apply(rsi_exit, check_date_str, scope,
                                              direction, ticker, _decisions)
             pnl = ((day_close - entry_open) / entry_open * 100 if direction == "BUY"
                    else (entry_open - day_close) / entry_open * 100)
