@@ -1,19 +1,33 @@
 {
-  "date": "2026-09-03",
+  "date": "2026-09-04",
   "signals": [
     {
-      "ticker": "4403.T",
-      "name": "日油",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
       "direction": "BUY",
-      "prev_close": 2690.0,
-      "limit_price": 2716
+      "prev_close": 2945.5,
+      "limit_price": 2974
     },
     {
-      "ticker": "3391.T",
-      "name": "ツルハホールディングス",
+      "ticker": "5110.T",
+      "name": "住友ゴム工業",
       "direction": "BUY",
-      "prev_close": 2228.5,
-      "limit_price": 2250
+      "prev_close": 2168.0,
+      "limit_price": 2189
+    },
+    {
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
+      "direction": "BUY",
+      "prev_close": 2733.5,
+      "limit_price": 2760
+    },
+    {
+      "ticker": "4612.T",
+      "name": "日本ペイントホールディングス",
+      "direction": "BUY",
+      "prev_close": 1150.0,
+      "limit_price": 1161
     }
   ]
 }
