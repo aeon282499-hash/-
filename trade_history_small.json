@@ -569,6 +569,16 @@
       "close": 1350.0,
       "pnl": -2.81,
       "win": false
+    },
+    {
+      "date": "2026-09-03",
+      "ticker": "4403.T",
+      "name": "日油",
+      "direction": "BUY",
+      "open": 2697.5,
+      "close": 2671.0,
+      "pnl": -0.98,
+      "win": false
     }
   ]
 }
