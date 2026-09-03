@@ -467,13 +467,20 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
             pos["hold_days"] += 1
             d_str = dt_idx.strftime("%Y-%m-%d")
             lo, hi, cl = float(row["Low"]), float(row["High"]), float(row["Close"])
+            op = float(row["Open"]) if row.get("Open") == row.get("Open") else None   # NaN→None
+            # 2026-09-03監査: 翌日以降に寄りで水準を飛び越えた玉は逆指値が寄り値で約定する。帳簿の pnl_pct は
+            # BTと同じ「水準ちょうど」のまま（パリティ維持）、実約定見込みだけ gap_pnl_pct に併記する。
+            gap = None
+            if pos["hold_days"] > 1 and op and op > 0:
+                if op < stop_price: gap = round((op - eo) / eo * 100, 3)
+                elif op > tp_price: gap = round((op - eo) / eo * 100, 3)
             if lo <= stop_price:                                  # STOP優先（本番と同順）
                 pos.update(pnl_pct=-pos["stop_pct"], exit_type="STOP",
-                           exit_date=d_str, status="closed")
+                           exit_date=d_str, status="closed", gap_pnl_pct=gap)
                 closed += 1
                 break
             if hi >= tp_price:
-                pos.update(pnl_pct=+TAKE_PROFIT, exit_type="TP",
+                pos.update(pnl_pct=+TAKE_PROFIT, exit_type="TP", gap_pnl_pct=gap,
                            exit_date=d_str, status="closed")
                 closed += 1
                 break
@@ -1126,6 +1133,15 @@ def monthly_report(today: date) -> bool:
     # 通常版との差の併記（📊通算 通常vs極み）は 2026-08-09 本人指示
     # 「合計差とかの案内いらない」で廃止。必要になれば _pairs("main") から再計算できる。
 
+    # 反発指標（止め時の合図・表示専用・2026-09-03）。失敗しても月次本体は送る。
+    try:
+        from kiwami_rebound_gauge import compute_live, gauge_embed
+        g = compute_live(today)
+        if g:
+            embeds.append(gauge_embed(g))
+            print(f"[shadow] 反発指標 {g['date']}: {g['value']:+.3f}")
+    except Exception as e:
+        print(f"[shadow] 反発指標の計算スキップ: {e}")
     return _shadow_post(embeds, env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
 
 

@@ -82,6 +82,16 @@ jobs:
           from zoneinfo import ZoneInfo
           import shadow_exit as se
           today = datetime.now(ZoneInfo('Asia/Tokyo')).date()
+          # 2026-09-03監査: 前夜配信(18:50)の後は today_signals_kiwami.json が翌営業日の日付なので、
+          # JSTの今日で読むと『前日分の建玉』を今夜の銘柄として再送してしまう。配信済みの対象日を優先。
+          try:
+              import json as _j
+              from datetime import date as _d
+              _sd = _j.load(open('today_signals_kiwami.json', encoding='utf-8')).get('date')
+              if _sd and _d.fromisoformat(_sd) > today:
+                  print(f'配信済みの対象日 {_sd} を再送対象にします（JST今日={today}）'); today = _d.fromisoformat(_sd)
+          except Exception as _e:
+              print('対象日の判定失敗（JST今日を使用）:', _e)
           target = (os.getenv('TARGET') or 'buy').strip().lower()
           if target == 'check':
               # webhookの生死診断: GETは投稿せずname/channel_idが返る（トークンは出さない）

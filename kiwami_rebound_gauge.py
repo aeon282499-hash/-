@@ -26,8 +26,8 @@ def load():
 def gauge(all_data, nm, lookback=126):
     rows = []
     for tk, df in all_data.items():
-        name = nm.get(tk)
-        if name is None or is_etf_ticker(tk, name) or len(df) < 140: continue
+        name = nm.get(tk)          # 名前が無い(本番の直取得)ならコード帯でETF判定
+        if is_etf_ticker(tk, name) or len(df) < 140: continue
         df = df.dropna(subset=["Close"]); o = df["Open"].astype(float); h = df["High"].astype(float); l = df["Low"].astype(float)
         cl = df["Close"].astype(float); v = df["Volume"].astype(float)
         dlt = cl.diff(); ag = dlt.clip(lower=0).ewm(alpha=1/14, min_periods=14).mean(); al = (-dlt).clip(lower=0).ewm(alpha=1/14, min_periods=14).mean()
@@ -42,6 +42,47 @@ def gauge(all_data, nm, lookback=126):
     D = pd.DataFrame(rows, columns=["entry","d2"]).groupby("entry").d2.mean().sort_index()
     ind = D.rolling(lookback, min_periods=60).mean()
     return D, ind
+
+def compute_live(today, cal_days: int = 400) -> dict | None:
+    """本番用: J-Quants から直近 cal_days 日の全銘柄日足を取り、反発指標の最新値と月末推移を返す。
+    月次レポート(shadow_exit.monthly_report)から呼ぶ。失敗したら None（レポート本体は無傷）。2026-09-03。"""
+    from datetime import timedelta
+    from screener import batch_download_jquants, _jquants_id_token
+    start = (today - timedelta(days=cal_days)).strftime("%Y-%m-%d")
+    data = batch_download_jquants(_jquants_id_token(), start=start, end=today.strftime("%Y-%m-%d"))
+    if not data:
+        return None
+    D, ind = gauge(data, {})
+    last = ind.dropna()
+    if last.empty:
+        return None
+    m = ind.resample("ME").last().dropna().tail(12)
+    out = {"date": str(last.index[-1].date()), "value": round(float(last.iloc[-1]), 4), "threshold": TH,
+           "monthly": {k.strftime("%Y-%m"): round(float(v), 4) for k, v in m.items()},
+           "n_days": int(len(D))}
+    try:
+        json.dump(out, open("kiwami_rebound_gauge.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    except Exception:
+        pass
+    return out
+
+
+def gauge_embed(g: dict) -> dict:
+    """Discord embed（月次レポートの末尾に付ける・表示専用）。"""
+    v = g["value"]; th = g["threshold"]
+    if v > 0:
+        verdict, color = "🟢 反発レジーム（押し目が翌々日に戻っている）", 0x2ECC71
+    elif v > th:
+        verdict, color = "🟡 弱め（基準の手前・様子見）", 0xF1C40F
+    else:
+        verdict, color = "🔴 基準割れ（この状態が続くなら縮小/停止を検討）", 0xE74C3C
+    trend = "  ".join(f"{k[2:]}:{x:+.2f}" for k, x in list(g["monthly"].items())[-6:])
+    return {"title": f"🧭 反発指標 {g['date']}: {v:+.3f}（基準 {th:+.2f}）",
+            "description": (f"{verdict}\n月末推移: {trend}\n"
+                            "※極み買いの入口条件に該当した全候補の「翌々日終値÷翌日寄り−1」の日次平均を直近126営業日で平均。"
+                            "26年検証で基準割れの期間は玉の平均-0.16%/PF0.86、2022年以降は一度も割れていない。発注ルールには入れない（表示専用）。"),
+            "color": color}
+
 
 if __name__ == "__main__":
     all_data, nm = load(); D, ind = gauge(all_data, nm)
