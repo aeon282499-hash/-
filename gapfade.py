@@ -81,7 +81,8 @@ SEND_MARKER = "gapfade_last_send.json"
 #   ②締切(=エントリー時刻)を過ぎたら、撃てと言わずに「遅延・本日見送り」として送る
 # 恒久解は cron-job.org → Cloudflare Worker → workflow_dispatch（他システムでは毎日
 # 8:05きっかりに着弾している実績あり）。本人のWorker登録が済むまでの防御がここ。
-EARLIEST_HM = "09:20"       # 最初の15分足が確定するのが9:15。これ未満は寄り値が取れない
+EARLIEST_HM = "09:31"       # 2026-09-04監査: daily_frames は当日4本(9:00/9:15/9:30/現在値)必要＝9:31未満で取った銘柄は
+                            # 全部「足不足」で見えず、「該当なし」を送ってマーカーを消費していた（9/2 9:26開始→候補0）
 DEADLINE_HM = "12:20"       # 後場寄り12:30に成行を仕込める最終ライン（10分前）
 
 
@@ -266,7 +267,8 @@ def mark_sent(day: str) -> None:
 
 
 def notify(day: str, cand: list[dict], stats: str, dry: bool,
-           state: str = "ok", now_hm: str | None = None, no_iss: bool = False) -> bool:
+           state: str = "ok", now_hm: str | None = None, no_iss: bool = False,
+           no_px: bool = False) -> bool:
     """Discordへ配信。実際に送信できたら True（マーカーを書く条件）。
     state='late' のときは「撃て」と言わず、遅延で見送りになった事実だけを送る。
     no_iss=True は貸借区分が取れなかった日＝「該当なし」でなく「判定不能」を明示する。"""
@@ -287,6 +289,9 @@ def notify(day: str, cand: list[dict], stats: str, dry: bool,
             body = head + "本日該当していた銘柄（記録用・撃たない）:\n" + ref
         else:
             body = head + f"なお本日はギャップ+{GAP_LO:.0f}〜{GAP_HI:.0f}%の該当なしでした。"
+    elif no_px:
+        body = ("⚠️ **価格データが半分以上取れず判定不能**（該当なしではありません）。\n"
+                "次のトリガーで自動再試行します。続くようならYahoo側の障害の可能性。")
     elif no_iss:
         # 貸借区分が取れない＝候補ゼロはシステム障害であって相場の「該当なし」ではない。
         # マーカーを立てないので後続の保険トリガーが自動で再試行する。
@@ -310,7 +315,11 @@ def notify(day: str, cand: list[dict], stats: str, dry: bool,
         print("[notify] 送信スキップ（--dry またはwebhook未設定）\n" + body)
         return False
     import requests
-    r = requests.post(hook, json=payload, timeout=20, verify=False)
+    try:
+        r = requests.post(hook, json=payload, timeout=20, verify=False)
+    except Exception as e:
+        print(f"[notify] Discord送信失敗: {e}（マーカーは立てない）")
+        return False
     print(f"[notify] Discord HTTP {r.status_code}")
     # 送信できた時だけ「配信済み」とみなす（webhook失効やタイムアウトで無配信のまま
     # マーカーを立てると、後続の保険トリガーまで黙って死ぬ）。
@@ -345,6 +354,15 @@ if __name__ == "__main__":
 
     # 寄り値が確定する前（9:20 JST未満）に起動した場合は何もしない。
     # ここで空配信すると同日ガードを消費して、間に合う時刻の後続便が黙って死ぬ。
+    try:                                            # 2026-09-04監査: 祝日に「該当なし」を送らない
+        import jpholiday
+        _d = datetime.now(JST).date()
+        if not dry and (_d.weekday() >= 5 or jpholiday.is_holiday(_d) or (_d.month == 12 and _d.day == 31) or (_d.month == 1 and _d.day <= 3)):
+            print(f"[guard] {_d} は休場日 → 何もせず終了"); raise SystemExit(0)
+    except SystemExit:
+        raise
+    except Exception as _e:
+        print(f"[guard] 休場判定スキップ: {_e}")
     state = timing_state()
     if state == "early" and not dry:
         print(f"[guard] {_now_hm()} JST は寄り値の確定前（{EARLIEST_HM}未満）→ 何もせず終了")
@@ -352,6 +370,13 @@ if __name__ == "__main__":
 
     store = fetch()
     frames = daily_frames(store)
+    try:
+        _n_targets = len(json.load(open(UNIV, encoding="utf-8")))
+    except Exception:
+        _n_targets = 0
+    no_px = bool(_n_targets) and len(store) < 0.5 * _n_targets   # 2026-09-04監査: Yahoo障害で半分以上取れない＝判定不能
+    if no_px:
+        print(f"[guard] 価格取得 {len(store)}/{_n_targets} 銘柄＝判定不能（該当なしとは別・マーカーを立てない）")
     iss = _load_iss()
     no_iss = not iss          # 貸借区分が取れない＝候補判定不能（該当なしと区別する）
     today = datetime.now(JST).strftime("%Y-%m-%d")
@@ -360,7 +385,7 @@ if __name__ == "__main__":
     n = settle(frames, led)
     print(f"[settle] {n}件を確定")
 
-    cand = [] if no_iss else candidates(frames, today, iss)
+    cand = [] if (no_iss or no_px) else candidates(frames, today, iss)
     seen = {(r["date"], r["ticker"]) for r in led}
     for c in cand:
         if (today, c["ticker"]) not in seen:
@@ -376,5 +401,5 @@ if __name__ == "__main__":
             print(f"[guard] {_now_hm()} JST はエントリー({ENTRY_LABEL})を過ぎている"
                   f" → 「撃て」ではなく遅延通知として配信する")
         # no_iss の日はマーカーを立てない＝後続の保険トリガーが自動で再試行する
-        if notify(today, cand, report(led), dry, state=state, no_iss=no_iss) and not no_iss:
+        if notify(today, cand, report(led), dry, state=state, no_iss=no_iss, no_px=no_px) and not (no_iss or no_px):
             mark_sent(today)

@@ -475,7 +475,7 @@ def _send_weekly_reports(today_jst: date) -> None:
         if k_sell:
             advance_sell(k_sell, today_jst + timedelta(days=1), all_data)   # 買い側(today+1)と揃える（2026-09-03監査）
         for _k in ("main", "mid", "small"):   # 2026-08-28 大/中/小の俺専用chへ（買い→買いch・売り→売りch）
-            ok = kiwami_weekly(today_jst, all_data, k_sell or main_sim_sell, key=_k)
+            ok = kiwami_weekly(today_jst, all_data, k_sell or None, key=_k)   # 2026-09-04監査: 極み台帳が空でも通常版の売り玉は出さない
             print(f"[report] 極みの週次({_k}){'送信OK' if ok else '送信NG（webhook未設定/HTTP失敗）'}")
     except Exception as e:
         print(f"[report] 極みの週次スキップ（通常版に影響なし）: {e}")

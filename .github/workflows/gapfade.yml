@@ -57,6 +57,7 @@ jobs:
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python -X utf8 gapfade.py
       - name: 台帳を保存
+        if: always()          # 2026-09-04監査: 配信後に落ちてもマーカー/台帳は必ず保存（未保存→保険便が「見送り」を二重送信）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -64,6 +65,10 @@ jobs:
           for f in gapfade_ledger.json gapfade_last_send.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
-          git diff --cached --quiet || git commit -m "chore(gapfade): update ledger [skip ci]"
-          git pull --rebase --autostash origin main
-          git push origin main
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(gapfade): update ledger [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin main && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          echo "push failed after 3 retries"; exit 1

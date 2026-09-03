@@ -96,6 +96,19 @@ def main():
     for k in earnings_dates:
         earnings_dates[k] = sorted(set(earnings_dates[k]))
 
+    # 2026-09-04監査: J-Quants障害(401/403/5xx)で空や穴だらけになった結果で既存を上書きすると、
+    # screener の決算±3日除外が黙ってOFFになる。既存より半分未満なら書かずに失敗させる。
+    try:
+        with open(output, encoding="utf-8") as f:
+            _old = json.load(f)
+        _old_n = sum(len(v) for v in _old.values())
+    except Exception:
+        _old_n = 0
+    _new_n = sum(len(v) for v in earnings_dates.values())
+    if _old_n and _new_n < 0.5 * _old_n:
+        print(f"⚠️ 取得結果 {_new_n} 件が既存 {_old_n} 件の半分未満 → 上書きせず終了（J-Quants障害の疑い）")
+        sys.exit(1)
+
     with open(output, "w", encoding="utf-8") as f:
         json.dump(earnings_dates, f, ensure_ascii=False, indent=2)
 

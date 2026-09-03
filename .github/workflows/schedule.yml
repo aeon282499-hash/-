@@ -36,8 +36,8 @@ jobs:
           # 「今日の0:30 UTC」だと過去になり待機ゼロで寄り前に叩いてしまう（実際に踏んだ）。
           # 次に来る 0:30 UTC を目標にする。
           NOW=$(date -u +%s)
-          TARGET=$(date -u -d 'today 00:30' +%s)
-          [ "$TARGET" -le "$NOW" ] && TARGET=$(date -u -d 'tomorrow 00:30' +%s)
+          TARGET=$(date -u -d 'today 00:32' +%s)   # 9:32 JST（2026-09-04: Yahooの当日足4本が9:31以降でないと揃わない）
+          [ "$TARGET" -le "$NOW" ] && TARGET=$(date -u -d 'tomorrow 00:32' +%s)
           WAIT=$(( TARGET - NOW ))
           echo "現在 $(date -u +'%m/%d %H:%M') UTC / 目標 $(date -u -d "@$TARGET" +'%m/%d %H:%M') UTC (=9:30 JST)"
           if [ "$WAIT" -gt 0 ] && [ "$WAIT" -le 14400 ]; then
@@ -179,6 +179,10 @@ jobs:
       DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
       # 友達用フェード（板の厚い玉のみ・2026-08-12・未設定なら無言スキップ）
       DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
+      # 2026-09-04監査: この job は main_earnings_preview.py(8:20予備リスト) と main_pead_paper.py(朝の答え合わせ) も
+      # 回すのに決算/PEAD の webhook が無く、両方とも「送信スキップ」で黙って未配信だった
+      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
+      DISCORD_WEBHOOK_PEAD_URL: ${{ secrets.DISCORD_WEBHOOK_PEAD_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
