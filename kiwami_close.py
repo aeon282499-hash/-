@@ -93,13 +93,9 @@ def load_open_sell() -> list[dict]:
                 if r.get("status") in ("pending", "open")
                 and r.get("direction", "SELL") == "SELL"]
 
-    rows = _read(SELL_LEDGER)
-    if rows:
-        return rows
-    fb = _read(SELL_LEDGER_FALLBACK)
-    if fb:
-        print(f"[kiwami_close] {SELL_LEDGER} が空 → 移行期のため通常版台帳を参照({len(fb)}件)")
-    return fb
+    # 2026-09-03監査: 極み売り台帳が空の日に通常版台帳(損切り3.0%)へフォールバックすると、極みでは
+    # +2.5%で損切り済みの玉を「保有継続」と通知してしまう。移行期(2026-07-29)は終わったので撤去。
+    return _read(SELL_LEDGER)
 
 
 def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
