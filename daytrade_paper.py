@@ -127,6 +127,7 @@ def fetch_iss_map(token) -> dict:
                                  {"date": cur.strftime("%Y-%m-%d")})
                 rows = d.get("data", [])
                 if rows:
+                    print(f"[paper] iss_map: {cur} 公表分 {len(rows)}件")
                     # 優先株式(5桁目≠0)を除外（2026-08-02）: 94345/94346のIssType"1"が
                     # 94340(ソフトバンク本体・貸借"2")を後勝ちで上書きし、本体が貸借×扱いで
                     # 候補から永久除外されていた（JAL/ANA/ゼンショー/インフロニアも同様）
@@ -938,15 +939,21 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
 
     if dry:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
-        return
+        return True
     url = (os.getenv("DISCORD_WEBHOOK_DAY_URL") or os.getenv("DISCORD_WEBHOOK_URL_DAY")
            or os.getenv("DISCORD_WEBHOOK_URL", "")).strip()
     if not url:
         print("[paper] webhook未設定 → 通知スキップ")
-        return
+        return False
     import requests
-    r = requests.post(url, json=payload, timeout=15)
+    # 2026-09-04監査: HTTP結果を見ずに送信済み扱いにしていた＝4xx/5xxで無配信のまま保険便が全部スキップ。
+    try:
+        r = requests.post(url, json=payload, timeout=15)
+    except Exception as e:
+        print(f"[paper] Discord通知 失敗: {e}（送信済み扱いにしない）")
+        return False
     print(f"[paper] Discord通知 HTTP {r.status_code}")
+    sent_ok = 200 <= r.status_code < 300
     # 友達ミラー配信（2026-08-24 本人指示「やっぱり友達も俺専用の売りフェードと同じ内容で」）:
     # 本人版embedをそのまま友達webhookへも送る＝銘柄・株数(100万計算)・プレミアム料行・
     # 51単元警告まで完全同一。旧・友達専用選定(7.5億フロア×50万×#1)は run_friends ごと休眠
@@ -956,9 +963,10 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
     if furl and furl != url:
         try:
             fr = requests.post(furl, json=payload, timeout=15)
-            print(f"[paper] 友達ミラー HTTP {fr.status_code}")
+            print(f"[paper] 友達ミラー HTTP {fr.status_code}" + ("（webhook失効の疑い・Secret要更新）" if fr.status_code == 404 else ""))
         except Exception as e:
             print(f"[paper] 友達ミラー失敗（本人向けは無傷）: {e}")
+    return sent_ok
 
 
 def monthly_stats(book: dict, ym: str) -> dict:
@@ -1307,6 +1315,10 @@ def run(today=None, signals=None, dry=False):
         print(f"[paper] J-Quantsトークン取得失敗（{e}）→ 付帯情報なしで続行")
         tok = None
     _LAST_ISS = fetch_iss_map(tok) if data else {}
+    if data and not _LAST_ISS:
+        # 2026-09-04監査: 貸借区分ゼロ＝全銘柄が売れない扱い＝候補ゼロが「条件未達」に化けてガードが立っていた
+        print("[paper] ⚠️ 貸借区分(IssType)が取得できず → 障害として配信・日付ガードは立てない")
+        fetch_failed = True
     ratio_map = fetch_ratio_map(tok) if data else {}
     alert_map = fetch_alert_map(tok) if data else {}
     banned: list = []   # 売り禁(日証金申込停止)で除外した銘柄（配信で可視化）
@@ -1334,10 +1346,12 @@ def run(today=None, signals=None, dry=False):
     # （2026-08-02）。立てると次のトリガー(8:20保険便)が再試行できず、システム障害が
     # 「今日は条件未達」に偽装される＝7/31にNO-GO理由表示を入れた目的の真逆になる。
     if book.get("last_report_date") != today_str:
-        send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned,
-                    fetch_failed=fetch_failed)
-        if not dry and not fetch_failed:
+        _sent = send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned,
+                            fetch_failed=fetch_failed)
+        if not dry and not fetch_failed and _sent:
             book["last_report_date"] = today_str
+        elif not dry and not _sent:
+            print("[paper] 配信未達 → 日付ガードを立てない（次の保険便が再送）")
 
     # 週明け/月初に前週・前月のサマリーを1回だけ（2026-08-01 本人指摘で追加）
     # 週→月の順。どちらも失敗しても本処理は止めない。

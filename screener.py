@@ -1085,7 +1085,7 @@ def check_gap_entry(signal: dict, today_open: float, gap_max_pct: float = 5.0) -
 def fetch_tse_prime_universe() -> list[tuple[str, str]]:
     """JPX公開Excelから東証プライム内国株を取得する。失敗時はフォールバック。"""
     url = ("https://www.jpx.co.jp/markets/statistics-equities/misc/"
-           "tvdivq0000001vg2-att/data_j.xls")
+           "tvdivq0000001vg2-att/data_j.xlsx")   # 2026-09-03に .xls が404・.xlsx へ移行（2026-09-04監査）
     try:
         import io as _io
         r = requests.get(url, timeout=30, verify=False)
