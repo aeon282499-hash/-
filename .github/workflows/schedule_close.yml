@@ -112,6 +112,7 @@ jobs:
         run: python kiwami_close.py
 
       - name: マーカー保存（last_close_check.json をコミット）
+        if: always()          # 2026-09-04: kiwami_close が always() で走るので、その出力(close_decisions/マーカー)も必ず保存
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

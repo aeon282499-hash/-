@@ -456,8 +456,9 @@ def _send_weekly_reports(today_jst: date) -> None:
 
     main_sim_sell = None
     for tier, buy_pos, sell_pos in tier_pos:
-        sim_buy  = update_positions(copy.deepcopy(buy_pos),  virtual_today, all_data=all_data)[0]
-        sim_sell = update_positions(copy.deepcopy(sell_pos), virtual_today, all_data=all_data)[0]
+        _scope = "main" if tier["key"] == "main" else f"main_{tier['key']}"   # close_decisions の階層別キー（2026-09-04）
+        sim_buy  = update_positions(copy.deepcopy(buy_pos),  virtual_today, all_data=all_data, scope=_scope)[0]
+        sim_sell = update_positions(copy.deepcopy(sell_pos), virtual_today, all_data=all_data, scope=_scope)[0]
         if tier["key"] == "main":
             main_sim_sell = sim_sell
         send_weekly_report(sim_buy, sim_sell, today_jst, tier=tier)

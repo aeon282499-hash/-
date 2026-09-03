@@ -253,6 +253,7 @@ jobs:
         run: python main_earnings_preview.py
 
       - name: ポジション保存（スイング3階層分 + デイトレ + セクターローテ）
+        if: always()          # 2026-09-04: main.py 失敗時も main_day が走る(always)ので、その台帳/マーカーを必ず保存
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

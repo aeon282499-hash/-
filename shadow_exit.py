@@ -470,17 +470,17 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
             op = float(row["Open"]) if row.get("Open") == row.get("Open") else None   # NaN→None
             # 2026-09-03監査: 翌日以降に寄りで水準を飛び越えた玉は逆指値が寄り値で約定する。帳簿の pnl_pct は
             # BTと同じ「水準ちょうど」のまま（パリティ維持）、実約定見込みだけ gap_pnl_pct に併記する。
-            gap = None
+            gap_dn = gap_up = None
             if pos["hold_days"] > 1 and op and op > 0:
-                if op < stop_price: gap = round((op - eo) / eo * 100, 3)
-                elif op > tp_price: gap = round((op - eo) / eo * 100, 3)
+                if op < stop_price: gap_dn = round((op - eo) / eo * 100, 3)
+                elif op > tp_price: gap_up = round((op - eo) / eo * 100, 3)
             if lo <= stop_price:                                  # STOP優先（本番と同順）
                 pos.update(pnl_pct=-pos["stop_pct"], exit_type="STOP",
-                           exit_date=d_str, status="closed", gap_pnl_pct=gap)
+                           exit_date=d_str, status="closed", gap_pnl_pct=gap_dn)
                 closed += 1
                 break
             if hi >= tp_price:
-                pos.update(pnl_pct=+TAKE_PROFIT, exit_type="TP", gap_pnl_pct=gap,
+                pos.update(pnl_pct=+TAKE_PROFIT, exit_type="TP", gap_pnl_pct=gap_up,
                            exit_date=d_str, status="closed")
                 closed += 1
                 break
@@ -531,20 +531,23 @@ def run_shadow(tiers, today: date, get_data) -> bool:
         try:
             send_discord(today, _k)
         except Exception as e:
+            _POST_FAILED = True      # 送る前に落ちた＝未達（2026-09-04）
             print(f"[shadow-{_k}] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
     for _k in NOTIFY_KEYS:           # 極み・売り（大/中/小・2026-08-28から3階層）
         try:
             send_discord_sell(today, _k)
         except Exception as e:
+            _POST_FAILED = True
             print(f"[shadow-{_k}] 極み売りの配信スキップ（通常版に影響なし）: {e}")
+    signals_ok = not _POST_FAILED      # 再送の対象は買い/売りシグナルだけ。月次の失敗で再送はしない（2026-09-04）
     try:
         from main import is_month_first_trading_day
         if is_month_first_trading_day(today):    # 月初営業日だけ（通常版と同じタイミング）
             monthly_report(today)
     except Exception as e:
         print(f"[shadow] 極み月次の配信スキップ（通常版に影響なし）: {e}")
-    write_sent_marker(today, not _POST_FAILED)
-    return not _POST_FAILED
+    write_sent_marker(today, signals_ok)
+    return signals_ok
 
 
 def write_sent_marker(today: date, sent: bool) -> None:
@@ -963,7 +966,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
     size = LEGACY_SIZE if key == "main" else tier_size   # size未記録の旧玉の既定
     rows = copy.deepcopy(load_ledger(key))
     if all_data:
-        advance(rows, today + timedelta(days=1), all_data)   # 当日引けまで反映（非破壊）
+        advance(rows, today + timedelta(days=1), all_data, scope=decision_scope(key))   # 当日引けまで反映（非破壊・scopeは台帳と同じ 2026-09-04）
 
     week_start = today - timedelta(days=today.weekday())
     ws, ts = week_start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")

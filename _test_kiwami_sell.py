@@ -218,8 +218,7 @@ def test_close_reader():
     json.dump([{"ticker": "8888.T", "direction": "SELL", "status": "open", "stop_pct": 3.0}],
               open("positions_sell.json", "w", encoding="utf-8"), ensure_ascii=False)
     fb = KC.load_open_sell()
-    ok(len(fb) == 1 and fb[0]["ticker"] == "8888.T",
-       "移行期（極み台帳が空）は通常版へフォールバック")
+    ok(fb == [], "極み台帳が空でも通常版へフォールバックしない（2026-09-03監査で撤去・+2.5%損切り済み玉の誤通知防止）")
 
     json.dump([{"ticker": "1111.T", "direction": "SELL", "status": "open", "stop_pct": 2.5},
                {"ticker": "2222.T", "direction": "SELL", "status": "closed", "stop_pct": 2.5}],
