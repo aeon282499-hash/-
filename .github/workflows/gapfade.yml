@@ -49,7 +49,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: 依存関係
-        run: pip install -q pandas numpy requests python-dotenv
+        run: pip install -q pandas numpy requests python-dotenv jpholiday   # jpholiday=休場日ガード（2026-09-04）
       - name: 候補生成＋前日分の答え合わせ＋配信
         env:
           DISCORD_WEBHOOK_GAPFADE_URL: ${{ secrets.DISCORD_WEBHOOK_GAPFADE_URL }}
