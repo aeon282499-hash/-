@@ -197,6 +197,15 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
 
     rows = load_ledger(key)
     seen = {(r["ticker"], r["signal_date"]) for r in rows}
+    # 玉サイズ傾斜（2026-09-04）: 基準サイズ×VI倍率。OFF/取得失敗なら倍率1.0＝従来どおり。
+    try:
+        import kiwami_vi
+        _vi_mult = float(kiwami_vi.load(today).get("mult") or 1.0)
+    except Exception:
+        _vi_mult = 1.0
+    _base = KIWAMI_SIZE if key == "main" else TIER_FILES[key][2]
+    _size = int(_base * _vi_mult)
+    _cap = kiwami_px_cap(key) if _vi_mult == 1.0 else _size // 100
     # 極みは損切りが広い分だけ通常版より長く持つことがある。通常版が先に決済して同じ銘柄に
     # 再シグナルを出しても、極みがまだ保有中なら二重に建ててはいけない（実弾で回す以上、
     # 同一銘柄の重複建ては通常版と同じく禁止・2026-07-26）。
@@ -211,8 +220,8 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         sig_date = today.strftime("%Y-%m-%d")
         # 値がさカット（極みのみ・2026-08-24）: BT公式は1万円超を除外して測っている。
         # 本番のmax(100株)床は予算超過買い(10年-113.7万の実害)を作るのでBTに合わせて見送る。
-        if (s.get("prev_close") or 0) > kiwami_px_cap(key):
-            print(f"[shadow-{key}] {tk} は値がさ{s.get('prev_close'):,.0f}円>{kiwami_px_cap(key):,}円 → 1玉に収まらず見送り")
+        if (s.get("prev_close") or 0) > _cap:
+            print(f"[shadow-{key}] {tk} は値がさ{s.get('prev_close'):,.0f}円>{_cap:,}円 → 1玉に収まらず見送り")
             continue
         if (tk, sig_date) in seen:
             continue
@@ -232,7 +241,8 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
             "entry_date":  sig_date,              # 当日寄り付きエントリー（本番と同じ）
             "ticker":      tk,
             "name":        s.get("name", tk),
-            "size":        KIWAMI_SIZE if key == "main" else TIER_FILES[key][2],
+            "size":        _size,
+            "vi_mult":     _vi_mult,
             "prev_close":  s.get("prev_close", 0),
             "limit_price": s.get("limit_price"),
             "atr_pct":     atr,
@@ -512,6 +522,13 @@ def run_shadow(tiers, today: date, get_data) -> bool:
     if not all_data:
         print("[shadow] 価格データなし → スキップ")
         return
+    # 玉サイズ傾斜（日経VI代替・2026-09-04・KIWAMI_VI_TILT=1 の時だけサイズに効く。未設定なら表示のみ）
+    try:
+        import kiwami_vi
+        from main import prev_trading_day as _ptd
+        kiwami_vi.update(_ptd(today), today)
+    except Exception as _e:
+        print(f"[shadow] VI取得スキップ（一律サイズ）: {_e}")
     for k in keys:
         c, e = update_ledger(k, today, all_data)
         a = record_signals(k, today, all_data)
@@ -781,6 +798,12 @@ def send_discord(today: date, key: str = "main") -> bool:
     elif extras:
         size = TIER_FILES[key][2]
         try:
+            import kiwami_vi
+            _vi = kiwami_vi.load(today); _vm = float(_vi.get("mult") or 1.0)
+        except Exception:
+            _vi = {"vi": None, "mult": 1.0}; _vm = 1.0
+        size = int(size * _vm); _cap_disp = kiwami_px_cap(key) if _vm == 1.0 else size // 100
+        try:
             from notifier import _nth_trading_day
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
         except Exception:
@@ -796,13 +819,17 @@ def send_discord(today: date, key: str = "main") -> bool:
             f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
             f"📅 処分期限 **{exit_str}**",
             waku,
-            "─" * 24,
         ]
+        try:
+            lines.append(kiwami_vi.line(_vi, TIER_FILES[key][2]))
+        except Exception:
+            pass
+        lines.append("─" * 24)
         for i, s in enumerate(extras, 1):
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
             lp = s.get("limit_price") or 0
-            if pc > kiwami_px_cap(key):
+            if pc > _cap_disp:
                 # 値がさ玉は発注情報を出さない（100株でも1玉に収まらない＝買わない）
                 head = f"#{i}（対象外・1玉に収まらない・買わない） {s.get('name', tk)} ({tk})"
             elif pc > 0:

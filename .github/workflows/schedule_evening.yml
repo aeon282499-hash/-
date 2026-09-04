@@ -71,6 +71,8 @@ jobs:
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       NOTE_URL: ${{ secrets.NOTE_URL }}
       EVENING_RUN: "1"
+      # 極み買いの玉サイズ傾斜（日経VI代替・2026-09-04）。"1"で有効・未設定/"0"は表示のみ＝本人承認後に切替
+      KIWAMI_VI_TILT: "0"
       PYTHONIOENCODING: utf-8
 
     steps:
@@ -123,7 +125,7 @@ jobs:
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json \
-            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json; do
+            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json kiwami_vi.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0
