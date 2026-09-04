@@ -1,11 +1,4 @@
 {
-  "date": "2026-09-04",
-  "signals": [
-    {
-      "ticker": "5021.T",
-      "name": "コスモエネルギーホールディングス",
-      "direction": "SELL",
-      "prev_close": 4414.0
-    }
-  ]
+  "date": "2026-09-07",
+  "signals": []
 }
