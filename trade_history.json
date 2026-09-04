@@ -1209,6 +1209,56 @@
       "close": 2671.0,
       "pnl": -0.98,
       "win": false
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
+      "direction": "BUY",
+      "open": 2940.0,
+      "close": 2912.0,
+      "pnl": -0.95,
+      "win": false
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "5110.T",
+      "name": "住友ゴム工業",
+      "direction": "BUY",
+      "open": 2152.0,
+      "close": 2099.0,
+      "pnl": -2.46,
+      "win": false
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "3086.T",
+      "name": "Ｊ．フロント　リテイリング",
+      "direction": "BUY",
+      "open": 2716.0,
+      "close": 2767.5,
+      "pnl": 1.9,
+      "win": true
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "4612.T",
+      "name": "日本ペイントホールディングス",
+      "direction": "BUY",
+      "open": 1135.5,
+      "close": 1142.0,
+      "pnl": 0.57,
+      "win": true
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "3099.T",
+      "name": "三越伊勢丹ホールディングス",
+      "direction": "BUY",
+      "open": 3180.0,
+      "close": 3203.0,
+      "pnl": 0.72,
+      "win": true
     }
   ]
 }

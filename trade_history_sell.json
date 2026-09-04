@@ -99,6 +99,16 @@
       "close": 1717.0,
       "pnl": 0.43,
       "win": true
+    },
+    {
+      "date": "2026-09-04",
+      "ticker": "5021.T",
+      "name": "コスモエネルギーホールディングス",
+      "direction": "SELL",
+      "open": 4420.0,
+      "close": 4347.0,
+      "pnl": 1.65,
+      "win": true
     }
   ]
 }
