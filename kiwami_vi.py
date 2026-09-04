@@ -117,12 +117,21 @@ def load(target_day: date) -> dict:
 
 
 def line(info: dict, base_size: int) -> str:
-    """配信に添える1行。"""
-    vi = info.get("vi"); m = float(info.get("mult") or 1.0)
+    """配信に添える1行（利用者目線レビュー2026-09-04: 用語は「相場ボラ」・日付は終値時点・売りは不変を明示）。"""
+    vi = info.get("vi"); m = float(info.get("mult") or 1.0); base = base_size // 10000
     if vi is None:
-        return "🧭 日経VI: 取得なし → 1件は基準サイズ"
-    tag = "高ボラ→増" if m > 1 else ("低ボラ→減" if m < 1 else "通常")
-    s = f"🧭 日経VI {vi:.1f}（{info.get('vi_date')}）→ **1件 {int(base_size * m) // 10000}万円**（基準{base_size // 10000}万×{m:.1f}・{tag}）"
-    if not info.get("enabled"):
-        s += "　※表示のみ（傾斜OFF）"
-    return s
+        return f"🧭 相場ボラ: 取得できず → 今回は1件{base}万（通常どおり）"
+    would = size_mult(vi)                          # OFFでも「ONならいくらか」を見せる
+    lvl = "高ボラ" if would > 1 else ("低ボラ" if would < 1 else "通常")
+    try:
+        from datetime import date as _d
+        _vd = _d.fromisoformat(info.get("vi_date")); when = f"{_vd.month}/{_vd.day}終値時点"
+    except Exception:
+        when = str(info.get("vi_date"))
+    if info.get("enabled"):
+        if m == 1.0:
+            return f"🧭 相場ボラ（日経VI相当）{vi:.1f}・{when}＝{lvl} → 今回の買いは1件 {base}万円（通常）"
+        return (f"🧭 相場ボラ（日経VI相当）{vi:.1f}・{when}＝{lvl} → **今回の買いは1件 {int(base_size * m) // 10000}万円**"
+                f"（{lvl}→{m:.1f}倍・売りは{base}万のまま）")
+    on_size = int(base_size * would) // 10000
+    return f"🧭 相場ボラ（日経VI相当）{vi:.1f}・{when}＝{lvl} → ONなら1件{on_size}万。今はOFF＝{base}万のまま"

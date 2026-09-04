@@ -205,7 +205,7 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         _vi_mult = 1.0
     _base = KIWAMI_SIZE if key == "main" else TIER_FILES[key][2]
     _size = int(_base * _vi_mult)
-    _cap = kiwami_px_cap(key) if _vi_mult == 1.0 else _size // 100
+    _cap = kiwami_px_cap(key)   # 値がさ上限はサイズに連動させない（BTの母集団=1万円固定とパリティ・レビューA）
     # 極みは損切りが広い分だけ通常版より長く持つことがある。通常版が先に決済して同じ銘柄に
     # 再シグナルを出しても、極みがまだ保有中なら二重に建ててはいけない（実弾で回す以上、
     # 同一銘柄の重複建ては通常版と同じく禁止・2026-07-26）。
@@ -802,7 +802,7 @@ def send_discord(today: date, key: str = "main") -> bool:
             _vi = kiwami_vi.load(today); _vm = float(_vi.get("mult") or 1.0)
         except Exception:
             _vi = {"vi": None, "mult": 1.0}; _vm = 1.0
-        size = int(size * _vm); _cap_disp = kiwami_px_cap(key) if _vm == 1.0 else size // 100
+        base_size = size; size = int(size * _vm); _cap_disp = kiwami_px_cap(key)   # 上限は固定（記帳側と同じ）
         try:
             from notifier import _nth_trading_day
             exit_str = _nth_trading_day(today, 2).strftime("%m/%d")
@@ -822,6 +822,14 @@ def send_discord(today: date, key: str = "main") -> bool:
         ]
         try:
             lines.append(kiwami_vi.line(_vi, TIER_FILES[key][2]))
+            if _vm > 1.0:
+                _tot = 0
+                for _s in extras:
+                    _pc = _s.get("prev_close", 0) or 0; _lp = _s.get("limit_price") or 0
+                    if 0 < _pc <= _cap_disp:
+                        _tot += max(100, int(size / _pc / 100) * 100) * _lp
+                lines.append(f"💴 合計 約{_tot/1e4:.0f}万。資金が足りない夜は #1→#2→#3 の順に{size//10000}万で建て、"
+                             f"最後の1本は残金で株数を減らす（100株に満たなければ見送り）")
         except Exception:
             pass
         lines.append("─" * 24)
@@ -863,10 +871,11 @@ def send_discord(today: date, key: str = "main") -> bool:
                 continue
             lv = 0.0 if lp["status"] == "expired" else (lp.get("pnl_pct") or 0.0)
             mark = "⚠️割れた" if abs(sv - lv) > 0.01 else "一致"
+            _sz = r.get("size") or size   # 玉ごとのサイズ（傾斜後）で換算
             settled.append(
                 f"{label}｜**{r['name']}** {mark}\n"
                 f"　本番 {lv:+.2f}%（{lp.get('exit_type')}） → 影 {sv:+.2f}%（{r['exit_type']}）"
-                f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
+                f" 差 **{(sv - lv) / 100 * _sz / 10_000:+.2f}万**")
     if settled:
         embeds.append({
             "title": "📕 極みの決済（紙の再現・通常版の帳簿とは別)",
@@ -1066,7 +1075,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "description": "\n".join([buy_txt, _hold_line(buy_holds),
                                   f"\n📊 週間合計（買い）: **{buy_yen:+,}円**"]),
         "color": _COLOR_WIN if buy_yen >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{tier_size // 10000}万・3枠・損切り-3%(通常版と同じ)・利確+5%・RSI≥50/3日で決済"},
+        "footer": {"text": f"1件{tier_size // 10000}万(ボラ傾斜時は70〜130%)・3枠・損切り-3%(通常版と同じ)・利確+5%・RSI≥50/3日で決済"},
     }], env=SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
 
     sell_txt, sell_yen = block(sell_week, "空売り", "📉", sell=True)
@@ -1140,7 +1149,7 @@ def monthly_report(today: date) -> bool:
                      else f"📈 {year}年 月別・年間損益（極み{sfx}・{kind}）",
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
-            "footer": {"text": f"※{slots}枠×1件{tier_size // 10000}万・"
+            "footer": {"text": f"※{slots}枠×1件{tier_size // 10000}万(ボラ傾斜時は玉ごとの台帳サイズで集計)・"
                                f"年間%は月利の和・資金枠に収まる分のみ集計・"
                                f"損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
         }

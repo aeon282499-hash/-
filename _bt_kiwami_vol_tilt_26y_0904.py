@@ -19,7 +19,7 @@ a, b = np.polyfit(J.mv, J.nvi, 1); corr = J.mv.corr(J.nvi)
 print(f"較正: 重なり{len(J)}日 相関{corr:.3f}  VI相当 = {a:.3f}×市場ボラ + {b:.2f}")
 vi_eq = (a * mv + b).rename("vi_eq")
 print("VI相当の年別中央値:", {y: round(v, 1) for y, v in vi_eq.groupby(vi_eq.index.year).median().items()})
-vi_lag = vi_eq.shift(1)
+vi_lag = vi_eq.shift(2)   # 本番パリティ: エントリー日E に対し E-2 営業日のVI（前夜18:50に使える最新値）
 def tilt_table(picks, label, hi=20, lo=15, up=1.3, dn=0.7, rev=False):
     P = picks.copy(); P["entry"] = pd.to_datetime(P.entry)
     P = pd.merge_asof(P.sort_values("entry"), pd.DataFrame({"Date": vi_lag.index, "v": vi_lag.values}).dropna(), left_on="entry", right_on="Date", allow_exact_matches=True)

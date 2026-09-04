@@ -48,11 +48,11 @@ with tempfile.TemporaryDirectory() as d:
         t("VI取得失敗→mult1.0で継続", info["mult"] == 1.0 and "失敗" in info["note"])
         # 配信行
         s = KV.line({"vi": 26.2, "vi_date": "2026-09-02", "mult": 1.3, "enabled": True}, 1_000_000)
-        t("配信行 130万", "130万円" in s and "高ボラ" in s)
+        t("配信行 130万", "130万円" in s and "高ボラ" in s and "売りは100万のまま" in s)
         s = KV.line({"vi": 12.0, "vi_date": "2026-09-02", "mult": 0.7, "enabled": True}, 1_000_000)
         t("配信行 70万", "70万円" in s and "低ボラ" in s)
         s = KV.line({"vi": 26.2, "vi_date": "2026-09-02", "mult": 1.0, "enabled": False}, 1_000_000)
-        t("OFF表示", "表示のみ" in s)
+        t("OFF表示（ONならいくらかを見せる）", "ONなら1件130万" in s and "今はOFF" in s)
         # record_signals: 記帳サイズと値がさカットが傾斜後
         import shadow_exit as SE
         os.environ["KIWAMI_VI_TILT"] = "1"
@@ -64,8 +64,8 @@ with tempfile.TemporaryDirectory() as d:
             open(SE.KIWAMI_SIG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
         n = SE.record_signals("main", date(2026, 9, 4), {})
         rows = SE.load_ledger("main")
-        t("値がさ1.2万円は130万玉(上限1.3万)なら記帳される", any(r["ticker"] == "1111.T" for r in rows))
-        t("記帳サイズ=130万・vi_mult=1.3", all(r["size"] == 1_300_000 and r.get("vi_mult") == 1.3 for r in rows))
+        t("値がさ1.2万円は130万玉でも見送り（上限1万円はBTと同じ固定）", not any(r["ticker"] == "1111.T" for r in rows))
+        t("2222.Tは記帳サイズ=130万・vi_mult=1.3", [r["ticker"] for r in rows] == ["2222.T"] and rows[0]["size"] == 1_300_000 and rows[0].get("vi_mult") == 1.3)
         # OFF なら従来どおり（上限1万円で1111.Tは見送り・size=100万）
         for f in (SE.TIER_FILES["main"][0], "shadow_exit_main.json"):
             if os.path.exists(f): os.remove(f)
