@@ -825,6 +825,19 @@ def calc_volume_ratio(df: pd.DataFrame, period: int = VOL_AVG_PERIOD) -> float |
     return round(prev_vol / avg_vol, 2)
 
 
+def calc_vol_trend5(df: pd.DataFrame) -> float | None:
+    """5日出来高トレンド＝直近5営業日の平均出来高 ÷ その前20営業日の平均出来高（極上の入口条件・2026-09-05）。
+    BT(_bt_kiwami_gokujo_0905.py) と同じ式: v[t-4..t].mean() / v[t-24..t-5].mean()（t=最終足=判定基準日）。
+    「出来高が枯れた押し目」ほど反発が良い（26年×4時代で単調・10年 1枠×300万で+536万）。"""
+    vol = df["Volume"].dropna()
+    if len(vol) < 25:
+        return None
+    base = float(vol.iloc[-25:-5].mean())
+    if base <= 0:
+        return None
+    return round(float(vol.iloc[-5:].mean()) / base, 3)
+
+
 def calc_turnover(df: pd.DataFrame) -> float | None:
     if len(df) < 2:
         return None
@@ -980,6 +993,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "turnover":    turnover,
         "prev_close":  last_close,
         "reason":      reason,
+        "vt5":         calc_vol_trend5(df),   # 極上の入口条件（2026-09-05）・通常版/極みは使わない
     }
 
 

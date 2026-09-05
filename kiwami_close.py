@@ -46,7 +46,9 @@ _COLOR_ACT, _COLOR_OK, _COLOR_DONE = 0xE67E22, 0x95A5A6, 0x2ECC71
 
 TIER_LEDGERS = {"main": ("大資金", "shadow_exit_main.json",  "DISCORD_WEBHOOK_SHADOW_URL"),
                 "mid":   ("中資金", "shadow_exit_mid.json",   "DISCORD_WEBHOOK_SHADOW_MID_URL"),
-                "small": ("小資金", "shadow_exit_small.json", "DISCORD_WEBHOOK_SHADOW_SMALL_URL")}
+                "small": ("小資金", "shadow_exit_small.json", "DISCORD_WEBHOOK_SHADOW_SMALL_URL"),
+                # 極上（2026-09-05・1枠×300万・出口は極みと同じ）。台帳/配信先だけ別。
+                "gokujo": ("極上",  "shadow_exit_gokujo.json", "DISCORD_WEBHOOK_GOKUJO_URL")}
 
 
 def load_open(key: str = "main") -> list[dict]:
@@ -121,7 +123,7 @@ def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
 
 
 def build_embeds(targets: list[dict], checked: list[dict], today: date,
-                 positions: list[dict], sell: bool = False) -> list[dict]:
+                 positions: list[dict], sell: bool = False, brand: str = "極み") -> list[dict]:
     """通常版 notifier._build_close_embed / _build_close_no_targets_embed と同一の書体
     （2026-08-09改装・本人「わかりずらい・売買シグナルと一緒の書体にして」）。
     極み固有の情報は損切りが通常版と違う時だけ行末に付ける（買いは現在一律-3%＝表示不要、
@@ -168,7 +170,7 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                 lines.append(f"　{t['warn']}")
         title_kind = "空売り大引け処分指示" if sell else "大引け処分指示"
         embeds.append({
-            "title": f"⚡【極み {title_kind}】{date_str}",
+            "title": f"{'👑' if brand == '極上' else '⚡'}【{brand} {title_kind}】{date_str}",
             "description": "\n".join(lines),
             "color": _COLOR_ACT,
             "footer": {"text": f"配信時刻: {time_str}"},
@@ -208,7 +210,7 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
         title_kind = "売り保有チェック" if sell else "大引けチェック"
         suffix = "" if targets else f" — {action}対象なし"
         embeds.append({
-            "title": f"🔍【極み {title_kind}】{date_str}{suffix}",
+            "title": f"🔍【{brand} {title_kind}】{date_str}{suffix}",
             "description": "\n".join(lines),
             "color": 0xE74C3C if warn else (_COLOR_DONE if settled else _COLOR_OK),
             "footer": {"text": f"配信時刻: {time_str}"},
@@ -243,7 +245,7 @@ def main() -> None:
     # 買いと売りは独立に判定する。片方が0件でももう片方は必ず処理する
     # （旧: 買いが0件だと return していて、売りだけ保有している日に処分指示が消えていた）
     positions = load_open("main")
-    tier_pos = {k2: load_open(k2) for k2 in ("mid", "small")}   # 2026-08-28 中/小も判定
+    tier_pos = {k2: load_open(k2) for k2 in ("mid", "small", "gokujo")}   # 2026-08-28 中/小も判定・2026-09-05 極上
     sells = load_open_sell()
     if not positions and not sells and not any(tier_pos.values()):
         print("[kiwami_close] 極みの保有玉なし（買い0/売り0）→ 無送信")
@@ -268,6 +270,7 @@ def main() -> None:
             ("買い", positions, "BUY", WEBHOOK_ENV, False, "kiwami"),
             ("買い・中資金", tier_pos["mid"], "BUY", TIER_LEDGERS["mid"][2], False, "kiwami_mid"),
             ("買い・小資金", tier_pos["small"], "BUY", TIER_LEDGERS["small"][2], False, "kiwami_small"),
+            ("買い・極上", tier_pos["gokujo"], "BUY", TIER_LEDGERS["gokujo"][2], False, "kiwami_gokujo"),
             ("売り", sells, "SELL", SELL_WEBHOOK_ENV, True, "kiwami"),
             ("売り・中資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL", True, "kiwami"),
             ("売り・小資金", sells, "SELL", "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL", True, "kiwami")):
@@ -279,7 +282,7 @@ def main() -> None:
             if not dry:   # 14:55判定を記録＝翌朝の shadow_exit.advance がこれに従う（2026-08-28）
                 import close_decisions
                 close_decisions.record(today, scope, direction, tg, ck)
-            emb = build_embeds(tg, ck, today, pos, sell=is_sell)
+            emb = build_embeds(tg, ck, today, pos, sell=is_sell, brand="極上" if scope == "kiwami_gokujo" else "極み")
             if not emb:
                 continue
             if dry:

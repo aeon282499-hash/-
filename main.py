@@ -412,6 +412,41 @@ def main() -> None:
                     # 極みファイル生成が死んでも友達向け配信(中・小)は止めない。
                     print(f"[main-極み] 生成失敗（通常版にフォールバック）: {_ke}")
 
+                # ── 極上（2026-09-05 本人決定「買いシグナル極み 1玉300万・保有は1銘柄」）────
+                # 極みの入口5条件＋買残1.2に「5日出来高トレンド≤GOKUJO_VT5_MAX（出来高が枯れた押し目）」を
+                # 足し、同じscore順で選ぶ。枠1×300万は shadow_exit 側（記帳・配信）。値がさは1万円カット。
+                # 根拠: _bt_kiwami_gokujo_0905.py 10年 1枠×300万=+536万/勝率57.9%/件+0.45%/DD-51万、
+                # 26年 17-21 年+55万/22-26 年+55万。vt5欠損は見送り（BTは有限値のみ）。
+                try:
+                    from shadow_exit import GOKUJO_VT5_MAX, GOKUJO_SIG_FILE, GOKUJO_SIZE, GOKUJO_PX_CAP
+                    from screener import MARGIN_DC_POOL_MAX as _dc_pool
+                    _g_pool = [c for c in all_buy
+                               if c.get("vt5") is not None and c["vt5"] <= GOKUJO_VT5_MAX
+                               and (c.get("prev_close") or 0) <= GOKUJO_PX_CAP]
+                    _g_tier = {"key": "gokujo", "label": "極上", "size": GOKUJO_SIZE}
+                    gokujo_signals, _ = _select_tier_signals(
+                        _g_pool, [], _g_tier, [], [], MAX_SIGNALS, dc_max=_dc_pool,
+                    )
+                    with open(GOKUJO_SIG_FILE, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "date":    today_str,
+                            "signals": [{"ticker": s["ticker"], "name": s["name"],
+                                         "direction": "BUY",
+                                         "prev_close": s.get("prev_close", 0),
+                                         "limit_price": yose_limit_price(s.get("prev_close", 0) or 0),
+                                         "days_cover": s.get("days_cover"),
+                                         "vt5": s.get("vt5"),
+                                         "rsi": s.get("rsi"),
+                                         "deviation": s.get("deviation"),
+                                         "vol_ratio": s.get("vol_ratio"),
+                                         "range_ratio": s.get("range_ratio"),
+                                         "turnover": s.get("turnover", 0)}
+                                        for s in gokujo_signals],
+                        }, f, ensure_ascii=False, indent=2)
+                    print(f"[main-極上] vt5≤{GOKUJO_VT5_MAX} 候補{len(_g_pool)}件 → 選定{len(gokujo_signals)}件 → {GOKUJO_SIG_FILE}")
+                except Exception as _ge:
+                    print(f"[main-極上] 生成失敗（極上は当日見送り・他の配信に影響なし）: {_ge}")
+
             # 新規シグナル追加・保存
             positions      = add_signals_to_positions(positions, tier_signals, today, entry_date)
             sell_positions = add_signals_to_positions(sell_positions, tier_sell_signals, today, entry_date)

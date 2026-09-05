@@ -79,6 +79,8 @@ KIWAMI_PX_CAP = 10_000
 
 def kiwami_px_cap(key: str) -> int:
     """値がさカット＝100株が1玉サイズに収まる上限（大1万円/中5千円/小3千円）。"""
+    if key == GOKUJO_KEY:
+        return GOKUJO_PX_CAP
     return KIWAMI_PX_CAP if key == "main" else TIER_FILES[key][2] // 100
 
 # ── 極みの売り（2026-07-29 実装・_bt_sell_improve.py の8軸グリッド）─────────────
@@ -94,11 +96,33 @@ SELL_MAX_SLOTS = 3      # 買いと独立の3枠（BT公式+116.9万は150万×3
 KIWAMI_SELL_LEDGER = "kiwami_sell.json"
 SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
 
+# ── 極上（2026-09-05 本人決定「買いシグナル極み 1玉300万・保有は1銘柄」）──────────────
+# 極みの入口5条件＋買残1.2に「5日出来高トレンド(直近5日平均÷前20日平均)≤1.09＝出来高が枯れた押し目」を
+# 足し、枠1×300万で回す。出口(寄指1.01/TP5/STOP3/H3/RSI50)は極みと完全に同じ。
+# 根拠 _bt_kiwami_gokujo_0905.py: 10年(本番同等プール) 1枠×300万=+536万・42玉/年(月3.6件)・勝率57.9%・
+# 件+0.45%・PF1.53・最悪月-29万・DD-51万。26年(立花) 01-08 年-5万/09-16 +12/17-21 +55/22-26 +55・最悪年-72万。
+# 同じ300万を現行3枠×100万で回すと+257万(勝率52.1%/DD-88万)＝2倍・DD半分。今のレジーム(2024-26型)では現行が上。
+# 台帳=shadow_exit_gokujo.json・配信=DISCORD_WEBHOOK_GOKUJO_URL（本人専用ch）。通常版・極みの台帳/配信には触れない。
+GOKUJO_KEY        = "gokujo"
+GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
+GOKUJO_SIZE       = 3_000_000
+GOKUJO_MAX_SLOTS  = 1
+GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
+GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
+GOKUJO_WEBHOOK_ENV = "DISCORD_WEBHOOK_GOKUJO_URL"
+
 TIER_FILES = {
     "main":  ("today_signals.json",        "positions.json",        1_000_000, "大資金"),
     "mid":   ("today_signals_mid.json",    "positions_mid.json",      500_000, "中資金"),
     "small": ("today_signals_small.json",  "positions_small.json",    300_000, "小資金"),
+    # 極上: 本番帳簿は無い（2要素目は存在しないファイル＝_live_closed が {} を返す）
+    GOKUJO_KEY: (GOKUJO_SIG_FILE, "_no_live_ledger_gokujo.json", GOKUJO_SIZE, "極上"),
 }
+
+
+def max_slots(key: str) -> int:
+    """同時保有の上限。極み=3枠・極上=1枠。"""
+    return GOKUJO_MAX_SLOTS if key == GOKUJO_KEY else MAX_SLOTS
 
 
 def ledger_path(key: str) -> str:
@@ -180,7 +204,8 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
     # 極み(main)は買残回転1.2の専用ファイルを優先（2026-08-02・10年+194万→+311万の採用）。
     # 当日分が無ければ従来の today_signals.json へフォールバック＝移行期・障害時も取りこぼさない。
     # 2026-08-28: 中/小も極み選定を使う（本人指示）。値がさカットだけ資金別。
-    if os.path.exists(KIWAMI_SIG_FILE):
+    # 極上は専用ファイルだけを読む（無い/古い日付なら当日は何も建てない＝極みへフォールバックしない）。
+    if key != GOKUJO_KEY and os.path.exists(KIWAMI_SIG_FILE):
         try:
             with open(KIWAMI_SIG_FILE, encoding="utf-8") as f:
                 _kp = json.load(f)
@@ -219,10 +244,10 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
         if tk in still_open:
             print(f"[shadow-{key}] {tk} は極みで保有中 → 重複エントリーを回避")
             continue
-        if slots_used >= MAX_SLOTS:
+        if slots_used >= max_slots(key):
             # 枠が埋まっている＝通常版には出るが極みでは建てない。見送った事実は配信に出す
             skipped.append(s.get("name", tk))
-            print(f"[shadow-{key}] {tk} は枠満杯({MAX_SLOTS})のため見送り")
+            print(f"[shadow-{key}] {tk} は枠満杯({max_slots(key)})のため見送り")
             continue
         slots_used += 1
         df = all_data.get(tk)
@@ -506,6 +531,8 @@ def run_shadow(tiers, today: date, get_data) -> bool:
     keys = [t["key"] for t in tiers if t["key"] in TIER_FILES]
     if not keys:
         return
+    if GOKUJO_KEY not in keys:       # 極上は TIERS に無い（通常版の階層ではない）ので常に足す
+        keys.append(GOKUJO_KEY)
     if not any(os.path.exists(TIER_FILES[k][0]) or load_ledger(k) for k in keys):
         return
     all_data = get_data() if callable(get_data) else get_data
@@ -527,7 +554,7 @@ def run_shadow(tiers, today: date, get_data) -> bool:
         print(f"[shadow] 極み売り台帳の更新スキップ（買いと通常版に影響なし）: {e}")
 
     # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
-    for _k in NOTIFY_KEYS:           # 極み・買い（大/中/小・2026-08-28から3階層）
+    for _k in BUY_NOTIFY_KEYS:       # 極み・買い（大/中/小・2026-08-28から3階層）＋極上（2026-09-05）
         try:
             send_discord(today, _k)
         except Exception as e:
@@ -578,7 +605,7 @@ def resend_only(today: date) -> bool:
     """台帳は触らず、当日分の極み買い/売りを再送するだけ（保険ランのフォールバック）。"""
     global _POST_FAILED
     _POST_FAILED = False
-    for _k in NOTIFY_KEYS:
+    for _k in BUY_NOTIFY_KEYS:
         try:
             send_discord(today, _k)
         except Exception as e:
@@ -671,6 +698,7 @@ SHADOW_TIER_WEBHOOK_ENV = {
     "main":  SHADOW_WEBHOOK_ENV,
     "mid":   "DISCORD_WEBHOOK_SHADOW_MID_URL",
     "small": "DISCORD_WEBHOOK_SHADOW_SMALL_URL",
+    GOKUJO_KEY: GOKUJO_WEBHOOK_ENV,          # 極上・買い（2026-09-05・本人専用ch）
 }
 SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り（大資金）
 # 中/小資金の極み売り（2026-08-28 本人「売りもチャンネルを統合」）。台帳(kiwami_sell.json)は1本のまま、
@@ -691,7 +719,8 @@ def _report_env(preferred: str) -> str:
     return preferred if os.getenv(preferred, "").strip() else SHADOW_WEBHOOK_ENV
 # 配信する階層（2026-07-26 本人指示「資金は大のみ」）。台帳は3階層とも記録し続けるので、
 # 後から中/小を出したくなったらこのタプルに足すだけで過去分ごと表示できる。
-NOTIFY_KEYS = ("main", "mid", "small")   # 2026-08-28 中/小も極み配信
+NOTIFY_KEYS = ("main", "mid", "small")   # 2026-08-28 中/小も極み配信（売り配信はこの3階層）
+BUY_NOTIFY_KEYS = NOTIFY_KEYS + (GOKUJO_KEY,)   # 買い配信・月次だけ極上を足す（売りは極上に無い・2026-09-05）
 _POST_FAILED = False                     # 2026-09-03 監査: Discord送信失敗をrun_shadowへ伝える
 KIWAMI_SENT_FILE = "kiwami_sent.json"    # {"date","sent"}: sent=False なら保険ランが極みだけ再送する
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
@@ -738,9 +767,10 @@ def send_discord(today: date, key: str = "main") -> bool:
 
     # ① 今朝の極みシグナル（today_signals_kiwami.json の全件・通常版と同形式）
     sigs: list[dict] = []
-    if os.path.exists(KIWAMI_SIG_FILE):
+    _sig_src = GOKUJO_SIG_FILE if key == GOKUJO_KEY else KIWAMI_SIG_FILE   # 極上は専用ファイル
+    if os.path.exists(_sig_src):
         try:
-            with open(KIWAMI_SIG_FILE, encoding="utf-8") as f:
+            with open(_sig_src, encoding="utf-8") as f:
                 _kp = json.load(f)
             if _kp.get("date") == today_str:
                 sigs = [s for s in _kp.get("signals", []) if s.get("direction") == "BUY"]
@@ -774,7 +804,7 @@ def send_discord(today: date, key: str = "main") -> bool:
 
     if slot_full:
         embeds.append({
-            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — 枠満杯",
+            "title": f"{_brand(key)}{today.strftime('%Y年%m月%d日')} — 枠満杯",
             "description": "📦 **枠満杯＝今夜の新規なし**（決済で枠が空いたら次回から）",
             "color": _COLOR_INFO,
         })
@@ -786,6 +816,8 @@ def send_discord(today: date, key: str = "main") -> bool:
         except Exception:
             exit_str = "3営業日後"
         waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄・枠内）" if n_in > 1 else "📦 **#1 を買う**（枠内）"
+        if key == GOKUJO_KEY:
+            waku = "📦 **#1 を買う**（1銘柄・最大保有1）"
         # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】文面から
         # 指標値(RSI/乖離/出来高/代金)・🔥極み帯マーク・保有ルール行・
         # 前日終値(寄指÷前日で寄指係数が割れる)を撤去。判定・台帳・JSONは無変更＝表示のみ。
@@ -814,7 +846,7 @@ def send_discord(today: date, key: str = "main") -> bool:
             lines.append(head)
             lines.append("")
         embeds.append({
-            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
+            "title": f"{_brand(key)}{today.strftime('%Y年%m月%d日')} — 買い{len(extras)}銘柄",
             "description": "\n".join(lines).rstrip(),
             "color": _COLOR_BUY,
         })
@@ -832,7 +864,10 @@ def send_discord(today: date, key: str = "main") -> bool:
             lp = live.get((r["ticker"], r["signal_date"]))
             sv = 0.0 if r["status"] == "expired" else (r.get("pnl_pct") or 0.0)
             if lp is None:
-                settled.append(f"{label}｜{r['name']} 影 {sv:+.2f}%（{r['exit_type']}）※本番は未決済")
+                if _k == GOKUJO_KEY:     # 極上に本番帳簿は無い＝比較せず結果だけ
+                    settled.append(f"{label}｜**{r['name']}** {sv:+.2f}%（{_EXIT_LABEL.get(r['exit_type'], r['exit_type'])}）")
+                else:
+                    settled.append(f"{label}｜{r['name']} 影 {sv:+.2f}%（{r['exit_type']}）※本番は未決済")
                 continue
             lv = 0.0 if lp["status"] == "expired" else (lp.get("pnl_pct") or 0.0)
             mark = "⚠️割れた" if abs(sv - lv) > 0.01 else "一致"
@@ -842,7 +877,7 @@ def send_discord(today: date, key: str = "main") -> bool:
                 f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
     if settled:
         embeds.append({
-            "title": "📕 極みの決済（紙の再現・通常版の帳簿とは別)",
+            "title": "📕 極上の決済" if key == GOKUJO_KEY else "📕 極みの決済（紙の再現・通常版の帳簿とは別)",
             "description": "\n".join(settled[:12]),
             "color": _COLOR_INFO,
         })
@@ -855,8 +890,10 @@ def send_discord(today: date, key: str = "main") -> bool:
     if not sigs:
         # 実弾で回すので「無音＝故障」と区別できるようシグナル0件の日も必ず出す（通常版と同じ思想）
         embeds.insert(0, {
-            "title": f"⚡【スイング極み{_tier_sfx(key)}】{today.strftime('%Y年%m月%d日')} — シグナルなし",
-            "description": "**本日の極みの買いシグナルはありません。**（0銘柄＝見送り）",
+            "title": f"{_brand(key)}{today.strftime('%Y年%m月%d日')} — シグナルなし",
+            "description": ("**本日の極上の買いシグナルはありません。**（0銘柄＝見送り・月3〜4件の系統）"
+                            if key == GOKUJO_KEY else
+                            "**本日の極みの買いシグナルはありません。**（0銘柄＝見送り）"),
             "color": _COLOR_INFO,
         })
     if not embeds:
@@ -866,7 +903,12 @@ def send_discord(today: date, key: str = "main") -> bool:
 
 
 def _tier_sfx(key: str) -> str:
-    return "" if key == "main" else "・" + TIER_FILES[key][3]
+    return "" if key in ("main", GOKUJO_KEY) else "・" + TIER_FILES[key][3]
+
+
+def _brand(key: str) -> str:
+    """配信タイトルの冠。極み=⚡【スイング極み(・階層)】／極上=👑【スイング極上】"""
+    return "👑【スイング極上】" if key == GOKUJO_KEY else f"⚡【スイング極み{_tier_sfx(key)}】"
 
 
 def send_discord_sell(today: date, key: str = "main") -> bool:
@@ -1034,13 +1076,16 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
     sfx = _tier_sfx(key)
 
     buy_txt, buy_yen = block(buy_week, "BUY", "📈", sell=False)
+    brand = "売買シグナル極上" if key == GOKUJO_KEY else f"売買シグナル極み{sfx}"
     ok_buy = _shadow_post([{
-        "title": f"📅【週次レポート】売買シグナル極み{sfx}｜買い｜{rng}",
+        "title": f"📅【週次レポート】{brand}｜買い｜{rng}",
         "description": "\n".join([buy_txt, _hold_line(buy_holds),
                                   f"\n📊 週間合計（買い）: **{buy_yen:+,}円**"]),
         "color": _COLOR_WIN if buy_yen >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{tier_size // 10000}万・3枠・損切り-3%(通常版と同じ)・利確+5%・RSI≥50/3日で決済"},
+        "footer": {"text": f"1件{tier_size // 10000}万・{max_slots(key)}枠・損切り-3%(通常版と同じ)・利確+5%・RSI≥50/3日で決済"},
     }], env=SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
+    if key == GOKUJO_KEY:            # 極上に売りは無い（売り週次は大/中/小のchへ既に出ている）
+        return ok_buy
 
     sell_txt, sell_yen = block(sell_week, "空売り", "📉", sell=True)
     ok_sell = _shadow_post([{
@@ -1073,6 +1118,7 @@ def monthly_report(today: date) -> bool:
     def _embed(rows: list[dict], *, sell: bool, funded: set | None,
                key: str = "main") -> dict | None:
         tier_size = TIER_FILES[key][2]
+        slots = 1 if key == GOKUJO_KEY else 3   # 極上は1枠×300万（2026-09-05）
         # 月次だけは大資金にもラベルを付ける（2026-09-01 本人「大資金中資金小資金わかりやすく」。
         # シグナル/週次は従来どおり _tier_sfx＝大資金無印のまま）。
         sfx = "・" + TIER_FILES[key][3]
@@ -1108,9 +1154,10 @@ def monthly_report(today: date) -> bool:
         desc = "\n".join(lines)
         desc += f"\n\n**{year}年合計: {a_sign}{ann:.1f}%（{a_sign}{ann_yen / 10000:.1f}万円）**"
         kind = "空売り" if sell else "スイング"
+        head = "極上" if key == GOKUJO_KEY else f"極み{sfx}"
         return {
-            "title": f"📉 {year}年 月別・年間損益（極み{sfx}・{kind}）" if sell
-                     else f"📈 {year}年 月別・年間損益（極み{sfx}・{kind}）",
+            "title": f"📉 {year}年 月別・年間損益（{head}・{kind}）" if sell
+                     else f"📈 {year}年 月別・年間損益（{head}・{kind}）",
             "description": desc,
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
             "footer": {"text": f"※{slots}枠×1件{tier_size // 10000}万・"
@@ -1120,9 +1167,9 @@ def monthly_report(today: date) -> bool:
 
     # 2026-08-28 本人指示: 月次chは1本＝大/中/小の買い＋売り(大)をまとめて1通で送る
     embeds = []
-    for _k in NOTIFY_KEYS:
+    for _k in BUY_NOTIFY_KEYS:       # 大/中/小＋極上（極上は1枠で資金枠を再適用）
         rows_k = load_ledger(_k)
-        e = _embed(rows_k, sell=False, funded=_slot_funded(rows_k, slots), key=_k)
+        e = _embed(rows_k, sell=False, funded=_slot_funded(rows_k, 1 if _k == GOKUJO_KEY else slots), key=_k)
         if e:
             embeds.append(e)
     sell_embed = _embed(load_sell_ledger(), sell=True, funded=None)   # 売り台帳は記帳時3枠制限済み
