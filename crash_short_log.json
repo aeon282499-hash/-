@@ -88,5 +88,50 @@
   "exec_date": "2026-09-01",
   "exec_open": 17770.0,
   "exec_close": 17770.0
+ },
+ {
+  "ticker": "4052.T",
+  "code": "4052",
+  "name": "フィーチャ",
+  "d0": "2026-09-04",
+  "close": 740.0,
+  "r1": -14.45,
+  "volx": 3.54,
+  "runup": 88.0,
+  "tov_oku": 14.6,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "4440.T",
+  "code": "4440",
+  "name": "ヴィッツ",
+  "d0": "2026-09-04",
+  "close": 1650.0,
+  "r1": -18.84,
+  "volx": 3.38,
+  "runup": 78.3,
+  "tov_oku": 20.6,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "4667.T",
+  "code": "4667",
+  "name": "アイサンテクノロジー",
+  "d0": "2026-09-04",
+  "close": 2970.0,
+  "r1": -19.07,
+  "volx": 3.33,
+  "runup": 101.1,
+  "tov_oku": 15.1,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
