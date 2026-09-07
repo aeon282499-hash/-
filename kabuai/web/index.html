@@ -181,6 +181,8 @@
   <!-- ⚡デイトレタブは2026-08-28本人指示で撤去（viewDaytrade/daytrade_watchデータは残置・
        #/daytrade直リンクは今も動く＝このタブとsetNavの1行を戻せば復活）。代わりに👑極み。 -->
   <a href="#/kiwami" id="nav-kiwami"><span class="i">👑</span>極み</a>
+  <!-- 🎯土俵=デイトレの銘柄選定（方向なし・2026-09-07本人依頼）。データは latest.json.arena（親リポ arena_watchlist.json） -->
+  <a href="#/arena" id="nav-arena"><span class="i">🎯</span>土俵</a>
   <!-- 📈演習タブは2026-08-28本人指示で撤去（viewQuiz/quiz系関数/web/quiz_charts.json/
        web/quiz_daytrade.jsonは残置・#/quiz直リンクは今も動く＝このタブとsetNavの1行を戻せば復活） -->
 
@@ -1277,6 +1279,35 @@ function viewKiwami(){
     <p class="disc">${DATA.disclaimer}</p>`;
 }
 
+// ── 🎯 土俵（デイトレの銘柄選定・方向は付けない・2026-09-07本人依頼）──
+// 前夜データで「翌日日中に上がる銘柄」は選べない（26年日足+15分足+LightGBM OOSで全滅）。
+// 勝っているデイトレーダーがやっている「前夜の準備」＝人と注文が集まる土俵を用意する部分だけを出す。
+// 勝負は板と歩み値（板レコーダーが9〜10時に記録）。データは親リポ arena_watchlist.json → latest.json.arena。
+function viewArena(){
+  const a=DATA.arena;
+  if(!a||!(a.rows||[]).length){
+    return `<h2>🎯 土俵</h2>
+      <div class="card muted">土俵リストがまだありません（前夜18:50頃の配信後に反映されます）。</div>
+      <p class="disc">${DATA.disclaimer}</p>`;
+  }
+  const mats=r=>(r.materials||[]).map(m=>`<span class="chip" style="color:var(--wa);border-color:rgba(255,159,67,.5)">${esc(m.kind)} ${esc(m.time||"")}</span>`).join("");
+  const flags=r=>(r.flags||[]).map(f=>`<div class="muted" style="font-size:11px;margin-top:2px">⚠️ ${esc(f)}</div>`).join("");
+  const row=(r,i)=>`<a class="pickrow" href="#/detail/${r.code}">
+    <div class="pk-nm"><b>${i+1}. ${esc(r.name)}</b>
+      <small>${r.code}${r.sector?" ・ "+esc(r.sector):""} ・ ¥${(r.close||0).toLocaleString()} <span class="${cls(r.chg)}">${fmtPct(r.chg)}</span> ・ 代金${r.turnover_oku}億${r.tov_ratio?`(×${r.tov_ratio})`:""} ・ 値幅${r.range_pct}% ・ ATR${r.atr_pct}% ・ 貸借${esc(r.shortable||"?")}</small>
+      <div class="chips">${mats(r)}</div>${flags(r)}</div></a>`;
+  const extra=(a.materials_extra||[]).map(r=>`<a href="#/detail/${r.code}">${esc(r.name)}</a>(${r.code}/${esc((r.materials||[{}])[0].kind||"")})`).join("、");
+  return `
+    <h2>🎯 土俵 <span class="muted" style="font-weight:400;font-size:12px">${esc(a.target_date||"")} 分（${esc(a.date||"")} 引け・母集団${a.universe||"-"}銘柄）</span></h2>
+    ${a.fresh?"":`<div class="warnbar">⚠️ これは過去分（${esc(a.target_date||"")}）の断面です。</div>`}
+    <div class="card" style="font-size:12px;line-height:1.7"><b>上がる/下がるは付けません。</b>前夜のデータで「翌日日中に上がる銘柄」は選べない（26年日足＋15分足＋AIの学習外検証で全滅）。
+      ここは<b>人と注文が集まる順</b>の一覧＝勝っているデイトレーダーが前夜にやる「準備」の部分だけ。勝負は場中の板と歩み値。</div>
+    <div class="warnbar">📏 ${(a.rules||[]).map(esc).join(" ／ ")}</div>
+    <div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${(a.rows||[]).map(row).join("")}</div></div>
+    ${extra?`<div class="card muted" style="font-size:12px;line-height:1.7"><b style="color:var(--tx)">材料あり（土俵外・代金順）</b>: ${extra}</div>`:""}
+    <p class="disc">${DATA.disclaimer}</p>`;
+}
+
 // ── 🔥 テーマ（勢いに乗る・攻め）＝継続型モメンタム。バーベルを正直に ──
 // 「上がってる勢いに乗る」欲求の正しい居場所。bt_exit（2026-06-01）で blast>=70 ×翌寄り→8日・
 // 損切り-12%・利確なし = +2.36%/件・PF1.62・勝率53.7%（バーベル）。下げ相場では自然に沈黙。
@@ -1536,6 +1567,7 @@ function setNav(h){
   $("#nav-home").classList.toggle("on",h==="#/"||h.startsWith("#/momentum")||h.startsWith("#/detail")||h.startsWith("#/search"));
   $("#nav-sell").classList.toggle("on",h.startsWith("#/sell"));
   $("#nav-kiwami").classList.toggle("on",h.startsWith("#/kiwami"));
+  $("#nav-arena").classList.toggle("on",h.startsWith("#/arena"));
   $("#nav-explore").classList.toggle("on",h.startsWith("#/explore"));
   $("#nav-about").classList.toggle("on",h.startsWith("#/about"));
 }
@@ -1549,6 +1581,7 @@ function render(){
     else if(h.startsWith("#/sell")) $("#view").innerHTML=viewSell();
     else if(h.startsWith("#/daytrade")) $("#view").innerHTML=viewDaytrade();
     else if(h.startsWith("#/kiwami")) $("#view").innerHTML=viewKiwami();
+    else if(h.startsWith("#/arena")) $("#view").innerHTML=viewArena();
     else if(h.startsWith("#/quiz")) $("#view").innerHTML=viewQuiz();
     else if(h.startsWith("#/momentum")) $("#view").innerHTML=viewMomentum();
     else if(h.startsWith("#/explore/")) $("#view").innerHTML=viewExploreList(decodeURIComponent(h.split("/")[2]));

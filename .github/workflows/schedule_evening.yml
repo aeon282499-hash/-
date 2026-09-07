@@ -110,6 +110,14 @@ jobs:
         continue-on-error: true
         run: python main_day.py
 
+      - name: デイトレ土俵リスト（2026-09-07追加・方向なし・銘柄選定のみ）
+        # 当日引けの代金/代金比/値幅/TDnet材料で「翌日人と注文が集まる土俵」を出す。
+        # 配信先 DISCORD_WEBHOOK_ARENA_URL（未設定ならJSONだけ）。板レコーダー(PC)の対象リストも兼ねる。
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_ARENA_URL: ${{ secrets.DISCORD_WEBHOOK_ARENA_URL }}
+        run: python arena_watchlist.py
+
       - name: ポジション・シグナル保存（朝ランと同一リスト）
         run: |
           git config user.name  "github-actions[bot]"
@@ -124,7 +132,7 @@ jobs:
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json _shadow_skipped_gokujo.json \
-            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json; do
+            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json arena_watchlist.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0

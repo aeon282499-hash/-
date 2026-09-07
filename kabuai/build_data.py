@@ -710,6 +710,21 @@ def build() -> dict:
     except Exception as e:
         print(f"[build] 極み読込スキップ: {e}")
 
+    # 🎯 土俵（デイトレの銘柄選定・方向なし・2026-09-07本人依頼）: 親リポの arena_watchlist.py が
+    # 前夜配信で生成・コミットする arena_watchlist.json をそのまま注入。上がる/下がるは付けない
+    # （前夜データで翌日日中の上昇は選べない＝26年BT+AI OOSで確定）。人と注文が集まる順の一覧。
+    arena = None
+    ar_path = HERE.parent / "arena_watchlist.json"
+    try:
+        if ar_path.exists():
+            with open(ar_path, encoding="utf-8") as f:
+                arena = json.load(f)
+            today_jst_str = datetime.now(JST).strftime("%Y-%m-%d")
+            arena["fresh"] = str(arena.get("target_date", "")) >= today_jst_str
+            print(f"[build] 土俵: {arena.get('target_date')} 分 {len(arena.get('rows', []))}本 (fresh={arena['fresh']})")
+    except Exception as e:
+        print(f"[build] 土俵読込スキップ: {e}")
+
     # ── v4(2026-07-18): 🔻売り・モメンタム終了検出 ──
     # 「直近1ヶ月走った銘柄の上昇が終わった」をEODで検出する情報タブ（空売り推奨ではない・
     # デイトレ化しない=本人確定指示）。実データ検証: 高速7504/ベクトル6058は7/16夕方時点で
@@ -1070,6 +1085,7 @@ def build() -> dict:
         "theme_blast": theme_blast,
         "sector_today": sector_today,
         "kiwami": kiwami,
+        "arena": arena,
         "sector_heat": sector_heat,
         "signals": signals,
         "signal_track": track,
