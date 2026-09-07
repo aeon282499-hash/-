@@ -1272,7 +1272,7 @@
       "basis_date": "2026-09-04",
       "prev_close": 6300.0,
       "limit_price": 6300.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 12.1,
       "short": {
         "mark": "○",
@@ -1284,7 +1284,14 @@
       "dev25": 20.0,
       "atr_pct": 5.33,
       "vol_ratio": 2.3,
-      "range_pct": 10.6
+      "range_pct": 10.6,
+      "entry_session": "2026-09-07",
+      "entry_open": 6270.0,
+      "entry_close": 6250.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 0.319,
+      "pnl_yen": 2000,
+      "win": true
     },
     {
       "ticker": "3994.T",
@@ -1294,7 +1301,7 @@
       "basis_date": "2026-09-04",
       "prev_close": 6710.0,
       "limit_price": 6710.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 8.72,
       "short": {
         "mark": "○",
@@ -1306,11 +1313,40 @@
       "dev25": 12.8,
       "atr_pct": 5.64,
       "vol_ratio": 2.4,
-      "range_pct": 6.3
+      "range_pct": 6.3,
+      "entry_session": "2026-09-07",
+      "entry_open": 6565.0,
+      "entry_close": 6221.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "9984.T",
+      "name": "ソフトバンクグループ",
+      "direction": "SELL",
+      "signal_date": "2026-09-08",
+      "basis_date": "2026-09-07",
+      "prev_close": 6217.0,
+      "limit_price": 6220.0,
+      "status": "pending",
+      "daily_gain": 11.22,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "dev25": 14.7,
+      "atr_pct": 5.14,
+      "vol_ratio": 2.3,
+      "range_pct": 6.5
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-07",
+  "last_report_date": "2026-09-08",
   "last_monthly_report": "2026-08",
   "last_weekly_report": "2026-W36"
 }
