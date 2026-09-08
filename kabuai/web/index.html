@@ -975,7 +975,7 @@ function viewAbout(){
     <p style="line-height:1.85;margin:0">このアプリは、東証全銘柄の<b>モメンタム（勢い）の観察ツール</b>です。
       「今どの銘柄が走っているか」（🐵モメンタム）と「どの銘柄の上昇が終わったか」（🔻売り）を、毎日終値ベースで表示します。</p>
     <div style="margin-top:10px;line-height:1.95">
-      <div>🏆 <b>勝ちやすい順張り</b> … 🐵タブの上段。26年の検証で「翌日買って20〜40日持つ」時に市場平均より良かった並び順（低ボラ×半年〜1年の上昇×高すぎない株価）。勢い順ではなく<b>静かに上がり続けている中低位株</b>の順。持ち越し用でデイトレ向けではありません。</div>
+      <div>🏆 <b>勝ちやすい順張り</b> … 🐵タブ最下部の折りたたみ。26年の検証で「翌日買って20〜40日持つ」時に市場平均より良かった並び順（低ボラ×半年〜1年の上昇×高すぎない株価）。勢い順ではなく<b>静かに上がり続けている中低位株</b>の順。持ち越し用でデイトレ向けではありません。</div>
       <div>🐵 <b>モメンタム</b> … 今いちばん勢いがある／過熱している順のランキング（S〜D）。<b style="color:#ff6b6b">買い推奨ではありません</b>——過去データではS評価ほど翌10日は弱い（平均-2.65%＝高値づかみ）。</div>
       <div>🔻 <b>売り</b> … 直近1ヶ月走った銘柄の<b>上昇が崩れたサイン</b>（5MA割れ×陰線×出来高増）。保有者の出口検討・高値づかみ回避の参考に。まれに検証済みの空売りシグナル（セクターローテSELL）も出ます。</div>
       <div>🧭 <b>探検</b> … 初動・押し目・ストップ高などの探索用スクリーナー（優位性は未検証・勝率は出しません）。</div>
@@ -1070,10 +1070,12 @@ function winnableSection(){
     <div class="m-px">${m.score!=null?Math.round(m.score):"—"}<br><small class="muted">点</small></div></a>`;
   const body=ms.length?`<div class="card" style="padding:4px 14px"><div class="picklist" style="border-top:0">${ms.map(row).join("")}</div></div>`
     :`<div class="card muted">本日は該当なし（母集団${w.n_universe||0}件）。</div>`;
-  return `<h2>🏆 勝ちやすい順張り <span class="muted" style="font-weight:400;font-size:12px">持ち越し用・上位${w.top_n||20}</span></h2>
-    <div class="warnbar">📌 <b>「勢いが強い順」ではなく「静かに上がり続けている中低位株」の順</b>です。翌日の寄りで買って<b>20〜40日持つ</b>前提の並び順で、<b style="color:var(--dn)">デイトレ向けではありません</b>。地合いが下がる日は一緒に下がります（市場平均より少し良い、が中身）。</div>
+  return `<details class="card" style="padding:10px 14px;margin-top:10px">
+    <summary style="cursor:pointer;font-weight:800;font-size:15px">🏆 勝ちやすい順張り <span class="muted" style="font-weight:400;font-size:12px">持ち越し(20〜40日)用・上位${w.top_n||20}・タップで開く</span></summary>
+    <div class="warnbar" style="margin-top:10px">📌 <b>「勢いが強い順」ではなく「静かに上がり続けている中低位株」の順</b>です。翌日の寄りで買って<b>20〜40日持つ</b>前提の並び順で、<b style="color:var(--dn)">デイトレ向けではありません</b>。地合いが下がる日は一緒に下がります（市場平均より少し良い、が中身）。</div>
     ${body}
-    <div class="card muted" style="font-size:11px;line-height:1.7">ルール: ${esc(w.rule||"")}。検証${esc(st.period||"")}: 上位20を翌日寄りで買って20日後＝<b style="color:var(--tx)">市場平均比${esc(st.vs_market_20d||"")}/件（生${esc(st.raw_20d||"")}）・勝ち年${esc(st.win_years||"")}・時代別 ${esc(st.eras||"")}</b>・40日後${esc(st.fwd40||"")}。同じ物差しで<b style="color:var(--dn)">🐵モメンタム上位20は${esc(st.mom_top20_vs_market_20d||"")}</b>（勢い順は買いの並び順にならない）。点数＝4項目の順位平均(100点満点)。買い推奨ではなく、順張りで持ち越すなら「どの並び順で見るか」の答えです。</div>`;
+    <div class="card muted" style="font-size:11px;line-height:1.7">ルール: ${esc(w.rule||"")}。検証${esc(st.period||"")}: 上位20を翌日寄りで買って20日後＝<b style="color:var(--tx)">市場平均比${esc(st.vs_market_20d||"")}/件（生${esc(st.raw_20d||"")}）・勝ち年${esc(st.win_years||"")}・時代別 ${esc(st.eras||"")}</b>・40日後${esc(st.fwd40||"")}。同じ物差しで<b style="color:var(--dn)">🐵モメンタム上位20は${esc(st.mom_top20_vs_market_20d||"")}</b>（勢い順は買いの並び順にならない）。点数＝4項目の順位平均(100点満点)。買い推奨ではなく、順張りで持ち越すなら「どの並び順で見るか」の答えです。5日では+0.19%/件(勝率50%)＝<b>短期スイング向けではない</b>（短期の買いは👑極み）。</div>
+  </details>`;
 }
 
 function viewMomentum(){
@@ -1099,7 +1101,6 @@ function viewMomentum(){
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length?`<span class="tag">⭐ ${WATCH.length}</span>`:""}</a>
     <div id="poscoach">${posCoach()}</div>
     ${WATCH.length?`<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>`:""}
-    ${winnableSection()}
     <h2>🐵 モメンタム <span class="muted" style="font-weight:400;font-size:12px">強さ・過熱ランキング</span></h2>
     <div class="warnbar">🔥 <b>買い推奨ではありません。</b>「今いちばん勢いがある／過熱している」順です。
       過去データでは<b>S評価ほど翌10日は弱い（平均-2.65%＝高値づかみになりやすい）</b>。
@@ -1107,6 +1108,7 @@ function viewMomentum(){
     <div class="gchips">${chip("all","すべて")}${["S","A","B","C"].filter(g=>gc[g]).map(g=>chip(g,g+" "+gc[g])).join("")}</div>
     <div class="card" style="padding:4px 14px">${rows||`<div class="muted" style="padding:12px 0">この評価の銘柄はランキング上位にありません。</div>`}</div>
     <div class="card muted" style="font-size:11px;line-height:1.7">勢いスコア＝直近の上昇効率（SR）と押し上げ力から算出。<b style="color:var(--tx)">高い＝今後上がる予測ではなく、最も過熱している目安</b>（バンド S/A/B/C/D）。上位50銘柄。🔻＝本日モメンタム終了サインが出ています（売りタブ参照）。<b style="color:var(--up)">🪶信用軽</b>＝信用買い残がほぼ残っていない銘柄（買残回転0.25日未満・JPX週次残高）。10年の実測では、勢い銘柄のうちこのタイプだけが5〜10営業日後も平均プラスでした（それ以外は平均マイナス）。これも予測や買い推奨ではなく参考情報です。</div>
+    ${winnableSection()}
     <p class="disc">${DATA.disclaimer}<br>生成: ${DATA.generated_at||"—"}</p>`;
 }
 
