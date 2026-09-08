@@ -1,33 +1,47 @@
 {
-  "date": "2026-09-08",
+  "date": "2026-09-09",
   "signals": [
     {
-      "ticker": "5108.T",
-      "name": "ブリヂストン",
+      "ticker": "7751.T",
+      "name": "キヤノン",
       "direction": "BUY",
-      "prev_close": 3920.0,
-      "limit_price": 3955,
-      "days_cover": 0.12369785056524318,
-      "vt5": 0.739,
-      "rsi": 41.65,
-      "deviation": -4.02,
-      "vol_ratio": 0.93,
-      "range_ratio": 1.72,
-      "turnover": 14415267300.0
+      "prev_close": 4362.0,
+      "limit_price": 4405,
+      "days_cover": 0.35843298804278817,
+      "vt5": 0.935,
+      "rsi": 36.64,
+      "deviation": -4.83,
+      "vol_ratio": 1.12,
+      "range_ratio": 1.6,
+      "turnover": 15689019800.0
     },
     {
-      "ticker": "2501.T",
-      "name": "サッポロビール",
+      "ticker": "7752.T",
+      "name": "リコー",
       "direction": "BUY",
-      "prev_close": 1851.0,
-      "limit_price": 1869,
-      "days_cover": 0.18111029642907092,
-      "vt5": 0.797,
-      "rsi": 38.1,
-      "deviation": -3.97,
-      "vol_ratio": 0.82,
-      "range_ratio": 1.5,
-      "turnover": 2071298250.0
+      "prev_close": 1567.0,
+      "limit_price": 1582,
+      "days_cover": 0.09230526517133397,
+      "vt5": 0.624,
+      "rsi": 39.69,
+      "deviation": -4.61,
+      "vol_ratio": 0.75,
+      "range_ratio": 1.88,
+      "turnover": 3082725200.0
+    },
+    {
+      "ticker": "6448.T",
+      "name": "ブラザー工業",
+      "direction": "BUY",
+      "prev_close": 4450.0,
+      "limit_price": 4490,
+      "days_cover": 0.10741119374376347,
+      "vt5": 0.936,
+      "rsi": 44.58,
+      "deviation": -3.88,
+      "vol_ratio": 0.68,
+      "range_ratio": 1.54,
+      "turnover": 3640923000.0
     }
   ]
 }

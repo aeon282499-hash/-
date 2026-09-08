@@ -1,44 +1,57 @@
 {
-  "date": "2026-09-08",
+  "date": "2026-09-09",
   "signals": [
     {
-      "ticker": "5108.T",
-      "name": "ブリヂストン",
+      "ticker": "7751.T",
+      "name": "キヤノン",
       "direction": "BUY",
-      "prev_close": 3920.0,
-      "limit_price": 3955,
-      "days_cover": 0.12369785056524318,
-      "rsi": 41.65,
-      "deviation": -4.02,
-      "vol_ratio": 0.93,
-      "range_ratio": 1.72,
-      "turnover": 14415267300.0
+      "prev_close": 4362.0,
+      "limit_price": 4405,
+      "days_cover": 0.35843298804278817,
+      "rsi": 36.64,
+      "deviation": -4.83,
+      "vol_ratio": 1.12,
+      "range_ratio": 1.6,
+      "turnover": 15689019800.0
     },
     {
-      "ticker": "2501.T",
-      "name": "サッポロビール",
+      "ticker": "7752.T",
+      "name": "リコー",
       "direction": "BUY",
-      "prev_close": 1851.0,
-      "limit_price": 1869,
-      "days_cover": 0.18111029642907092,
-      "rsi": 38.1,
-      "deviation": -3.97,
-      "vol_ratio": 0.82,
-      "range_ratio": 1.5,
-      "turnover": 2071298250.0
+      "prev_close": 1567.0,
+      "limit_price": 1582,
+      "days_cover": 0.09230526517133397,
+      "rsi": 39.69,
+      "deviation": -4.61,
+      "vol_ratio": 0.75,
+      "range_ratio": 1.88,
+      "turnover": 3082725200.0
     },
     {
-      "ticker": "1332.T",
-      "name": "ニッスイ",
+      "ticker": "6448.T",
+      "name": "ブラザー工業",
       "direction": "BUY",
-      "prev_close": 1208.5,
-      "limit_price": 1220,
-      "days_cover": 0.14843281944555045,
-      "rsi": 33.45,
-      "deviation": -4.95,
-      "vol_ratio": 1.9,
-      "range_ratio": 2.05,
-      "turnover": 3511206100.0
+      "prev_close": 4450.0,
+      "limit_price": 4490,
+      "days_cover": 0.10741119374376347,
+      "rsi": 44.58,
+      "deviation": -3.88,
+      "vol_ratio": 0.68,
+      "range_ratio": 1.54,
+      "turnover": 3640923000.0
+    },
+    {
+      "ticker": "2222.T",
+      "name": "寿スピリッツ",
+      "direction": "BUY",
+      "prev_close": 2462.0,
+      "limit_price": 2486,
+      "days_cover": 0.08830002559462269,
+      "rsi": 33.78,
+      "deviation": -7.48,
+      "vol_ratio": 3.47,
+      "range_ratio": 2.62,
+      "turnover": 3983819550.0
     }
   ]
 }
