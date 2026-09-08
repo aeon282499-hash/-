@@ -619,6 +619,26 @@
       "close": 1142.0,
       "pnl": 0.57,
       "win": true
+    },
+    {
+      "date": "2026-09-08",
+      "ticker": "2501.T",
+      "name": "サッポロビール",
+      "direction": "BUY",
+      "open": 1848.0,
+      "close": 1876.0,
+      "pnl": 1.52,
+      "win": true
+    },
+    {
+      "date": "2026-09-08",
+      "ticker": "1332.T",
+      "name": "ニッスイ",
+      "direction": "BUY",
+      "open": 1212.0,
+      "close": 1203.0,
+      "pnl": -0.74,
+      "win": false
     }
   ]
 }

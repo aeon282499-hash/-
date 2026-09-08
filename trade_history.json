@@ -1259,6 +1259,36 @@
       "close": 3203.0,
       "pnl": 0.72,
       "win": true
+    },
+    {
+      "date": "2026-09-08",
+      "ticker": "5108.T",
+      "name": "ブリヂストン",
+      "direction": "BUY",
+      "open": 3861.0,
+      "close": 3797.0,
+      "pnl": -1.66,
+      "win": false
+    },
+    {
+      "date": "2026-09-08",
+      "ticker": "2501.T",
+      "name": "サッポロビール",
+      "direction": "BUY",
+      "open": 1848.0,
+      "close": 1876.0,
+      "pnl": 1.52,
+      "win": true
+    },
+    {
+      "date": "2026-09-08",
+      "ticker": "1332.T",
+      "name": "ニッスイ",
+      "direction": "BUY",
+      "open": 1212.0,
+      "close": 1203.0,
+      "pnl": -0.74,
+      "win": false
     }
   ]
 }
