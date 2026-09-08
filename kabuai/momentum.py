@@ -140,6 +140,12 @@ def indicators(df: pd.DataFrame) -> dict | None:
     if not np.isfinite(vr) or not np.isfinite(turnover):
         return None
 
+    # ── 🏆勝ちやすい順張り（2026-09-09・_bt_trend_rank_0909.py）用の素材 ─────────
+    # 60日ボラ(日次リターンσ%)・120日/250日リターン。履歴不足は None（=順張りリスト対象外）。
+    vol60 = float(ret.tail(60).std() * 100) if len(ret.dropna()) >= 60 else None
+    ret120 = float((close.iloc[-1] / close.iloc[-121] - 1.0) * 100) if len(close) > 120 and close.iloc[-121] > 0 else None
+    ret250 = float((close.iloc[-1] / close.iloc[-251] - 1.0) * 100) if len(close) > 250 and close.iloc[-251] > 0 else None
+
     return {
         "price": round(float(close.iloc[-1]), 1),
         "momentum": round(momentum, 1),
@@ -163,6 +169,10 @@ def indicators(df: pd.DataFrame) -> dict | None:
         "vol_x": round(vol_x, 2) if vol_x is not None and np.isfinite(vol_x) else None,
         "off_peak20": round(off_peak20, 1) if off_peak20 is not None and np.isfinite(off_peak20) else None,
         "runup20": round(runup20, 1) if runup20 is not None and np.isfinite(runup20) else None,
+        # 🏆勝ちやすい順張り用
+        "vol60": round(vol60, 2) if vol60 is not None and np.isfinite(vol60) else None,
+        "ret120": round(ret120, 1) if ret120 is not None and np.isfinite(ret120) else None,
+        "ret250": round(ret250, 1) if ret250 is not None and np.isfinite(ret250) else None,
     }
 
 

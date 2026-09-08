@@ -442,6 +442,65 @@ def build_sector_heat(rows: list[dict], track: dict,
                  "買い推奨ではありません（買いは各銘柄の✅検証済み買い候補を参照）。"),
     }
 
+# ── 🏆 勝ちやすい順張り（2026-09-09 本人「モメンタムをさらに良くして・買いの持ち越し・順張り」）──
+# 検証: 立花26年(2001-26)+J-Quants(2022-26)・_bt_trend_rank_0909.py / _log_trend_composite2_0909.txt
+#   現行mom指数の上位20＝翌日寄り→20日で市場比-0.56%/件・4時代すべてマイナス（勢いの強い順は買いの並び順にならない）
+#   効くのは「低ボラ×120/250日の上昇×高すぎない株価」＝日内順位の和。最安10%と高い30%を除外した中で
+#   上位20＝市場比+0.38%/20日・生+0.84%・勝ち年19/25・4時代全プラス(+0.41/+0.24/+0.32/+0.64)・40日+0.72。
+#   J-Quants別ソース2022-26でも+0.58・5年全プラス。3枠×100万の単独システムとしては噪音床の上端＝
+#   「単独で稼ぐ道具」ではなく「並び順の質」の改善。地合いが下がる時は一緒に下がる（市場比の性質）。
+WIN_TURNOVER = 5e8          # 代金≥5億（BTと同じ）
+WIN_PX_LO, WIN_PX_HI = 300, 20000
+WIN_PRICE_BAND = (0.10, 0.70)   # 価格順位の下10%（生存者バイアスで水増し）と上30%（26年で最も負ける帯）を除外
+WIN_TOP_N = 20
+WIN_VOL_FLOOR = 0.5         # 60日ボラ%/日の下限。TOB・上場廃止待ちで値が動かない銘柄を弾く
+
+
+def _pct_rank(vals: list[float]) -> list[float]:
+    """0〜1 の百分位順位（平均法・小さいほど0側）。"""
+    s = pd.Series(vals, dtype=float)
+    return (s.rank(method="average", pct=True)).tolist()
+
+
+def build_winnable(rows: list[dict], data_date: str) -> dict:
+    uni = [r for r in rows
+           if r.get("vol60") is not None and r.get("ret120") is not None and r.get("ret250") is not None
+           and r.get("turnover_oku") is not None and r["turnover_oku"] * 1e8 >= WIN_TURNOVER
+           and WIN_PX_LO <= (r.get("price") or 0) <= WIN_PX_HI
+           and r["vol60"] >= WIN_VOL_FLOOR                       # TOB等で値が張り付いた銘柄(ボラ≈0)は除外
+           and r.get("name") and r["name"] != r["code"] and not r["name"].endswith(".T")]   # 名前無し(上場廃止予定・新規)は除外
+    n_uni = len(uni)
+    if n_uni < 30:
+        return {"date": data_date, "n_universe": n_uni, "members": [], "note": "母集団不足"}
+    pr = _pct_rank([r["price"] for r in uni])
+    band = [r for r, p in zip(uni, pr) if WIN_PRICE_BAND[0] <= p <= WIN_PRICE_BAND[1]]
+    r_lv = [1 - x for x in _pct_rank([r["vol60"] for r in band])]
+    r_250 = _pct_rank([r["ret250"] for r in band])
+    r_120 = _pct_rank([r["ret120"] for r in band])
+    r_px = [1 - x for x in _pct_rank([r["price"] for r in band])]
+    scored = []
+    for r, a, b, c, d in zip(band, r_lv, r_250, r_120, r_px):
+        sc = (a + b + c + d) / 4 * 100
+        scored.append((sc, r, a, b, c, d))
+    scored.sort(key=lambda z: -z[0])
+    members = []
+    for i, (sc, r, a, b, c, d) in enumerate(scored[:WIN_TOP_N], 1):
+        members.append({
+            "rank": i, "code": r["code"], "name": r["name"], "price": r["price"], "r1": r["r1"], "r20": r["r20"],
+            "score": round(sc, 1), "vol60": r["vol60"], "ret120": r["ret120"], "ret250": r["ret250"],
+            "turnover_oku": r["turnover_oku"], "sector": r.get("sector"), "grade": r.get("grade"),
+            "momentum": r.get("momentum"),
+            "why": (f"ボラ{r['vol60']:.1f}%/日(静か{a*100:.0f}点)・250日{r['ret250']:+.0f}%({b*100:.0f}点)"
+                    f"・120日{r['ret120']:+.0f}%({c*100:.0f}点)・株価帯({d*100:.0f}点)"),
+        })
+    return {
+        "date": data_date, "n_universe": n_uni, "n_band": len(band), "top_n": WIN_TOP_N, "members": members,
+        "rule": "代金5億以上・株価300〜2万円・価格帯の下10%と上30%を除外 → 60日ボラが低い／250日上昇／120日上昇／株価が高すぎない の順位平均",
+        "stats": {"period": "2001-2026(立花26年)+2022-26(J-Quants)", "vs_market_20d": "+0.38%", "raw_20d": "+0.84%",
+                  "win_years": "19/25", "eras": "01-08 +0.41 / 09-16 +0.24 / 17-21 +0.32 / 22-26 +0.64", "fwd40": "+0.72%",
+                  "mom_top20_vs_market_20d": "-0.56%"},
+    }
+
 
 def build() -> dict:
     if SOURCE == "jquants_cache":
@@ -500,6 +559,10 @@ def build() -> dict:
             "vol_x": ind["vol_x"],
             "off_peak20": ind["off_peak20"],
             "runup20": ind["runup20"],
+            # 🏆勝ちやすい順張り（2026-09-09）用
+            "vol60": ind["vol60"],
+            "ret120": ind["ret120"],
+            "ret250": ind["ret250"],
         })
 
     rows.sort(key=lambda x: x["momentum"], reverse=True)
@@ -1059,6 +1122,8 @@ def build() -> dict:
                 print(f"[build] スコアボードJSON読込も失敗: {e}")
 
     top = rows[:TOP_N]
+    winnable = build_winnable(rows, data_date)
+    print(f"[build] 🏆勝ちやすい順張り: 母集団{winnable.get('n_universe')} 価格帯内{winnable.get('n_band','-')} → {len(winnable.get('members', []))}件")
     out = {
         "schema": "kabuai-phase14",  # phase14 = 先物連動タグ + v2フロント（2026-07-02）
         "data_date": data_date,
@@ -1090,6 +1155,7 @@ def build() -> dict:
         "signals": signals,
         "signal_track": track,
         "ranking": top,
+        "winnable": winnable,    # 🏆勝ちやすい順張り（2026-09-09）
     }
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
           f"(skip {n_skip} 履歴不足ほか) / {time.time()-t0:.1f}s")
