@@ -101,8 +101,11 @@
   "tov_oku": 14.6,
   "ma5_up": true,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": -8.442,
+  "result_yen": -25326,
+  "exec_date": "2026-09-07",
+  "exec_open": 770.0,
+  "exec_close": 835.0
  },
  {
   "ticker": "4440.T",
@@ -116,8 +119,11 @@
   "tov_oku": 20.6,
   "ma5_up": true,
   "loanable": "○",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 3.063,
+  "result_yen": 9189,
+  "exec_date": "2026-09-07",
+  "exec_open": 1665.0,
+  "exec_close": 1614.0
  },
  {
   "ticker": "4667.T",
@@ -131,6 +137,24 @@
   "tov_oku": 15.1,
   "ma5_up": true,
   "loanable": "×",
+  "result_pct": -9.93,
+  "result_yen": -29790,
+  "exec_date": "2026-09-07",
+  "exec_open": 2870.0,
+  "exec_close": 3155.0
+ },
+ {
+  "ticker": "446A.T",
+  "code": "446A",
+  "name": "ノースサンド",
+  "d0": "2026-09-07",
+  "close": 2144.0,
+  "r1": -7.27,
+  "volx": 3.06,
+  "runup": 40.5,
+  "tov_oku": 10.5,
+  "ma5_up": true,
+  "loanable": "○",
   "result_pct": null,
   "result_yen": null
  }
