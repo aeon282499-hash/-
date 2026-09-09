@@ -87,6 +87,37 @@ for wf, needle in (("resend_kiwami.yml", "se.BUY_NOTIFY_KEYS"), ("kiwami_weekly.
 rs = open(os.path.join(cwd, "report.py"), encoding="utf-8").read()
 t("report.py has_active が極み台帳を見る", "_se.BUY_NOTIFY_KEYS" in rs)
 
+# ── 5. 売りフェード（daytrade_paper）──
+import pandas as pd
+import daytrade_paper as dp
+def _df(dates, o=1000.0):
+    idx = pd.to_datetime(dates)
+    return pd.DataFrame({"Open": o, "High": o * 1.01, "Low": o * 0.99, "Close": o, "Volume": 1e6}, index=idx)
+data_fresh = {"AAAA.T": _df(["2026-09-08", "2026-09-09"]), "BBBB.T": _df(["2026-09-07", "2026-09-08"])}
+t("_last_market_date はデータ全体の最終足", dp._last_market_date(data_fresh, "2026-09-10") == "2026-09-09")
+t("_last_market_date は today 以降の足を除く",
+  dp._last_market_date({"A": _df(["2026-09-09", "2026-09-10"])}, "2026-09-10") == "2026-09-09")
+t("_prev_trading_day 月曜→金曜", dp._prev_trading_day(date(2026, 9, 14)) == date(2026, 9, 11))
+t("_prev_trading_day 1/4→12/30", dp._prev_trading_day(date(2027, 1, 4)) == date(2026, 12, 30))
+# 鮮度ガードの配線
+dsrc = open(os.path.join(cwd, "daytrade_paper.py"), encoding="utf-8").read()
+t("run() が最終足≠直前営業日を fetch_failed にする", "_lm != _exp" in dsrc and "fetch_failed = True" in dsrc)
+t("run() が朝モード寄り後は選定/配信しない", "late_morning = True" in dsrc and "if late_morning:" in dsrc)
+# 記帳時の株数保存と決済での利用
+book = {"positions": [], "expired": []}
+sig = [{"ticker": "AAAA.T", "name": "A", "direction": "SELL", "prev_close": 4000.0,
+        "min_entry_price": 4000.0, "rank": 2, "daily_gain": 8.0}]
+added = dp.record(book, sig, {"AAAA.T": _df(["2026-09-08", "2026-09-09"], 4000.0)}, {}, date(2026, 9, 10))
+t("record は ②50万÷4000円=100株 を保存", added and added[0].get("shares") == 100)
+book["positions"][0]["shares"] = 300          # サイズ定数が後で変わっても記帳株数で決済する
+data_settle = {"AAAA.T": _df(["2026-09-08", "2026-09-09", "2026-09-10"], 4000.0)}
+data_settle["AAAA.T"].loc[pd.Timestamp("2026-09-10"), ["Open", "Close"]] = [4000.0, 3900.0]
+closed = dp.settle(book, data_settle, date(2026, 9, 11))
+t("settle は記帳株数(300)で損益円を出す", closed and closed[0]["pnl_yen"] == 300 * 100)
+t("_trade_shares_of は記帳株数を優先", dp._trade_shares_of(closed[0]) == 300)
+t("_trade_shares_of pnl=0 の②玉は50万で逆算",
+  dp._trade_shares_of({"rank": 2, "entry_open": 2500.0, "entry_close": 2500.0, "pnl_yen": 0}) == 200)
+
 n_ok = sum(1 for _, c in RESULTS if c)
 print(f"\n{n_ok}/{len(RESULTS)} PASS")
 raise SystemExit(0 if n_ok == len(RESULTS) else 1)

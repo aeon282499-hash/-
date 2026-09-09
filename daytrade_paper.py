@@ -452,19 +452,7 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
 
     # 直近の市場営業日（データ全体の最終足）。売買停止中の銘柄が「古い+12%」のまま
     # 候補化して停止明けギャップに突っ込むのを防ぐ（鮮度ガード・2026-07-22実弾前監査で追加）
-    last_mkt = None
-    for df in data.values():
-        if df is None or df.empty:
-            continue
-        mx = df.index.max()
-        ds = mx.strftime("%Y-%m-%d")
-        if ds >= today_str:
-            older = df.index[df.index.strftime("%Y-%m-%d") < today_str]
-            if len(older) == 0:
-                continue
-            ds = older.max().strftime("%Y-%m-%d")
-        if last_mkt is None or ds > last_mkt:
-            last_mkt = ds
+    last_mkt = _last_market_date(data, today_str)
 
     # ── ETF/ETN除外（2026-07-31 監査で発覚した実害バグ）──────────────────────
     # BTは name_map が引けない銘柄（＝ETF/ETN）を丸ごと落としていたが、本番には
@@ -656,6 +644,33 @@ def _shares_for(limit_price: float, rank=1) -> int:
     return max(100, int(cap / limit_price / 100) * 100)
 
 
+def _last_market_date(data: dict, today_str: str) -> str | None:
+    """データ全体の最終足の日付（today 以降の足は除く）。daily_top_fades の鮮度ガードと
+    run() の「最終足＝直前営業日か」チェックで共用（2026-09-09 監査）。"""
+    last_mkt = None
+    for df in data.values():
+        if df is None or df.empty:
+            continue
+        mx = df.index.max()
+        ds = mx.strftime("%Y-%m-%d")
+        if ds >= today_str:
+            older = df.index[df.index.strftime("%Y-%m-%d") < today_str]
+            if len(older) == 0:
+                continue
+            ds = older.max().strftime("%Y-%m-%d")
+        if last_mkt is None or ds > last_mkt:
+            last_mkt = ds
+    return last_mkt
+
+
+def _prev_trading_day(d):
+    """d の直前の営業日（土日祝・年末年始を除く）。"""
+    cur = d - timedelta(days=1)
+    while not is_trading_day(cur):
+        cur -= timedelta(days=1)
+    return cur
+
+
 # ------------------------------------------------------------------ 決済
 def settle(book: dict, data: dict, today) -> list[dict]:
     """pending を決済確定。確定した建玉リストを返す。"""
@@ -713,7 +728,9 @@ def settle(book: dict, data: dict, today) -> list[dict]:
             else:
                 exit_type, pnl = "CLOSE", (o - c) / o * 100
 
-        shares = _shares_for(limit or o, p.get("rank", 1))
+        # 2026-09-09 監査: 記帳時に保存した株数を優先（サイズ定数の変更が pending 玉に遡及しない）。
+        # 旧記帳(shares 無し)は従来どおり limit(=前日終値) 基準で逆算＝BTの丸めと同一。
+        shares = p["shares"] if p.get("shares") is not None else _shares_for(limit or o, p.get("rank", 1))
         if shares == 0 and exit_type == "CLOSE":
             exit_type, pnl = "SKIP", 0.0      # ②の値がさ玉＝建てていない（2026-08-28 100/50化）
         pnl_yen = int(round(shares * o * pnl / 100)) if exit_type == "CLOSE" else 0
@@ -778,6 +795,10 @@ def record(book: dict, signals: list[dict], data: dict, iss_map: dict, today) ->
             rec["short"] = shortability(tk, iss_map)
             rec["jsf_stop"] = bool(s.get("jsf_stop"))   # 売り禁=ハイカラ在庫依存の紙。後で分離分析用
             rec["rank"] = s.get("rank")                 # 1-2=本命。帯別成績の分離分析用
+            # 配信した株数をそのまま記帳（2026-09-09 監査）。決済は settle がこの値を使う。
+            _px = limit or s.get("prev_close")
+            if _px:
+                rec["shares"] = _shares_for(float(_px), s.get("rank") or 1)
             # 選定2軸と補助指標も記帳する（2026-08-02）。どんな玉が実弾で滑る/建てられないかを
             # 後で層別分析するため（jsf_stop・rankと同じ思想）。旧記帳には無いキー＝Noneは書かない。
             for k in ("dev25", "atr_pct", "vol_ratio", "range_pct"):
@@ -1168,10 +1189,14 @@ def _rank_tag(p: dict) -> str:
 
 def _trade_shares_of(p: dict) -> int:
     """記帳時の実株数を逆算する（pnl_yen＝株数×(売建-買戻)）。玉サイズ変更(50万→100万)を跨いでも正しい。"""
+    if p.get("shares"):
+        return int(p["shares"])                     # 2026-09-09: 記帳株数があればそれが真実
     eo, ec = p.get("entry_open") or 0, p.get("entry_close") or 0
     if eo > 0 and abs(eo - ec) > 1e-9 and p.get("pnl_yen"):
         return max(100, int(round(float(p["pnl_yen"]) / (eo - ec) / 100)) * 100)
-    return max(100, int(CAPITAL_PER_TRADE / eo / 100) * 100) if eo > 0 else 100
+    # 寄=引(pnl 0)の玉: rank 別サイズで逆算（旧: 常に100万＝②玉が2倍表示・2026-09-09 監査）
+    _cap = CAPITAL_BY_RANK.get(p.get("rank") or 1, CAPITAL_PER_TRADE)
+    return max(100, int(_cap / eo / 100) * 100) if eo > 0 else 100
 
 
 def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
@@ -1322,8 +1347,30 @@ def run(today=None, signals=None, dry=False):
     ratio_map = fetch_ratio_map(tok) if data else {}
     alert_map = fetch_alert_map(tok) if data else {}
     banned: list = []   # 売り禁(日証金申込停止)で除外した銘柄（配信で可視化）
-    picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map,
-                            alert_map=alert_map, excluded_out=banned)   # 上位2（各GO/NO-GO+借りやすさ）
+    # ── 鮮度ガード（2026-09-09 監査）: start/end 指定の取得は最終営業日の欠落を検知しない
+    # （screener の欠落リトライは lookback モード限定）。当日足が無いまま選定すると last_mkt が
+    # 黙って前営業日に下がり、**前日と同じ玉を「本日の寄り成行」で再配信**する。
+    # 最終足≠直前営業日なら障害扱い（障害文を配信・日付ガードは立てず次の保険便が再試行）。
+    if data and not fetch_failed:
+        _lm = _last_market_date(data, today_str)
+        _exp = _prev_trading_day(today).strftime("%Y-%m-%d")
+        if _lm != _exp:
+            print(f"[paper] ⚠️ 最終足 {_lm} ≠ 直前営業日 {_exp}（当日足未公開/取得欠落）→ 障害として配信・選定しない")
+            fetch_failed = True
+    # ── 朝モードの寄り後ガード（2026-09-09 監査）: 朝の保険便(GitHub cron)は実測最悪3h45m遅延。
+    # 9:00 を過ぎてから「寄り成行で発注」を出しても執行不能＝配信・記帳しない（決済だけ保存）。
+    # 前夜配信(EVENING_RUN)は today=翌営業日なので対象外。
+    late_morning = False
+    if os.getenv("EVENING_RUN", "").strip() != "1" and book.get("last_report_date") != today_str:
+        _now = datetime.now(JST)
+        if _now.date() == today and _now.hour >= 9:
+            late_morning = True
+            print(f"[paper] 朝モードだが寄り後（{_now.strftime('%H:%M')} JST）→ 発注不能のため選定/配信しない（決済のみ保存）")
+    if fetch_failed or late_morning:
+        picks = []
+    else:
+        picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map,
+                                alert_map=alert_map, excluded_out=banned)   # 上位2（各GO/NO-GO+借りやすさ）
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
     # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）
@@ -1345,7 +1392,9 @@ def run(today=None, signals=None, dry=False):
     # データ取得失敗の日は「見送り」でなく障害として配信し、**日付ガードを立てない**
     # （2026-08-02）。立てると次のトリガー(8:20保険便)が再試行できず、システム障害が
     # 「今日は条件未達」に偽装される＝7/31にNO-GO理由表示を入れた目的の真逆になる。
-    if book.get("last_report_date") != today_str:
+    if late_morning:
+        pass                                   # 寄り後の朝便は配信しない（ガードも立てない）
+    elif book.get("last_report_date") != today_str:
         _sent = send_report(just_closed, buy_fires, picks, stats, today, dry=dry, banned=banned,
                             fetch_failed=fetch_failed)
         if not dry and not fetch_failed and _sent:
