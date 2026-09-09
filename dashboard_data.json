@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-09-09 08:17:12",
+  "generated_at": "2026-09-09 10:21:16",
   "date": "2026-09-09",
   "tier_summary": {
     "S": 0,
     "A": 4,
-    "B": 21,
-    "C": 65
+    "B": 19,
+    "C": 69
   },
   "driver_returns": {
-    "AMAT": 3.98,
-    "AMD": 5.9,
-    "AMZN": -0.6,
-    "ASML": 2.91,
-    "AVGO": 2.98,
-    "CRWD": -1.45,
-    "GEV": 3.12,
-    "GOOGL": -0.03,
-    "IONQ": 2.4,
-    "KLAC": 1.82,
-    "LRCX": 4.15,
-    "META": -0.53,
-    "MSFT": -1.15,
-    "MU": -1.61,
-    "NRG": 0.52,
-    "NVDA": -2.01,
-    "ON": -4.44,
-    "PANW": 1.12,
-    "PLTR": -2.31,
-    "PLUG": 4.15,
-    "QBTS": 6.57,
-    "RGTI": 4.01,
-    "S": -2.26,
+    "AMAT": 4.31,
+    "AMD": 4.69,
+    "AMZN": -0.15,
+    "ASML": 4.17,
+    "AVGO": 0.21,
+    "CRWD": -0.87,
+    "GEV": 0.01,
+    "GOOGL": -1.11,
+    "IONQ": 1.28,
+    "KLAC": 7.32,
+    "LRCX": 5.12,
+    "META": 1.0,
+    "MSFT": -2.04,
+    "MU": 6.1,
+    "NRG": 6.42,
+    "NVDA": 0.84,
+    "ON": 0.99,
+    "PANW": 0.4,
+    "PLTR": -4.49,
+    "PLUG": 2.84,
+    "QBTS": -1.43,
+    "RGTI": 0.13,
+    "S": 0.4,
     "SOX": 1.3,
-    "TSLA": 3.98,
-    "TSM": 2.35,
-    "VRT": 3.67,
-    "VST": 1.62,
-    "ZS": -4.63
+    "TSLA": -5.92,
+    "TSM": 2.85,
+    "VRT": 4.35,
+    "VST": 3.52,
+    "ZS": -4.5
   },
   "themes": [
     {
@@ -56,7 +56,7 @@
         "GOOGL"
       ],
       "policy": "",
-      "us_tailwind": -1.38
+      "us_tailwind": -1.7
     },
     {
       "theme": "創薬_バイオ",
@@ -117,7 +117,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": 2.23
+      "us_tailwind": 3.57
     },
     {
       "theme": "商社_資源",
@@ -233,7 +233,7 @@
         "QBTS"
       ],
       "policy": "",
-      "us_tailwind": 4.33
+      "us_tailwind": -0.01
     },
     {
       "theme": "不動産_再開発",
@@ -266,7 +266,7 @@
         "S"
       ],
       "policy": "",
-      "us_tailwind": -1.8
+      "us_tailwind": -1.14
     },
     {
       "theme": "半導体_ロジック_メモリ",
@@ -285,7 +285,7 @@
         "AVGO"
       ],
       "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_tailwind": 1.31
+      "us_tailwind": 2.96
     },
     {
       "theme": "半導体_前工程装置",
@@ -307,7 +307,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": 2.07
+      "us_tailwind": 3.7
     },
     {
       "theme": "インバウンド_観光",
@@ -337,7 +337,7 @@
         "PLUG"
       ],
       "policy": "",
-      "us_tailwind": 4.15
+      "us_tailwind": 2.84
     },
     {
       "theme": "半導体_検査_計測",
@@ -355,7 +355,7 @@
         "ASML"
       ],
       "policy": "経済安保・先端半導体の国内検査体制",
-      "us_tailwind": 0.73
+      "us_tailwind": 2.1
     },
     {
       "theme": "半導体_後工程_先端パッケージ",
@@ -374,7 +374,7 @@
         "AMD"
       ],
       "policy": "後工程拠点の国内回帰・補助",
-      "us_tailwind": 2.31
+      "us_tailwind": 2.15
     },
     {
       "theme": "フィジカルAI_ヒューマノイド",
@@ -391,7 +391,7 @@
         "NVDA"
       ],
       "policy": "ムーンショット目標(2050身体能力拡張ロボ)・新ロボット戦略・省人化政策で国産ヒューマノイド/部品育成",
-      "us_tailwind": 0.99
+      "us_tailwind": -2.54
     },
     {
       "theme": "宇宙",
@@ -450,7 +450,7 @@
         "NVDA"
       ],
       "policy": "改正道交法でレベル4(特定条件下完全自動運転)解禁・自動運転実装に向けた国の実証/補助",
-      "us_tailwind": 0.99
+      "us_tailwind": -2.54
     },
     {
       "theme": "光通信_データセンター",
@@ -470,7 +470,7 @@
         "AMZN"
       ],
       "policy": "",
-      "us_tailwind": -0.16
+      "us_tailwind": -0.45
     },
     {
       "theme": "パワー半導体",
@@ -488,7 +488,7 @@
         "NVDA"
       ],
       "policy": "SiCパワー半導体の国内増産補助・GX(グリーントランスフォーメーション)・電動化/EV政策で構造的需要増",
-      "us_tailwind": -0.82
+      "us_tailwind": -1.36
     },
     {
       "theme": "EV_二次電池",
@@ -504,7 +504,7 @@
         "TSLA"
       ],
       "policy": "",
-      "us_tailwind": 3.98
+      "us_tailwind": -5.92
     },
     {
       "theme": "半導体_ウエハー_材料",
@@ -523,7 +523,7 @@
         "AMD"
       ],
       "policy": "半導体材料の国産化・サプライチェーン強靭化補助",
-      "us_tailwind": 2.31
+      "us_tailwind": 2.15
     },
     {
       "theme": "自動車_完成車",
@@ -557,7 +557,7 @@
         "NVDA"
       ],
       "policy": "",
-      "us_tailwind": -0.86
+      "us_tailwind": -0.29
     },
     {
       "theme": "フィジカルAI_産業ロボFA",
@@ -575,7 +575,7 @@
         "ABBN"
       ],
       "policy": "省人化・設備投資減税(賃上げ促進/DX投資)・国内回帰(リショアリング)補助で設備投資が構造的に増加",
-      "us_tailwind": 0.99
+      "us_tailwind": -2.54
     },
     {
       "theme": "コンデンサ_電子部品",
@@ -606,7 +606,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 85.0,
       "tier": "A",
       "init_stars": 1,
@@ -685,7 +685,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 71.0,
       "tier": "A",
       "init_stars": 3,
@@ -789,6 +789,48 @@
       }
     },
     {
+      "ticker": "285A.T",
+      "name": "キオクシア",
+      "role": "NANDフラッシュ(2024-12上場・AI向け需要)",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": -1.9,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 2.96,
+      "score": 64.0,
+      "tier": "B",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 42.5,
+      "blast": 36.6,
+      "laggard": 38.2,
+      "mom_pts": 44.0,
+      "ctx_pts": 20.0,
+      "vr": 0.95,
+      "dev": 9.55,
+      "rsi": 53.58,
+      "r1": -0.03561229632118257,
+      "r5": 0.12568627450980396,
+      "r20": 0.19579254322016237,
+      "close": 57410.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 20,
+        "r1_pts": 0,
+        "trend_pts": 18,
+        "pos_pts": 6,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
       "ticker": "6525.T",
       "name": "KOKUSAI ELECTRIC",
       "role": "成膜/熱処理装置",
@@ -804,7 +846,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.07,
+      "us_tailwind": 3.7,
       "score": 63.0,
       "tier": "B",
       "init_stars": 3,
@@ -868,48 +910,6 @@
         "heat_pts": 10.6,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "285A.T",
-      "name": "キオクシア",
-      "role": "NANDフラッシュ(2024-12上場・AI向け需要)",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": -1.9,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.31,
-      "score": 60.0,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 42.5,
-      "blast": 36.6,
-      "laggard": 34.9,
-      "mom_pts": 44.0,
-      "ctx_pts": 16.0,
-      "vr": 0.95,
-      "dev": 9.55,
-      "rsi": 53.58,
-      "r1": -0.03561229632118257,
-      "r5": 0.12568627450980396,
-      "r20": 0.19579254322016237,
-      "close": 57410.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 20,
-        "r1_pts": 0,
-        "trend_pts": 18,
-        "pos_pts": 6,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
       }
     },
     {
@@ -1073,7 +1073,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 2.23,
+      "us_tailwind": 3.57,
       "score": 54.5,
       "tier": "B",
       "init_stars": 3,
@@ -1140,47 +1140,6 @@
       }
     },
     {
-      "ticker": "3687.T",
-      "name": "フィックスターズ",
-      "role": "量子計算ソフト最適化",
-      "theme": "量子コンピューティング",
-      "theme_heat": 1.9,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 4.33,
-      "score": 53.8,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 2.3,
-      "laggard": 45.8,
-      "mom_pts": 41.0,
-      "ctx_pts": 12.8,
-      "vr": 1.23,
-      "dev": 1.38,
-      "rsi": 52.87,
-      "r1": 0.00494604316546754,
-      "r5": 0.018687329079307258,
-      "r20": 0.018223234624145768,
-      "close": 2235.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 5,
-        "thrust_pts": 3,
-        "r1_pts": 3,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 0.8,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
-      }
-    },
-    {
       "ticker": "4062.T",
       "name": "イビデン",
       "role": "ABFパッケージ基板(GPU土台・Nvidia直結)",
@@ -1193,7 +1152,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 53.0,
       "tier": "B",
       "init_stars": 3,
@@ -1223,46 +1182,6 @@
       }
     },
     {
-      "ticker": "6594.T",
-      "name": "ニデック",
-      "role": "精密小型モータ(ロボ関節)",
-      "theme": "フィジカルAI_ヒューマノイド",
-      "theme_heat": -11.3,
-      "policy": "ムーンショット目標(2050身体能力拡張ロボ)・新ロボット戦略・省人化政策で国産ヒューマノイド/部品育成",
-      "us_drivers": [
-        "TSLA",
-        "NVDA"
-      ],
-      "us_tailwind": 0.99,
-      "score": 52.0,
-      "tier": "B",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 2.3,
-      "laggard": 44.0,
-      "mom_pts": 41.0,
-      "ctx_pts": 11.0,
-      "vr": 1.28,
-      "dev": 1.92,
-      "rsi": 55.36,
-      "r1": -0.03200568990042674,
-      "r5": 0.0587320108907039,
-      "r20": -0.013410656034795188,
-      "close": 2722.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 5,
-        "thrust_pts": 14,
-        "r1_pts": 0,
-        "trend_pts": 10,
-        "pos_pts": 12,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 3.0
-      }
-    },
-    {
       "ticker": "9501.T",
       "name": "東京電力ホールディングス",
       "role": "柏崎刈羽再稼働期待",
@@ -1275,7 +1194,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 2.23,
+      "us_tailwind": 3.57,
       "score": 51.5,
       "tier": "B",
       "init_stars": 3,
@@ -1317,7 +1236,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 48.0,
       "tier": "B",
       "init_stars": 2,
@@ -1470,7 +1389,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 46.0,
       "tier": "B",
       "init_stars": 3,
@@ -1512,7 +1431,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 2.23,
+      "us_tailwind": 3.57,
       "score": 45.5,
       "tier": "B",
       "init_stars": 2,
@@ -1554,7 +1473,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 2.23,
+      "us_tailwind": 3.57,
       "score": 45.5,
       "tier": "B",
       "init_stars": 3,
@@ -1655,6 +1574,46 @@
         "heat_pts": 11.6,
         "policy_pts": 0.0,
         "us_pts": 0.0
+      }
+    },
+    {
+      "ticker": "6594.T",
+      "name": "ニデック",
+      "role": "精密小型モータ(ロボ関節)",
+      "theme": "フィジカルAI_ヒューマノイド",
+      "theme_heat": -11.3,
+      "policy": "ムーンショット目標(2050身体能力拡張ロボ)・新ロボット戦略・省人化政策で国産ヒューマノイド/部品育成",
+      "us_drivers": [
+        "TSLA",
+        "NVDA"
+      ],
+      "us_tailwind": -2.54,
+      "score": 44.0,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 2.3,
+      "laggard": 41.0,
+      "mom_pts": 41.0,
+      "ctx_pts": 3.0,
+      "vr": 1.28,
+      "dev": 1.92,
+      "rsi": 55.36,
+      "r1": -0.03200568990042674,
+      "r5": 0.0587320108907039,
+      "r20": -0.013410656034795188,
+      "close": 2722.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 5,
+        "thrust_pts": 14,
+        "r1_pts": 0,
+        "trend_pts": 10,
+        "pos_pts": 12,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": -5.0
       }
     },
     {
@@ -1781,7 +1740,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 43.0,
       "tier": "C",
       "init_stars": 3,
@@ -1808,47 +1767,6 @@
         "heat_pts": 15.0,
         "policy_pts": 0.0,
         "us_pts": -5.0
-      }
-    },
-    {
-      "ticker": "6702.T",
-      "name": "富士通",
-      "role": "量子シミュレータ(大型)",
-      "theme": "量子コンピューティング",
-      "theme_heat": 1.9,
-      "policy": "",
-      "us_drivers": [
-        "IONQ",
-        "RGTI",
-        "QBTS"
-      ],
-      "us_tailwind": 4.33,
-      "score": 42.8,
-      "tier": "C",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 37.8,
-      "mom_pts": 30.0,
-      "ctx_pts": 12.8,
-      "vr": 0.6,
-      "dev": 1.3,
-      "rsi": 53.04,
-      "r1": -0.014617593317671651,
-      "r5": -0.04357740055738535,
-      "r20": 0.015057811239580499,
-      "close": 3775.0,
-      "above_ma25": true,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 0,
-        "trend_pts": 18,
-        "pos_pts": 12,
-        "heat_pts": 0.8,
-        "policy_pts": 0.0,
-        "us_pts": 12.0
       }
     },
     {
@@ -2123,7 +2041,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 40.0,
       "tier": "C",
       "init_stars": 3,
@@ -2165,7 +2083,7 @@
         "MSFT",
         "GOOGL"
       ],
-      "us_tailwind": -1.38,
+      "us_tailwind": -1.7,
       "score": 40.0,
       "tier": "C",
       "init_stars": 3,
@@ -2210,7 +2128,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.07,
+      "us_tailwind": 3.7,
       "score": 40.0,
       "tier": "C",
       "init_stars": 3,
@@ -2573,6 +2491,47 @@
       }
     },
     {
+      "ticker": "3687.T",
+      "name": "フィックスターズ",
+      "role": "量子計算ソフト最適化",
+      "theme": "量子コンピューティング",
+      "theme_heat": 1.9,
+      "policy": "",
+      "us_drivers": [
+        "IONQ",
+        "RGTI",
+        "QBTS"
+      ],
+      "us_tailwind": -0.01,
+      "score": 36.8,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 2.3,
+      "laggard": 33.8,
+      "mom_pts": 41.0,
+      "ctx_pts": -4.2,
+      "vr": 1.23,
+      "dev": 1.38,
+      "rsi": 52.87,
+      "r1": 0.00494604316546754,
+      "r5": 0.018687329079307258,
+      "r20": 0.018223234624145768,
+      "close": 2235.0,
+      "above_ma25": true,
+      "_detail": {
+        "vol_pts": 5,
+        "thrust_pts": 3,
+        "r1_pts": 3,
+        "trend_pts": 18,
+        "pos_pts": 12,
+        "heat_pts": 0.8,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
+      }
+    },
+    {
       "ticker": "8601.T",
       "name": "大和証券グループ本社",
       "role": "証券大手",
@@ -2906,6 +2865,88 @@
       }
     },
     {
+      "ticker": "6857.T",
+      "name": "アドバンテスト",
+      "role": "テスタ(AI向けHBM/SoC検査で急伸)",
+      "theme": "半導体_検査_計測",
+      "theme_heat": -9.9,
+      "policy": "経済安保・先端半導体の国内検査体制",
+      "us_drivers": [
+        "SOX",
+        "NVDA",
+        "ASML"
+      ],
+      "us_tailwind": 2.1,
+      "score": 35.0,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 45.0,
+      "mom_pts": 15.0,
+      "ctx_pts": 20.0,
+      "vr": 1.18,
+      "dev": -1.65,
+      "rsi": 51.27,
+      "r1": -0.019721577726218076,
+      "r5": 0.012582384661473878,
+      "r20": -0.013426736719206023,
+      "close": 33800.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 3,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 12,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
+      "ticker": "6920.T",
+      "name": "レーザーテック",
+      "role": "EUVマスク検査(独占的)",
+      "theme": "半導体_検査_計測",
+      "theme_heat": -9.9,
+      "policy": "経済安保・先端半導体の国内検査体制",
+      "us_drivers": [
+        "SOX",
+        "NVDA",
+        "ASML"
+      ],
+      "us_tailwind": 2.1,
+      "score": 34.0,
+      "tier": "C",
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 32.0,
+      "mom_pts": 14.0,
+      "ctx_pts": 20.0,
+      "vr": 1.01,
+      "dev": -5.25,
+      "rsi": 44.46,
+      "r1": -0.019106490587243563,
+      "r5": 0.05532043530834341,
+      "r20": -0.1182116696135388,
+      "close": 34910.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 14,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 0,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
       "ticker": "8801.T",
       "name": "三井不動産",
       "role": "デベロッパー首位(都心再開発)",
@@ -2954,7 +2995,7 @@
         "TSLA",
         "NVDA"
       ],
-      "us_tailwind": -0.82,
+      "us_tailwind": -1.36,
       "score": 33.0,
       "tier": "C",
       "init_stars": 3,
@@ -3107,7 +3148,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": -1.8,
+      "us_tailwind": -1.14,
       "score": 27.0,
       "tier": "C",
       "init_stars": 2,
@@ -3174,44 +3215,44 @@
       }
     },
     {
-      "ticker": "6857.T",
-      "name": "アドバンテスト",
-      "role": "テスタ(AI向けHBM/SoC検査で急伸)",
-      "theme": "半導体_検査_計測",
-      "theme_heat": -9.9,
-      "policy": "経済安保・先端半導体の国内検査体制",
+      "ticker": "6702.T",
+      "name": "富士通",
+      "role": "量子シミュレータ(大型)",
+      "theme": "量子コンピューティング",
+      "theme_heat": 1.9,
+      "policy": "",
       "us_drivers": [
-        "SOX",
-        "NVDA",
-        "ASML"
+        "IONQ",
+        "RGTI",
+        "QBTS"
       ],
-      "us_tailwind": 0.73,
-      "score": 26.0,
+      "us_tailwind": -0.01,
+      "score": 25.8,
       "tier": "C",
       "init_stars": 3,
       "overextended": false,
       "potential": 0.0,
       "blast": 0.0,
-      "laggard": 36.0,
-      "mom_pts": 15.0,
-      "ctx_pts": 11.0,
-      "vr": 1.18,
-      "dev": -1.65,
-      "rsi": 51.27,
-      "r1": -0.019721577726218076,
-      "r5": 0.012582384661473878,
-      "r20": -0.013426736719206023,
-      "close": 33800.0,
-      "above_ma25": false,
+      "laggard": 25.8,
+      "mom_pts": 30.0,
+      "ctx_pts": -4.2,
+      "vr": 0.6,
+      "dev": 1.3,
+      "rsi": 53.04,
+      "r1": -0.014617593317671651,
+      "r5": -0.04357740055738535,
+      "r20": 0.015057811239580499,
+      "close": 3775.0,
+      "above_ma25": true,
       "_detail": {
         "vol_pts": 0,
-        "thrust_pts": 3,
+        "thrust_pts": 0,
         "r1_pts": 0,
-        "trend_pts": 0,
+        "trend_pts": 18,
         "pos_pts": 12,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 3.0
+        "heat_pts": 0.8,
+        "policy_pts": 0.0,
+        "us_pts": -5.0
       }
     },
     {
@@ -3252,47 +3293,6 @@
       }
     },
     {
-      "ticker": "6920.T",
-      "name": "レーザーテック",
-      "role": "EUVマスク検査(独占的)",
-      "theme": "半導体_検査_計測",
-      "theme_heat": -9.9,
-      "policy": "経済安保・先端半導体の国内検査体制",
-      "us_drivers": [
-        "SOX",
-        "NVDA",
-        "ASML"
-      ],
-      "us_tailwind": 0.73,
-      "score": 25.0,
-      "tier": "C",
-      "init_stars": 2,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 23.0,
-      "mom_pts": 14.0,
-      "ctx_pts": 11.0,
-      "vr": 1.01,
-      "dev": -5.25,
-      "rsi": 44.46,
-      "r1": -0.019106490587243563,
-      "r5": 0.05532043530834341,
-      "r20": -0.1182116696135388,
-      "close": 34910.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 14,
-        "r1_pts": 0,
-        "trend_pts": 0,
-        "pos_pts": 0,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 3.0
-      }
-    },
-    {
       "ticker": "4063.T",
       "name": "信越化学工業",
       "role": "シリコンウエハー/フォトレジスト世界首位級",
@@ -3305,7 +3305,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 25.0,
       "tier": "C",
       "init_stars": 2,
@@ -3372,6 +3372,90 @@
       }
     },
     {
+      "ticker": "6526.T",
+      "name": "ソシオネクスト",
+      "role": "カスタムSoC設計(ASIC)",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": -1.9,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 2.96,
+      "score": 24.0,
+      "tier": "C",
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 32.0,
+      "mom_pts": 4.0,
+      "ctx_pts": 20.0,
+      "vr": 0.71,
+      "dev": -4.61,
+      "rsi": 39.87,
+      "r1": -0.04758327072376656,
+      "r5": -0.047344689378757465,
+      "r20": -0.033790650406504086,
+      "close": 1901.5,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 4,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
+      "ticker": "6875.T",
+      "name": "メガチップス",
+      "role": "ファブレス(カスタムLSI/ASIC)",
+      "theme": "半導体_ロジック_メモリ",
+      "theme_heat": -1.9,
+      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
+      "us_drivers": [
+        "MU",
+        "NVDA",
+        "AMD",
+        "AVGO"
+      ],
+      "us_tailwind": 2.96,
+      "score": 24.0,
+      "tier": "C",
+      "init_stars": 3,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 45.0,
+      "mom_pts": 4.0,
+      "ctx_pts": 20.0,
+      "vr": 0.88,
+      "dev": -2.53,
+      "rsi": 48.13,
+      "r1": -0.0572963294538944,
+      "r5": -0.02859778597785978,
+      "r20": -0.07306338028169013,
+      "close": 10530.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 4,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
       "ticker": "8035.T",
       "name": "東京エレクトロン",
       "role": "前工程総合装置(成膜/エッチング)",
@@ -3387,7 +3471,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.07,
+      "us_tailwind": 3.7,
       "score": 24.0,
       "tier": "C",
       "init_stars": 2,
@@ -3429,7 +3513,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 24.0,
       "tier": "C",
       "init_stars": 3,
@@ -3471,7 +3555,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 24.0,
       "tier": "C",
       "init_stars": 2,
@@ -3535,46 +3619,6 @@
         "heat_pts": 0.1,
         "policy_pts": 0.0,
         "us_pts": 0.0
-      }
-    },
-    {
-      "ticker": "6814.T",
-      "name": "古野電気",
-      "role": "車載/船舶レーダー・センシング",
-      "theme": "フィジカルAI_自動運転_車載",
-      "theme_heat": -13.3,
-      "policy": "改正道交法でレベル4(特定条件下完全自動運転)解禁・自動運転実装に向けた国の実証/補助",
-      "us_drivers": [
-        "TSLA",
-        "NVDA"
-      ],
-      "us_tailwind": 0.99,
-      "score": 23.0,
-      "tier": "C",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 36.0,
-      "mom_pts": 12.0,
-      "ctx_pts": 11.0,
-      "vr": 0.94,
-      "dev": -1.76,
-      "rsi": 50.24,
-      "r1": -0.05243445692883897,
-      "r5": -0.013003901170351106,
-      "r20": -0.03312101910828025,
-      "close": 7590.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 0,
-        "trend_pts": 0,
-        "pos_pts": 12,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 3.0
       }
     },
     {
@@ -3652,9 +3696,9 @@
       }
     },
     {
-      "ticker": "6526.T",
-      "name": "ソシオネクスト",
-      "role": "カスタムSoC設計(ASIC)",
+      "ticker": "6723.T",
+      "name": "ルネサスエレクトロニクス",
+      "role": "車載/産業MCU",
       "theme": "半導体_ロジック_メモリ",
       "theme_heat": -1.9,
       "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
@@ -3664,75 +3708,33 @@
         "AMD",
         "AVGO"
       ],
-      "us_tailwind": 1.31,
+      "us_tailwind": 2.96,
       "score": 20.0,
       "tier": "C",
-      "init_stars": 2,
+      "init_stars": 1,
       "overextended": false,
       "potential": 0.0,
       "blast": 0.0,
-      "laggard": 28.0,
-      "mom_pts": 4.0,
-      "ctx_pts": 16.0,
-      "vr": 0.71,
-      "dev": -4.61,
-      "rsi": 39.87,
-      "r1": -0.04758327072376656,
-      "r5": -0.047344689378757465,
-      "r20": -0.033790650406504086,
-      "close": 1901.5,
+      "laggard": 20.0,
+      "mom_pts": 0.0,
+      "ctx_pts": 20.0,
+      "vr": 1.08,
+      "dev": -8.1,
+      "rsi": 36.98,
+      "r1": -0.0443726124008228,
+      "r5": -0.01870850935425472,
+      "r20": -0.14980392156862743,
+      "close": 3252.0,
       "above_ma25": false,
       "_detail": {
         "vol_pts": 0,
         "thrust_pts": 0,
         "r1_pts": 0,
         "trend_pts": 0,
-        "pos_pts": 4,
+        "pos_pts": 0,
         "heat_pts": 0.0,
         "policy_pts": 8.0,
-        "us_pts": 8.0
-      }
-    },
-    {
-      "ticker": "6875.T",
-      "name": "メガチップス",
-      "role": "ファブレス(カスタムLSI/ASIC)",
-      "theme": "半導体_ロジック_メモリ",
-      "theme_heat": -1.9,
-      "policy": "ラピダス(2nmロジック国策)/キオクシア・マイクロン四日市の補助金",
-      "us_drivers": [
-        "MU",
-        "NVDA",
-        "AMD",
-        "AVGO"
-      ],
-      "us_tailwind": 1.31,
-      "score": 20.0,
-      "tier": "C",
-      "init_stars": 3,
-      "overextended": false,
-      "potential": 0.0,
-      "blast": 0.0,
-      "laggard": 41.0,
-      "mom_pts": 4.0,
-      "ctx_pts": 16.0,
-      "vr": 0.88,
-      "dev": -2.53,
-      "rsi": 48.13,
-      "r1": -0.0572963294538944,
-      "r5": -0.02859778597785978,
-      "r20": -0.07306338028169013,
-      "close": 10530.0,
-      "above_ma25": false,
-      "_detail": {
-        "vol_pts": 0,
-        "thrust_pts": 0,
-        "r1_pts": 0,
-        "trend_pts": 0,
-        "pos_pts": 4,
-        "heat_pts": 0.0,
-        "policy_pts": 8.0,
-        "us_pts": 8.0
+        "us_pts": 12.0
       }
     },
     {
@@ -3751,7 +3753,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.07,
+      "us_tailwind": 3.7,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -3781,6 +3783,88 @@
       }
     },
     {
+      "ticker": "7729.T",
+      "name": "東京精密",
+      "role": "プローバ/測定機",
+      "theme": "半導体_検査_計測",
+      "theme_heat": -9.9,
+      "policy": "経済安保・先端半導体の国内検査体制",
+      "us_drivers": [
+        "SOX",
+        "NVDA",
+        "ASML"
+      ],
+      "us_tailwind": 2.1,
+      "score": 20.0,
+      "tier": "C",
+      "init_stars": 2,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 32.0,
+      "mom_pts": 0.0,
+      "ctx_pts": 20.0,
+      "vr": 0.69,
+      "dev": -6.59,
+      "rsi": 41.91,
+      "r1": -0.051988636363636376,
+      "r5": -0.03888248847926268,
+      "r20": -0.07792207792207795,
+      "close": 16685.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 0,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
+      "ticker": "6951.T",
+      "name": "日本電子",
+      "role": "電子顕微鏡/計測(先端プロセス)",
+      "theme": "半導体_検査_計測",
+      "theme_heat": -9.9,
+      "policy": "経済安保・先端半導体の国内検査体制",
+      "us_drivers": [
+        "SOX",
+        "NVDA",
+        "ASML"
+      ],
+      "us_tailwind": 2.1,
+      "score": 20.0,
+      "tier": "C",
+      "init_stars": 1,
+      "overextended": false,
+      "potential": 0.0,
+      "blast": 0.0,
+      "laggard": 20.0,
+      "mom_pts": 0.0,
+      "ctx_pts": 20.0,
+      "vr": 0.82,
+      "dev": -9.72,
+      "rsi": 38.97,
+      "r1": -0.03313039784793992,
+      "r5": -0.03952180028129393,
+      "r20": -0.18731405450434369,
+      "close": 6829.0,
+      "above_ma25": false,
+      "_detail": {
+        "vol_pts": 0,
+        "thrust_pts": 0,
+        "r1_pts": 0,
+        "trend_pts": 0,
+        "pos_pts": 0,
+        "heat_pts": 0.0,
+        "policy_pts": 8.0,
+        "us_pts": 12.0
+      }
+    },
+    {
       "ticker": "6146.T",
       "name": "ディスコ",
       "role": "ダイサ/グラインダ(後工程・CoWoS)",
@@ -3793,7 +3877,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -3835,7 +3919,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -3877,7 +3961,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 2,
@@ -3919,7 +4003,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -3961,7 +4045,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -4003,7 +4087,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
@@ -4045,7 +4129,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 2,
@@ -4087,7 +4171,7 @@
         "AVGO",
         "AMD"
       ],
-      "us_tailwind": 2.31,
+      "us_tailwind": 2.15,
       "score": 20.0,
       "tier": "C",
       "init_stars": 1,
