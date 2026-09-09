@@ -789,6 +789,36 @@
       "close": 1203.0,
       "pnl": -0.74,
       "win": false
+    },
+    {
+      "date": "2026-09-09",
+      "ticker": "7751.T",
+      "name": "キヤノン",
+      "direction": "BUY",
+      "open": 4336.0,
+      "close": 4317.0,
+      "pnl": -0.44,
+      "win": false
+    },
+    {
+      "date": "2026-09-09",
+      "ticker": "7752.T",
+      "name": "リコー",
+      "direction": "BUY",
+      "open": 1565.5,
+      "close": 1539.0,
+      "pnl": -1.69,
+      "win": false
+    },
+    {
+      "date": "2026-09-09",
+      "ticker": "2222.T",
+      "name": "寿スピリッツ",
+      "direction": "BUY",
+      "open": 2478.0,
+      "close": 2455.0,
+      "pnl": -0.93,
+      "win": false
     }
   ]
 }
