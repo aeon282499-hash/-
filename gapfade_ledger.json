@@ -1002,10 +1002,10 @@
     "open": 3946.0,
     "prev_close": 3702.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 4128.0,
+    "exit_px": 4139.0,
+    "pnl": -0.366,
+    "yen": -1830
   },
   {
     "date": "2026-09-09",
@@ -1014,10 +1014,10 @@
     "open": 2624.0,
     "prev_close": 2478.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 2577.0,
+    "exit_px": 2554.0,
+    "pnl": 0.793,
+    "yen": 3965
   },
   {
     "date": "2026-09-09",
@@ -1026,10 +1026,10 @@
     "open": 3090.0,
     "prev_close": 2933.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 3055.0,
+    "exit_px": 3015.0,
+    "pnl": 1.209,
+    "yen": 6045
   },
   {
     "date": "2026-09-09",
@@ -1038,9 +1038,9 @@
     "open": 2232.0,
     "prev_close": 2126.0,
     "shares": 200,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 2225.0,
+    "exit_px": 2214.0,
+    "pnl": 0.394,
+    "yen": 1970
   }
 ]
