@@ -38,12 +38,13 @@ jobs:
           python - <<'PY'
           import os, copy
           from datetime import datetime, date, timezone, timedelta
-          from shadow_exit import weekly_report, load_sell_ledger, load_ledger, advance_sell
+          from shadow_exit import weekly_report, load_sell_ledger, load_ledger, advance_sell, BUY_NOTIFY_KEYS
           JST = timezone(timedelta(hours=9))
           d = os.environ.get("TARGET_DATE", "").strip()
           today = date.fromisoformat(d) if d else datetime.now(JST).date()
           all_data = None
-          rows = load_ledger("main") + load_sell_ledger()
+          # 2026-09-09: 大/中/小/極上の全台帳で未確定玉を見る（旧: 大資金だけ→中/小/極上の金曜決済が「保有中」表示）
+          rows = [r for k in BUY_NOTIFY_KEYS for r in load_ledger(k)] + load_sell_ledger()
           if any(r.get("status") in ("pending", "open") for r in rows):
               # 未確定玉があれば report.py と同じく当日引けまでドライラン用の価格を取る
               from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
@@ -55,7 +56,7 @@ jobs:
           if k_sell and all_data:
               advance_sell(k_sell, today + timedelta(days=1), all_data)
           ok = True
-          for k in ("main", "mid", "small"):
+          for k in BUY_NOTIFY_KEYS:            # 大/中/小＋極上（2026-09-09: 極上の週次漏れを修正）
               r = weekly_report(today, all_data, k_sell or None, key=k)
               print(f"[kiwami_weekly] {today} {k} 送信{'OK' if r else 'NG'}")
               ok = ok and r

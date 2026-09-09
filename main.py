@@ -253,11 +253,23 @@ def main() -> None:
             # 2026-09-03 監査: ガードは極み配信より前に書かれるので、Discord側の失敗で極みだけ
             # 未達の日がある。その時は台帳を触らず当日分を再送するだけ（保険ランが自然に拾う）。
             try:
-                from shadow_exit import needs_resend, resend_only
-                if needs_resend(today):
+                from shadow_exit import marker_state, resend_only, run_shadow
+                _st = marker_state(today)
+                if _st == "resend":
                     print(f"[main] 本日分({today_str})は送信済みだが極み配信が未達 → 極みだけ再送")
                     ok = resend_only(today)
                     print("[main] 極み再送 " + ("成功" if ok else "失敗（次の保険ランで再試行）"))
+                    sys.exit(0)
+                if _st == "full":
+                    # 2026-09-09 監査: 前回ランで run_shadow が送信前に落ちた（例外/価格データ無し）
+                    # → 台帳更新＋記帳＋配信をやり直す。update_ledger/record_signals は冪等
+                    # （決済は再計算・新規は (ticker,signal_date) で重複排除）なので二重建てしない。
+                    print(f"[main] 本日分({today_str})は送信済みだが極み台帳が未処理 → 台帳更新から再実行")
+                    from screener import batch_download_jquants, _jquants_id_token, RSI_WARMUP_CAL_DAYS
+                    _rs = (today - timedelta(days=RSI_WARMUP_CAL_DAYS)).strftime("%Y-%m-%d")
+                    ok = run_shadow(TIERS, today,
+                                    lambda: batch_download_jquants(_jquants_id_token(), start=_rs, end=today_str))
+                    print("[main] 極み再実行 " + ("成功" if ok else "失敗（次の保険ランで再試行）"))
                     sys.exit(0)
             except SystemExit:
                 raise

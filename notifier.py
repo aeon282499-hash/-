@@ -145,6 +145,9 @@ def _nth_trading_day(d, n: int):
     count = 0
     while count < n:
         cur += timedelta(days=1)
+        # 年末年始(12/31〜1/3)は東証休業（main.is_trading_day と同じ・2026-09-09 監査で表示ズレ修正）
+        if (cur.month == 12 and cur.day == 31) or (cur.month == 1 and cur.day <= 3):
+            continue
         if cur.weekday() < 5 and not jpholiday.is_holiday(cur):
             count += 1
     return cur

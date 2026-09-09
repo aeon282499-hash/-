@@ -129,9 +129,10 @@ jobs:
               dp.send_report([], [], picks, stats, today, dry=False, banned=banned)
               print('fade resend done / picks:', [(p.get(\"ticker\"), p.get(\"verdict\")) for p in picks])
               raise SystemExit(0)
-          for key in se.NOTIFY_KEYS:
-              if target in ('both', 'buy'):
+          if target in ('both', 'buy'):
+              for key in se.BUY_NOTIFY_KEYS:      # 大/中/小＋極上（2026-09-09: 極上の再送漏れを修正）
                   print(key, 'buy  ->', se.send_discord(today, key))
-              if target in ('both', 'sell'):
+          if target in ('both', 'sell'):
+              for key in se.NOTIFY_KEYS:          # 売りは大/中/小のみ（極上に売りは無い）
                   print(key, 'sell ->', se.send_discord_sell(today, key))
           "

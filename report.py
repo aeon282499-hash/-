@@ -442,6 +442,15 @@ def _send_weekly_reports(today_jst: date) -> None:
         tier_pos.append((tier, buy_pos, sell_pos))
         has_active = has_active or any(p.get("status") in ("pending", "open")
                                        for p in buy_pos + sell_pos)
+    # 2026-09-09 監査: 通常版に保有ゼロでも極み/極上(台帳が別)に保有があれば当日決済のドライランが要る。
+    # 極上は dc1.2×vt5 で通常版と銘柄が一致しない日があるので、通常版だけで判定すると
+    # 金曜の極み/極上週次が「保有中」のまま出る。
+    try:
+        import shadow_exit as _se
+        _krows = [r for k in _se.BUY_NOTIFY_KEYS for r in _se.load_ledger(k)] + _se.load_sell_ledger()
+        has_active = has_active or any(r.get("status") in ("pending", "open") for r in _krows)
+    except Exception as _e:
+        print(f"[report] 極み台帳の保有判定スキップ: {_e}")
 
     # 全階層で使い回す価格データを1回だけ取得（窓は tracker と同じ120日。
     # 旧30日窓は起点が朝runと1日ズレるだけでRSI50境界の判定が割れ、2026-07-17に

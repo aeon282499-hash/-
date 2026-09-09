@@ -27,11 +27,19 @@ with tempfile.TemporaryDirectory() as d:
         today = date(2026, 9, 4)
         se.write_sent_marker(today, False)
         t("marker sent=False → needs_resend", se.needs_resend(today))
-        t("marker 別日は needs_resend=False", not se.needs_resend(date(2026, 9, 7)))
+        # 2026-09-09 監査で意味変更: 別日のマーカー＝当日の台帳処理が走っていない → "full"(再実行) 扱い
+        t("marker 別日は needs_resend=True(full)", se.needs_resend(date(2026, 9, 7))
+          and se.marker_state(date(2026, 9, 7)) == "full")
+        t("marker 当日 sent=False は resend", se.marker_state(today) == "resend")
         se.write_sent_marker(today, True)
-        t("marker sent=True → needs_resend=False", not se.needs_resend(today))
+        t("marker sent=True → needs_resend=False", not se.needs_resend(today) and se.marker_state(today) == "ok")
         m = json.load(open(se.KIWAMI_SENT_FILE, encoding="utf-8"))
-        t("marker 形式", m == {"date": "2026-09-04", "sent": True})
+        t("marker 形式", m == {"date": "2026-09-04", "sent": True, "failed": [], "ledger_done": True})
+        se.write_sent_marker(today, False, ledger_done=False)
+        t("marker ledger_done=False は full", se.marker_state(today) == "full")
+        se.write_sent_marker(today, False, failed=["buy:gokujo"])
+        m = json.load(open(se.KIWAMI_SENT_FILE, encoding="utf-8"))
+        t("marker failed 一覧を保持", m["failed"] == ["buy:gokujo"] and se.marker_state(today) == "resend")
         # _shadow_post: webhook未設定は失敗扱いにしない / HTTP失敗はフラグを立てる
         se._POST_FAILED = False
         os.environ.pop("DISCORD_WEBHOOK_SHADOW_URL", None)

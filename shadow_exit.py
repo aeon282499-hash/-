@@ -537,8 +537,12 @@ def run_shadow(tiers, today: date, get_data) -> bool:
         return
     all_data = get_data() if callable(get_data) else get_data
     if not all_data:
-        print("[shadow] 価格データなし → スキップ")
-        return
+        # 2026-09-09 監査: ここで黙って抜けると kiwami_sent.json が前日のまま残り、翌朝の保険ランは
+        # 「送信済み」で全部スキップ＝その日の極み/極上が台帳にも配信にも永久に載らない。
+        # マーカーを sent=False(台帳未処理)で残し、main.py の保険ランが run_shadow をやり直す。
+        print("[shadow] 価格データなし → スキップ（kiwami_sent.json に未処理を記録）")
+        write_sent_marker(today, False, ledger_done=False)
+        return False
     for k in keys:
         c, e = update_ledger(k, today, all_data)
         a = record_signals(k, today, all_data)
@@ -554,69 +558,110 @@ def run_shadow(tiers, today: date, get_data) -> bool:
         print(f"[shadow] 極み売り台帳の更新スキップ（買いと通常版に影響なし）: {e}")
 
     # 専用チャンネルへの配信。ここが失敗しても台帳は既に保存済みで、本番配信にも影響しない。
-    for _k in BUY_NOTIFY_KEYS:       # 極み・買い（大/中/小・2026-08-28から3階層）＋極上（2026-09-05）
-        try:
-            send_discord(today, _k)
-        except Exception as e:
-            _POST_FAILED = True      # 送る前に落ちた＝未達（2026-09-04）
-            print(f"[shadow-{_k}] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
-    for _k in NOTIFY_KEYS:           # 極み・売り（大/中/小・2026-08-28から3階層）
-        try:
-            send_discord_sell(today, _k)
-        except Exception as e:
-            _POST_FAILED = True
-            print(f"[shadow-{_k}] 極み売りの配信スキップ（通常版に影響なし）: {e}")
-    signals_ok = not _POST_FAILED      # 再送の対象は買い/売りシグナルだけ。月次の失敗で再送はしない（2026-09-04）
+    # 2026-09-09: 失敗した ch だけを kiwami_sent.json に残し、再送はその ch に限る（1ch の失敗で
+    # 7ch 全部を二重投稿しない）。
+    failed = _post_signals(today)
+    signals_ok = not failed            # 再送の対象は買い/売りシグナルだけ。月次の失敗で再送はしない（2026-09-04）
     try:
         from main import is_month_first_trading_day
         if is_month_first_trading_day(today):    # 月初営業日だけ（通常版と同じタイミング）
             monthly_report(today)
     except Exception as e:
         print(f"[shadow] 極み月次の配信スキップ（通常版に影響なし）: {e}")
-    write_sent_marker(today, signals_ok)
+    write_sent_marker(today, signals_ok, failed=failed)
     return signals_ok
 
 
-def write_sent_marker(today: date, sent: bool) -> None:
+def _post_signals(today: date, only: set[str] | None = None) -> list[str]:
+    """極み買い(大/中/小/極上)＋極み売り(大/中/小)を送り、失敗した ch の一覧("buy:main" 等)を返す。
+    only を渡すとその ch だけ送る（再送用）。送信前の例外も未達として数える（2026-09-04）。"""
+    global _POST_FAILED
+    failed: list[str] = []
+    for _k in BUY_NOTIFY_KEYS:       # 極み・買い（大/中/小・2026-08-28から3階層）＋極上（2026-09-05）
+        tag = f"buy:{_k}"
+        if only is not None and tag not in only:
+            continue
+        _POST_FAILED = False
+        try:
+            send_discord(today, _k)
+        except Exception as e:
+            _POST_FAILED = True      # 送る前に落ちた＝未達（2026-09-04）
+            print(f"[shadow-{_k}] 極み買いの配信スキップ（台帳は保存済み・通常版に影響なし）: {e}")
+        if _POST_FAILED:
+            failed.append(tag)
+    for _k in NOTIFY_KEYS:           # 極み・売り（大/中/小・2026-08-28から3階層）
+        tag = f"sell:{_k}"
+        if only is not None and tag not in only:
+            continue
+        _POST_FAILED = False
+        try:
+            send_discord_sell(today, _k)
+        except Exception as e:
+            _POST_FAILED = True
+            print(f"[shadow-{_k}] 極み売りの配信スキップ（通常版に影響なし）: {e}")
+        if _POST_FAILED:
+            failed.append(tag)
+    _POST_FAILED = bool(failed)
+    return failed
+
+
+def write_sent_marker(today: date, sent: bool, failed: list[str] | None = None,
+                      ledger_done: bool = True) -> None:
     """極み配信の成否を kiwami_sent.json に残す（2026-09-03 監査: ガードは送信前に書かれるため、
-    Discord側の障害で配信が消えると保険ランが全部スキップしていた）。"""
+    Discord側の障害で配信が消えると保険ランが全部スキップしていた）。
+    2026-09-09: failed=未達の ch 一覧（再送はこの ch だけ）・ledger_done=False は台帳処理自体が
+    未了（価格データ無し等）＝保険ランは配信だけでなく run_shadow をやり直す。"""
     try:
         with open(KIWAMI_SENT_FILE, "w", encoding="utf-8") as f:
-            json.dump({"date": today.strftime("%Y-%m-%d"), "sent": bool(sent)}, f, ensure_ascii=False)
+            json.dump({"date": today.strftime("%Y-%m-%d"), "sent": bool(sent),
+                       "failed": sorted(failed or []), "ledger_done": bool(ledger_done)},
+                      f, ensure_ascii=False)
         if not sent:
-            print(f"[shadow] ⚠️ 極み配信が失敗 → {KIWAMI_SENT_FILE} に sent=False（次の保険ランが極みだけ再送）")
+            print(f"[shadow] ⚠️ 極み配信が失敗 → {KIWAMI_SENT_FILE} に sent=False"
+                  f"（次の保険ランが{'極みだけ再送' if ledger_done else '台帳更新から再実行'}）")
     except Exception as e:
         print(f"[shadow] 送信マーカー書込失敗: {e}")
 
 
-def needs_resend(today: date) -> bool:
-    """送信済みガードが立っているのに極み配信だけ失敗した日か。"""
+def marker_state(today: date) -> str:
+    """kiwami_sent.json と today の関係。
+    "ok"     = 当日分を送信済み（何もしない）
+    "resend" = 当日分の台帳は処理済みだが配信が未達（failed の ch だけ再送）
+    "full"   = 当日分の台帳処理が走っていない（マーカー無し／前日のまま／ledger_done=False）
+               → 2026-09-09 監査: run_shadow が送信前に例外で抜けた夜はこの状態になり、
+                 旧 needs_resend(date==today and not sent) では拾えず極み/極上が永久に欠落した。"""
+    today_str = today.strftime("%Y-%m-%d")
     if not os.path.exists(KIWAMI_SENT_FILE):
-        return False
+        return "full"
     try:
         with open(KIWAMI_SENT_FILE, encoding="utf-8") as f:
             m = json.load(f)
-        return m.get("date") == today.strftime("%Y-%m-%d") and not m.get("sent", True)
     except Exception:
-        return False
+        return "full"
+    if m.get("date") != today_str or not m.get("ledger_done", True):
+        return "full"
+    return "ok" if m.get("sent", True) else "resend"
+
+
+def needs_resend(today: date) -> bool:
+    """送信済みガードが立っているのに極みの当日処理が終わっていない日か（resend / full の両方）。"""
+    return marker_state(today) != "ok"
 
 
 def resend_only(today: date) -> bool:
-    """台帳は触らず、当日分の極み買い/売りを再送するだけ（保険ランのフォールバック）。"""
-    global _POST_FAILED
-    _POST_FAILED = False
-    for _k in BUY_NOTIFY_KEYS:
-        try:
-            send_discord(today, _k)
-        except Exception as e:
-            print(f"[shadow-{_k}] 再送失敗(買い): {e}")
-    for _k in NOTIFY_KEYS:
-        try:
-            send_discord_sell(today, _k)
-        except Exception as e:
-            print(f"[shadow-{_k}] 再送失敗(売り): {e}")
-    write_sent_marker(today, not _POST_FAILED)
-    return not _POST_FAILED
+    """台帳は触らず、当日分の極み買い/売りを再送するだけ（保険ランのフォールバック）。
+    kiwami_sent.json に failed の一覧があればその ch だけ、無ければ全 ch。"""
+    only: set[str] | None = None
+    try:
+        with open(KIWAMI_SENT_FILE, encoding="utf-8") as f:
+            _m = json.load(f)
+        if _m.get("date") == today.strftime("%Y-%m-%d") and _m.get("failed"):
+            only = set(_m["failed"])
+    except Exception:
+        pass
+    failed = _post_signals(today, only)
+    write_sent_marker(today, not failed, failed=failed)
+    return not failed
 
 
 # ────────────────────────────── レポート ──────────────────────────────
