@@ -1,26 +1,40 @@
 {
-  "date": "2026-09-09",
+  "date": "2026-09-10",
   "signals": [
     {
-      "ticker": "7752.T",
-      "name": "リコー",
+      "ticker": "4403.T",
+      "name": "日油",
       "direction": "BUY",
-      "prev_close": 1567.0,
-      "limit_price": 1582
+      "prev_close": 2654.0,
+      "limit_price": 2680
     },
     {
-      "ticker": "6724.T",
-      "name": "セイコーエプソン",
+      "ticker": "7259.T",
+      "name": "アイシン",
       "direction": "BUY",
-      "prev_close": 2972.0,
-      "limit_price": 3000
+      "prev_close": 2186.5,
+      "limit_price": 2208
     },
     {
-      "ticker": "2222.T",
-      "name": "寿スピリッツ",
+      "ticker": "2181.T",
+      "name": "パーソルホールディングス",
       "direction": "BUY",
-      "prev_close": 2462.0,
-      "limit_price": 2486
+      "prev_close": 279.0,
+      "limit_price": 281
+    },
+    {
+      "ticker": "6471.T",
+      "name": "日本精工",
+      "direction": "BUY",
+      "prev_close": 1060.5,
+      "limit_price": 1071
+    },
+    {
+      "ticker": "7951.T",
+      "name": "ヤマハ",
+      "direction": "BUY",
+      "prev_close": 1230.0,
+      "limit_price": 1242
     }
   ]
 }
