@@ -1,28 +1,16 @@
 {
-  "date": "2026-09-10",
-  "fetched_at": "2026-09-09 23:11:41",
-  "signals": [
-    {
-      "ticker": "6806.T",
-      "name": "ヒロセ電機",
-      "rsi": 31.59,
-      "deviation": -7.86,
-      "turnover_oku": 39.898535,
-      "prev_close": 23885.0,
-      "in_sector_top": false,
-      "in_theme": true,
-      "sector": "電気機器"
-    }
-  ],
+  "date": "2026-09-11",
+  "fetched_at": "2026-09-10 23:11:19",
+  "signals": [],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 25,
+    "raw_buy": 8,
     "earnings_skip": 0,
     "sector_pass": 0,
-    "theme_pass": 1,
-    "or_pass": 1,
+    "theme_pass": 0,
+    "or_pass": 0,
     "both_pass": 0,
-    "raw_sell": 1,
+    "raw_sell": 0,
     "sell_earnings_skip": 0,
     "sell_sector_pass": 0
   }
