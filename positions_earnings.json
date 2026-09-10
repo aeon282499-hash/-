@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-09-09",
+ "last_signal_date": "2026-09-10",
  "positions": [
   {
    "ticker": "6521.T",
@@ -556,6 +556,17 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -2.27,
    "pnl_yen": -7000
+  },
+  {
+   "ticker": "215A.T",
+   "name": "タイミー",
+   "type": "第１四半期",
+   "date": "2026-09-10",
+   "signal_price": 1553.0,
+   "shares": 300,
+   "rsi": 43.7,
+   "runup5": -3.1,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-09-01"
