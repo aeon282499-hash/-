@@ -669,6 +669,56 @@
       "close": 2455.0,
       "pnl": -0.93,
       "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "4403.T",
+      "name": "日油",
+      "direction": "BUY",
+      "open": 2654.0,
+      "close": 2620.0,
+      "pnl": -1.28,
+      "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "7259.T",
+      "name": "アイシン",
+      "direction": "BUY",
+      "open": 2140.0,
+      "close": 2176.5,
+      "pnl": 1.71,
+      "win": true
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "2181.T",
+      "name": "パーソルホールディングス",
+      "direction": "BUY",
+      "open": 280.8,
+      "close": 289.2,
+      "pnl": 2.99,
+      "win": true
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "6471.T",
+      "name": "日本精工",
+      "direction": "BUY",
+      "open": 1051.0,
+      "close": 1048.5,
+      "pnl": -0.24,
+      "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "7951.T",
+      "name": "ヤマハ",
+      "direction": "BUY",
+      "open": 1221.5,
+      "close": 1221.0,
+      "pnl": -0.04,
+      "win": false
     }
   ]
 }

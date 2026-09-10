@@ -1319,6 +1319,56 @@
       "close": 2455.0,
       "pnl": -0.93,
       "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "5201.T",
+      "name": "ＡＧＣ",
+      "direction": "BUY",
+      "open": 5521.0,
+      "close": 5532.0,
+      "pnl": 0.2,
+      "win": true
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "7278.T",
+      "name": "エクセディ",
+      "direction": "BUY",
+      "open": 5880.0,
+      "close": 5870.0,
+      "pnl": -0.17,
+      "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "4403.T",
+      "name": "日油",
+      "direction": "BUY",
+      "open": 2654.0,
+      "close": 2620.0,
+      "pnl": -1.28,
+      "win": false
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "7259.T",
+      "name": "アイシン",
+      "direction": "BUY",
+      "open": 2140.0,
+      "close": 2176.5,
+      "pnl": 1.71,
+      "win": true
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "4182.T",
+      "name": "三菱瓦斯化学",
+      "direction": "BUY",
+      "open": 3829.0,
+      "close": 3863.0,
+      "pnl": 0.89,
+      "win": true
     }
   ]
 }

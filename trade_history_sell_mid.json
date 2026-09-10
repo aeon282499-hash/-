@@ -99,6 +99,16 @@
       "close": 4347.0,
       "pnl": 1.65,
       "win": true
+    },
+    {
+      "date": "2026-09-10",
+      "ticker": "1803.T",
+      "name": "清水建設",
+      "direction": "SELL",
+      "open": 2459.5,
+      "close": 2391.5,
+      "pnl": 2.76,
+      "win": true
     }
   ]
 }
