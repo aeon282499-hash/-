@@ -1,40 +1,33 @@
 {
-  "date": "2026-09-10",
+  "date": "2026-09-11",
   "signals": [
     {
-      "ticker": "4403.T",
-      "name": "日油",
+      "ticker": "4528.T",
+      "name": "小野薬品工業",
       "direction": "BUY",
-      "prev_close": 2654.0,
-      "limit_price": 2680
+      "prev_close": 2343.5,
+      "limit_price": 2366
     },
     {
-      "ticker": "7259.T",
-      "name": "アイシン",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
       "direction": "BUY",
-      "prev_close": 2186.5,
-      "limit_price": 2208
+      "prev_close": 945.2,
+      "limit_price": 954
     },
     {
-      "ticker": "4182.T",
-      "name": "三菱瓦斯化学",
+      "ticker": "8117.T",
+      "name": "中央自動車工業",
       "direction": "BUY",
-      "prev_close": 3858.0,
-      "limit_price": 3895
+      "prev_close": 2095.0,
+      "limit_price": 2115
     },
     {
-      "ticker": "2181.T",
-      "name": "パーソルホールディングス",
+      "ticker": "2264.T",
+      "name": "森永乳業",
       "direction": "BUY",
-      "prev_close": 279.0,
-      "limit_price": 281
-    },
-    {
-      "ticker": "8830.T",
-      "name": "住友不動産",
-      "direction": "BUY",
-      "prev_close": 3307.0,
-      "limit_price": 3340
+      "prev_close": 1089.0,
+      "limit_price": 1099
     }
   ]
 }

@@ -1,11 +1,4 @@
 {
-  "date": "2026-09-10",
-  "signals": [
-    {
-      "ticker": "1803.T",
-      "name": "清水建設",
-      "direction": "SELL",
-      "prev_close": 2533.5
-    }
-  ]
+  "date": "2026-09-11",
+  "signals": []
 }

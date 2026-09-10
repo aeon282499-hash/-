@@ -1350,10 +1350,56 @@
       "pnl_pct": -7.037,
       "pnl_yen": -43100,
       "win": false
+    },
+    {
+      "ticker": "3653.T",
+      "name": "モルフォ",
+      "direction": "SELL",
+      "signal_date": "2026-09-11",
+      "basis_date": "2026-09-10",
+      "prev_close": 1490.0,
+      "limit_price": 1490.0,
+      "status": "pending",
+      "daily_gain": 7.43,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 600,
+      "dev25": 64.1,
+      "atr_pct": 12.38,
+      "vol_ratio": 4.6,
+      "range_pct": 11.3
+    },
+    {
+      "ticker": "4440.T",
+      "name": "ヴィッツ",
+      "direction": "SELL",
+      "signal_date": "2026-09-11",
+      "basis_date": "2026-09-10",
+      "prev_close": 2570.0,
+      "limit_price": 2570.0,
+      "status": "pending",
+      "daily_gain": 24.15,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 2,
+      "shares": 100,
+      "dev25": 77.3,
+      "atr_pct": 11.62,
+      "vol_ratio": 1.0,
+      "range_pct": 12.7
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-10",
+  "last_report_date": "2026-09-11",
   "last_monthly_report": "2026-08",
   "last_weekly_report": "2026-W36"
 }
