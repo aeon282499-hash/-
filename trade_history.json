@@ -1369,6 +1369,56 @@
       "close": 3863.0,
       "pnl": 0.89,
       "win": true
+    },
+    {
+      "date": "2026-09-11",
+      "ticker": "8830.T",
+      "name": "住友不動産",
+      "direction": "BUY",
+      "open": 3182.0,
+      "close": 3211.0,
+      "pnl": 0.91,
+      "win": true
+    },
+    {
+      "date": "2026-09-11",
+      "ticker": "9706.T",
+      "name": "日本空港ビルデング",
+      "direction": "BUY",
+      "open": 5502.0,
+      "close": 5409.0,
+      "pnl": -1.69,
+      "win": false
+    },
+    {
+      "date": "2026-09-11",
+      "ticker": "4528.T",
+      "name": "小野薬品工業",
+      "direction": "BUY",
+      "open": 2301.0,
+      "close": 2320.0,
+      "pnl": 0.83,
+      "win": true
+    },
+    {
+      "date": "2026-09-11",
+      "ticker": "8113.T",
+      "name": "ユニ・チャーム",
+      "direction": "BUY",
+      "open": 945.0,
+      "close": 951.5,
+      "pnl": 0.69,
+      "win": true
+    },
+    {
+      "date": "2026-09-11",
+      "ticker": "8117.T",
+      "name": "中央自動車工業",
+      "direction": "BUY",
+      "open": 2071.0,
+      "close": 2090.0,
+      "pnl": 0.92,
+      "win": true
     }
   ]
 }
