@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-09-10",
+ "last_signal_date": "2026-09-11",
  "positions": [
   {
    "ticker": "6521.T",
@@ -566,8 +566,47 @@
    "shares": 300,
    "rsi": 43.7,
    "runup5": -3.1,
-   "status": "pending",
-   "prev_close": 1559.0
+   "status": "closed",
+   "prev_close": 1559.0,
+   "entry": 1559.0,
+   "exit_date": "2026-09-11",
+   "exit": 1308.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -16.1,
+   "pnl_yen": -75300
+  },
+  {
+   "ticker": "186A.T",
+   "name": "アストロスケールホールディングス",
+   "type": "第１四半期",
+   "date": "2026-09-11",
+   "signal_price": 1010.0,
+   "shares": 400,
+   "rsi": 38.6,
+   "runup5": -3.5,
+   "status": "pending"
+  },
+  {
+   "ticker": "446A.T",
+   "name": "ノースサンド",
+   "type": "第２四半期",
+   "date": "2026-09-11",
+   "signal_price": 1918.0,
+   "shares": 200,
+   "rsi": 48.0,
+   "runup5": -17.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "9166.T",
+   "name": "ＧＥＮＤＡ",
+   "type": "第２四半期",
+   "date": "2026-09-11",
+   "signal_price": 712.0,
+   "shares": 700,
+   "rsi": 49.4,
+   "runup5": -3.1,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-09-11"
