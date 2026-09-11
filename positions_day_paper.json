@@ -1359,7 +1359,7 @@
       "basis_date": "2026-09-10",
       "prev_close": 1490.0,
       "limit_price": 1490.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.43,
       "short": {
         "mark": "○",
@@ -1372,7 +1372,14 @@
       "dev25": 64.1,
       "atr_pct": 12.38,
       "vol_ratio": 4.6,
-      "range_pct": 11.3
+      "range_pct": 11.3,
+      "entry_session": "2026-09-11",
+      "entry_open": 1460.0,
+      "entry_close": 1289.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 11.712,
+      "pnl_yen": 102600,
+      "win": true
     },
     {
       "ticker": "4440.T",
@@ -1382,7 +1389,7 @@
       "basis_date": "2026-09-10",
       "prev_close": 2570.0,
       "limit_price": 2570.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 24.15,
       "short": {
         "mark": "○",
@@ -1395,11 +1402,18 @@
       "dev25": 77.3,
       "atr_pct": 11.62,
       "vol_ratio": 1.0,
-      "range_pct": 12.7
+      "range_pct": 12.7,
+      "entry_session": "2026-09-11",
+      "entry_open": 2920.0,
+      "entry_close": 2624.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 10.137,
+      "pnl_yen": 29600,
+      "win": true
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-11",
+  "last_report_date": "2026-09-14",
   "last_monthly_report": "2026-08",
-  "last_weekly_report": "2026-W36"
+  "last_weekly_report": "2026-W37"
 }

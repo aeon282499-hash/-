@@ -1,70 +1,31 @@
 {
-  "date": "2026-09-11",
+  "date": "2026-09-14",
   "signals": [
     {
-      "ticker": "8830.T",
-      "name": "住友不動産",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
       "direction": "BUY",
-      "prev_close": 3227.0,
-      "limit_price": 3255,
-      "days_cover": 0.48452890055194026,
-      "rsi": 37.52,
-      "deviation": -3.74,
-      "vol_ratio": 1.52,
-      "range_ratio": 1.57,
-      "turnover": 14977733700.0
+      "prev_close": 3361.0,
+      "limit_price": 3390,
+      "days_cover": 0.3647848307195093,
+      "rsi": 43.55,
+      "deviation": -1.5,
+      "vol_ratio": 1.73,
+      "range_ratio": 2.04,
+      "turnover": 12261940800.0
     },
     {
-      "ticker": "9706.T",
-      "name": "日本空港ビルデング",
+      "ticker": "2127.T",
+      "name": "日本Ｍ＆Ａセンターホールディングス",
       "direction": "BUY",
-      "prev_close": 5562.0,
-      "limit_price": 5610,
-      "days_cover": 0.08537307381870818,
-      "rsi": 43.47,
-      "deviation": -2.82,
-      "vol_ratio": 5.71,
-      "range_ratio": 0.74,
-      "turnover": 25685491000.0
-    },
-    {
-      "ticker": "4528.T",
-      "name": "小野薬品工業",
-      "direction": "BUY",
-      "prev_close": 2343.5,
-      "limit_price": 2366,
-      "days_cover": 0.23421380057195193,
-      "rsi": 37.82,
-      "deviation": -3.69,
-      "vol_ratio": 0.95,
-      "range_ratio": 1.52,
-      "turnover": 3187373800.0
-    },
-    {
-      "ticker": "8113.T",
-      "name": "ユニ・チャーム",
-      "direction": "BUY",
-      "prev_close": 945.2,
-      "limit_price": 954,
-      "days_cover": 0.4208616922900765,
-      "rsi": 36.85,
-      "deviation": -4.12,
-      "vol_ratio": 0.94,
-      "range_ratio": 1.64,
-      "turnover": 4256474850.0
-    },
-    {
-      "ticker": "8117.T",
-      "name": "中央自動車工業",
-      "direction": "BUY",
-      "prev_close": 2095.0,
-      "limit_price": 2115,
-      "days_cover": 0.7205598908519276,
-      "rsi": 41.45,
-      "deviation": -4.15,
-      "vol_ratio": 10.43,
-      "range_ratio": 0.16,
-      "turnover": 5189247800.0
+      "prev_close": 627.9,
+      "limit_price": 634,
+      "days_cover": 0.6230387793876679,
+      "rsi": 33.46,
+      "deviation": -5.2,
+      "vol_ratio": 2.2,
+      "range_ratio": 0.68,
+      "turnover": 4183256999.9999995
     }
   ]
 }

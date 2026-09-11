@@ -1,40 +1,19 @@
 {
-  "date": "2026-09-11",
+  "date": "2026-09-14",
   "signals": [
     {
-      "ticker": "8830.T",
-      "name": "住友不動産",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
       "direction": "BUY",
-      "prev_close": 3227.0,
-      "limit_price": 3255
+      "prev_close": 3361.0,
+      "limit_price": 3390
     },
     {
-      "ticker": "9706.T",
-      "name": "日本空港ビルデング",
+      "ticker": "2127.T",
+      "name": "日本Ｍ＆Ａセンターホールディングス",
       "direction": "BUY",
-      "prev_close": 5562.0,
-      "limit_price": 5610
-    },
-    {
-      "ticker": "4528.T",
-      "name": "小野薬品工業",
-      "direction": "BUY",
-      "prev_close": 2343.5,
-      "limit_price": 2366
-    },
-    {
-      "ticker": "8113.T",
-      "name": "ユニ・チャーム",
-      "direction": "BUY",
-      "prev_close": 945.2,
-      "limit_price": 954
-    },
-    {
-      "ticker": "8117.T",
-      "name": "中央自動車工業",
-      "direction": "BUY",
-      "prev_close": 2095.0,
-      "limit_price": 2115
+      "prev_close": 627.9,
+      "limit_price": 634
     }
   ]
 }
