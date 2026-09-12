@@ -45,6 +45,15 @@ input double InpUsJpyPer01    = 40000;      // 0.1lot(名目約11万円)あた�
 input double InpUsLotMax      = 50.0;
 input int    InpUsMaxSpread   = 150;        // 許容スプレッド(pt=0.01$)
 input long   InpUsMagic       = 20260913;
+
+input bool   InpDeOn          = true;       // GER40 欧州の夜(01:00JST買→16:00JST売・火〜金JST・直前レッグ≤0)
+input string InpDeSymbol      = "GER40Cash";
+input double InpDeJpyPer01    = 50000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
+input double InpDeLotMax      = 50.0;
+input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
+input int    InpDeEntryHour   = 1;          // 買い時刻 JST
+input int    InpDeExitHour    = 16;         // 手仕舞い時刻 JST
+input long   InpDeMagic       = 20260914;
 //--- C) 金 Globex再開買い（サーバー01:05買→03:00売・13年t8.2・14/14年・0.01lot=名目68万円）
 input int    InpGxMode        = 1;          // 0=off / 1=紙(仮想約定をログとFilesに記録) / 2=実弾(残高がInpGxMinBalance以上のときだけ)
 input double InpGxMinBalance  = 200000;     // 実弾に切り替える残高(円)・未満なら紙のまま
@@ -58,7 +67,7 @@ input long   InpGxMagic       = 20260910;
 
 CTrade   trade;
 datetime g_goldEntryDay = 0, g_goldEntryTime = 0;
-datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0;
+datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0;
 datetime g_gxDay = 0; double g_gxPaperEntry = 0.0; datetime g_gxPaperTime = 0; bool g_gxPaperOpen = false; datetime g_gxWaitStart = 0;
 
 datetime DayOf(datetime t) { return t - (t % 86400); }
@@ -144,6 +153,52 @@ double LotIdx(string sym, double jpyPerUnit, double unit, double lotMax)
 }
 double LotJp() { return LotIdx(InpJpSymbol, InpJpJpyPerLot, 1.0, InpJpLotMax); }
 double LotUs() { return LotIdx(InpUsSymbol, InpUsJpyPer01, 0.1, InpUsLotMax); }
+double LotDe() { return LotIdx(InpDeSymbol, InpDeJpyPer01, 0.1, InpDeLotMax); }
+//--- 直前レッグ: 直近の exitH 足(now以前)と、その前の entryH 足。間隔が26h超(週末跨ぎ)なら一つ前のexitH足へ戻る。取れなければ0(=建てる)
+double PrevLegPct(string sym, int entryH, int exitH)
+{
+   datetime srvOff = TimeTradeServer() - TimeGMT();
+   datetime now = TimeTradeServer();
+   for(int back = 0; back < 8; back++)
+   {
+      datetime dayJ = DayOf(NowJST()) - back * 86400;
+      datetime tE = dayJ + exitH * 3600 - 9 * 3600 + srvOff;          // その日のexitH(JST)をサーバー時刻に
+      if(tE > now) continue;
+      int bE = iBarShift(sym, PERIOD_H1, tE, true);
+      if(bE < 0) continue;
+      datetime tA = tE - (exitH - entryH) * 3600;                       // 同日 entryH
+      if(entryH > exitH) tA -= 86400;
+      int bA = iBarShift(sym, PERIOD_H1, tA, true);
+      if(bA < 0) continue;
+      double oA = iOpen(sym, PERIOD_H1, bA), oE = iOpen(sym, PERIOD_H1, bE);
+      if(oA <= 0 || oE <= 0) continue;
+      return (oE / oA - 1.0) * 100.0;
+   }
+   return 0.0;
+}
+void DeTick()
+{
+   datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
+   if(dt.hour >= InpDeExitHour && HasPos(InpDeSymbol, InpDeMagic) && g_deExitDay != today)
+   { if(CanTrade()) CloseAll(InpDeSymbol, InpDeMagic, "GER40"); g_deExitDay = today; return; }
+   bool okDay = (dt.day_of_week >= 2 && dt.day_of_week <= 5);        // 火〜金JST(=欧州の月〜木の夜)
+   if(dt.hour >= InpDeEntryHour && dt.hour < InpDeExitHour && okDay && !HasPos(InpDeSymbol, InpDeMagic) && g_deEntryDay != today)
+   {
+      if(dt.hour >= InpDeEntryHour + 3) { g_deEntryDay = today; return; }
+      if(Halted()) { g_deEntryDay = today; return; }
+      int spread = (int)SymbolInfoInteger(InpDeSymbol, SYMBOL_SPREAD);
+      if(spread > InpDeMaxSpread) { PrintFormat("[GER40] スプレッド%dpt > %d 見送り(再試行)", spread, InpDeMaxSpread); return; }
+      double pn = PrevLegPct(InpDeSymbol, InpDeEntryHour, InpDeExitHour);
+      if(pn > 0.0) { PrintFormat("[GER40] 直前レッグ%+.2f%% > 0 なので見送り", pn); g_deEntryDay = today; return; }
+      PrintFormat("[GER40] 直前レッグ%+.2f%% → 建てる", pn);
+      double lots = LotDe();
+      if(!CanTrade()) { PrintFormat("[GER40][デモ以外] 買いシグナル lot=%.1f（発注せず）", lots); g_deEntryDay = today; return; }
+      trade.SetExpertMagicNumber(InpDeMagic);
+      if(trade.Buy(lots, InpDeSymbol, 0, 0, 0, "eunight")) PrintFormat("[GER40] 買い lot=%.1f(残高%.0f円) @%.2f spread=%dpt", lots, AccountInfoDouble(ACCOUNT_BALANCE), trade.ResultPrice(), spread);
+      else PrintFormat("[GER40] 買い失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      g_deEntryDay = today;
+   }
+}
 
 int OnInit()
 {
@@ -152,10 +207,11 @@ int OnInit()
    if(InpGoldOn && !SymbolSelect(InpGoldSymbol, true)) { Print("銘柄が見つからない: ", InpGoldSymbol); return INIT_FAILED; }
    if(InpJpOn && !SymbolSelect(InpJpSymbol, true)) { Print("銘柄が見つからない: ", InpJpSymbol); return INIT_FAILED; }
    if(InpUsOn && !SymbolSelect(InpUsSymbol, true)) { Print("銘柄が見つからない: ", InpUsSymbol); return INIT_FAILED; }
+   if(InpDeOn && !SymbolSelect(InpDeSymbol, true)) { Print("銘柄が見つからない: ", InpDeSymbol); return INIT_FAILED; }
    if(!CanTrade()) Print("⚠ デモ口座ではないので発注しません(InpDemoOnly=true)");
-   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | UK-DST=%s",
+   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
-               InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, UkDst(TimeGMT()) ? "夏" : "冬");
+               InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
    EventSetTimer(5);
    return INIT_SUCCEEDED;
 }
@@ -272,5 +328,6 @@ void OnTimer()
    if(InpGoldOn) GoldTick();
    if(InpJpOn) JpTick();
    if(InpUsOn) UsTick();
+   if(InpDeOn) DeTick();
 }
 //+------------------------------------------------------------------+

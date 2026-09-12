@@ -5,7 +5,7 @@
 import sys, os, datetime as dt, csv
 import MetaTrader5 as mt5
 
-MAGICS = {20260908: "GOLD.", 20260909: "JP225Cash", 20260913: "US500Cash"}   # 金15分ショート / 日経夜ドリフト
+MAGICS = {20260908: "GOLD.", 20260909: "JP225Cash", 20260913: "US500Cash", 20260914: "GER40Cash"}   # 金15分ショート / 日経夜ドリフト
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fix_trades.csv")
 days = int(sys.argv[sys.argv.index("--days") + 1]) if "--days" in sys.argv else 1
 
@@ -34,7 +34,7 @@ for pid, ds in by_pos.items():
         continue
     e, x = ent[0], ext[-1]
     pnl = sum(d.profit for d in ds); comm = sum(d.commission for d in ds); swap = sum(d.swap for d in ds)
-    rows.append(dict(position_id=str(pid), system=("金" if e.magic == 20260908 else "日経" if e.magic == 20260909 else "US500"), date=dt.datetime.fromtimestamp(e.time).strftime("%Y-%m-%d"),
+    rows.append(dict(position_id=str(pid), system=("金" if e.magic == 20260908 else "日経" if e.magic == 20260909 else "US500" if e.magic == 20260913 else "GER40"), date=dt.datetime.fromtimestamp(e.time).strftime("%Y-%m-%d"),
                      entry_time=dt.datetime.fromtimestamp(e.time).strftime("%H:%M:%S"), exit_time=dt.datetime.fromtimestamp(x.time).strftime("%H:%M:%S"),
                      lot=e.volume, sell=e.price, cover=x.price, gross_usd_oz=round(e.price - x.price, 2),
                      profit_jpy=round(pnl, 0), commission_jpy=round(comm, 0), swap_jpy=round(swap, 0), net_jpy=round(pnl + comm + swap, 0),
