@@ -105,7 +105,7 @@ SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEY
 # 台帳=shadow_exit_gokujo.json・配信=DISCORD_WEBHOOK_GOKUJO_URL（本人専用ch）。通常版・極みの台帳/配信には触れない。
 GOKUJO_KEY        = "gokujo"
 GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
-GOKUJO_SIZE       = 3_000_000
+GOKUJO_SIZE       = 1_500_000   # 2026-09-14 本人決定: 300万→150万（9/8 _report_300man_0908.md: 極上150+①100/②50=10年+1,607万/DD-95・保証金50万前提。買いは9/10決定で紙運用のまま）
 GOKUJO_MAX_SLOTS  = 1
 GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
 GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
@@ -1163,7 +1163,7 @@ def monthly_report(today: date) -> bool:
     def _embed(rows: list[dict], *, sell: bool, funded: set | None,
                key: str = "main") -> dict | None:
         tier_size = TIER_FILES[key][2]
-        slots = 1 if key == GOKUJO_KEY else 3   # 極上は1枠×300万（2026-09-05）
+        slots = 1 if key == GOKUJO_KEY else 3   # 極上は1枠×GOKUJO_SIZE（2026-09-05は300万・2026-09-14から150万）
         # 月次だけは大資金にもラベルを付ける（2026-09-01 本人「大資金中資金小資金わかりやすく」。
         # シグナル/週次は従来どおり _tier_sfx＝大資金無印のまま）。
         sfx = "・" + TIER_FILES[key][3]
