@@ -889,8 +889,14 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             # 下落なし)なら指値に価格制限は無いので、1円下の指値で寄り板寄せに参加すれば
             # 寄り値≥指値の限り寄り値で約定＝BTの執行前提(板寄せ)と同じ。
             if i < n_shoot and shares > 5_000:
+                # 2026-09-12 本人「寄付指値が刺さらず、当日中なら刺さって爆益だった(9/11モルフォ)」
+                # → 26年BT(_bt_fade_limit_allday_0912.py): 寄付限定指値@前終=26年+2,224万 /
+                # 当日中指値@前終(上抜け0.3%要求)=+2,766万(21/26年で上・+21万/年) / 寄成=+2,858万。
+                # 指値を使う時は執行条件「当日中」＝寄付限定にしない（下に寄って前終まで戻った玉も
+                # 建てる。その玉は26年平均+0.53%/勝率59%＝寄成なら-1.35%の玉を指値が救う形）。
                 lines.append(f"   ⚠️ {shares:,}株＝{shares // 100}単元。**51単元以上は成行の空売り不可**（価格規制）"
-                             f"→ 寄り前に**指値{p['prev_close'] - 1:,.0f}円**で発注（寄りがそれ以上なら寄り値で約定）")
+                             f"→ 寄り前に**指値{p['prev_close'] - 1:,.0f}円・執行条件は当日中**で発注"
+                             f"（寄付限定にしない＝寄りがそれ以上なら寄り値・下に寄っても戻れば約定）")
             # 💰プレミアム料の判断行（売り禁＝ハイカラ在庫で売る玉だけ・2026-08-15復活）。
             # 旧版(〜8/10廃止)は「総額◯円まで」表記で、SBIの画面は**円/株**表示のため毎回
             # 暗算が必要＝2回「わかりずらい」で死んだ。今回はこの銘柄の株数で割った円/株を
@@ -902,7 +908,10 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 lim_ps = int(FADE_EDGE_PCT_MAIN / 100 * capital_for_rank(rk) // shares)
                 tail = ("撃たない（今日は#2だけ）"
                         if (rk == 1 and n_shoot >= 2) else "撃たない（見送り）")
-                yb = f"寄指¥{p['min_entry_price']:,.0f}"
+                # 2026-09-12: この帯は「寄付限定」のまま。当日中指値で場中に戻って刺さる玉は26年
+                # 平均+0.53%(gross)＝この帯のプレミアム料(0.45〜1.46%)を払うと期待値マイナス。
+                # 9/11モルフォ(+13.5%)はこの帯のテール。〜ok円/株なら成行(=当日中でも可)。
+                yb = f"寄付限定の指値¥{p['min_entry_price']:,.0f}"
                 if lim_ps < 1:
                     band = f"1円/株でもエッジ超え → {tail}"
                 elif ok_ps < 1:
@@ -913,6 +922,8 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 else:
                     band = f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}円〜→{tail}"
                 lines.append(f"   💰 SBIのプレミアム料を見て: {band}")
+                if lim_ps >= 1 and ok_ps >= 1 and lim_ps > ok_ps:
+                    lines.append(f"   　 ※{ok_ps + 1}〜{lim_ps}円の指値は**寄付限定**のまま（場中に戻って刺さる玉は平均+0.5%＝この料では負け）")
             lines.append("")
         if any(p["prev_close"] < 300 for p in go_picks[:n_shoot]):
             lines.append("⚠️ 低位株あり（300円未満）＝一日信用の売り在庫だけ要確認")
