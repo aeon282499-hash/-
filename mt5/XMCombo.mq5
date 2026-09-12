@@ -19,7 +19,7 @@ input double InpStopBelowBalance = 25000;   // 残高がこの円を割ったら
 input bool   InpGoldOn        = true;       // 金ショートを動かす
 input string InpGoldSymbol    = "GOLD.";    // 銘柄(Zero口座は GOLD.)
 input double InpGoldJpyPer001 = 50000;      // 0.01lotあたりの必要残高(円)
-input double InpGoldLotMax    = 0.20;       // 上限ロット
+input double InpGoldLotMax    = 1.00;       // 上限ロット
 input double InpGoldStopUsd   = 10.0;       // 損切り幅($/oz・0=無し)
 input int    InpGoldMaxSpread = 40;         // 許容スプレッド(pt=0.01$)
 input int    InpGoldHourLon   = 10;         // 売り時刻 ロンドン(時)
@@ -30,7 +30,7 @@ input long   InpGoldMagic     = 20260908;
 input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
 input string InpJpSymbol      = "JP225Cash";
 input double InpJpJpyPerLot   = 7000;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
-input double InpJpLotMax      = 50.0;
+input double InpJpLotMax      = 500.0;
 input int    InpJpEntryHour   = 15;         // 買い時刻 JST
 input int    InpJpExitHour    = 9;          // 手仕舞い時刻 JST
 input bool   InpJpHoldWeekend = false;      // 金曜も建てて月曜朝に閉じる

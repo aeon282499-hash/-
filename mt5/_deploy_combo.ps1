@@ -11,8 +11,8 @@ $log = "$src\compile_combo.log"
 if (Test-Path $log) { Remove-Item $log }
 Start-Process "C:\Program Files\XM Trading MT5\MetaEditor64.exe" -ArgumentList "/compile:`"$d\MQL5\Experts\Hoshino\XMCombo.mq5`"", "/log:`"$log`"" -Wait
 Get-Content $log -Encoding Unicode | Select-String "error|Result"
-@("InpDemoOnly=false","InpStopBelowBalance=25000","InpGoldOn=true","InpGoldSymbol=GOLD.","InpGoldJpyPer001=50000","InpGoldLotMax=0.20","InpGoldStopUsd=10.0","InpGoldMaxSpread=40","InpGoldHourLon=10","InpGoldMinLon=15","InpGoldHoldMin=15","InpGoldMagic=20260908",
-  "InpJpOn=true","InpJpSymbol=JP225Cash","InpJpJpyPerLot=7000","InpJpLotMax=50.0","InpJpEntryHour=15","InpJpExitHour=9","InpJpHoldWeekend=false","InpJpPrevNightFilter=true","InpJpPrevNightMax=0.0","InpJpMaxSpread=20","InpJpMagic=20260909","InpGxMode=1","InpGxMinBalance=200000","InpGxEntryHourSrv=1","InpGxEntryMinSrv=5","InpGxExitHourSrv=3","InpGxMaxSpread=25","InpGxJpyPer001=20000","InpGxLotMax=0.10","InpGxMagic=20260910") | Set-Content "$d\MQL5\Presets\XMCombo.set" -Encoding Unicode
+@("InpDemoOnly=false","InpStopBelowBalance=25000","InpGoldOn=true","InpGoldSymbol=GOLD.","InpGoldJpyPer001=50000","InpGoldLotMax=1.00","InpGoldStopUsd=10.0","InpGoldMaxSpread=40","InpGoldHourLon=10","InpGoldMinLon=15","InpGoldHoldMin=15","InpGoldMagic=20260908",
+  "InpJpOn=true","InpJpSymbol=JP225Cash","InpJpJpyPerLot=7000","InpJpLotMax=500.0","InpJpEntryHour=15","InpJpExitHour=9","InpJpHoldWeekend=false","InpJpPrevNightFilter=true","InpJpPrevNightMax=0.0","InpJpMaxSpread=20","InpJpMagic=20260909","InpGxMode=1","InpGxMinBalance=200000","InpGxEntryHourSrv=1","InpGxEntryMinSrv=5","InpGxExitHourSrv=3","InpGxMaxSpread=25","InpGxJpyPer001=20000","InpGxLotMax=0.10","InpGxMagic=20260910") | Set-Content "$d\MQL5\Presets\XMCombo.set" -Encoding Unicode
 $ini = "$src\_start.ini"
 @("[Common]", "Login=70674546", "Server=XMTrading-MT5 3", "NewsEnable=0",
   "[Experts]", "AllowLiveTrading=1", "AllowDllImport=0", "Enabled=1", "Account=1", "Profile=1",
