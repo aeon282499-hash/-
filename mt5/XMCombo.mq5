@@ -1,0 +1,263 @@
+//+------------------------------------------------------------------+
+//|                                                      XMCombo.mq5 |
+//|  星野さん用 XM Zero口座 統合EA（2026-09-08）                        |
+//|   A) 金 15分ショート: ロンドン10:15売り→10:30買戻し(英国DST追従)     |
+//|      Zero実測 spread$0.14+手数料$0.07・net+0.09$/oz/回・SL$10        |
+//|   B) 日経225 夜ドリフト: 15:00JST買い→翌9:00JST売り・月〜木          |
+//|      XM実データ2016-26 net+0.041%/晩・年+8〜10%・勝ち年8/11          |
+//|  1チャートで両方を動かす（[StartUp]で貼れるEAが1本のため統合）。      |
+//+------------------------------------------------------------------+
+#property copyright "hoshino"
+#property version   "1.00"
+#property strict
+#include <Trade\Trade.mqh>
+
+//--- 共通
+input bool   InpDemoOnly      = false;      // true=デモ口座以外では発注しない
+input double InpStopBelowBalance = 25000;   // 残高がこの円を割ったら新規建てを全停止(0=無効)・人が判断するまで再開しない
+//--- A) 金 15分ショート
+input bool   InpGoldOn        = true;       // 金ショートを動かす
+input string InpGoldSymbol    = "GOLD.";    // 銘柄(Zero口座は GOLD.)
+input double InpGoldJpyPer001 = 50000;      // 0.01lotあたりの必要残高(円)
+input double InpGoldLotMax    = 0.20;       // 上限ロット
+input double InpGoldStopUsd   = 10.0;       // 損切り幅($/oz・0=無し)
+input int    InpGoldMaxSpread = 40;         // 許容スプレッド(pt=0.01$)
+input int    InpGoldHourLon   = 10;         // 売り時刻 ロンドン(時)
+input int    InpGoldMinLon    = 15;         // 売り時刻 ロンドン(分)
+input int    InpGoldHoldMin   = 15;         // 保有分数
+input long   InpGoldMagic     = 20260908;
+//--- B) 日経225 夜ドリフト
+input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
+input string InpJpSymbol      = "JP225Cash";
+input double InpJpJpyPerLot   = 7000;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
+input double InpJpLotMax      = 50.0;
+input int    InpJpEntryHour   = 15;         // 買い時刻 JST
+input int    InpJpExitHour    = 9;          // 手仕舞い時刻 JST
+input bool   InpJpHoldWeekend = false;      // 金曜も建てて月曜朝に閉じる
+input bool   InpJpPrevNightFilter = true;   // 前夜(前日15:00→当日9:00)が上げなら見送る(15年+82→+99%・XM t=3.2・月勝率58→61%)
+input double InpJpPrevNightMax = 0.0;       // 前夜の上げがこの%以下の日だけ建てる
+input int    InpJpMaxSpread   = 20;         // 許容スプレッド(pt=1円)
+input long   InpJpMagic       = 20260909;
+//--- C) 金 Globex再開買い（サーバー01:05買→03:00売・13年t8.2・14/14年・0.01lot=名目68万円）
+input int    InpGxMode        = 1;          // 0=off / 1=紙(仮想約定をログとFilesに記録) / 2=実弾(残高がInpGxMinBalance以上のときだけ)
+input double InpGxMinBalance  = 200000;     // 実弾に切り替える残高(円)・未満なら紙のまま
+input int    InpGxEntryHourSrv = 1;         // 建て時刻 サーバー(時)・メンテ明け01:05
+input int    InpGxEntryMinSrv  = 5;
+input int    InpGxExitHourSrv  = 3;         // 決済時刻 サーバー(時)
+input int    InpGxMaxSpread   = 25;         // 許容スプレッド(pt=0.01$)・超えたら最大60秒待つ
+input double InpGxJpyPer001   = 20000;      // 0.01lotあたりの必要残高(円)
+input double InpGxLotMax      = 0.10;
+input long   InpGxMagic       = 20260910;
+
+CTrade   trade;
+datetime g_goldEntryDay = 0, g_goldEntryTime = 0;
+datetime g_jpEntryDay = 0, g_jpExitDay = 0;
+datetime g_gxDay = 0; double g_gxPaperEntry = 0.0; datetime g_gxPaperTime = 0; bool g_gxPaperOpen = false; datetime g_gxWaitStart = 0;
+
+datetime DayOf(datetime t) { return t - (t % 86400); }
+datetime NowJST() { return TimeGMT() + 9 * 3600; }
+bool UkDst(datetime gmt)
+{
+   MqlDateTime d; TimeToStruct(gmt, d); int y = d.year;
+   datetime mar31 = StringToTime(StringFormat("%04d.03.31 01:00", y)); MqlDateTime m; TimeToStruct(mar31, m);
+   datetime start = mar31 - m.day_of_week * 86400;
+   datetime oct31 = StringToTime(StringFormat("%04d.10.31 01:00", y)); MqlDateTime o; TimeToStruct(oct31, o);
+   datetime end = oct31 - o.day_of_week * 86400;
+   return (gmt >= start && gmt < end);
+}
+datetime NowLondon() { datetime g = TimeGMT(); return g + (UkDst(g) ? 3600 : 0); }
+
+bool AnotherInstanceRunning()
+{
+   long me = ChartID();
+   for(long id = ChartFirst(); id >= 0; id = ChartNext(id))
+      if(id != me && ChartGetString(id, CHART_EXPERT_NAME) == MQLInfoString(MQL_PROGRAM_NAME)) return true;
+   return false;
+}
+bool CanTrade() { return !(InpDemoOnly && AccountInfoInteger(ACCOUNT_TRADE_MODE) != ACCOUNT_TRADE_MODE_DEMO); }
+datetime g_haltLogDay = 0;
+bool Halted()
+{
+   if(InpStopBelowBalance <= 0 || AccountInfoDouble(ACCOUNT_BALANCE) >= InpStopBelowBalance) return false;
+   datetime today = DayOf(NowJST());
+   if(g_haltLogDay != today) { PrintFormat("⛔ 残高%.0f円 < 全停止ライン%.0f円: 新規建てを停止中（既存建玉の決済だけ行う）", AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance); g_haltLogDay = today; }
+   return true;
+}
+
+bool HasPos(string sym, long magic)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong tk = PositionGetTicket(i);
+      if(tk > 0 && PositionSelectByTicket(tk) && PositionGetString(POSITION_SYMBOL) == sym && PositionGetInteger(POSITION_MAGIC) == magic) return true;
+   }
+   return false;
+}
+void CloseAll(string sym, long magic, string tag)
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong tk = PositionGetTicket(i);
+      if(tk > 0 && PositionSelectByTicket(tk) && PositionGetString(POSITION_SYMBOL) == sym && PositionGetInteger(POSITION_MAGIC) == magic)
+      {
+         trade.SetExpertMagicNumber(magic);
+         if(!trade.PositionClose(tk)) PrintFormat("[%s] 決済失敗 #%I64u ret=%d %s", tag, tk, trade.ResultRetcode(), trade.ResultRetcodeDescription());
+         else PrintFormat("[%s] 決済 #%I64u @%.2f", tag, tk, trade.ResultPrice());
+      }
+   }
+}
+double LotGold()
+{
+   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / InpGoldJpyPer001) * 0.01;
+   double vmin = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
+   lot = MathMax(vmin, MathMin(InpGoldLotMax, lot)); return NormalizeDouble(MathFloor(lot / vstep) * vstep, 2);
+}
+//--- 前夜リターン: 当日9:00JSTのH1始値 ÷ 前日15:00JSTのH1始値 - 1（%）。取れなければ NaN 扱い(建てる)
+double PrevNightPct()
+{
+   datetime srvOff = TimeTradeServer() - TimeGMT();          // サーバー時刻 - GMT
+   datetime jst = NowJST(); datetime dayJ = DayOf(jst);
+   datetime t9  = dayJ + 9 * 3600 - 9 * 3600 + srvOff;       // 当日09:00JST をサーバー時刻に
+   datetime t15 = dayJ - 86400 + 15 * 3600 - 9 * 3600 + srvOff; // 前日15:00JST
+   MqlDateTime dw; TimeToStruct(jst, dw);
+   if(dw.day_of_week == 1) t15 -= 3 * 86400;                  // 月曜は金曜15:00
+   int b9 = iBarShift(InpJpSymbol, PERIOD_H1, t9, true), b15 = iBarShift(InpJpSymbol, PERIOD_H1, t15, true);
+   if(b9 < 0 || b15 < 0) return 0.0;
+   double o9 = iOpen(InpJpSymbol, PERIOD_H1, b9), o15 = iOpen(InpJpSymbol, PERIOD_H1, b15);
+   if(o9 <= 0 || o15 <= 0) return 0.0;
+   return (o9 / o15 - 1.0) * 100.0;
+}
+
+double LotJp()
+{
+   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / InpJpJpyPerLot * 10.0) / 10.0;
+   double vmin = SymbolInfoDouble(InpJpSymbol, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(InpJpSymbol, SYMBOL_VOLUME_STEP);
+   lot = MathMax(vmin, MathMin(InpJpLotMax, lot)); return NormalizeDouble(MathFloor(lot / vstep) * vstep, 2);
+}
+
+int OnInit()
+{
+   if(AnotherInstanceRunning()) { Print("XMCombo は別チャートで稼働中なので起動しません"); ExpertRemove(); return INIT_FAILED; }
+   trade.SetDeviationInPoints(30);
+   if(InpGoldOn && !SymbolSelect(InpGoldSymbol, true)) { Print("銘柄が見つからない: ", InpGoldSymbol); return INIT_FAILED; }
+   if(InpJpOn && !SymbolSelect(InpJpSymbol, true)) { Print("銘柄が見つからない: ", InpJpSymbol); return INIT_FAILED; }
+   if(!CanTrade()) Print("⚠ デモ口座ではないので発注しません(InpDemoOnly=true)");
+   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s | UK-DST=%s",
+               AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
+               InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", UkDst(TimeGMT()) ? "夏" : "冬");
+   EventSetTimer(5);
+   return INIT_SUCCEEDED;
+}
+void OnDeinit(const int reason) { EventKillTimer(); }
+
+void GoldTick()
+{
+   datetime lon = NowLondon(); MqlDateTime dt; TimeToStruct(lon, dt); datetime today = DayOf(lon);
+   int nowMin = dt.hour * 60 + dt.min, entMin = InpGoldHourLon * 60 + InpGoldMinLon;
+   if(HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryTime > 0 && lon >= g_goldEntryTime + InpGoldHoldMin * 60)
+   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGoldMagic, "金"); g_goldEntryTime = 0; return; }
+   if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 2 && !HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryDay != today)
+   {
+      if(Halted()) { g_goldEntryDay = today; return; }
+      int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
+      g_goldEntryDay = today;
+      if(spread > InpGoldMaxSpread) { PrintFormat("[金] スプレッド%dpt > %d 見送り", spread, InpGoldMaxSpread); return; }
+      double lots = LotGold();
+      if(!CanTrade()) { PrintFormat("[金][デモ以外] 売りシグナル lot=%.2f（発注せず）", lots); return; }
+      double slpx = InpGoldStopUsd > 0 ? NormalizeDouble(SymbolInfoDouble(InpGoldSymbol, SYMBOL_ASK) + InpGoldStopUsd, (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_DIGITS)) : 0.0;
+      trade.SetExpertMagicNumber(InpGoldMagic);
+      if(trade.Sell(lots, InpGoldSymbol, 0, slpx, 0, "fix"))
+      { g_goldEntryTime = lon; PrintFormat("[金] 売り lot=%.2f(残高%.0f円) @%.2f SL=%.2f spread=%dpt London %02d:%02d", lots, AccountInfoDouble(ACCOUNT_BALANCE), trade.ResultPrice(), slpx, spread, dt.hour, dt.min); }
+      else PrintFormat("[金] 売り失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+   }
+}
+
+void JpTick()
+{
+   datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
+   if(dt.hour >= InpJpExitHour && dt.hour < InpJpEntryHour && HasPos(InpJpSymbol, InpJpMagic) && g_jpExitDay != today)
+   { if(CanTrade()) CloseAll(InpJpSymbol, InpJpMagic, "日経"); g_jpExitDay = today; return; }
+   bool okDay = (dt.day_of_week >= 1 && dt.day_of_week <= 4) || (InpJpHoldWeekend && dt.day_of_week == 5);
+   if(dt.hour >= InpJpEntryHour && okDay && !HasPos(InpJpSymbol, InpJpMagic) && g_jpEntryDay != today)
+   {
+      if(dt.hour >= InpJpEntryHour + 3) { g_jpEntryDay = today; return; }
+      if(Halted()) { g_jpEntryDay = today; return; }
+      int spread = (int)SymbolInfoInteger(InpJpSymbol, SYMBOL_SPREAD);
+      if(spread > InpJpMaxSpread) { PrintFormat("[日経] スプレッド%dpt > %d 見送り(再試行)", spread, InpJpMaxSpread); return; }
+      if(InpJpPrevNightFilter)
+      {
+         double pn = PrevNightPct();
+         if(pn > InpJpPrevNightMax) { PrintFormat("[日経] 前夜%+.2f%% > %.2f%% なので今夜は見送り", pn, InpJpPrevNightMax); g_jpEntryDay = today; return; }
+         PrintFormat("[日経] 前夜%+.2f%% → 建てる", pn);
+      }
+      double lots = LotJp();
+      if(!CanTrade()) { PrintFormat("[日経][デモ以外] 買いシグナル lot=%.1f（発注せず）", lots); g_jpEntryDay = today; return; }
+      trade.SetExpertMagicNumber(InpJpMagic);
+      if(trade.Buy(lots, InpJpSymbol, 0, 0, 0, "night")) PrintFormat("[日経] 買い lot=%.1f(残高%.0f円) @%.1f spread=%dpt", lots, AccountInfoDouble(ACCOUNT_BALANCE), trade.ResultPrice(), spread);
+      else PrintFormat("[日経] 買い失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      g_jpEntryDay = today;
+   }
+}
+
+double LotGx()
+{
+   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / InpGxJpyPer001) * 0.01;
+   double vmin = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
+   lot = MathMax(vmin, MathMin(InpGxLotMax, lot)); return NormalizeDouble(MathFloor(lot / vstep) * vstep, 2);
+}
+void GxRecord(string line)
+{
+   int h = FileOpen("XMCombo_globex_paper.csv", FILE_READ | FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
+   if(h == INVALID_HANDLE) return;
+   FileSeek(h, 0, SEEK_END); FileWriteString(h, line + "\r\n"); FileClose(h);
+}
+void GxTick()
+{
+   if(InpGxMode == 0) return;
+   datetime srv = TimeTradeServer(); MqlDateTime dt; TimeToStruct(srv, dt); datetime today = DayOf(srv);
+   bool live = (InpGxMode == 2 && AccountInfoDouble(ACCOUNT_BALANCE) >= InpGxMinBalance && CanTrade() && !Halted());
+   int nowMin = dt.hour * 60 + dt.min, entMin = InpGxEntryHourSrv * 60 + InpGxEntryMinSrv, exitMin = InpGxExitHourSrv * 60;
+   //--- 決済
+   if(nowMin >= exitMin && nowMin < exitMin + 30)
+   {
+      if(live && HasPos(InpGoldSymbol, InpGxMagic)) CloseAll(InpGoldSymbol, InpGxMagic, "金再開");
+      if(g_gxPaperOpen)
+      {
+         double bid = SymbolInfoDouble(InpGoldSymbol, SYMBOL_BID); double pnl = bid - g_gxPaperEntry;
+         PrintFormat("[金再開][紙] 決済 @%.2f 建%.2f 差%+.2f$/oz (%+.3f%%)", bid, g_gxPaperEntry, pnl, pnl / g_gxPaperEntry * 100);
+         GxRecord(StringFormat("%s,%s,%.2f,%.2f,%.2f,%.4f", TimeToString(g_gxPaperTime, TIME_DATE | TIME_MINUTES), TimeToString(srv, TIME_DATE | TIME_MINUTES), g_gxPaperEntry, bid, pnl, pnl / g_gxPaperEntry * 100));
+         g_gxPaperOpen = false;
+      }
+      return;
+   }
+   //--- 建て: 01:05〜01:07（スプレッドが広ければ最大60秒待つ）
+   if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 3 && g_gxDay != today)
+   {
+      int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
+      double ask = SymbolInfoDouble(InpGoldSymbol, SYMBOL_ASK);
+      if(ask <= 0) return;                                            // ティック未着
+      if(spread > InpGxMaxSpread)
+      {
+         if(g_gxWaitStart == 0) g_gxWaitStart = srv;
+         if(srv - g_gxWaitStart < 60) return;
+         PrintFormat("[金再開] スプレッド%dpt > %d が60秒続いたので見送り", spread, InpGxMaxSpread); g_gxDay = today; g_gxWaitStart = 0; return;
+      }
+      g_gxDay = today; g_gxWaitStart = 0;
+      if(live)
+      {
+         trade.SetExpertMagicNumber(InpGxMagic);
+         if(trade.Buy(LotGx(), InpGoldSymbol, 0, 0, 0, "globex")) PrintFormat("[金再開] 買い lot=%.2f @%.2f spread=%dpt", LotGx(), trade.ResultPrice(), spread);
+         else PrintFormat("[金再開] 買い失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      }
+      g_gxPaperEntry = ask; g_gxPaperTime = srv; g_gxPaperOpen = true;
+      PrintFormat("[金再開][%s] 建て @%.2f spread=%dpt %s", live ? "実弾" : "紙", ask, spread, TimeToString(srv, TIME_DATE | TIME_MINUTES | TIME_SECONDS));
+   }
+}
+
+void OnTimer()
+{
+   GxTick();
+   if(InpGoldOn) GoldTick();
+   if(InpJpOn) JpTick();
+}
+//+------------------------------------------------------------------+
