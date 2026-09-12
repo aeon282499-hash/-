@@ -378,6 +378,11 @@ FADE_PX_MIN = 0
 FADE_ENTRY_MARKET = True       # True=寄付成行で撃つ（下寄りも建てる）/ False=寄指（下寄りは見送り）
 FADE_EDGE_PCT_MAIN = 1.46      # 上寄りの玉の gross 期待値%（上位3玉除去の保守値）
 FADE_EDGE_PCT_GAPDN = 0.45     # 下寄りの玉の gross 期待値%（同上）
+# 2026-09-12 本人「成行/寄付限定/当日中の3つで迷う・料は7円とか15円」→ 26年BT(_bt_fade_premium_order_0912.py):
+# 下に寄った玉のうち65%は前終まで戻り、当日中指値ならその玉が gross +0.66%/玉(10年+0.71%)。
+# 料 r(=円/株÷株価) で答えが変わる: r≤0.45%→成行 / 0.45〜0.7%→当日中指値@前終 / 0.7〜1.46%→寄付限定 / 超→見送り。
+# 0.45〜0.7%帯は成行と当日中の差が±0.1%/玉(=±1,000円)＝どちらでも可。
+FADE_EDGE_PCT_INTRA = 0.66     # 下に寄って前終まで戻った玉の gross 期待値%（当日中指値で建つ玉）
 
 # 寄りのギャップアップ下限（2026-07-27検証・_bt_fade_size.py系の10年分析で発見）:
 # 旧ルールは「寄り≥前日終値」＝ギャップ0%以上なら何でも建てていたが、**ほぼフラットで寄る玉は
@@ -911,19 +916,22 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
                 # 2026-09-12: この帯は「寄付限定」のまま。当日中指値で場中に戻って刺さる玉は26年
                 # 平均+0.53%(gross)＝この帯のプレミアム料(0.45〜1.46%)を払うと期待値マイナス。
                 # 9/11モルフォ(+13.5%)はこの帯のテール。〜ok円/株なら成行(=当日中でも可)。
+                mid_ps = int(FADE_EDGE_PCT_INTRA / 100 * capital_for_rank(rk) // shares)
                 yb = f"寄付限定の指値¥{p['min_entry_price']:,.0f}"
+                yd = f"当日中の指値¥{p['min_entry_price']:,.0f}"
                 if lim_ps < 1:
                     band = f"1円/株でもエッジ超え → {tail}"
                 elif ok_ps < 1:
                     band = f"成行は使わない ／ 〜{lim_ps}円/株→{yb}で発注 ／ {lim_ps + 1}円〜→{tail}"
+                elif lim_ps > mid_ps > ok_ps:
+                    band = (f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}〜{mid_ps}円→{yd} ／ "
+                            f"{mid_ps + 1}〜{lim_ps}円→{yb} ／ {lim_ps + 1}円〜→{tail}")
                 elif lim_ps > ok_ps:
                     band = (f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}〜{lim_ps}円→{yb}に変更 ／ "
                             f"{lim_ps + 1}円〜→{tail}")
                 else:
                     band = f"〜{ok_ps}円/株→成行のまま ／ {ok_ps + 1}円〜→{tail}"
                 lines.append(f"   💰 SBIのプレミアム料を見て: {band}")
-                if lim_ps >= 1 and ok_ps >= 1 and lim_ps > ok_ps:
-                    lines.append(f"   　 ※{ok_ps + 1}〜{lim_ps}円の指値は**寄付限定**のまま（場中に戻って刺さる玉は平均+0.5%＝この料では負け）")
             lines.append("")
         if any(p["prev_close"] < 300 for p in go_picks[:n_shoot]):
             lines.append("⚠️ 低位株あり（300円未満）＝一日信用の売り在庫だけ要確認")

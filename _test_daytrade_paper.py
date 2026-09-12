@@ -539,7 +539,10 @@ def test_premium_pershare_line():
     d = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 5510, False)])
     check("売り禁玉に円/株の判断行が出る", "SBIのプレミアム料を見て" in d)
     check(f"成行のままの上限={ok}円/株", f"〜{ok}円/株→成行のまま" in d)
-    check(f"寄指切替帯={ok + 1}〜{lim}円", f"{ok + 1}〜{lim}円→寄付限定の指値¥2,165に変更" in d)
+    mid = int(dp.FADE_EDGE_PCT_INTRA / 100 * cap // sh_a)
+    # 2026-09-12 3帯化: 〜ok成行 / ok+1〜mid 当日中指値 / mid+1〜lim 寄付限定 / lim+1〜撃たない
+    check(f"当日中指値帯={ok + 1}〜{mid}円", f"{ok + 1}〜{mid}円→当日中の指値¥2,165" in d)
+    check(f"寄付限定帯={mid + 1}〜{lim}円", f"{mid + 1}〜{lim}円→寄付限定の指値¥2,165" in d)
     # 2026-08-21 2本実弾化: #1を見送っても#2はもう建っているので「#2に振り替え」でなく「今日は#2だけ」
     check(f"{lim + 1}円〜は撃たない（今日は#2だけ）",
           f"{lim + 1}円〜→撃たない（今日は#2だけ）" in d)
