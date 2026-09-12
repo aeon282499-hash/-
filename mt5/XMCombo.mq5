@@ -41,14 +41,14 @@ input long   InpJpMagic       = 20260909;
 
 input bool   InpUsOn          = true;       // US500夜ドリフトを動かす(3本目・日経と同型・前夜≤0)
 input string InpUsSymbol      = "US500Cash";
-input double InpUsJpyPer01    = 40000;      // 0.1lot(名目約11万円)あたりの必要残高(円)
+input double InpUsJpyPer01    = 25000;      // 0.1lot(名目約11万円)あたりの必要残高(円)
 input double InpUsLotMax      = 50.0;
 input int    InpUsMaxSpread   = 150;        // 許容スプレッド(pt=0.01$)
 input long   InpUsMagic       = 20260913;
 
 input bool   InpDeOn          = true;       // GER40 欧州の夜(01:00JST買→16:00JST売・火〜金JST・直前レッグ≤0)
 input string InpDeSymbol      = "GER40Cash";
-input double InpDeJpyPer01    = 50000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
+input double InpDeJpyPer01    = 40000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
 input double InpDeLotMax      = 50.0;
 input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
 input int    InpDeEntryHour   = 1;          // 買い時刻 JST
