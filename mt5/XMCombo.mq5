@@ -392,8 +392,18 @@ void GxTick()
    }
 }
 
+datetime g_hbLast = 0;
+void Heartbeat()
+{
+   datetime now = TimeGMT(); if(now - g_hbLast < 30) return; g_hbLast = now;
+   int h = FileOpen("XMCombo_heartbeat.txt", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE) return;
+   FileWriteString(h, StringFormat("%s balance=%.0f equity=%.0f positions=%d connected=%d", TimeToString(now, TIME_DATE | TIME_MINUTES | TIME_SECONDS), AccountInfoDouble(ACCOUNT_BALANCE), AccountInfoDouble(ACCOUNT_EQUITY), PositionsTotal(), (int)TerminalInfoInteger(TERMINAL_CONNECTED)));
+   FileClose(h);
+}
 void OnTimer()
 {
+   Heartbeat();
    GxTick();
    if(InpGoldOn) GoldTick();
    if(InpJpOn) JpTick();
