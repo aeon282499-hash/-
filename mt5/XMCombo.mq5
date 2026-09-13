@@ -29,7 +29,7 @@ input long   InpGoldMagic     = 20260908;
 //--- B) 日経225 夜ドリフト
 input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
 input string InpJpSymbol      = "JP225Cash";
-input double InpJpJpyPerLot   = 7000;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
+input double InpJpJpyPerLot   = 8750;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
 input double InpJpLotMax      = 500.0;
 input int    InpJpEntryHour   = 15;         // 買い時刻 JST
 input int    InpJpExitHour    = 9;          // 手仕舞い時刻 JST
@@ -45,14 +45,14 @@ input double InpJpAddMult     = 1.0;        // 追加量(元玉の倍率)
 
 input bool   InpUsOn          = true;       // US500夜ドリフトを動かす(3本目・日経と同型・前夜≤0)
 input string InpUsSymbol      = "US500Cash";
-input double InpUsJpyPer01    = 25000;      // 0.1lot(名目約11万円)あたりの必要残高(円)
+input double InpUsJpyPer01    = 31250;      // 0.1lot(名目約11万円)あたりの必要残高(円)
 input double InpUsLotMax      = 50.0;
 input int    InpUsMaxSpread   = 150;        // 許容スプレッド(pt=0.01$)
 input long   InpUsMagic       = 20260913;
 
 input bool   InpDeOn          = true;       // GER40 欧州の夜(01:00JST買→16:00JST売・火〜金JST・直前レッグ≤0)
 input string InpDeSymbol      = "GER40Cash";
-input double InpDeJpyPer01    = 40000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
+input double InpDeJpyPer01    = 50000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
 input double InpDeLotMax      = 50.0;
 input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
 input int    InpDeEntryHour   = 1;          // 買い時刻 JST
