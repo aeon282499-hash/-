@@ -54,6 +54,8 @@ elif mode=='entry':
     lines=[l for l in txt.splitlines() if re.search(pat,l)]
     if not lines: post(f'⚠️ XM監視: {leg} の建て時刻を過ぎたが「買い」も「見送り」もログに無い(EA停止/時刻ずれの疑い)')
     else: log(f'{leg} OK: '+lines[-1][-120:])
+elif mode=='test':
+    post('🛠 XM監視テスト: MT5稼働中・EAハートビートOK。今後ここに「MT5停止」「建て漏れ」「朝の約定記録(9:20)」を流す。専用chが欲しければwebhookを作って .env の DISCORD_WEBHOOK_XM_URL に入れる。')
 elif mode=='daily':
     r=subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True).stdout.decode('utf-8','ignore') if False else subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True)
     out=[l for l in r.stdout.decode('utf-8','ignore').splitlines() if l.startswith('[')]
