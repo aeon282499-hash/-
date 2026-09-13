@@ -49,7 +49,7 @@ if mode=='health':
     else: log('OK '+(body or ''))
 elif mode=='entry':
     leg=sys.argv[sys.argv.index('--leg')+1]; txt=expert_log_today(); today=dt.datetime.now().strftime('%H:')
-    pat={'日経':r'\[日経\] (買い|前夜|月曜)','US500':r'\[US500\] (買い|前夜|月曜)','GER40':r'\[GER40\] (買い|直前)','金':r'\[金\] (売り|スプレッド)'}[leg]
+    pat={'日経':r'\[日経\] (買い|前夜|月曜)','US500':r'\[US500\] (買い|前夜|月曜)','GER40':r'\[GER40\] (買い|直前)','金':r'\[金\] (売り|スプレッド|ゲート)'}[leg]
     hits=re.findall(r'^(\d\d:\d\d:\d\d).*'+pat,txt,flags=re.M)
     lines=[l for l in txt.splitlines() if re.search(pat,l)]
     if not lines: post(f'⚠️ XM監視: {leg} の建て時刻を過ぎたが「買い」も「見送り」もログに無い(EA停止/時刻ずれの疑い)')

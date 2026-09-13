@@ -279,9 +279,11 @@ void GoldGateAppend(datetime lonDay, double r)
 {
    int n = ArraySize(g_gfHist); ArrayResize(g_gfHist, n + 1); ArrayResize(g_gfHistDay, n + 1); g_gfHist[n] = r; g_gfHistDay[n] = lonDay;
 }
+int g_gfInitTries = 0;
 void GoldGateInit()
 {
    if(g_gfInit || InpGoldGateN <= 0) return;
+   ArrayResize(g_gfHist, 0); ArrayResize(g_gfHistDay, 0);
    datetime today = DayOf(NowLondon()); int got = 0;
    for(int d = 1; d <= 120 && got < InpGoldGateN + 10; d++)
    {
@@ -292,6 +294,8 @@ void GoldGateInit()
    // 古い→新しい順に並べ替え
    int n = ArraySize(g_gfHist);
    for(int i = 0; i < n / 2; i++) { double t = g_gfHist[i]; g_gfHist[i] = g_gfHist[n - 1 - i]; g_gfHist[n - 1 - i] = t; datetime td = g_gfHistDay[i]; g_gfHistDay[i] = g_gfHistDay[n - 1 - i]; g_gfHistDay[n - 1 - i] = td; }
+   g_gfInitTries++;
+   if(n < InpGoldGateN && g_gfInitTries < 60) return;          // M1履歴の読込待ち(5秒×60)
    g_gfInit = true;
    PrintFormat("[金ゲート] 履歴%d本を復元 直近%d回平均=%+.3f$/oz (閾値%.2f・%s)", n, InpGoldGateN, GoldGateMean(), InpGoldGateThr, GoldGateOpen() ? "稼働" : "休止");
 }
@@ -308,6 +312,13 @@ void GoldGateRecord()
    int nowMin = dt.hour * 60 + dt.min, doneMin = InpGoldHourLon * 60 + InpGoldMinLon + InpGoldHoldMin + 2;
    if(dt.day_of_week < 1 || dt.day_of_week > 5 || nowMin < doneMin || g_gfRecDay == today) return;
    int n = ArraySize(g_gfHistDay); if(n > 0 && g_gfHistDay[n - 1] == today) { g_gfRecDay = today; return; }
+   datetime from = (n > 0) ? g_gfHistDay[n - 1] + 86400 : today;
+   if(today - from > 30 * 86400) from = today - 30 * 86400;
+   for(datetime day = from; day < today; day += 86400)         // 抜けた営業日を補完
+   {
+      MqlDateTime dd; TimeToStruct(day, dd); if(dd.day_of_week == 0 || dd.day_of_week == 6) continue;
+      double rb; if(GoldFixWindow(day, rb)) GoldGateAppend(day, rb);
+   }
    double r; if(!GoldFixWindow(today, r)) return;
    GoldGateAppend(today, r); g_gfRecDay = today;
    PrintFormat("[金ゲート] 今日の窓%+.2f$/oz → 直近%d回平均%+.3f (%s)", r, InpGoldGateN, GoldGateMean(), GoldGateOpen() ? "稼働" : "休止");
