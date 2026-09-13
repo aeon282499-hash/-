@@ -113,6 +113,13 @@ GOKUJO_MAX_SLOTS  = 1
 # 機構=カット玉の損得はゼロ(持っても翌寄り処分でも-1.5%)。利得は1枠を1〜2日早く空けて次の候補(+0.24%/件)を取る回転。
 # 極上(1枠)だけに適用。極み(3枠)は微差なので触らない。
 GOKUJO_DAY1_CUT_PCT = 1.0
+# 2026-09-14 本人承認「2日目の勝ち乗せ」: 保有1日目の終値が建値×(1+GOKUJO_ADDON_PCT%)より上なら、2日目の寄り成行で
+# 同額(GOKUJO_ADDON_FRAC×玉サイズ)を追加。追加玉は本玉と同じ水準(損切/利確/RSI/期限)で同時に手仕舞い。
+# 26年(立花・DAY1CUT土台): PF1.30→1.34・+352→+452万・4分割すべて改善・最悪年-34→-28。
+# 公式10年(J-Quants): PF1.66→1.76・+296→+386万・勝ち年10/10。追加玉=該当22%・平均+0.34%・勝率58%・最悪-4.5%。
+# 台帳: addon_open/addon_date/addon_size を記録し、決済時に addon_pnl_pct を書く。週次/月次は追加玉の円も合算。
+GOKUJO_ADDON_PCT  = 1.0
+GOKUJO_ADDON_FRAC = 1.0
 GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
 GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
 GOKUJO_WEBHOOK_ENV = "DISCORD_WEBHOOK_GOKUJO_URL"
@@ -495,6 +502,8 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
                   (df.index.strftime("%Y-%m-%d") < today_str)]
         pos["hold_days"] = 0
         day1_cut = False          # 極上: 初日引け≤-1%で立つ → 翌営業日の寄りで処分（2026-09-14）
+        prev_close = None
+        is_gokujo = scope == f"kiwami_{GOKUJO_KEY}"
         for dt_idx, row in post.iterrows():
             pos["hold_days"] += 1
             d_str = dt_idx.strftime("%Y-%m-%d")
@@ -505,6 +514,13 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
                            exit_date=d_str, status="closed")
                 closed += 1
                 break
+            # 極上だけ: 初日終値が建値×(1+1%)より上 → 2日目の寄り成行で同額追加（2026-09-14 本人承認・勝ち乗せ）
+            if (is_gokujo and pos["hold_days"] == 2 and prev_close is not None and op and op > 0
+                    and prev_close > eo * (1 + GOKUJO_ADDON_PCT / 100)):
+                pos["addon_open"] = op
+                pos["addon_date"] = d_str
+                pos["addon_size"] = round((pos.get("size") or GOKUJO_SIZE) * GOKUJO_ADDON_FRAC)
+            prev_close = cl
             # 2026-09-03監査: 翌日以降に寄りで水準を飛び越えた玉は逆指値が寄り値で約定する。帳簿の pnl_pct は
             # BTと同じ「水準ちょうど」のまま（パリティ維持）、実約定見込みだけ gap_pnl_pct に併記する。
             gap_dn = gap_up = None
@@ -532,9 +548,13 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
                 closed += 1
                 break
             # 極上だけ: 初日の引けが建値比 -GOKUJO_DAY1_CUT_PCT% 以下 → 翌営業日の寄りで処分（2026-09-14 本人承認）
-            if scope == f"kiwami_{GOKUJO_KEY}" and pos["hold_days"] == 1 and cl <= eo * (1 - GOKUJO_DAY1_CUT_PCT / 100):
+            if is_gokujo and pos["hold_days"] == 1 and cl <= eo * (1 - GOKUJO_DAY1_CUT_PCT / 100):
                 day1_cut = True
                 pos["day1_cut_pending"] = True    # 15時通知/翌朝の目印（決済時に残っていても無害）
+        # 勝ち乗せの追加玉: 本玉の決済価格(帳簿はBT水準パリティ=建値×(1+pnl_pct))で同時に手仕舞い
+        if pos.get("addon_open") and pos.get("status") == "closed" and pos.get("pnl_pct") is not None:
+            xp = eo * (1 + pos["pnl_pct"] / 100)
+            pos["addon_pnl_pct"] = round((xp - pos["addon_open"]) / pos["addon_open"] * 100, 3)
 
     return closed, expired
 
@@ -1116,6 +1136,12 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
                 f"{mark} {p['name']} {_md(p.get('entry_date'))}→{_md(p.get('exit_date'))}"
                 f" {sh:,}株｜{in_label} {ep:,.0f}円 → {out_label} {xp:,.0f}円"
                 f"｜**{pnl_yen:+,}円**（{p['pnl_pct']:+.1f}% {el}）")
+            # 極上の勝ち乗せ（2026-09-14）: 追加玉の円も合算して1行添える
+            if p.get("addon_open") and p.get("addon_pnl_pct") is not None and not sell:
+                ao = float(p["addon_open"]); a_sh = max(100, int((p.get("addon_size") or GOKUJO_SIZE) / ao / 100) * 100)
+                a_amt = round(a_sh * ao); a_yen = round(a_amt * p["addon_pnl_pct"] / 100)
+                entry_total += a_amt; exit_total += a_amt + a_yen; pnl_total += a_yen
+                out_rows.append(f"　↳ 勝ち乗せ {_md(p.get('addon_date'))} {a_sh:,}株｜買 {ao:,.0f}円｜**{a_yen:+,}円**（{p['addon_pnl_pct']:+.1f}%）")
         in_total, out_total = ("売建合計", "買戻合計") if sell else ("買付合計", "売却合計")
         total_line = (f"💰 {in_total} {entry_total:,}円 → {out_total} {exit_total:,}円"
                       f" ＝ **{pnl_total:+,}円**")
@@ -1196,6 +1222,8 @@ def monthly_report(today: date) -> bool:
             ym = (r.get("exit_date") or "")[:7]
             if ym:
                 monthly[ym].append((r["pnl_pct"], r.get("size") or (LEGACY_SIZE if key == "main" else tier_size)))
+                if r.get("addon_open") and r.get("addon_pnl_pct") is not None:   # 極上の勝ち乗せ（2026-09-14）
+                    monthly[ym].append((r["addon_pnl_pct"], r.get("addon_size") or GOKUJO_SIZE))
         ym_year = {k: v for k, v in monthly.items() if k.startswith(year)}
         if not ym_year:
             return None

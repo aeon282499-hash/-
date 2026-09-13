@@ -209,6 +209,11 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                 lines.append(f"⛔ **{name}** ({ticker}) 1日目 — 引け {(price-entry)/entry*100:+.2f}%（建値比-1%以下）"
                              f"{px_str} → **明朝 寄り成行で処分**（OCOは取消）")
                 continue
+            # 極上だけ（2026-09-14 本人承認・勝ち乗せ）: 保有1日目の引けが建値+1%超なら翌朝の寄り成行で同額追加
+            if (not sell) and brand == "極上" and hold == 1 and price is not None and entry and price > entry * 1.01:
+                lines.append(f"🔼 **{name}** ({ticker}) 1日目 — 引け {(price-entry)/entry*100:+.2f}%（建値比+1%超）"
+                             f"{px_str} → **明朝 寄り成行で同額を追加**（勝ち乗せ・OCOは2玉分に）")
+                continue
             lines.append(f"📊 **{name}** ({ticker}) {hold}日目 — "
                          f"{rsi_str}{px_str}・{rest_str}{_stop_note(c['ticker'])}")
             if c.get("warn"):
