@@ -107,6 +107,12 @@ GOKUJO_KEY        = "gokujo"
 GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
 GOKUJO_SIZE       = 1_500_000   # 2026-09-14 本人決定: 300万→150万（9/8 _report_300man_0908.md: 極上150+①100/②50=10年+1,607万/DD-95・保証金50万前提。買いは9/10決定で紙運用のまま）
 GOKUJO_MAX_SLOTS  = 1
+# 2026-09-14 本人承認「初日引けの処分」: 保有1日目の終値が建値比 -GOKUJO_DAY1_CUT_PCT% 以下なら翌朝の寄りで処分（日中-3%の損切りは残す）。
+# 26年(立花・_bt_buy_untested6_26y.py): 極上1×150万 PF1.24→1.30・+300→+352万・4分割すべて改善・最悪年-37→-34。
+# 公式10年(J-Quants・決算除外/NOFILL/買残1.2): PF1.53→1.66・+256→+296万(+16%)・勝ち年10/10維持・勝率57.9→57.0。
+# 機構=カット玉の損得はゼロ(持っても翌寄り処分でも-1.5%)。利得は1枠を1〜2日早く空けて次の候補(+0.24%/件)を取る回転。
+# 極上(1枠)だけに適用。極み(3枠)は微差なので触らない。
+GOKUJO_DAY1_CUT_PCT = 1.0
 GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
 GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
 GOKUJO_WEBHOOK_ENV = "DISCORD_WEBHOOK_GOKUJO_URL"
@@ -488,11 +494,17 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
         post = df[(df.index.strftime("%Y-%m-%d") >= entry_date_str) &
                   (df.index.strftime("%Y-%m-%d") < today_str)]
         pos["hold_days"] = 0
+        day1_cut = False          # 極上: 初日引け≤-1%で立つ → 翌営業日の寄りで処分（2026-09-14）
         for dt_idx, row in post.iterrows():
             pos["hold_days"] += 1
             d_str = dt_idx.strftime("%Y-%m-%d")
             lo, hi, cl = float(row["Low"]), float(row["High"]), float(row["Close"])
             op = float(row["Open"]) if row.get("Open") == row.get("Open") else None   # NaN→None
+            if day1_cut and op and op > 0:                         # 翌朝の寄り成行（OCOより先・寄りで決着）
+                pos.update(pnl_pct=round((op - eo) / eo * 100, 3), exit_type="DAY1CUT",
+                           exit_date=d_str, status="closed")
+                closed += 1
+                break
             # 2026-09-03監査: 翌日以降に寄りで水準を飛び越えた玉は逆指値が寄り値で約定する。帳簿の pnl_pct は
             # BTと同じ「水準ちょうど」のまま（パリティ維持）、実約定見込みだけ gap_pnl_pct に併記する。
             gap_dn = gap_up = None
@@ -519,6 +531,10 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
                            exit_date=d_str, status="closed")
                 closed += 1
                 break
+            # 極上だけ: 初日の引けが建値比 -GOKUJO_DAY1_CUT_PCT% 以下 → 翌営業日の寄りで処分（2026-09-14 本人承認）
+            if scope == f"kiwami_{GOKUJO_KEY}" and pos["hold_days"] == 1 and cl <= eo * (1 - GOKUJO_DAY1_CUT_PCT / 100):
+                day1_cut = True
+                pos["day1_cut_pending"] = True    # 15時通知/翌朝の目印（決済時に残っていても無害）
 
     return closed, expired
 
@@ -1023,7 +1039,7 @@ def send_discord_sell(today: date, key: str = "main") -> bool:
     }], env=env)
 
 
-_EXIT_LABEL = {"TP": "利確", "STOP": "損切", "RSI": "RSI回復", "MAXHOLD": "期限", "NOFILL": "寄指不成立"}
+_EXIT_LABEL = {"TP": "利確", "STOP": "損切", "RSI": "RSI回復", "MAXHOLD": "期限", "NOFILL": "寄指不成立", "DAY1CUT": "初日引け処分"}
 
 
 def _md(d: str | None) -> str:

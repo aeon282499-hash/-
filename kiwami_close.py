@@ -202,6 +202,13 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
             rest = 3 - (hold or 0)
             rest_str = "明日が処分期限" if rest == 1 else f"期限まであと{rest}日"
             px_str = f"・現在 {price:,.0f}円" if price is not None else ""
+            entry = c.get("entry_open")
+            # 極上だけ（2026-09-14 本人承認）: 保有1日目の引けが建値比-1%以下なら翌朝の寄りで成行処分
+            if (not sell) and brand == "極上" and hold == 1 and price is not None and entry and price <= entry * 0.99:
+                warn = True
+                lines.append(f"⛔ **{name}** ({ticker}) 1日目 — 引け {(price-entry)/entry*100:+.2f}%（建値比-1%以下）"
+                             f"{px_str} → **明朝 寄り成行で処分**（OCOは取消）")
+                continue
             lines.append(f"📊 **{name}** ({ticker}) {hold}日目 — "
                          f"{rsi_str}{px_str}・{rest_str}{_stop_note(c['ticker'])}")
             if c.get("warn"):
