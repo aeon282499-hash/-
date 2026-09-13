@@ -26,6 +26,8 @@ input int    InpGoldHourLon   = 10;         // 売り時刻 ロンドン(時)
 input int    InpGoldMinLon    = 15;         // 売り時刻 ロンドン(分)
 input int    InpGoldHoldMin   = 15;         // 保有分数
 input long   InpGoldMagic     = 20260908;
+input int    InpGoldGateN     = 40;         // 自己判断ゲート: 直近N回(紙でも毎日計測)の平均$/ozが閾値超の時だけ撃つ(0=無効)。BT: 10年+233→+539$・2016-24 -217→+92
+input double InpGoldGateThr   = 0.10;       // 閾値 $/oz
 //--- B) 日経225 夜ドリフト
 input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
 input string InpJpSymbol      = "JP225Cash";
@@ -78,7 +80,7 @@ input double InpGxLotMax      = 0.10;
 input long   InpGxMagic       = 20260910;
 
 CTrade   trade;
-datetime g_goldEntryDay = 0, g_goldEntryTime = 0;
+datetime g_goldEntryDay = 0, g_goldEntryTime = 0; double g_gfHist[]; datetime g_gfHistDay[]; datetime g_gfRecDay = 0; bool g_gfInit = false;
 datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0, g_jpAddDay = 0, g_gdEntryDay = 0, g_gdExitDay = 0;
 datetime g_gxDay = 0; double g_gxPaperEntry = 0.0; datetime g_gxPaperTime = 0; bool g_gxPaperOpen = false; datetime g_gxWaitStart = 0;
 
@@ -259,6 +261,57 @@ int OnInit()
 }
 void OnDeinit(const int reason) { EventKillTimer(); }
 
+//--- 金15分窓の紙の結果($/oz・SL$10・コスト$0.21): London day の 10:15始値 - 10:30始値
+bool GoldFixWindow(datetime lonDay, double &res)
+{
+   datetime srvOff = TimeTradeServer() - TimeGMT();
+   datetime gmt15 = lonDay + (InpGoldHourLon * 60 + InpGoldMinLon) * 60 - (UkDst(lonDay + 12 * 3600) ? 3600 : 0);
+   datetime t1 = gmt15 + srvOff, t2 = t1 + InpGoldHoldMin * 60;
+   int b1 = iBarShift(InpGoldSymbol, PERIOD_M1, t1, true), b2 = iBarShift(InpGoldSymbol, PERIOD_M1, t2, true);
+   if(b1 < 0 || b2 < 0 || b1 <= b2) return false;
+   double o1 = iOpen(InpGoldSymbol, PERIOD_M1, b1), o2 = iOpen(InpGoldSymbol, PERIOD_M1, b2);
+   if(o1 <= 0 || o2 <= 0) return false;
+   double hi = 0; for(int b = b1; b > b2; b--) hi = MathMax(hi, iHigh(InpGoldSymbol, PERIOD_M1, b));
+   res = (InpGoldStopUsd > 0 && hi >= o1 + InpGoldStopUsd) ? -InpGoldStopUsd - 0.21 : (o1 - o2) - 0.21;
+   return true;
+}
+void GoldGateAppend(datetime lonDay, double r)
+{
+   int n = ArraySize(g_gfHist); ArrayResize(g_gfHist, n + 1); ArrayResize(g_gfHistDay, n + 1); g_gfHist[n] = r; g_gfHistDay[n] = lonDay;
+}
+void GoldGateInit()
+{
+   if(g_gfInit || InpGoldGateN <= 0) return;
+   datetime today = DayOf(NowLondon()); int got = 0;
+   for(int d = 1; d <= 120 && got < InpGoldGateN + 10; d++)
+   {
+      datetime day = today - d * 86400; MqlDateTime dt; TimeToStruct(day, dt);
+      if(dt.day_of_week == 0 || dt.day_of_week == 6) continue;
+      double r; if(GoldFixWindow(day, r)) { GoldGateAppend(day, r); got++; }
+   }
+   // 古い→新しい順に並べ替え
+   int n = ArraySize(g_gfHist);
+   for(int i = 0; i < n / 2; i++) { double t = g_gfHist[i]; g_gfHist[i] = g_gfHist[n - 1 - i]; g_gfHist[n - 1 - i] = t; datetime td = g_gfHistDay[i]; g_gfHistDay[i] = g_gfHistDay[n - 1 - i]; g_gfHistDay[n - 1 - i] = td; }
+   g_gfInit = true;
+   PrintFormat("[金ゲート] 履歴%d本を復元 直近%d回平均=%+.3f$/oz (閾値%.2f・%s)", n, InpGoldGateN, GoldGateMean(), InpGoldGateThr, GoldGateOpen() ? "稼働" : "休止");
+}
+double GoldGateMean()
+{
+   int n = ArraySize(g_gfHist); if(n == 0) return 0; int k = MathMin(n, InpGoldGateN); double s = 0;
+   for(int i = n - k; i < n; i++) s += g_gfHist[i]; return s / k;
+}
+bool GoldGateOpen() { if(InpGoldGateN <= 0) return true; if(ArraySize(g_gfHist) < InpGoldGateN) return true; return GoldGateMean() > InpGoldGateThr; }
+void GoldGateRecord()
+{
+   if(InpGoldGateN <= 0) return;
+   datetime lon = NowLondon(); MqlDateTime dt; TimeToStruct(lon, dt); datetime today = DayOf(lon);
+   int nowMin = dt.hour * 60 + dt.min, doneMin = InpGoldHourLon * 60 + InpGoldMinLon + InpGoldHoldMin + 2;
+   if(dt.day_of_week < 1 || dt.day_of_week > 5 || nowMin < doneMin || g_gfRecDay == today) return;
+   int n = ArraySize(g_gfHistDay); if(n > 0 && g_gfHistDay[n - 1] == today) { g_gfRecDay = today; return; }
+   double r; if(!GoldFixWindow(today, r)) return;
+   GoldGateAppend(today, r); g_gfRecDay = today;
+   PrintFormat("[金ゲート] 今日の窓%+.2f$/oz → 直近%d回平均%+.3f (%s)", r, InpGoldGateN, GoldGateMean(), GoldGateOpen() ? "稼働" : "休止");
+}
 void GoldTick()
 {
    datetime lon = NowLondon(); MqlDateTime dt; TimeToStruct(lon, dt); datetime today = DayOf(lon);
@@ -268,6 +321,7 @@ void GoldTick()
    if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 2 && !HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryDay != today)
    {
       if(Halted()) { g_goldEntryDay = today; return; }
+      if(!GoldGateOpen()) { PrintFormat("[金] ゲート休止: 直近%d回平均%+.3f$/oz ≤ %.2f → 撃たない(紙で計測は継続)", InpGoldGateN, GoldGateMean(), InpGoldGateThr); g_goldEntryDay = today; return; }
       int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
       g_goldEntryDay = today;
       if(spread > InpGoldMaxSpread) { PrintFormat("[金] スプレッド%dpt > %d 見送り", spread, InpGoldMaxSpread); return; }
@@ -404,6 +458,7 @@ void Heartbeat()
 void OnTimer()
 {
    Heartbeat();
+   if(InpGoldOn) { GoldGateInit(); GoldGateRecord(); }
    GxTick();
    if(InpGoldOn) GoldTick();
    if(InpJpOn) JpTick();
