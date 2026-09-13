@@ -58,6 +58,14 @@ input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
 input int    InpDeEntryHour   = 1;          // 買い時刻 JST
 input int    InpDeExitHour    = 16;         // 手仕舞い時刻 JST
 input long   InpDeMagic       = 20260914;
+
+input bool   InpGdOn          = true;       // 金 04:00JST買→22:00JST売(火〜金JST・直前レッグ≤0・t3.6 勝10/11)
+input double InpGdJpyPer001   = 120000;     // 0.01lot(=1oz・名目約65万円)あたりの必要残高(円)。残高12万未満は0枚
+input double InpGdLotMax      = 1.00;
+input int    InpGdMaxSpread   = 40;         // 許容スプレッド(pt=0.01$)
+input int    InpGdEntryHour   = 4;          // 買い時刻 JST
+input int    InpGdExitHour    = 22;         // 手仕舞い時刻 JST
+input long   InpGdMagic       = 20260915;
 //--- C) 金 Globex再開買い（サーバー01:05買→03:00売・13年t8.2・14/14年・0.01lot=名目68万円）
 input int    InpGxMode        = 1;          // 0=off / 1=紙(仮想約定をログとFilesに記録) / 2=実弾(残高がInpGxMinBalance以上のときだけ)
 input double InpGxMinBalance  = 200000;     // 実弾に切り替える残高(円)・未満なら紙のまま
@@ -71,7 +79,7 @@ input long   InpGxMagic       = 20260910;
 
 CTrade   trade;
 datetime g_goldEntryDay = 0, g_goldEntryTime = 0;
-datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0, g_jpAddDay = 0;
+datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0, g_jpAddDay = 0, g_gdEntryDay = 0, g_gdExitDay = 0;
 datetime g_gxDay = 0; double g_gxPaperEntry = 0.0; datetime g_gxPaperTime = 0; bool g_gxPaperOpen = false; datetime g_gxWaitStart = 0;
 
 datetime DayOf(datetime t) { return t - (t % 86400); }
@@ -180,6 +188,36 @@ double PrevLegPct(string sym, int entryH, int exitH)
    }
    return 0.0;
 }
+double LotGd()
+{
+   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / InpGdJpyPer001 + 1e-9) * 0.01;   // 12万未満は0
+   double vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP); if(vstep <= 0) vstep = 0.01;
+   lot = MathMin(InpGdLotMax, lot); return NormalizeDouble(MathFloor(lot / vstep + 1e-9) * vstep, 2);
+}
+void GdTick()
+{
+   datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
+   if(dt.hour >= InpGdExitHour && HasPos(InpGoldSymbol, InpGdMagic) && g_gdExitDay != today)
+   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGdMagic, "金昼"); g_gdExitDay = today; return; }
+   bool okDay = (dt.day_of_week >= 2 && dt.day_of_week <= 5);        // 火〜金JST(土曜JST04:00=金曜NY午後は決済足が無いので建てない)
+   if(dt.hour >= InpGdEntryHour && dt.hour < InpGdExitHour && okDay && !HasPos(InpGoldSymbol, InpGdMagic) && g_gdEntryDay != today)
+   {
+      if(dt.hour >= InpGdEntryHour + 3) { g_gdEntryDay = today; return; }
+      double lots = LotGd();
+      if(lots < 0.01) { g_gdEntryDay = today; return; }                 // 残高不足は静かに見送り
+      if(Halted()) { g_gdEntryDay = today; return; }
+      int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
+      if(spread > InpGdMaxSpread) { PrintFormat("[金昼] スプレッド%dpt > %d 見送り(再試行)", spread, InpGdMaxSpread); return; }
+      double pn = PrevLegPct(InpGoldSymbol, InpGdEntryHour, InpGdExitHour);
+      if(pn > 0.0) { PrintFormat("[金昼] 直前レッグ%+.2f%% > 0 なので見送り", pn); g_gdEntryDay = today; return; }
+      PrintFormat("[金昼] 直前レッグ%+.2f%% → 建てる", pn);
+      if(!CanTrade()) { PrintFormat("[金昼][デモ以外] 買いシグナル lot=%.2f（発注せず）", lots); g_gdEntryDay = today; return; }
+      trade.SetExpertMagicNumber(InpGdMagic);
+      if(trade.Buy(lots, InpGoldSymbol, 0, 0, 0, "goldday")) PrintFormat("[金昼] 買い lot=%.2f(残高%.0f円) @%.2f spread=%dpt", lots, AccountInfoDouble(ACCOUNT_BALANCE), trade.ResultPrice(), spread);
+      else PrintFormat("[金昼] 買い失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      g_gdEntryDay = today;
+   }
+}
 void DeTick()
 {
    datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
@@ -213,9 +251,9 @@ int OnInit()
    if(InpUsOn && !SymbolSelect(InpUsSymbol, true)) { Print("銘柄が見つからない: ", InpUsSymbol); return INIT_FAILED; }
    if(InpDeOn && !SymbolSelect(InpDeSymbol, true)) { Print("銘柄が見つからない: ", InpDeSymbol); return INIT_FAILED; }
    if(!CanTrade()) Print("⚠ デモ口座ではないので発注しません(InpDemoOnly=true)");
-   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | UK-DST=%s",
+   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
-               InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
+               InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, InpGdOn ? "on" : "off", LotGd(), InpGdJpyPer001, InpGdEntryHour, InpGdExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
    EventSetTimer(5);
    return INIT_SUCCEEDED;
 }
@@ -361,5 +399,6 @@ void OnTimer()
    if(InpJpOn) JpTick();
    if(InpUsOn) UsTick();
    if(InpDeOn) DeTick();
+   if(InpGdOn) GdTick();
 }
 //+------------------------------------------------------------------+
