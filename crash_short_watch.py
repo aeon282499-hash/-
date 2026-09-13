@@ -10,6 +10,7 @@
   直近1ヶ月+30%以上の急騰 × 終値5MA割れ初日 × 当日-5%以上 × 出来高20日平均2倍以上
   × 代金20日平均5億以上 × 株価100円以上。貸借区分・5MA向きも記録（forward検証用）。
 想定執行: 翌営業日 寄り成行空売り → 当日引け買戻し（デイ・持ち越しなし）。
+  2026-09-14〜: 寄りが前日終値比-3%以下（GAP_SKIP_PCT）なら見送り（26年BTで4時代すべて改善・本人承認）。
 注意: 紙運用専用。逆日歩・貸株料は含まない（紙で実測するのが目的）。
 """
 from __future__ import annotations
@@ -33,6 +34,10 @@ from screener import (batch_download_jquants, fetch_tse_universe,
 LOG_FILE = Path("crash_short_log.json")
 RUNUP_MIN, R1_MAX, VOLX_MIN, TOV_MIN_OKU, PRICE_MIN = 30.0, -5.0, 2.0, 5.0, 100.0
 PAPER_SIZE = 300_000   # 紙の建玉サイズ（円）
+# 2026-09-14 本人承認: 寄りが前日終値比 GAP_SKIP_PCT 以下（大きく下寄り）なら見送り。
+# 26年BT(_bt_crashshort_26y.py・貸借のみ): 本番条件+0.20%/件・PF1.10 → 見送り追加で+0.45%/PF1.25・4時代すべて改善・
+# 10年+57→+63万・最悪年不変・除外136玉の平均-1.14%。フェードの「下寄り見送り」と同型（寄り後に判断する運用）。
+GAP_SKIP_PCT = -3.0
 
 
 def _load_log() -> list[dict]:
@@ -77,9 +82,10 @@ def _notify(hits: list[dict], today_str: str) -> None:
         "title": f"🩸 崩壊ショート紙運用 — 検出 {len(hits)}件（{today_str}終値）",
         "description": ("\n".join(lines) +
                         "\n\n📝 **紙運用**: 翌営業日 寄り成行空売り→当日引け買戻し想定（実弾ではありません）"
+                        "\n⛔ 寄りが前日終値比-3%以下で始まったら見送り（2026-09-14〜・26年BTで4時代すべて改善）"
                         "\n実務メモ: 貸借○のみ空売り可 / 50単元以下は価格規制の成行制限対象外 / 逆日歩は要実測"),
         "color": 0x8B0000,
-        "footer": {"text": "10年BT: 貸借のみ 平均+0.85%/件・勝率58%・PF1.52・陽性9/10年（コスト前）"},
+        "footer": {"text": "10年BT: 貸借のみ +0.85%/件・PF1.52 / 26年BT: +0.20%/PF1.10 → 下寄り見送りで+0.45%/PF1.25"},
     }
     try:
         r = requests.post(url, json={"embeds": [embed]}, timeout=15)
@@ -129,14 +135,27 @@ def main() -> None:
         e["exec_date"] = after.index[0].strftime("%Y-%m-%d")
         e["exec_open"] = o1
         e["exec_close"] = c1
-        e["result_pct"] = round((o1 - c1) / o1 * 100, 3)
-        e["result_yen"] = round(PAPER_SIZE * e["result_pct"] / 100)
+        gap = (o1 / float(e["close"]) - 1) * 100 if e.get("close") else 0.0
+        e["gap_pct"] = round(gap, 2)
+        raw = round((o1 - c1) / o1 * 100, 3)
+        if gap <= GAP_SKIP_PCT:
+            # 見送り（2026-09-14〜）: 紙の損益は0で記帳し、撃っていたらどうだったかを would_pct に残す
+            e["skipped"] = "GD"; e["would_pct"] = raw
+            e["result_pct"] = 0.0; e["result_yen"] = 0
+        else:
+            e["result_pct"] = raw
+            e["result_yen"] = round(PAPER_SIZE * raw / 100)
         scored += 1
     if scored:
-        done = [e for e in log if e.get("result_pct") is not None]
+        done = [e for e in log if e.get("result_pct") is not None and not e.get("skipped")]
+        skp = [e for e in log if e.get("skipped")]
         tot = sum(e["result_yen"] for e in done)
         wins = sum(1 for e in done if e["result_pct"] > 0)
-        print(f"[score] {scored}件を採点 → 通算 {len(done)}件 勝率{wins/len(done)*100:.0f}% {tot:+,}円（紙・30万/件）")
+        msg = (f"[score] {scored}件を採点 → 通算 {len(done)}件 勝率{wins/len(done)*100:.0f}% {tot:+,}円（紙・30万/件）"
+               if done else f"[score] {scored}件を採点（通算はまだ0件）")
+        if skp:
+            msg += f" / 下寄り見送り{len(skp)}件（撃っていたら平均{np.mean([x['would_pct'] for x in skp]):+.2f}%）"
+        print(msg)
 
     # ── 2) 当日の検出 ──
     iss = _iss_map(token)
