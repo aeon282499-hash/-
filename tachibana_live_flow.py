@@ -56,7 +56,11 @@ SECTOR_MAP = ROOT / "sector33_map.json"
 HUB_URL = os.environ.get("CHIMP_LIVE_URL", "https://chimp-live.aeon282499.workers.dev/publish")
 TOKEN_FILE = ROOT / ".tachibana" / "chimp_live_token.txt"
 
-UNIVERSE_MIN_OKU = 1.0          # 20日平均代金 1億円以上（≈2,000銘柄）
+UNIVERSE_MIN_OKU = 0.5          # 20日平均代金 0.5億円以上（≈2,500銘柄・21要求/一巡）
+KABUTAN = ROOT / "kabutan_themes.json"   # 株探テーマ辞書（kabutan_themes.py・週次）
+KABUTAN_MIN_MEMBERS = 3         # 株探テーマは巡回対象の構成銘柄が3以上のものだけ集計
+TOP_MEMBERS = 150               # 構成銘柄リストを載せるテーマ数（並び上位）＋手作り全部
+TOP_SERIES = 60                 # スパークライン系列を載せるテーマ数＋手作り全部
 PRICE_COLS = ("pDPP", "tDPP:T", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
 SESSION_START, SESSION_END = "08:58", "15:35"
 # 時刻別の想定進捗（累計代金が1日の何割まで来ているか・U字カーブの近似）。flow の分母に使う。
@@ -141,8 +145,21 @@ def load_universe(log) -> tuple[dict[str, dict], dict[str, dict]]:
     theme_codes: set[str] = set()
     for key, t in themes_raw.items():
         members = [m["ticker"].removesuffix(".T") for m in t.get("members", [])]
-        themes[key] = {"label": key.replace("_", " "), "desc": t.get("desc", ""), "members": members}
+        themes[key] = {"label": key.replace("_", " "), "desc": t.get("desc", ""), "members": members, "source": "hand"}
         theme_codes |= set(members)
+    # 株探テーマ（2026-09-14 本人「やれや」）: 構成銘柄は巡回対象（代金0.5億以上）に絞る＝要求数を増やさない
+    n_kab = 0
+    if KABUTAN.exists():
+        try:
+            kj = json.load(open(KABUTAN, encoding="utf-8"))
+            for name, t in (kj.get("themes") or {}).items():
+                if name in themes:
+                    continue
+                themes["k:" + name] = {"label": name, "desc": "", "members": list(t.get("members") or []), "source": "kabutan"}
+                n_kab += 1
+            log.info(f"株探テーマ辞書: {n_kab}本（{kj.get('fetched')}）")
+        except Exception as e:  # noqa: BLE001
+            log.warning(f"株探テーマ辞書の読込失敗: {e}")
     uni: dict[str, dict] = {}
     for r in stocks:
         code = str(r.get("code", ""))
@@ -153,7 +170,11 @@ def load_universe(log) -> tuple[dict[str, dict], dict[str, dict]]:
     for c in theme_codes:
         if c not in uni:
             uni[c] = {"name": c, "sector": sec_map.get(c), "avg_tov": 0.0}
-    log.info(f"巡回対象 {len(uni)}銘柄（代金{UNIVERSE_MIN_OKU}億以上＋テーマ構成{len(theme_codes)}）・テーマ{len(themes)}")
+    for k, t in themes.items():           # 株探テーマの構成銘柄は巡回対象内だけに絞る
+        if t.get("source") == "kabutan":
+            t["members"] = [c for c in t["members"] if c in uni]
+    themes = {k: t for k, t in themes.items() if t.get("source") == "hand" or len(t["members"]) >= KABUTAN_MIN_MEMBERS}
+    log.info(f"巡回対象 {len(uni)}銘柄（代金{UNIVERSE_MIN_OKU}億以上＋手作りテーマ構成{len(theme_codes)}）・テーマ{len(themes)}（株探{sum(1 for t in themes.values() if t.get('source')=='kabutan')}）")
     return uni, themes
 
 
@@ -248,7 +269,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
             "gap": round((opn / prev - 1) * 100, 2) if (opn and prev) else None,
         }
 
-    def group(key: str, label: str, members: list[str], desc: str = "") -> dict | None:
+    def group(key: str, label: str, members: list[str], desc: str = "", source: str = "") -> dict | None:
         ms = [stocks[c] for c in members if c in stocks]
         if not ms:
             return None
@@ -262,7 +283,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
         f5 = [m for m in ms if m["flow5"] is not None and m["avg_tov"] > 0]
         flow5 = (sum(m["flow5"] * m["avg_tov"] for m in f5) / sum(m["avg_tov"] for m in f5)) if f5 else None
         return {
-            "key": key, "label": label, "desc": desc, "n": len(ms),
+            "key": key, "label": label, "desc": desc, "n": len(ms), "src": source,
             "tov": tov, "avg_tov": avg,
             "flow": round(tov / (avg * prog), 2) if (avg > 0 and prog > 0.02 and tov) else None,
             "flow5": None if flow5 is None else round(flow5, 2),
@@ -273,7 +294,8 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
             "members": sorted((m["code"] for m in ms), key=lambda c: -stocks[c]["tov"]),
         }
 
-    theme_groups = [g for g in (group(k, v["label"], v["members"], v.get("desc", "")) for k, v in themes.items()) if g]
+    theme_groups = [g for g in (group(k, v["label"], v["members"], v.get("desc", ""), v.get("source", "")) for k, v in themes.items()) if g]
+    theme_groups = [g for g in theme_groups if g["src"] == "hand" or g["n"] >= KABUTAN_MIN_MEMBERS]
     sec_members: dict[str, list[str]] = {}
     for c, m in stocks.items():
         if m.get("sector"):
@@ -292,6 +314,15 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     except Exception:  # noqa: BLE001
         arena_codes = []
     st.maybe_series(epoch, now.strftime("%H:%M"), {"themes": theme_groups, "sectors": sector_groups})
+    # 並び（場中=直近5分・場外=当日）で上位だけ構成銘柄/系列を載せる＝株探1,500本でも毎分120KB級に収める
+    intraday = state in ("am", "pm", "lunch")
+    sort_key = "flow5" if intraday else "flow"
+    theme_groups.sort(key=lambda g: -(g[sort_key] if g[sort_key] is not None else -9))
+    top_members = set(g["key"] for g in theme_groups[:TOP_MEMBERS]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
+    top_series = set(g["key"] for g in theme_groups[:TOP_SERIES]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
+    for g in theme_groups:
+        if g["key"] not in top_members:
+            g["members"] = []
 
     # 個別の「いま資金が来ている」上位（テーマ外も拾う）
     liquid = [m for m in stocks.values() if m["tov"] >= 1e8 and m["avg_tov"] > 0]
@@ -326,13 +357,14 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
         "source": "立花証券e支店API（取引所リアルタイム）", "interval_note": "全銘柄を約1分で一巡・毎分配信",
         "universe": len(uni), "got": len(raw),
         "market": market,
-        "themes": sorted(theme_groups, key=lambda g: -(g["flow5"] if g["flow5"] is not None else -9)),
+        "themes": theme_groups, "n_themes_kabutan": sum(1 for g in theme_groups if g["src"] == "kabutan"),
         "sectors": sorted(sector_groups, key=lambda g: -(g["flow5"] if g["flow5"] is not None else -9)),
         "hot5": [m["code"] for m in hot5], "hot": [m["code"] for m in hot], "gain": [m["code"] for m in gain],
         "lose": [m["code"] for m in lose], "tovtop": [m["code"] for m in tovtop],
         "arena": [c for c in arena_codes if c in stocks],
         "stocks": {c: stocks[c] for c in keep if c in stocks},
-        "series": {"ts": st.series_ts, "themes": st.series["themes"], "sectors": st.series["sectors"]},
+        "series": {"ts": st.series_ts, "themes": {k: v for k, v in st.series["themes"].items() if k in top_series},
+                   "sectors": st.series["sectors"]},
     }
 
 

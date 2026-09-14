@@ -74,6 +74,8 @@ if (LIVEJ) {
   sandbox.liveToggle("themes", key); hv = $get("#live-root").innerHTML;
   check("ライブ: テーマ展開で構成銘柄行", clean(hv) && hv.includes("srow"), `${(hv.match(/class="srow/g) || []).length}行`);
   sandbox.liveSetSort("chg_w"); hv = $get("#live-root").innerHTML; check("ライブ: 騰落率ソート", clean(hv));
+  sandbox.liveSetQ("半導体"); hv = $get("#live-groups").innerHTML; check("ライブ: テーマ絞り込み '半導体'", clean(hv) && hv.includes("半導体") && !hv.includes("防衛"));
+  sandbox.liveSetQ(""); sandbox.liveToggleAll(); hv = $get("#live-root").innerHTML; check("ライブ: 全件表示トグル", clean(hv)); sandbox.liveToggleAll();
   sandbox.liveSetSeg("sectors"); hv = $get("#live-root").innerHTML; check("ライブ: セクター", clean(hv) && hv.includes("業種"));
   sandbox.liveSetSeg("stocks"); hv = $get("#live-root").innerHTML; check("ライブ: 個別(今きてる)", clean(hv));
   for (const t of ["hot", "gain", "tovtop", "lose"]) { sandbox.liveSetTab(t); hv = $get("#live-root").innerHTML; check(`ライブ: 個別タブ ${t}`, clean(hv) && hv.includes("srow")); }

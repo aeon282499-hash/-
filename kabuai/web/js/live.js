@@ -5,6 +5,8 @@
 //            当日倍率 flow＝当日累計代金 ÷ (20日平均代金×時刻別の想定進捗)。1.0＝いつも通り。
 let LIVE = null, LIVE_AT = 0, LIVE_ERR = "", LIVE_WS = null, LIVE_WS_OK = false, LIVE_BACKOFF = 5000;
 let L_SEG = "themes", L_SORT = "auto", L_TAB = "auto";   // auto=場中は「直近5分」・引け後/寄り前は「当日」
+let L_Q = "", L_ALL = false;                              // テーマ絞り込み・全件表示（株探≈1,500本のため既定は上位60）
+const L_TOP = 60;
 const L_OPEN = new Set();
 let L_THEME_OF = {};
 
@@ -38,7 +40,9 @@ function liveApply(j) {
   if (LIVE && LIVE.ts === j.ts && LIVE.got === j.got) { LIVE_AT = Date.now(); liveClock(); return; }
   LIVE = j; LIVE_AT = Date.now(); LIVE_ERR = "";
   L_THEME_OF = {};
-  (j.themes || []).forEach(g => (g.members || []).forEach(c => { (L_THEME_OF[c] = L_THEME_OF[c] || []).push(g.label); }));
+  // 銘柄→テーマ（手作りを先に・株探は後ろ）。チップは2つまで出す
+  const ordered = (j.themes || []).slice().sort((a, b) => ((a.src === "hand") ? 0 : 1) - ((b.src === "hand") ? 0 : 1));
+  ordered.forEach(g => (g.members || []).forEach(c => { (L_THEME_OF[c] = L_THEME_OF[c] || []).push(g.label); }));
   liveRefresh();
 }
 function liveRefresh() {
@@ -80,6 +84,8 @@ function liveIntraday() { return !!(LIVE && (LIVE.state === "am" || LIVE.state =
 function effSort() { return L_SORT === "auto" ? (liveIntraday() ? "flow5" : "flow") : L_SORT; }
 function effTab() { return L_TAB === "auto" ? (liveIntraday() ? "hot5" : "hot") : L_TAB; }
 function liveSetSeg(s) { L_SEG = s; liveRefresh(); }
+function liveSetQ(v) { L_Q = v || ""; const el = document.getElementById("live-groups"); if (el) el.innerHTML = groupsInner(); }
+function liveToggleAll() { L_ALL = !L_ALL; liveRefresh(); }
 function liveSetSort(s) { L_SORT = s; liveRefresh(); }
 function liveSetTab(s) { L_TAB = s; liveRefresh(); }
 function liveToggle(kind, key) { const k = kind + ":" + key; if (L_OPEN.has(k)) L_OPEN.delete(k); else L_OPEN.add(k); liveRefresh(); }
@@ -100,16 +106,27 @@ function groupCard(kind, g) {
   const ser = ((LIVE.series || {})[kind] || {})[g.key];
   const up = g.up_ratio == null ? 0 : Math.round(g.up_ratio * 100);
   const members = open ? (g.members || []).map(c => stockRow(LIVE.stocks[c])).join("") : "";
+  const src = g.src === "kabutan" ? ' <span class="chip" style="padding:0 5px;font-size:9px;vertical-align:middle">株探</span>' : "";
   return `<div class="gcard${open ? " open" : ""}">
     <div class="ghead" onclick="liveToggle('${kind}','${esc(g.key)}')">
-      <div class="gname"><b>${esc(g.label)}</b><small>${g.n}銘柄 ・ 代金${oku(g.tov)} ・ 上昇${up}%${g.flow != null ? ` ・ 当日${flowTxt(g.flow)}` : ""}</small>
+      <div class="gname"><b>${esc(g.label)}${src}</b><small>${g.n}銘柄 ・ 代金${oku(g.tov)} ・ 上昇${up}%${g.flow != null ? ` ・ 当日${flowTxt(g.flow)}` : ""}</small>
         <div class="upbar"><i style="width:${up}%"></i></div></div>
       <div class="gstat"><span class="flow ${flowCls(g.flow5)}">${flowTxt(g.flow5)}</span><small>直近5分の資金</small></div>
       <div class="gstat">${chgSpan(g.chg_w, 1)}<small>本日（代金加重）</small></div>
       ${spark(ser ? ser.flow : null)}
     </div>
-    ${open ? `<div class="gbody">${g.desc ? `<div class="gdesc">${esc(g.desc)}</div>` : ""}${members || `<div class="empty">構成銘柄のデータなし</div>`}</div>` : ""}
+    ${open ? `<div class="gbody">${g.desc ? `<div class="gdesc">${esc(g.desc)}</div>` : ""}${members || `<div class="empty">${(g.n && !(g.members || []).length) ? "並び上位外のため構成銘柄は省略中（上位に入ると表示・約1分ごと）" : "構成銘柄のデータなし"}</div>`}</div>` : ""}
   </div>`;
+}
+function groupsInner() {
+  let arr = sortGroups(LIVE[L_SEG]);
+  const q = (L_Q || "").trim().toLowerCase();
+  if (L_SEG === "themes" && q) arr = arr.filter(g => String(g.label).toLowerCase().includes(q) || String(g.key).toLowerCase().includes(q));
+  const total = arr.length;
+  const show = (L_SEG === "themes" && !L_ALL && !q) ? arr.slice(0, L_TOP) : arr;
+  const more = total > show.length ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:13px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">残り ${total - show.length}テーマを表示 ▾</a>`
+    : (L_ALL && L_SEG === "themes" && total > L_TOP ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:13px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">上位${L_TOP}だけに戻す ▴</a>` : "");
+  return (show.map(g => groupCard(L_SEG, g)).join("") || `<div class="empty">該当なし</div>`) + more;
 }
 function sortGroups(arr) {
   const k = effSort(), v = g => (g[k] == null || isNaN(g[k])) ? -1e9 : Number(g[k]);
@@ -130,10 +147,11 @@ function liveBody() {
   const sortBtn = (k, l) => `<a class="${effSort() === k ? "on" : ""}" onclick="event.preventDefault();liveSetSort('${k}')">${l}</a>`;
   let body = "";
   if (L_SEG === "themes" || L_SEG === "sectors") {
-    const arr = sortGroups(LIVE[L_SEG]);
-    body = `<div class="lhead"><span class="muted" style="font-size:12px">${L_SEG === "themes" ? `${arr.length}テーマ` : `${arr.length}業種`}・タップで構成銘柄</span>
+    const arr = LIVE[L_SEG] || [];
+    body = `<div class="lhead"><span class="muted" style="font-size:12px">${L_SEG === "themes" ? `${arr.length}テーマ（手作り${arr.filter(g => g.src === "hand").length}＋株探${LIVE.n_themes_kabutan || 0}）` : `${arr.length}業種`}・タップで構成銘柄</span>
         <span class="sortsel">${sortBtn("flow5", "今の資金")}${sortBtn("flow", "当日資金")}${sortBtn("chg_w", "騰落率")}</span></div>
-      ${arr.map(g => groupCard(L_SEG, g)).join("") || `<div class="empty">データなし</div>`}`;
+      ${L_SEG === "themes" ? `<input class="searchbox" style="padding:9px 12px;font-size:14px;margin-bottom:8px" type="search" placeholder="テーマ名で絞り込み（例: 半導体・防衛・データセンター）" value="${esc(L_Q)}" oninput="liveSetQ(this.value)">` : ""}
+      <div id="live-groups">${groupsInner()}</div>`;
   } else {
     const tabs = [["hot5", "今きてる"], ["hot", "当日倍率"], ["gain", "上昇率"], ["tovtop", "代金"], ["lose", "下落率"]];
     const tab = effTab();
@@ -160,7 +178,7 @@ function liveBody() {
     ${arenaStrip}
     <div class="seg">${seg("themes")}🔥 テーマ</a>${seg("sectors")}🏭 セクター</a>${seg("stocks")}🚀 個別</a></div>
     ${body}
-    <div class="legend">🔥 <b>今の資金</b>＝直近5分の売買代金がふだんの5分の何倍か（×2以上＝資金が集中）。<b>当日資金</b>＝当日累計代金 ÷ 平常×時刻の進み具合。騰落は前日終値比。数字は取引所の現在値（立花証券API）で約1分ごと。予測や推奨ではなく「いまどこに資金が来ているか」の観測。</div>
+    <div class="legend">テーマ＝手作り34本＋株探テーマ辞書（週次更新・構成銘柄は代金0.5億以上に限定・3銘柄以上のもの）。🔥 <b>今の資金</b>＝直近5分の売買代金がふだんの5分の何倍か（×2以上＝資金が集中）。<b>当日資金</b>＝当日累計代金 ÷ 平常×時刻の進み具合。騰落は前日終値比。数字は取引所の現在値（立花証券API）で約1分ごと。予測や推奨ではなく「いまどこに資金が来ているか」の観測。</div>
     <p class="disc">${esc(DATA.disclaimer || "")}</p>`;
 }
 function liveExplain() {
