@@ -405,34 +405,66 @@ def main() -> int:
     if not a.once and (now.weekday() >= 5 or hhmm(now) > a.end):
         log.info(f"場外（{now:%a %H:%M}）→ 終了")
         return 0
-    uni, themes = load_universe(log)
+    # 止まらないための方針（2026-09-14 本人「エラーで止まったりしない？」）:
+    #  ①ユニバース読込/ログインは失敗しても60秒おきに引け(--end)まで再試行 ②1巡ごとの取得・集計・配信は
+    #  まるごと try/except で握って次の巡回へ ③連続失敗が続いても終了しない（ログに残す）
+    #  ④タスク側も RestartCount=3（異常終了なら5分後に再起動）
+    uni, themes, client = None, None, None
+    while uni is None:
+        try:
+            uni, themes = load_universe(log)
+        except Exception as e:  # noqa: BLE001
+            log.error(f"ユニバース読込失敗（60秒後に再試行）: {e}")
+            if a.once or hhmm() > a.end:
+                return 1
+            time.sleep(60)
     codes = sorted(uni.keys())
     if a.limit:
         codes = codes[:a.limit]
-    client = TachibanaClient()
-    try:
-        client.ensure_session()
-    except Exception as e:  # noqa: BLE001
-        log.error(f"ログイン失敗: {e}")
-        return 1
+    while client is None:
+        try:
+            client = TachibanaClient()
+            client.ensure_session()
+        except Exception as e:  # noqa: BLE001
+            log.error(f"ログイン失敗（60秒後に再試行）: {e}")
+            client = None
+            if a.once or hhmm() > a.end:
+                return 1
+            time.sleep(60)
     st = FlowState()
-    n_sweep = 0
+    n_sweep, n_fail = 0, 0
     while True:
         now = datetime.now()
         if not a.once and hhmm(now) < SESSION_START:
             time.sleep(15); continue
         t0 = time.monotonic()
-        raw = sweep(client, codes, a.interval, log)
-        payload = aggregate(raw, uni, themes, st, datetime.now())
-        n_sweep += 1
-        dump = Path(a.dump) if a.dump else OUT_DIR / "latest.json"
-        dump.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-        top = payload["themes"][:3]
-        log.info(f"#{n_sweep} {payload['hhmm']} {payload['state']} got{payload['got']}/{len(codes)} "
-                 f"{time.monotonic()-t0:.0f}s 市場flow{payload['market']['flow']} "
-                 f"top: " + " / ".join(f"{g['label']} f5={g['flow5']} chg={g['chg_w']}" for g in top))
-        if not a.no_publish:
-            publish(payload, log)
+        try:
+            raw = sweep(client, codes, a.interval, log)
+            if not raw:
+                raise RuntimeError("時価が1件も取れない（API/セッション異常の疑い）")
+            payload = aggregate(raw, uni, themes, st, datetime.now())
+            n_sweep += 1
+            dump = Path(a.dump) if a.dump else OUT_DIR / "latest.json"
+            dump.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            top = payload["themes"][:3]
+            log.info(f"#{n_sweep} {payload['hhmm']} {payload['state']} got{payload['got']}/{len(codes)} "
+                     f"{time.monotonic()-t0:.0f}s 市場flow{payload['market']['flow']} "
+                     f"top: " + " / ".join(f"{g['label']} f5={g['flow5']} chg={g['chg_w']}" for g in top))
+            if not a.no_publish:
+                publish(payload, log)
+            n_fail = 0
+        except Exception as e:  # noqa: BLE001
+            n_fail += 1
+            log.exception(f"巡回で例外（{n_fail}回目・続行）: {e}")
+            if a.once:
+                return 1
+            time.sleep(min(60, 10 * n_fail))
+            if n_fail % 5 == 0:          # 5回続けて落ちたらセッションを取り直す
+                try:
+                    client.clear_session(); client.ensure_session(); log.info("再ログインした")
+                except Exception as e2:  # noqa: BLE001
+                    log.error(f"再ログイン失敗: {e2}")
+            continue
         if a.once:
             break
         if hhmm(datetime.now()) > a.end:

@@ -121,7 +121,11 @@ def main() -> int:
     t0 = time.time()
     for i, name in enumerate(todo, 1):
         time.sleep(DELAY)
-        codes, pages = fetch_theme(name, s, log)
+        try:
+            codes, pages = fetch_theme(name, s, log)
+        except Exception as e:  # noqa: BLE001  1テーマの失敗で全体を止めない
+            log.warning(f"{name} 失敗（飛ばす）: {e}")
+            continue
         data["themes"][name] = {"members": codes, "n": len(codes), "pages": pages, "fetched": datetime.now().strftime("%Y-%m-%d")}
         if i % 10 == 0 or i == len(todo):
             data["fetched"] = datetime.now().strftime("%Y-%m-%d %H:%M")
