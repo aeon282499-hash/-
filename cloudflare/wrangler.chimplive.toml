@@ -1,0 +1,19 @@
+name = "chimp-live"
+main = "chimp-live.js"
+compatibility_date = "2025-04-30"
+workers_dev = true
+
+# モメンタムチンパン v5 🔥ライブ配信ハブ（2026-09-14）
+# deploy: cd cloudflare && npx wrangler deploy -c wrangler.chimplive.toml
+# secret: npx wrangler secret put PUBLISH_TOKEN -c wrangler.chimplive.toml
+
+[[durable_objects.bindings]]
+name = "LIVE_HUB"
+class_name = "LiveHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LiveHub"]
+
+[observability]
+enabled = true

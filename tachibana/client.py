@@ -326,8 +326,33 @@ class TachibanaClient:
             raise TachibanaTransportError(f"JSONでない応答: {text[:300]!r}") from e
 
     def _next_p_no(self) -> int:
-        self._p_no += 1
-        self._save_p_no()
+        # 2026-09-14: 板レコーダー(8:55-10:05/12:25-13:05)とライブ巡回(tachibana_live_flow.py・終日)が
+        # 同じ session/p_no を同時に使うようになったため、p_no はファイルをプロセス間ロックして
+        # read→+1→write する（各プロセスのメモリ値で増やすと p_no が重複/逆行する）。
+        lock_path = self.state_dir / "p_no.lock"
+        try:
+            import msvcrt  # Windows専用（本番PC）
+            with open(lock_path, "a+b") as lk:
+                lk.seek(0)
+                for _ in range(200):
+                    try:
+                        msvcrt.locking(lk.fileno(), msvcrt.LK_NBLCK, 1)
+                        break
+                    except OSError:
+                        time.sleep(0.01)
+                try:
+                    disk = self._load_p_no()
+                    self._p_no = max(self._p_no, disk) + 1
+                    self._save_p_no()
+                finally:
+                    try:
+                        lk.seek(0)
+                        msvcrt.locking(lk.fileno(), msvcrt.LK_UNLCK, 1)
+                    except OSError:
+                        pass
+        except ImportError:
+            self._p_no += 1
+            self._save_p_no()
         return self._p_no
 
     def _target_for(self, clmid: str) -> str:
@@ -361,6 +386,15 @@ class TachibanaClient:
         self.last_response = resp
         p_errno = str(resp.get("p_errno", "0"))
         if p_errno == "2":
+            # 他プロセス（板レコーダー/ライブ巡回）が先に再ログインしていれば、その session.json を採用して
+            # 二重ログインの往復を避ける（2026-09-14）。無ければ従来どおり自分で再ログイン。
+            prev_urls = (self.session_info or {}).get("urls", {})
+            fresh = self._load_session()
+            if _retry_login and fresh and fresh.get("urls") and fresh.get("urls") != prev_urls:
+                self.session_info = fresh
+                if self.has_valid_session():
+                    log.info("仮想URLが無効（p_errno=2）→ 他プロセスの新しい session.json を採用して再試行")
+                    return self.call(clmid, params, raise_on_result=raise_on_result, _retry_login=False)
             self.clear_session()
             if _retry_login:
                 log.info("仮想URLが無効（p_errno=2）→ 再ログインして1回だけ再試行")
