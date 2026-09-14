@@ -1,0 +1,500 @@
+[pool] 候補 18,155件
+[feat] 23s
+
+■ C ATRでサイズ正規化（26年・1×150万×係数・追加玉も同じ株数）
+
+■ B' 貸借倍率の深掘り（2016-08〜・土台=極上∧買残回転≤1.2＝本番同等）
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+  買残回転>1.2 の玉(本番では建てない) 239/2093件
+  土台(買残回転≤1.2)                   玉 460 勝率 54.1% PF 1.64 10年  +360万 | 16-20 +120 21-26 +241 | 勝年10/11 最悪  -6 | 年別 16:-6 17:+20 18:+14 19:+70 20:+21 21:+57 22:+36 23:+67 24:+28 25:+38 26:+15
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+  貸借倍率 五分位境界: 1.11/2.32/4.71/9.70
+    五分位1                         n=  370 件あたり +0.25% 勝率 50.3%
+    五分位2                         n=  370 件あたり +0.24% 勝率 51.9%
+    五分位3                         n=  369 件あたり +0.40% 勝率 53.4%
+    五分位4                         n=  370 件あたり +0.23% 勝率 50.3%
+    五分位5                         n=  370 件あたり +0.16% 勝率 49.2%
+  貸借倍率>3を除外                      玉 353 勝率 54.1% PF 1.61 10年  +272万 | 16-20 +125 21-26 +147 | 勝年10/11 最悪 -25 | 年別 16:+9 17:+22 18:+27 19:+51 20:+17 21:+81 22:+7 23:+55 24:-25 25:+1 26:+28
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率52% 噪音99%点351万 sd67 年別で土台超え 5/11
+  貸借倍率>4を除外                      玉 379 勝率 52.8% PF 1.54 10年  +269万 | 16-20 +104 21-26 +165 | 勝年9/11 最悪 -21 | 年別 16:-8 17:+26 18:+8 19:+66 20:+13 21:+96 22:+7 23:+55 24:-21 25:+1 26:+28
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率44% 噪音99%点353万 sd68 年別で土台超え 3/11
+  貸借倍率>5を除外                      玉 395 勝率 53.9% PF 1.79 10年  +374万 | 16-20 +128 21-26 +246 | 勝年10/11 最悪  -8 | 年別 16:-8 17:+35 18:+15 19:+74 20:+11 21:+93 22:+13 23:+45 24:+48 25:+6 26:+41
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率37% 噪音99%点370万 sd55 年別で土台超え 6/11
+  貸借倍率>6を除外                      玉 409 勝率 55.0% PF 1.88 10年  +416万 | 16-20 +119 21-26 +297 | 勝年10/11 最悪  -5 | 年別 16:-5 17:+35 18:+10 19:+67 20:+12 21:+98 22:+22 23:+57 24:+46 25:+15 26:+59
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率32% 噪音99%点343万 sd45 年別で土台超え 5/11
+  貸借倍率>8を除外                      玉 420 勝率 54.3% PF 1.81 10年  +405万 | 16-20 +118 21-26 +287 | 勝年10/11 最悪  -5 | 年別 16:-5 17:+34 18:+8 19:+67 20:+15 21:+92 22:+24 23:+51 24:+36 25:+26 26:+59
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率25% 噪音99%点391万 sd43 年別で土台超え 5/11
+  貸借倍率>10を除外                     玉 429 勝率 54.8% PF 1.74 10年  +387万 | 16-20 +113 21-26 +274 | 勝年10/11 最悪  -5 | 年別 16:-5 17:+29 18:+7 19:+67 20:+15 21:+91 22:+24 23:+58 24:+38 25:+29 26:+34
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+C:\Users\星野\Documents\my-first-project\_bt_gokujo_round6b_26y.py:190: RuntimeWarning: divide by zero encountered in divide
+  add_pct = np.where(add_ok, (exit_px / o2 - 1) * 100, 0.0)
+      除外率20% 噪音99%点415万 sd45 年別で土台超え 5/11
+  貸借倍率>15を除外                     玉 448 勝率 55.1% PF 1.71 10年  +396万 | 16-20 +134 21-26 +262 | 勝年10/11 最悪  -6 ★ | 年別 16:-6 17:+27 18:+22 19:+70 20:+21 21:+75 22:+21 23:+75 24:+22 25:+30 26:+39
+      除外率11% 噪音99%点396万 sd40 年別で土台超え 5/11
+  買残回転×貸借倍率の独立性（件あたり%）:
+    買残回転 低×倍率≤6.76               n=  806 件あたり +0.30% 勝率 52.2%
+    買残回転 低×倍率>6.76               n=  118 件あたり +0.05% 勝率 48.3%
+    買残回転 高×倍率≤6.76               n=  509 件あたり +0.36% 勝率 52.3%
+    買残回転 高×倍率>6.76               n=  416 件あたり +0.11% 勝率 47.8%
+  売残回転（分母を揃えた売り側単独・五分位）:
+    売残回転 五分位1(≤0.032)            n=  370 件あたり +0.38% 勝率 54.1%
+    売残回転 五分位2(≤0.059)            n=  370 件あたり +0.05% 勝率 47.6%
+    売残回転 五分位3(≤0.098)            n=  370 件あたり +0.10% 勝率 47.3%
+    売残回転 五分位4(≤0.182)            n=  370 件あたり +0.38% 勝率 53.8%
+    売残回転 五分位5(≤inf)              n=  370 件あたり +0.37% 勝率 52.4%
+
+■ C' ATRサイズ正規化（26年・平均係数=1に正規化＝資金同額で公平比較）
+  極上玉のATR分布: 中央値2.14% 平均2.15% 10%点1.52 90%点2.77
+  固定150万(現行)                     玉  955 勝率 51.0% PF 1.34 26年  +452万 | 4分割   +68/ +384/ +186/ +192 | 10年 +378 PF1.69 最悪年+11 | 勝年17/26 最悪 -28 DD  -87
+  ATR2.0 [0.7,1.3] 正規化(÷0.96)    玉  955 勝率 51.0% PF 1.32 26年  +417万 | 4分割   +57/ +359/ +177/ +179 | 10年 +357 PF1.66 最悪年+16 | 勝年17/26 最悪 -20 DD  -67
+      年別で現行超え 11/26 平均建玉139万
+  ATR2.0 [0.5,1.5] 正規化(÷0.97)    玉  955 勝率 51.0% PF 1.32 26年  +411万 | 4分割   +48/ +362/ +181/ +177 | 10年 +359 PF1.67 最悪年+16 | 勝年17/26 最悪 -20 DD  -70
+      年別で現行超え 11/26 平均建玉139万
+  ATR2.0 [0.5,2.0] 正規化(÷0.98)    玉  955 勝率 51.0% PF 1.32 26年  +407万 | 4分割   +50/ +357/ +179/ +174 | 10年 +353 PF1.66 最悪年+15 | 勝年17/26 最悪 -20 DD  -67
+      年別で現行超え 12/26 平均建玉139万
+  ATR2.4 [0.7,1.3] 正規化(÷1.10)    玉  955 勝率 51.0% PF 1.33 26年  +431万 | 4分割   +61/ +370/ +186/ +183 | 10年 +369 PF1.68 最悪年+15 | 勝年17/26 最悪 -22 DD  -71
+      年別で現行超え 12/26 平均建玉139万
+  ATR2.4 [0.5,1.5] 正規化(÷1.14)    玉  955 勝率 51.0% PF 1.33 26年  +418万 | 4分割   +58/ +360/ +180/ +180 | 10年 +360 PF1.67 最悪年+18 | 勝年17/26 最悪 -20 DD  -66
+      年別で現行超え 11/26 平均建玉140万
+  ATR2.4 [0.5,2.0] 正規化(÷1.18)    玉  955 勝率 51.0% PF 1.32 26年  +408万 | 4分割   +51/ +357/ +178/ +175 | 10年 +353 PF1.66 最悪年+15 | 勝年17/26 最悪 -20 DD  -68
+      年別で現行超え 13/26 平均建玉139万
+  ATR2.8 [0.7,1.3] 正規化(÷1.21)    玉  955 勝率 51.0% PF 1.35 26年  +462万 | 4分割   +72/ +390/ +186/ +195 | 10年 +381 PF1.70 最悪年+14 | 勝年18/26 最悪 -26 DD  -76
+      年別で現行超え 15/26 平均建玉139万
+  ATR2.8 [0.5,1.5] 正規化(÷1.28)    玉  955 勝率 51.0% PF 1.33 26年  +429万 | 4分割   +61/ +369/ +184/ +181 | 10年 +365 PF1.67 最悪年+15 | 勝年18/26 最悪 -22 DD  -72
+      年別で現行超え 12/26 平均建玉139万
+  ATR2.8 [0.5,2.0] 正規化(÷1.36)    玉  955 勝率 51.0% PF 1.32 26年  +411万 | 4分割   +49/ +361/ +178/ +178 | 10年 +357 PF1.66 最悪年+16 | 勝年17/26 最悪 -20 DD  -69
+      年別で現行超え 11/26 平均建玉140万
+  参考: ATR2.4 [0.7,1.3] 非正規化 平均係数1.10 平均建玉155万
+
+[done] 30s
