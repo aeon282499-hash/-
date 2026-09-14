@@ -27,16 +27,16 @@ def mt5_running():
     out=subprocess.run(['tasklist','/FI','IMAGENAME eq terminal64.exe'],capture_output=True).stdout.decode('cp932','ignore')
     return 'terminal64.exe' in out
 def start_mt5():
-    subprocess.Popen([r'C:\Program Files\XM Trading MT5	erminal64.exe', '/config:'+os.path.join(HERE,'_start.ini')])
+    subprocess.Popen([os.path.join(r'C:\Program Files\XM Trading MT5','terminal64.exe'), '/config:'+os.path.join(HERE,'_start.ini')])
 def heartbeat_age():
     f=os.path.join(DATA,'MQL5','Files','XMCombo_heartbeat.txt')
     if not os.path.exists(f): return None,None
     age=(dt.datetime.now()-dt.datetime.fromtimestamp(os.path.getmtime(f))).total_seconds()
     return age, open(f,encoding='utf-8',errors='ignore').read().strip()
 def expert_log_today():
-    fs=sorted(glob.glob(os.path.join(DATA,'MQL5','Logs','*.log')),key=os.path.getmtime)
-    if not fs: return ''
-    return open(fs[-1],encoding='utf-16',errors='ignore').read()
+    f=os.path.join(DATA,'MQL5','Logs',dt.datetime.now().strftime('%Y%m%d')+'.log')   # Expertsログはローカル日付ごと。今日の分が無ければ空(=建て漏れ扱い)
+    if not os.path.exists(f): return ''
+    return open(f,encoding='utf-16',errors='ignore').read()
 mode=sys.argv[sys.argv.index('--mode')+1] if '--mode' in sys.argv else 'health'
 if mode=='health':
     problems=[]
@@ -52,7 +52,9 @@ elif mode=='entry':
     pat={'日経':r'\[日経\] (買い|前夜|月曜)','US500':r'\[US500\] (買い|前夜|月曜)','GER40':r'\[GER40\] (買い|直前)','金':r'\[金\] (売り|スプレッド|ゲート)'}[leg]
     hits=re.findall(r'^(\d\d:\d\d:\d\d).*'+pat,txt,flags=re.M)
     lines=[l for l in txt.splitlines() if re.search(pat,l)]
+    bad=[l for l in txt.splitlines() if re.search(r'\['+re.escape(leg)+r'\].*(失敗|再試行中|未ロード)',l)]
     if not lines: post(f'⚠️ XM監視: {leg} の建て時刻を過ぎたが「買い」も「見送り」もログに無い(EA停止/時刻ずれの疑い)')
+    elif any('失敗' in l for l in bad): post(f'⚠️ XM監視: {leg} の発注が失敗している: '+bad[-1][-160:])
     else: log(f'{leg} OK: '+lines[-1][-120:])
 elif mode=='test':
     post('🛠 XM監視テスト: MT5稼働中・EAハートビートOK。今後ここに「MT5停止」「建て漏れ」「朝の約定記録(9:20)」を流す。専用chが欲しければwebhookを作って .env の DISCORD_WEBHOOK_XM_URL に入れる。')

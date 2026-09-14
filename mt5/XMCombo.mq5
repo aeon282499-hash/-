@@ -96,6 +96,28 @@ bool UkDst(datetime gmt)
    return (gmt >= start && gmt < end);
 }
 datetime NowLondon() { datetime g = TimeGMT(); return g + (UkDst(g) ? 3600 : 0); }
+#define NA_PCT (-999.0)   // 足が取れない(未ロード)印。0.0=「建てる」と区別する
+//--- 他銘柄のH1/M1を毎ティック触って常時ロードしておく(判定時刻に初めて触ると -1 が返り、9/9-9/10は前夜が+0.00%扱いで素通りしていた)
+void WarmSeries()
+{
+   if(InpJpOn) iTime(InpJpSymbol, PERIOD_H1, 1);
+   if(InpUsOn) iTime(InpUsSymbol, PERIOD_H1, 1);
+   if(InpDeOn) iTime(InpDeSymbol, PERIOD_H1, 1);
+   if(InpGoldOn || InpGdOn) { iTime(InpGoldSymbol, PERIOD_H1, 1); iTime(InpGoldSymbol, PERIOD_M1, 1); }
+}
+//--- 足が取れない時: 建て時刻から10分間は5秒ごとに再試行(true=まだ待つ)、過ぎたらフィルタ無しで建てる(false)
+datetime g_naLogMin = 0;
+bool NaRetry(string tag, int entryH, MqlDateTime &dt, datetime jst)
+{
+   if(dt.hour == entryH && dt.min < 10)
+   {
+      datetime m = jst - (jst % 60);
+      if(g_naLogMin != m) { PrintFormat("[%s] 足が未ロード(H1取得-1) → 再試行中", tag); g_naLogMin = m; }
+      return true;
+   }
+   PrintFormat("[%s] 足が10分取れないのでフィルタ無しで建てる", tag);
+   return false;
+}
 
 bool AnotherInstanceRunning()
 {
@@ -142,7 +164,7 @@ double LotGold()
    double vmin = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
    lot = MathMax(vmin, MathMin(InpGoldLotMax, lot)); return NormalizeDouble(MathFloor(lot / vstep) * vstep, 2);
 }
-//--- 前夜リターン: 当日9:00JSTのH1始値 ÷ 前日15:00JSTのH1始値 - 1（%）。取れなければ NaN 扱い(建てる)
+//--- 前夜リターン: 当日9:00JSTのH1始値 ÷ 前日15:00JSTのH1始値 - 1（%）。取れなければ NA_PCT(呼び側で再試行)
 double PrevNightPct(string sym)
 {
    datetime srvOff = TimeTradeServer() - TimeGMT();          // サーバー時刻 - GMT
@@ -152,9 +174,9 @@ double PrevNightPct(string sym)
    MqlDateTime dw; TimeToStruct(jst, dw);
    if(dw.day_of_week == 1) t15 -= 3 * 86400;                  // 月曜は金曜15:00
    int b9 = iBarShift(sym, PERIOD_H1, t9, true), b15 = iBarShift(sym, PERIOD_H1, t15, true);
-   if(b9 < 0 || b15 < 0) return 0.0;
+   if(b9 < 0 || b15 < 0) return NA_PCT;
    double o9 = iOpen(sym, PERIOD_H1, b9), o15 = iOpen(sym, PERIOD_H1, b15);
-   if(o9 <= 0 || o15 <= 0) return 0.0;
+   if(o9 <= 0 || o15 <= 0) return NA_PCT;
    return (o9 / o15 - 1.0) * 100.0;
 }
 
@@ -178,6 +200,7 @@ double PrevLegPct(string sym, int entryH, int exitH)
       datetime dayJ = DayOf(NowJST()) - back * 86400;
       datetime tE = dayJ + exitH * 3600 - 9 * 3600 + srvOff;          // その日のexitH(JST)をサーバー時刻に
       if(tE > now) continue;
+      if(iBars(sym, PERIOD_H1) <= 0) return NA_PCT;                    // 未ロード → 呼び側で再試行
       int bE = iBarShift(sym, PERIOD_H1, tE, true);
       if(bE < 0) continue;
       datetime tA = tE - (exitH - entryH) * 3600;                       // 同日 entryH
@@ -200,17 +223,18 @@ void GdTick()
 {
    datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
    if(dt.hour >= InpGdExitHour && HasPos(InpGoldSymbol, InpGdMagic) && g_gdExitDay != today)
-   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGdMagic, "金昼"); g_gdExitDay = today; return; }
+   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGdMagic, "金昼"); if(!HasPos(InpGoldSymbol, InpGdMagic)) g_gdExitDay = today; else Print("[金昼] 決済が残っている → 5秒後に再試行"); return; }
    bool okDay = (dt.day_of_week >= 2 && dt.day_of_week <= 5);        // 火〜金JST(土曜JST04:00=金曜NY午後は決済足が無いので建てない)
    if(dt.hour >= InpGdEntryHour && dt.hour < InpGdExitHour && okDay && !HasPos(InpGoldSymbol, InpGdMagic) && g_gdEntryDay != today)
    {
-      if(dt.hour >= InpGdEntryHour + 3) { g_gdEntryDay = today; return; }
+      if(dt.hour >= InpGdEntryHour + 3) { PrintFormat("[金昼] %02d時以降なので今日は建てない", dt.hour); g_gdEntryDay = today; return; }
       double lots = LotGd();
-      if(lots < 0.01) { g_gdEntryDay = today; return; }                 // 残高不足は静かに見送り
+      if(lots < 0.01) { PrintFormat("[金昼] 残高%.0f円 < %.0f円 なので0枚(見送り)", AccountInfoDouble(ACCOUNT_BALANCE), InpGdJpyPer001); g_gdEntryDay = today; return; }
       if(Halted()) { g_gdEntryDay = today; return; }
       int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
       if(spread > InpGdMaxSpread) { PrintFormat("[金昼] スプレッド%dpt > %d 見送り(再試行)", spread, InpGdMaxSpread); return; }
       double pn = PrevLegPct(InpGoldSymbol, InpGdEntryHour, InpGdExitHour);
+      if(pn == NA_PCT) { if(NaRetry("金昼", InpGdEntryHour, dt, jst)) return; pn = 0.0; }
       if(pn > 0.0) { PrintFormat("[金昼] 直前レッグ%+.2f%% > 0 なので見送り", pn); g_gdEntryDay = today; return; }
       PrintFormat("[金昼] 直前レッグ%+.2f%% → 建てる", pn);
       if(!CanTrade()) { PrintFormat("[金昼][デモ以外] 買いシグナル lot=%.2f（発注せず）", lots); g_gdEntryDay = today; return; }
@@ -224,15 +248,16 @@ void DeTick()
 {
    datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
    if(dt.hour >= InpDeExitHour && HasPos(InpDeSymbol, InpDeMagic) && g_deExitDay != today)
-   { if(CanTrade()) CloseAll(InpDeSymbol, InpDeMagic, "GER40"); g_deExitDay = today; return; }
+   { if(CanTrade()) CloseAll(InpDeSymbol, InpDeMagic, "GER40"); if(!HasPos(InpDeSymbol, InpDeMagic)) g_deExitDay = today; else Print("[GER40] 決済が残っている → 5秒後に再試行"); return; }
    bool okDay = (dt.day_of_week >= 2 && dt.day_of_week <= 5);        // 火〜金JST(=欧州の月〜木の夜)
    if(dt.hour >= InpDeEntryHour && dt.hour < InpDeExitHour && okDay && !HasPos(InpDeSymbol, InpDeMagic) && g_deEntryDay != today)
    {
-      if(dt.hour >= InpDeEntryHour + 3) { g_deEntryDay = today; return; }
+      if(dt.hour >= InpDeEntryHour + 3) { PrintFormat("[GER40] %02d時以降なので今日は建てない", dt.hour); g_deEntryDay = today; return; }
       if(Halted()) { g_deEntryDay = today; return; }
       int spread = (int)SymbolInfoInteger(InpDeSymbol, SYMBOL_SPREAD);
       if(spread > InpDeMaxSpread) { PrintFormat("[GER40] スプレッド%dpt > %d 見送り(再試行)", spread, InpDeMaxSpread); return; }
       double pn = PrevLegPct(InpDeSymbol, InpDeEntryHour, InpDeExitHour);
+      if(pn == NA_PCT) { if(NaRetry("GER40", InpDeEntryHour, dt, jst)) return; pn = 0.0; }
       if(pn > 0.0) { PrintFormat("[GER40] 直前レッグ%+.2f%% > 0 なので見送り", pn); g_deEntryDay = today; return; }
       PrintFormat("[GER40] 直前レッグ%+.2f%% → 建てる", pn);
       double lots = LotDe();
@@ -256,6 +281,7 @@ int OnInit()
    PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
                InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, InpGdOn ? "on" : "off", LotGd(), InpGdJpyPer001, InpGdEntryHour, InpGdExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
+   WarmSeries();
    EventSetTimer(5);
    return INIT_SUCCEEDED;
 }
@@ -327,8 +353,17 @@ void GoldTick()
 {
    datetime lon = NowLondon(); MqlDateTime dt; TimeToStruct(lon, dt); datetime today = DayOf(lon);
    int nowMin = dt.hour * 60 + dt.min, entMin = InpGoldHourLon * 60 + InpGoldMinLon;
+   if(HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryTime == 0)
+   {  // 再起動後に建玉が残っていた: 建て時刻をポジションから復元(サーバー時刻→ロンドン)
+      for(int i = PositionsTotal() - 1; i >= 0; i--)
+      {
+         ulong tk = PositionGetTicket(i);
+         if(tk > 0 && PositionSelectByTicket(tk) && PositionGetString(POSITION_SYMBOL) == InpGoldSymbol && PositionGetInteger(POSITION_MAGIC) == InpGoldMagic)
+         { g_goldEntryTime = (datetime)PositionGetInteger(POSITION_TIME) - (TimeTradeServer() - TimeGMT()) + (UkDst(TimeGMT()) ? 3600 : 0); PrintFormat("[金] 再起動後の建玉 #%I64u を検出 建て時刻(London)=%s", tk, TimeToString(g_goldEntryTime, TIME_DATE | TIME_MINUTES)); break; }
+      }
+   }
    if(HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryTime > 0 && lon >= g_goldEntryTime + InpGoldHoldMin * 60)
-   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGoldMagic, "金"); g_goldEntryTime = 0; return; }
+   { if(CanTrade()) CloseAll(InpGoldSymbol, InpGoldMagic, "金"); if(!HasPos(InpGoldSymbol, InpGoldMagic)) g_goldEntryTime = 0; else Print("[金] 決済が残っている → 5秒後に再試行"); return; }
    if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 2 && !HasPos(InpGoldSymbol, InpGoldMagic) && g_goldEntryDay != today)
    {
       if(Halted()) { g_goldEntryDay = today; return; }
@@ -350,17 +385,18 @@ void IdxTick(string sym, long magic, double lots, int maxSpread, string tag, dat
 {
    datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
    if(dt.hour >= InpJpExitHour && dt.hour < InpJpEntryHour && HasPos(sym, magic) && exitDay != today)
-   { if(CanTrade()) CloseAll(sym, magic, tag); exitDay = today; return; }
+   { if(CanTrade()) CloseAll(sym, magic, tag); if(!HasPos(sym, magic)) exitDay = today; else PrintFormat("[%s] 決済が残っている → 5秒後に再試行", tag); return; }
    bool okDay = (dt.day_of_week >= 1 && dt.day_of_week <= 4) || (InpJpHoldWeekend && dt.day_of_week == 5);
    if(dt.hour >= InpJpEntryHour && okDay && !HasPos(sym, magic) && entryDay != today)
    {
-      if(dt.hour >= InpJpEntryHour + 3) { entryDay = today; return; }
+      if(dt.hour >= InpJpEntryHour + 3) { PrintFormat("[%s] %02d時以降なので今日は建てない", tag, dt.hour); entryDay = today; return; }
       if(Halted()) { entryDay = today; return; }
       int spread = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
       if(spread > maxSpread) { PrintFormat("[%s] スプレッド%dpt > %d 見送り(再試行)", tag, spread, maxSpread); return; }
       if(InpJpPrevNightFilter && !(InpJpMondayFree && dt.day_of_week == 1))
       {
          double pn = PrevNightPct(sym);
+         if(pn == NA_PCT) { if(NaRetry(tag, InpJpEntryHour, dt, jst)) return; pn = 0.0; }
          if(pn > InpJpPrevNightMax) { PrintFormat("[%s] 前夜%+.2f%% > %.2f%% なので今夜は見送り", tag, pn, InpJpPrevNightMax); entryDay = today; return; }
          PrintFormat("[%s] 前夜%+.2f%% → 建てる", tag, pn);
       }
@@ -468,7 +504,7 @@ void Heartbeat()
 }
 void OnTimer()
 {
-   Heartbeat();
+   Heartbeat(); WarmSeries();
    if(InpGoldOn) { GoldGateInit(); GoldGateRecord(); }
    GxTick();
    if(InpGoldOn) GoldTick();
