@@ -1006,6 +1006,16 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             print(f"[paper] 友達ミラー HTTP {fr.status_code}" + ("（webhook失効の疑い・Secret要更新）" if fr.status_code == 404 else ""))
         except Exception as e:
             print(f"[paper] 友達ミラー失敗（本人向けは無傷）: {e}")
+    # 追加ミラー（2026-09-14 本人「売りフェードここにも欲しい」）: Secret DISCORD_WEBHOOK_DAY_EXTRA_URLS に
+    # カンマ区切りで並べた webhook 全部へ本人版と同一の embed を送る。前夜18:50便も15時結果便も同じ関数＝両方届く。
+    for xurl in [u.strip() for u in os.getenv("DISCORD_WEBHOOK_DAY_EXTRA_URLS", "").split(",") if u.strip()]:
+        if xurl in (url, furl):
+            continue
+        try:
+            xr = requests.post(xurl, json=payload, timeout=15)
+            print(f"[paper] 追加ミラー HTTP {xr.status_code}" + ("（webhook失効の疑い・Secret要更新）" if xr.status_code == 404 else ""))
+        except Exception as e:
+            print(f"[paper] 追加ミラー失敗（本人向けは無傷）: {e}")
     return sent_ok
 
 

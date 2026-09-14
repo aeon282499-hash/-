@@ -352,6 +352,13 @@ def main() -> None:
     today_jst = now.date()
     today_str = today_jst.strftime("%Y-%m-%d")
 
+    # 営業日ガード（2026-09-14追加）。日曜9/13 16:40に外部トリガーが report.yml を起動し、
+    # _is_week_last_trading_day(日曜)=True（次の営業日=月曜が別の週）で大中小＋極み全chの
+    # 週次レポートが金曜に続いて2回目送信された実障害。土日祝は帳簿も週次も触らない。
+    if not _is_trading_day(today_jst):
+        print(f"[report] {today_str} は非営業日 → 何もせず終了します")
+        return
+
     # 同日送信済みガード（2026-08-28追加）。Worker外部トリガー(16:40)とGitHub cron保険(15:40設計・
     # 実測16:30前後着)の二本体制になったため、先に走った方だけが配信する。マーカーは main() 完走時のみ
     # 書く＝途中で死んだ日は保険便が再挑戦できる。ファイルは report.yml がコミットして翌日に持ち越す。

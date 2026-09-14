@@ -21,6 +21,12 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v6
 
+      # 2026-09-14: workflow_dispatch は起動時点のSHAを固定するため、16:40に Worker と cron-job.org の
+      # 2経路が同時に起動すると、直列化されても2本目が1本目の last_report_run.json を見ずに再送する。
+      # 走る直前に main の先頭へ追従して、送信済みマーカーを必ず読む。
+      - name: mainの最新へ追従（送信済みマーカーを読む）
+        run: git pull --ff-only origin main || (git fetch origin main && git reset --hard origin/main)
+
       - name: Python 3.12 をセットアップ
         uses: actions/setup-python@v6
         with:

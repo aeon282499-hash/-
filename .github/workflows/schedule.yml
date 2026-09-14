@@ -180,6 +180,7 @@ jobs:
       DISCORD_WEBHOOK_DAY_MONTHLY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_MONTHLY_URL }}
       # 友達用フェード（板の厚い玉のみ・2026-08-12・未設定なら無言スキップ）
       DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
+      DISCORD_WEBHOOK_DAY_EXTRA_URLS: ${{ secrets.DISCORD_WEBHOOK_DAY_EXTRA_URLS }}
       # 2026-09-04監査: この job は main_earnings_preview.py(8:20予備リスト) と main_pead_paper.py(朝の答え合わせ) も
       # 回すのに決算/PEAD の webhook が無く、両方とも「送信スキップ」で黙って未配信だった
       DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
