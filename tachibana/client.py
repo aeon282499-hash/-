@@ -325,34 +325,49 @@ class TachibanaClient:
         except json.JSONDecodeError as e:
             raise TachibanaTransportError(f"JSONでない応答: {text[:300]!r}") from e
 
-    def _next_p_no(self) -> int:
-        # 2026-09-14: 板レコーダー(8:55-10:05/12:25-13:05)とライブ巡回(tachibana_live_flow.py・終日)が
-        # 同じ session/p_no を同時に使うようになったため、p_no はファイルをプロセス間ロックして
-        # read→+1→write する（各プロセスのメモリ値で増やすと p_no が重複/逆行する）。
-        lock_path = self.state_dir / "p_no.lock"
-        try:
-            import msvcrt  # Windows専用（本番PC）
-            with open(lock_path, "a+b") as lk:
-                lk.seek(0)
-                for _ in range(200):
-                    try:
-                        msvcrt.locking(lk.fileno(), msvcrt.LK_NBLCK, 1)
-                        break
-                    except OSError:
-                        time.sleep(0.01)
+    class _CrossProcessLock:
+        """2026-09-14: 板レコーダー(8:55-10:05/12:25-13:05)とライブ巡回(tachibana_live_flow.py・終日)が同じ
+        session/p_no を同時に使う。APIは p_no の単調増加をセッション単位で強制する（p_errno=6
+        「p_no <= 前要求.p_no」＝採番だけ排他しても送信順が入れ替わると落ちる）ので、
+        『採番＋HTTP送信』をまるごとプロセス間ロック（msvcrt・.tachibana/p_no.lock）で直列化する。"""
+
+        def __init__(self, path: Path):
+            self.path, self.fh = path, None
+
+        def __enter__(self):
+            try:
+                import msvcrt  # Windows専用（本番PC）。他OSはロック無し
+            except ImportError:
+                return self
+            self.fh = open(self.path, "a+b")
+            self.fh.seek(0)
+            for _ in range(6000):            # 最長60秒待つ
                 try:
-                    disk = self._load_p_no()
-                    self._p_no = max(self._p_no, disk) + 1
-                    self._save_p_no()
-                finally:
-                    try:
-                        lk.seek(0)
-                        msvcrt.locking(lk.fileno(), msvcrt.LK_UNLCK, 1)
-                    except OSError:
-                        pass
-        except ImportError:
-            self._p_no += 1
-            self._save_p_no()
+                    msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
+                    return self
+                except OSError:
+                    time.sleep(0.01)
+            log.warning("p_no.lock を60秒取れず→ロック無しで続行")
+            return self
+
+        def __exit__(self, *a):
+            if self.fh is not None:
+                try:
+                    import msvcrt
+                    self.fh.seek(0)
+                    msvcrt.locking(self.fh.fileno(), msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    pass
+                self.fh.close()
+            return False
+
+    def _xlock(self) -> "TachibanaClient._CrossProcessLock":
+        return self._CrossProcessLock(self.state_dir / "p_no.lock")
+
+    def _next_p_no(self) -> int:
+        # 呼び出し側（call/login）が _xlock を保持している前提。ディスクの値と自分の値の大きい方＋1。
+        self._p_no = max(self._p_no, self._load_p_no()) + 1
+        self._save_p_no()
         return self._p_no
 
     def _target_for(self, clmid: str) -> str:
@@ -377,7 +392,7 @@ class TachibanaClient:
                 "環境変数 TACHIBANA_ALLOW_ORDERS=1 を明示してください。"
             )
         self.ensure_session()
-        with self._lock:
+        with self._lock, self._xlock():
             body = {"p_no": str(self._next_p_no()), "p_sd_date": self.p_sd_date(), "sCLMID": clmid}
             body.update(params or {})
             body["sJsonOfmt"] = self.json_ofmt
@@ -411,7 +426,7 @@ class TachibanaClient:
     # ---- 認証 ----------------------------------------------------------------
     def login(self) -> dict[str, Any]:
         """公開鍵認証でログインし、仮想URLを復号して session.json に保存する。"""
-        with self._lock:
+        with self._lock, self._xlock():
             self._p_no = 1
             self._save_p_no()
             body = {"p_no": "1", "p_sd_date": self.p_sd_date(), "sCLMID": "CLMAuthLoginRequest",
