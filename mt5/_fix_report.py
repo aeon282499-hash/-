@@ -14,7 +14,12 @@ if not mt5.initialize(timeout=60000):
 ai = mt5.account_info()
 frm = dt.datetime.now() - dt.timedelta(days=days)
 deals = mt5.history_deals_get(frm, dt.datetime.now() + dt.timedelta(days=1)) or []
+# deal.time はサーバー時刻(UTC+2/+3)の epoch。JST = サーバー時刻 - サーバーオフセット + 9h
+import time as _time
+_tk = mt5.symbol_info_tick("GOLD.")
+_srv_off = round((_tk.time - _time.time()) / 3600) * 3600 if _tk else 3 * 3600
 mt5.shutdown()
+def jst(t): return dt.datetime.utcfromtimestamp(t - _srv_off + 9 * 3600)
 
 deals = [d for d in deals if d.magic in MAGICS and d.symbol == MAGICS[d.magic]]
 by_pos = {}
@@ -34,9 +39,9 @@ for pid, ds in by_pos.items():
         continue
     e, x = ent[0], ext[-1]
     pnl = sum(d.profit for d in ds); comm = sum(d.commission for d in ds); swap = sum(d.swap for d in ds)
-    rows.append(dict(position_id=str(pid), system=("金" if e.magic == 20260908 else "日経" if e.magic == 20260909 else "US500" if e.magic == 20260913 else "GER40" if e.magic == 20260914 else "金昼"), date=dt.datetime.fromtimestamp(e.time).strftime("%Y-%m-%d"),
-                     entry_time=dt.datetime.fromtimestamp(e.time).strftime("%H:%M:%S"), exit_time=dt.datetime.fromtimestamp(x.time).strftime("%H:%M:%S"),
-                     lot=e.volume, sell=e.price, cover=x.price, gross_usd_oz=round(e.price - x.price, 2),
+    rows.append(dict(position_id=str(pid), system=("金" if e.magic == 20260908 else "日経" if e.magic == 20260909 else "US500" if e.magic == 20260913 else "GER40" if e.magic == 20260914 else "金昼"), date=jst(e.time).strftime("%Y-%m-%d"),
+                     entry_time=jst(e.time).strftime("%H:%M:%S"), exit_time=jst(x.time).strftime("%H:%M:%S"),
+                     lot=e.volume, sell=e.price, cover=x.price, gross_usd_oz=round((x.price - e.price) if e.type == mt5.DEAL_TYPE_BUY else (e.price - x.price), 2),
                      profit_jpy=round(pnl, 0), commission_jpy=round(comm, 0), swap_jpy=round(swap, 0), net_jpy=round(pnl + comm + swap, 0),
                      exit_reason=x.comment, balance_after=ai.balance))
 new = [r for r in rows if r["position_id"] not in seen]
