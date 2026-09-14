@@ -1,4 +1,19 @@
 {
-  "date": "2026-09-14",
-  "signals": []
+  "date": "2026-09-15",
+  "signals": [
+    {
+      "ticker": "3407.T",
+      "name": "旭化成",
+      "direction": "BUY",
+      "prev_close": 1555.0,
+      "limit_price": 1570,
+      "days_cover": 0.3009328956478472,
+      "vt5": 0.941,
+      "rsi": 34.21,
+      "deviation": -5.08,
+      "vol_ratio": 1.04,
+      "range_ratio": 1.73,
+      "turnover": 7080689600.0
+    }
+  ]
 }

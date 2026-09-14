@@ -1,31 +1,44 @@
 {
-  "date": "2026-09-14",
+  "date": "2026-09-15",
   "signals": [
     {
-      "ticker": "1928.T",
-      "name": "積水ハウス",
+      "ticker": "9065.T",
+      "name": "山九",
       "direction": "BUY",
-      "prev_close": 3361.0,
-      "limit_price": 3390,
-      "days_cover": 0.3647848307195093,
-      "rsi": 43.55,
-      "deviation": -1.5,
-      "vol_ratio": 1.73,
-      "range_ratio": 2.04,
-      "turnover": 12261940800.0
+      "prev_close": 8027.0,
+      "limit_price": 8100,
+      "days_cover": 0.265403390724177,
+      "rsi": 37.0,
+      "deviation": -3.14,
+      "vol_ratio": 5.41,
+      "range_ratio": 1.15,
+      "turnover": 7192243200.0
     },
     {
-      "ticker": "2127.T",
-      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "ticker": "1911.T",
+      "name": "住友林業",
       "direction": "BUY",
-      "prev_close": 627.9,
-      "limit_price": 634,
-      "days_cover": 0.6230387793876679,
-      "rsi": 33.46,
-      "deviation": -5.2,
-      "vol_ratio": 2.2,
-      "range_ratio": 0.68,
-      "turnover": 4183256999.9999995
+      "prev_close": 1259.0,
+      "limit_price": 1271,
+      "days_cover": 0.7103103581803041,
+      "rsi": 38.98,
+      "deviation": -4.24,
+      "vol_ratio": 2.3,
+      "range_ratio": 0.71,
+      "turnover": 11404134000.0
+    },
+    {
+      "ticker": "3407.T",
+      "name": "旭化成",
+      "direction": "BUY",
+      "prev_close": 1555.0,
+      "limit_price": 1570,
+      "days_cover": 0.3009328956478472,
+      "rsi": 34.21,
+      "deviation": -5.08,
+      "vol_ratio": 1.04,
+      "range_ratio": 1.73,
+      "turnover": 7080689600.0
     }
   ]
 }

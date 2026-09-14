@@ -1410,10 +1410,33 @@
       "pnl_pct": 10.137,
       "pnl_yen": 29600,
       "win": true
+    },
+    {
+      "ticker": "3692.T",
+      "name": "ＦＦＲＩセキュリティ",
+      "direction": "SELL",
+      "signal_date": "2026-09-15",
+      "basis_date": "2026-09-14",
+      "prev_close": 6950.0,
+      "limit_price": 6950.0,
+      "status": "pending",
+      "daily_gain": 9.79,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "shares": 100,
+      "dev25": 26.2,
+      "atr_pct": 6.18,
+      "vol_ratio": 4.0,
+      "range_pct": 12.2
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-14",
+  "last_report_date": "2026-09-15",
   "last_monthly_report": "2026-08",
   "last_weekly_report": "2026-W37"
 }

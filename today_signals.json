@@ -1,19 +1,26 @@
 {
-  "date": "2026-09-14",
+  "date": "2026-09-15",
   "signals": [
     {
-      "ticker": "1928.T",
-      "name": "積水ハウス",
+      "ticker": "9065.T",
+      "name": "山九",
       "direction": "BUY",
-      "prev_close": 3361.0,
-      "limit_price": 3390
+      "prev_close": 8027.0,
+      "limit_price": 8100
     },
     {
-      "ticker": "2127.T",
-      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "ticker": "1911.T",
+      "name": "住友林業",
       "direction": "BUY",
-      "prev_close": 627.9,
-      "limit_price": 634
+      "prev_close": 1259.0,
+      "limit_price": 1271
+    },
+    {
+      "ticker": "3407.T",
+      "name": "旭化成",
+      "direction": "BUY",
+      "prev_close": 1555.0,
+      "limit_price": 1570
     }
   ]
 }
