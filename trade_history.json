@@ -1419,6 +1419,26 @@
       "close": 2090.0,
       "pnl": 0.92,
       "win": true
+    },
+    {
+      "date": "2026-09-14",
+      "ticker": "1928.T",
+      "name": "積水ハウス",
+      "direction": "BUY",
+      "open": 3389.0,
+      "close": 3366.0,
+      "pnl": -0.68,
+      "win": false
+    },
+    {
+      "date": "2026-09-14",
+      "ticker": "2127.T",
+      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "direction": "BUY",
+      "open": 629.6,
+      "close": 644.5,
+      "pnl": 2.37,
+      "win": true
     }
   ]
 }

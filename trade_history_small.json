@@ -759,6 +759,16 @@
       "close": 1106.0,
       "pnl": 0.82,
       "win": true
+    },
+    {
+      "date": "2026-09-14",
+      "ticker": "2127.T",
+      "name": "日本Ｍ＆Ａセンターホールディングス",
+      "direction": "BUY",
+      "open": 629.6,
+      "close": 644.5,
+      "pnl": 2.37,
+      "win": true
     }
   ]
 }
