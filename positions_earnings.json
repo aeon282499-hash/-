@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-09-11",
+ "last_signal_date": "2026-09-14",
  "positions": [
   {
    "ticker": "6521.T",
@@ -584,8 +584,14 @@
    "shares": 400,
    "rsi": 38.6,
    "runup5": -3.5,
-   "status": "pending",
-   "prev_close": 1010.0
+   "status": "closed",
+   "prev_close": 1010.0,
+   "entry": 1010.0,
+   "exit_date": "2026-09-14",
+   "exit": 986.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -2.38,
+   "pnl_yen": -9600
   },
   {
    "ticker": "446A.T",
@@ -596,8 +602,14 @@
    "shares": 200,
    "rsi": 48.0,
    "runup5": -17.0,
-   "status": "pending",
-   "prev_close": 1914.0
+   "status": "closed",
+   "prev_close": 1914.0,
+   "entry": 1914.0,
+   "exit_date": "2026-09-14",
+   "exit": 1930.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.84,
+   "pnl_yen": 3200
   },
   {
    "ticker": "9166.T",
@@ -608,8 +620,14 @@
    "shares": 700,
    "rsi": 49.4,
    "runup5": -3.1,
-   "status": "pending",
-   "prev_close": 709.0
+   "status": "closed",
+   "prev_close": 709.0,
+   "entry": 709.0,
+   "exit_date": "2026-09-14",
+   "exit": 709.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.0,
+   "pnl_yen": 0
   }
  ],
  "last_reminder_date": "2026-09-14"
