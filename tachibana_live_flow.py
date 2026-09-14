@@ -59,8 +59,9 @@ TOKEN_FILE = ROOT / ".tachibana" / "chimp_live_token.txt"
 UNIVERSE_MIN_OKU = 0.5          # 20日平均代金 0.5億円以上（≈2,500銘柄・21要求/一巡）
 KABUTAN = ROOT / "kabutan_themes.json"   # 株探テーマ辞書（kabutan_themes.py・週次）
 KABUTAN_MIN_MEMBERS = 3         # 株探テーマは巡回対象の構成銘柄が3以上のものだけ集計
-TOP_MEMBERS = 150               # 構成銘柄リストを載せるテーマ数（並び上位）＋手作り全部
-TOP_SERIES = 60                 # スパークライン系列を載せるテーマ数＋手作り全部
+TOP_MEMBERS = 40                # 構成銘柄リストを載せるテーマ数（並び上位）＋手作り全部（株探10本で169KB→上限を絞る）
+MEMBERS_CAP = 25                # 1テーマの構成銘柄リスト上限（代金順）
+TOP_SERIES = 40                 # スパークライン系列を載せるテーマ数＋手作り全部
 PRICE_COLS = ("pDPP", "tDPP:T", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
 SESSION_START, SESSION_END = "08:58", "15:35"
 # 時刻別の想定進捗（累計代金が1日の何割まで来ているか・U字カーブの近似）。flow の分母に使う。
@@ -321,8 +322,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     top_members = set(g["key"] for g in theme_groups[:TOP_MEMBERS]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
     top_series = set(g["key"] for g in theme_groups[:TOP_SERIES]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
     for g in theme_groups:
-        if g["key"] not in top_members:
-            g["members"] = []
+        g["members"] = g["members"][:MEMBERS_CAP] if g["key"] in top_members else []
 
     # 個別の「いま資金が来ている」上位（テーマ外も拾う）
     liquid = [m for m in stocks.values() if m["tov"] >= 1e8 and m["avg_tov"] > 0]
@@ -362,7 +362,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
         "hot5": [m["code"] for m in hot5], "hot": [m["code"] for m in hot], "gain": [m["code"] for m in gain],
         "lose": [m["code"] for m in lose], "tovtop": [m["code"] for m in tovtop],
         "arena": [c for c in arena_codes if c in stocks],
-        "stocks": {c: stocks[c] for c in keep if c in stocks},
+        "stocks": {c: {k: v for k, v in stocks[c].items() if k != "avg_tov"} for c in keep if c in stocks},
         "series": {"ts": st.series_ts, "themes": {k: v for k, v in st.series["themes"].items() if k in top_series},
                    "sectors": st.series["sectors"]},
     }
