@@ -160,5 +160,20 @@
   "exec_date": "2026-09-08",
   "exec_open": 2185.0,
   "exec_close": 2149.0
+ },
+ {
+  "ticker": "6203.T",
+  "code": "6203",
+  "name": "豊和工業",
+  "d0": "2026-09-14",
+  "close": 2344.0,
+  "r1": -17.58,
+  "volx": 3.92,
+  "runup": 84.7,
+  "tov_oku": 127.7,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
