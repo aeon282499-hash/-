@@ -1272,5 +1272,202 @@
       "rsi": null,
       "price": null
     }
+  },
+  "2026-09-15": {
+    "main:BUY:8830.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:9706.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:4528.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8113.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8117.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:1928.T": {
+      "decision": "HOLD",
+      "rsi": 42.29,
+      "price": 3349.0
+    },
+    "main:BUY:2127.T": {
+      "decision": "HOLD",
+      "rsi": 46.24,
+      "price": 648.7999877929688
+    },
+    "main:BUY:9065.T": {
+      "decision": "HOLD",
+      "rsi": 36.68,
+      "price": 8016.0
+    },
+    "main:BUY:1911.T": {
+      "decision": "HOLD",
+      "rsi": 36.1,
+      "price": 1240.5
+    },
+    "main:BUY:3407.T": {
+      "decision": "HOLD",
+      "rsi": 36.21,
+      "price": 1562.5
+    },
+    "main:SELL:6417.T": {
+      "decision": "HOLD",
+      "rsi": 71.46,
+      "price": 2119.5
+    },
+    "main_mid:BUY:4528.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_mid:BUY:8113.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_mid:BUY:8117.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_mid:BUY:2264.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_mid:BUY:1928.T": {
+      "decision": "HOLD",
+      "rsi": 42.29,
+      "price": 3349.0
+    },
+    "main_mid:BUY:2127.T": {
+      "decision": "HOLD",
+      "rsi": 46.24,
+      "price": 648.7999877929688
+    },
+    "main_mid:BUY:1911.T": {
+      "decision": "HOLD",
+      "rsi": 36.1,
+      "price": 1240.5
+    },
+    "main_mid:BUY:3407.T": {
+      "decision": "HOLD",
+      "rsi": 36.21,
+      "price": 1562.5
+    },
+    "main_mid:SELL:6417.T": {
+      "decision": "HOLD",
+      "rsi": 71.46,
+      "price": 2119.5
+    },
+    "main_small:BUY:4528.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_small:BUY:8113.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_small:BUY:8117.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_small:BUY:2264.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main_small:BUY:2127.T": {
+      "decision": "HOLD",
+      "rsi": 46.24,
+      "price": 648.7999877929688
+    },
+    "main_small:BUY:1911.T": {
+      "decision": "HOLD",
+      "rsi": 36.1,
+      "price": 1240.5
+    },
+    "main_small:BUY:3407.T": {
+      "decision": "HOLD",
+      "rsi": 36.21,
+      "price": 1562.5
+    },
+    "main_small:SELL:6417.T": {
+      "decision": "HOLD",
+      "rsi": 71.46,
+      "price": 2119.5
+    },
+    "kiwami:BUY:8830.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:1928.T": {
+      "decision": "HOLD",
+      "rsi": 42.17,
+      "price": 3348.0
+    },
+    "kiwami:BUY:9065.T": {
+      "decision": "HOLD",
+      "rsi": 36.88,
+      "price": 8022.0
+    },
+    "kiwami_mid:BUY:8830.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:1928.T": {
+      "decision": "HOLD",
+      "rsi": 42.17,
+      "price": 3348.0
+    },
+    "kiwami_mid:BUY:2127.T": {
+      "decision": "HOLD",
+      "rsi": 46.35,
+      "price": 649.0
+    },
+    "kiwami_small:BUY:4528.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:8113.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:2127.T": {
+      "decision": "HOLD",
+      "rsi": 46.35,
+      "price": 649.0
+    },
+    "kiwami_gokujo:BUY:3407.T": {
+      "decision": "HOLD",
+      "rsi": 35.63,
+      "price": 1560.0
+    },
+    "kiwami:SELL:6417.T": {
+      "decision": "HOLD",
+      "rsi": 71.56,
+      "price": 2120.0
+    }
   }
 }
