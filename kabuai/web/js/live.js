@@ -38,6 +38,11 @@ async function liveFetch() {
 function liveApply(j) {
   if (!j || !j.ts) return;
   if (LIVE && LIVE.ts === j.ts && LIVE.got === j.got) { LIVE_AT = Date.now(); liveClock(); return; }
+  // 圧縮行（並び上位外の株探テーマ: [key,label,n,flow5,flow,chg_w,up_ratio,tov]）を通常のグループに展開
+  if (Array.isArray(j.themes_rest)) {
+    j.themes = (j.themes || []).concat(j.themes_rest.map(r => ({ key: r[0], label: r[1], n: r[2], flow5: r[3], flow: r[4], chg_w: r[5], up_ratio: r[6], tov: r[7], src: "kabutan", members: [], desc: "" })));
+    delete j.themes_rest;
+  }
   LIVE = j; LIVE_AT = Date.now(); LIVE_ERR = "";
   L_THEME_OF = {};
   // 銘柄→テーマ（手作りを先に・株探は後ろ）。チップは2つまで出す
@@ -109,7 +114,7 @@ function groupCard(kind, g) {
   const src = g.src === "kabutan" ? ' <span class="chip" style="padding:0 5px;font-size:9px;vertical-align:middle">株探</span>' : "";
   return `<div class="gcard${open ? " open" : ""}">
     <div class="ghead" onclick="liveToggle('${kind}','${esc(g.key)}')">
-      <div class="gname"><b>${esc(g.label)}${src}</b><small>${g.n}銘柄 ・ 代金${oku(g.tov)} ・ 上昇${up}%${g.flow != null ? ` ・ 当日${flowTxt(g.flow)}` : ""}</small>
+      <div class="gname"><b>${esc(g.label)}${src}</b><small>${g.n}銘柄 ・ 代金${g.tov != null ? oku(g.tov) : "—"} ・ 上昇${up}%${g.flow != null ? ` ・ 当日${flowTxt(g.flow)}` : ""}</small>
         <div class="upbar"><i style="width:${up}%"></i></div></div>
       <div class="gstat"><span class="flow ${flowCls(g.flow5)}">${flowTxt(g.flow5)}</span><small>直近5分の資金</small></div>
       <div class="gstat">${chgSpan(g.chg_w, 1)}<small>本日（代金加重）</small></div>

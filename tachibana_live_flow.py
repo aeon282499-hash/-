@@ -60,7 +60,8 @@ UNIVERSE_MIN_OKU = 0.5          # 20日平均代金 0.5億円以上（≈2,500�
 KABUTAN = ROOT / "kabutan_themes.json"   # 株探テーマ辞書（kabutan_themes.py・週次）
 KABUTAN_MIN_MEMBERS = 3         # 株探テーマは巡回対象の構成銘柄が3以上のものだけ集計
 TOP_MEMBERS = 40                # 構成銘柄リストを載せるテーマ数（並び上位）＋手作り全部（株探10本で169KB→上限を絞る）
-MEMBERS_CAP = 25                # 1テーマの構成銘柄リスト上限（代金順）
+MEMBERS_CAP = 20                # 1テーマの構成銘柄リスト上限（代金順）
+TOP_FULL = 150                  # 完全な形で載せるテーマ数（それ以外は themes_rest に圧縮行で載せる・初日実測455KB/分→削減）
 TOP_SERIES = 40                 # スパークライン系列を載せるテーマ数＋手作り全部
 PRICE_COLS = ("pDPP", "tDPP:T", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
 SESSION_START, SESSION_END = "08:58", "15:35"
@@ -303,7 +304,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
             sec_members.setdefault(m["sector"], []).append(c)
     sector_groups = [g for g in (group(s, s, cs) for s, cs in sec_members.items()) if g]
     for g in sector_groups:
-        g["members"] = g["members"][:10]          # セクターは代金上位10だけ（全部だと重い）
+        g["members"] = g["members"][:8]           # セクターは代金上位8だけ（全部だと重い）
     # 🎯土俵（前夜配信・板レコーダーが8:55にgit pull済み）の銘柄も常に載せる＝「土俵のいま」
     arena_codes: list[str] = []
     try:
@@ -323,6 +324,10 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     top_series = set(g["key"] for g in theme_groups[:TOP_SERIES]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
     for g in theme_groups:
         g["members"] = g["members"][:MEMBERS_CAP] if g["key"] in top_members else []
+    full_keys = set(g["key"] for g in theme_groups[:TOP_FULL]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
+    themes_rest = [[g["key"], g["label"], g["n"], g["flow5"], g["flow"], g["chg_w"], g["up_ratio"], g["tov"]]
+                   for g in theme_groups if g["key"] not in full_keys]
+    theme_groups = [g for g in theme_groups if g["key"] in full_keys]
 
     # 個別の「いま資金が来ている」上位（テーマ外も拾う）
     liquid = [m for m in stocks.values() if m["tov"] >= 1e8 and m["avg_tov"] > 0]
@@ -357,7 +362,8 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
         "source": "立花証券e支店API（取引所リアルタイム）", "interval_note": "全銘柄を約1分で一巡・毎分配信",
         "universe": len(uni), "got": len(raw),
         "market": market,
-        "themes": theme_groups, "n_themes_kabutan": sum(1 for g in theme_groups if g["src"] == "kabutan"),
+        "themes": theme_groups, "themes_rest": themes_rest,
+        "n_themes_kabutan": sum(1 for g in theme_groups if g["src"] == "kabutan") + len(themes_rest),
         "sectors": sorted(sector_groups, key=lambda g: -(g["flow5"] if g["flow5"] is not None else -9)),
         "hot5": [m["code"] for m in hot5], "hot": [m["code"] for m in hot], "gain": [m["code"] for m in gain],
         "lose": [m["code"] for m in lose], "tovtop": [m["code"] for m in tovtop],
@@ -432,6 +438,13 @@ def main() -> int:
                 return 1
             time.sleep(60)
     st = FlowState()
+    try:   # 同日の再起動なら系列（スパークライン）を引き継ぐ
+        prev = json.loads((OUT_DIR / "latest.json").read_text(encoding="utf-8"))
+        if prev.get("date") == datetime.now().strftime("%Y-%m-%d") and prev.get("series", {}).get("ts"):
+            st.series_ts = list(prev["series"]["ts"]); st.series = {"themes": dict(prev["series"].get("themes", {})), "sectors": dict(prev["series"].get("sectors", {}))}
+            st._last_series_epoch = time.time(); log.info(f"系列を引き継ぎ {len(st.series_ts)}点")
+    except Exception:  # noqa: BLE001
+        pass
     n_sweep, n_fail = 0, 0
     while True:
         now = datetime.now()
