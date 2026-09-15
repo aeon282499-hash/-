@@ -1,44 +1,18 @@
 {
-  "date": "2026-09-15",
+  "date": "2026-09-16",
   "signals": [
     {
-      "ticker": "9065.T",
-      "name": "山九",
+      "ticker": "7701.T",
+      "name": "島津製作所",
       "direction": "BUY",
-      "prev_close": 8027.0,
-      "limit_price": 8100,
-      "days_cover": 0.265403390724177,
-      "rsi": 37.0,
-      "deviation": -3.14,
-      "vol_ratio": 5.41,
-      "range_ratio": 1.15,
-      "turnover": 7192243200.0
-    },
-    {
-      "ticker": "1911.T",
-      "name": "住友林業",
-      "direction": "BUY",
-      "prev_close": 1259.0,
-      "limit_price": 1271,
-      "days_cover": 0.7103103581803041,
-      "rsi": 38.98,
-      "deviation": -4.24,
-      "vol_ratio": 2.3,
-      "range_ratio": 0.71,
-      "turnover": 11404134000.0
-    },
-    {
-      "ticker": "3407.T",
-      "name": "旭化成",
-      "direction": "BUY",
-      "prev_close": 1555.0,
-      "limit_price": 1570,
-      "days_cover": 0.3009328956478472,
-      "rsi": 34.21,
-      "deviation": -5.08,
-      "vol_ratio": 1.04,
-      "range_ratio": 1.73,
-      "turnover": 7080689600.0
+      "prev_close": 3780.0,
+      "limit_price": 3815,
+      "days_cover": 0.2660263238599449,
+      "rsi": 35.38,
+      "deviation": -5.56,
+      "vol_ratio": 1.76,
+      "range_ratio": 1.68,
+      "turnover": 5438087800.0
     }
   ]
 }

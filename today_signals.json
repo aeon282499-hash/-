@@ -1,26 +1,12 @@
 {
-  "date": "2026-09-15",
+  "date": "2026-09-16",
   "signals": [
     {
-      "ticker": "9065.T",
-      "name": "山九",
+      "ticker": "7701.T",
+      "name": "島津製作所",
       "direction": "BUY",
-      "prev_close": 8027.0,
-      "limit_price": 8100
-    },
-    {
-      "ticker": "1911.T",
-      "name": "住友林業",
-      "direction": "BUY",
-      "prev_close": 1259.0,
-      "limit_price": 1271
-    },
-    {
-      "ticker": "3407.T",
-      "name": "旭化成",
-      "direction": "BUY",
-      "prev_close": 1555.0,
-      "limit_price": 1570
+      "prev_close": 3780.0,
+      "limit_price": 3815
     }
   ]
 }

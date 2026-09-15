@@ -1,11 +1,4 @@
 {
-  "date": "2026-09-15",
-  "signals": [
-    {
-      "ticker": "6417.T",
-      "name": "ＳＡＮＫＹＯ",
-      "direction": "SELL",
-      "prev_close": 2133.0
-    }
-  ]
+  "date": "2026-09-16",
+  "signals": []
 }
