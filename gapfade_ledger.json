@@ -1122,10 +1122,10 @@
     "open": 2095.0,
     "prev_close": 2029.0,
     "shares": 200,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 2068.0,
+    "exit_px": 2095.0,
+    "pnl": -1.406,
+    "yen": -7030
   },
   {
     "date": "2026-09-15",
@@ -1134,9 +1134,9 @@
     "open": 3232.0,
     "prev_close": 3136.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 3175.0,
+    "exit_px": 3188.0,
+    "pnl": -0.509,
+    "yen": -2545
   }
 ]
