@@ -109,6 +109,16 @@
       "close": 2391.5,
       "pnl": 2.76,
       "win": true
+    },
+    {
+      "date": "2026-09-15",
+      "ticker": "6417.T",
+      "name": "ＳＡＮＫＹＯ",
+      "direction": "SELL",
+      "open": 2122.5,
+      "close": 2117.5,
+      "pnl": 0.24,
+      "win": true
     }
   ]
 }

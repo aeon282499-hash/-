@@ -769,6 +769,26 @@
       "close": 644.5,
       "pnl": 2.37,
       "win": true
+    },
+    {
+      "date": "2026-09-15",
+      "ticker": "1911.T",
+      "name": "住友林業",
+      "direction": "BUY",
+      "open": 1257.5,
+      "close": 1233.0,
+      "pnl": -1.95,
+      "win": false
+    },
+    {
+      "date": "2026-09-15",
+      "ticker": "3407.T",
+      "name": "旭化成",
+      "direction": "BUY",
+      "open": 1558.5,
+      "close": 1568.0,
+      "pnl": 0.61,
+      "win": true
     }
   ]
 }
