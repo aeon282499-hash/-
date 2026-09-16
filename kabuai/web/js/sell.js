@@ -39,8 +39,15 @@ function viewSell() {
     <div class="warnbar">⚠️ <b>空売りの推奨ではありません。</b>直近1ヶ月で大きく上昇した銘柄の<b>上昇モメンタムが終わったサイン</b>。保有者の出口検討・高値づかみ回避に。</div>`;
   if (!members.length) return head + `<div class="card"><div class="empty">本日、モメンタム終了の条件に合致した銘柄はありません。</div></div><div class="card note">${esc((sw && sw.note) || "")}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
   const cr = (sw && sw.crash) || null;
-  const crBar = (cr && cr.count) ? `<div class="card danger"><div style="font-weight:700;color:var(--dn)">💥 崩壊ショート（BT合格）${cr.count}件</div>
-      <div class="note" style="margin-top:4px">急騰+${cr.cond.runup20}%以上 × 出来高${cr.cond.vol_x}倍以上 × 当日${cr.cond.r1}%以下 × 5MA割れ初日 × 貸借○ を全部満たす銘柄に💥。検証${esc(cr.stats.period)}: <b>${cr.stats.n}件・勝率${cr.stats.win}%・平均+${cr.stats.avg}%/件・PF${cr.stats.pf}</b>。撃ち方: <b>${esc(cr.how)}</b>。<span class="warn">⚠️ ${esc(cr.caveat)}</span></div></div>` : "";
+  // 💥崩壊ショート: 2026-09-17 本人指示「資金に余裕があったらいい銘柄だけ・寄指で」→ 該当銘柄を枠の中に
+  // 撃ち方つきで並べる（寄指の下限＝前日終値-3%・◎＝代金20億+）。0件の日も「撃つ日じゃない」を出す。
+  const crHits = cr ? members.filter(m => m.crash) : [];
+  const crRow = m => `<a class="pickrow" href="#/detail/${m.code}"><div class="pk-nm"><b>${m.strong ? '<span class="chip dn" style="font-weight:800">◎</span> ' : ""}${esc(m.name)}</b>
+      <small>${m.code} ・ 前日終値 ${yen(m.price)} ・ ${pctTag(m.r1) || "—"} ・ 出来高${m.vol_x != null ? Number(m.vol_x).toFixed(1) : "—"}倍 ・ 代金${m.turnover_oku != null ? Number(m.turnover_oku).toFixed(0) : "—"}億</small>
+      <div class="chips">${m.entry_min != null ? `<span class="chip dn">寄指 売り ${yen(m.entry_min)}以上 → 引け成行で買い戻し</span>` : ""}${m.strong ? '<span class="chip">◎ 代金20億+（PF1.44）</span>' : '<span class="chip">代金20億未満（PF1.07・見送り可）</span>'}</div></div></a>`;
+  const crBar = !cr ? "" : `<div class="card danger"><div style="font-weight:700;color:var(--dn)">💥 崩壊ショート（BT合格）${cr.count || 0}件 <span class="sub">資金に余裕がある時だけ</span></div>
+      ${crHits.length ? `<div class="list">${crHits.map(crRow).join("")}</div>` : `<div class="empty" style="margin-top:6px">本日💥なし＝撃つ日じゃない</div>`}
+      <div class="note" style="margin-top:4px">急騰+${cr.cond.runup20}%以上 × 出来高${cr.cond.vol_x}倍以上 × 当日${cr.cond.r1}%以下 × 5MA割れ初日 × 貸借○ を全部満たす銘柄だけ。検証${esc(cr.stats.period)}: <b>${cr.stats.n}件・勝率${cr.stats.win}%・平均+${cr.stats.avg}%/件・PF${cr.stats.pf}</b>${cr.stats.strong_pf ? `（◎代金20億+はPF${cr.stats.strong_pf}）` : ""}。撃ち方: <b>${esc(cr.how)}</b>。寄指＝寄付だけ有効の指値。ザラ場に残す指値売りは別物（戻りで刺さる）なので使わない。<span class="warn">⚠️ ${esc(cr.caveat)}</span></div></div>`;
   const rows = members.slice().sort((a, b) => (b.crash ? 1 : 0) - (a.crash ? 1 : 0)).map(m => {
     const fresh = (m.below5 == null || m.below5 <= 1);
     const shortChip = m.crash ? ' <span class="chip dn" style="font-weight:800">💥崩壊ショート</span>' : (m.shortable === false ? ' <span class="chip wa">貸借✕</span>' : "");

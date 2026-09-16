@@ -87,6 +87,13 @@ hv = go("#/about"); check("使い方", clean(hv) && hv.includes("ライブの数
 console.log("── 2) 🎯土俵 / 🔻売り / 🐵EOD / 🧭探検 ──");
 hv = go("#/arena"); check("土俵", clean(hv) && hv.includes("土俵"));
 hv = go("#/sell"); check("売り", clean(hv) && hv.includes("フェード") && hv.includes("モメンタム終了"));
+check("売り: 💥枠(0件でも出る)", hv.includes("崩壊ショート") && (hv.includes("本日💥なし") || hv.includes("寄指 売り")));
+// 💥該当日の描画（合成: 先頭メンバーを💥にして寄指行が出るか）
+{ const m0 = DATA.sell_watch && DATA.sell_watch.members && DATA.sell_watch.members[0];
+  if (m0) { const bak = {...m0}; Object.assign(m0, {crash: true, shortable: true, entry_min: Math.round(m0.price * 0.97), strong: (m0.turnover_oku || 0) >= 20});
+    DATA.sell_watch.crash.count = 1; hv = go("#/sell");
+    check("売り: 💥合成1件→寄指行", clean(hv) && hv.includes("寄指 売り") && hv.includes("引け成行で買い戻し") && hv.includes(m0.name));
+    Object.assign(m0, bak); delete m0.entry_min; delete m0.strong; DATA.sell_watch.crash.count = 0; } }
 hv = go("#/momentum"); check("EODランキング", clean(hv) && hv.includes("モメンタム") && (hv.match(/class="mrow/g) || []).length >= 10, `${(hv.match(/class="mrow/g) || []).length}行`);
 check("EOD: 勝ちやすい順張り折りたたみ", hv.includes("勝ちやすい順張り"));
 sandbox.setMomGrade("A"); hv = view(); check("EOD: Aフィルタ", clean(hv)); sandbox.setMomGrade("all");

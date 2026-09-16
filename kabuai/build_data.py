@@ -980,6 +980,11 @@ def build() -> dict:
             m["crash"] = bool(hit and m["shortable"] is True)
             if m["crash"]:
                 n_crash += 1
+                # 2026-09-17 本人指示「資金に余裕があったらいい銘柄だけ・寄指で」:
+                #  寄指の下限＝前日終値-3%（26年で寄りGD-3%以下はPF0.66・見送りが正解＝crash_short_watch GAP_SKIP_PCT）
+                #  ◎＝代金20億以上（2017-26 貸借○: 20億+ PF1.44/+0.83% vs 5〜20億 PF1.07/+0.12%・_bt_kuzure_loose_26y.py）
+                m["entry_min"] = int(round(float(m["price"]) * 0.97))
+                m["strong"] = bool((m.get("turnover_oku") or 0) >= 20)
         except Exception:
             m["crash"] = False
             m["shortable"] = None
@@ -987,10 +992,11 @@ def build() -> dict:
         "count": n_crash,
         "cond": {"runup20": CRASH_RUNUP_MIN, "vol_x": CRASH_VOLX_MIN,
                  "r1": CRASH_R1_MAX, "first_day": True, "shortable": True},
-        "stats": {"n": 425, "per_year": 43, "avg": 0.78, "win": 57.6, "pf": 1.47,
-                  "era1": 0.95, "era2": 0.61, "period": "2016-2026/07"},
-        "how": "翌日の寄りで空売り → その日の大引けで買い戻す（当日完結）",
-        "caveat": "逆日歩は未測定。年+0.78%は逆日歩0.8%で消える水準なので実弾前に要実測。",
+        # 2026-09-17 数字を26年プール(貸借○・2017-26)に更新: _bt_kuzure_loose_26y.py
+        "stats": {"n": 457, "per_year": 18, "avg": 0.51, "win": 55.1, "pf": 1.28,
+                  "era1": 0.28, "era2": 0.71, "period": "2017-2026(貸借○)", "strong_pf": 1.44},
+        "how": "翌営業日の寄指（表示の値段以上＝前日終値-3%より下で寄ったら撃たない）で空売り → 大引け成行で買い戻す（当日完結・持ち越し禁止）",
+        "caveat": "紙運用中（年18件・年+6万の薄いエッジ）。資金に余裕がある時だけ・◎優先で1本・30万目安。踏み上げは5%点-8%/最悪-18%。",
     }
     print(f"[build] 💥崩壊ショート(BT合格): {n_crash}件 / 🔻検出{len(sell_members)}件中")
 
