@@ -1,0 +1,945 @@
+{
+ "date": "2026-09-16",
+ "target_date": "2026-09-17",
+ "generated_at": "2026-09-17 01:47",
+ "orders": [
+  {
+   "system": "🩳フェード",
+   "pri": 1,
+   "code": "4813",
+   "name": "ＡＣＣＥＳＳ",
+   "side": "空売り",
+   "size": "②50万",
+   "order": "寄指 売り 447円以上 → 大引け成行で買い戻し",
+   "note": "前日+9.0% / 乖離+20% / ATR8.3%",
+   "warn": "",
+   "iss": "○"
+  },
+  {
+   "system": "🩳フェード",
+   "pri": 1,
+   "code": "5707",
+   "name": "東邦亜鉛",
+   "side": "空売り",
+   "size": "①100万",
+   "order": "寄指 売り 1,154円以上 → 大引け成行で買い戻し",
+   "note": "前日+9.4% / 乖離+25% / ATR6.9%",
+   "warn": "",
+   "iss": "○"
+  },
+  {
+   "system": "💥崩壊",
+   "pri": 3,
+   "code": "581A",
+   "name": "ＧＯ",
+   "side": "空売り",
+   "size": "50万",
+   "order": "寄指 売り 3,051円以上 → 大引け成行で買い戻し",
+   "note": "前日-8.3% / 出来高2.7倍 / 代金90億 / ◎",
+   "warn": "",
+   "iss": "○"
+  }
+ ],
+ "paper": [],
+ "news": [
+  {
+   "code": "4884",
+   "name": "クリングルファーマ",
+   "kinds": [
+    "契約",
+    "業績修正"
+   ],
+   "time": "17:30",
+   "title": "声帯瘢痕治療薬の日本における独占的販売許諾等に関する契約書の締結に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "284A",
+   "name": "284A",
+   "kinds": [
+    "業績修正"
+   ],
+   "time": "17:00",
+   "title": "業績予想の修正に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "?",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3260",
+   "name": "3260",
+   "kinds": [
+    "上場廃止"
+   ],
+   "time": "17:00",
+   "title": "当社株式の上場廃止の決定及び整理銘柄指定に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "?",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "4760",
+   "name": "アルファ",
+   "kinds": [
+    "上場廃止"
+   ],
+   "time": "17:00",
+   "title": "東京証券取引所における当社株式の上場廃止の決定及び整理銘柄への指定に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3479",
+   "name": "ＴＫＰ",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "16:49",
+   "title": "連結子会社の吸収合併（簡易合併）に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3856",
+   "name": "Ａｂａｌａｎｃｅ",
+   "kinds": [
+    "自社株買い"
+   ],
+   "time": "16:40",
+   "title": "自己株式立会外買付取引（ToSTNeT-3）による自己株式の買付けに関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "8254",
+   "name": "さいか屋",
+   "kinds": [
+    "上場廃止"
+   ],
+   "time": "16:40",
+   "title": "当社株式の上場廃止の決定及び整理銘柄への指定に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "2721",
+   "name": "ジェイホールディングス",
+   "kinds": [
+    "新株予約権"
+   ],
+   "time": "16:30",
+   "title": "第10回新株予約権（行使価額修正条項付）の取得及び消却に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3370",
+   "name": "フジタコーポレーション",
+   "kinds": [
+    "M&A"
+   ],
+   "time": "16:30",
+   "title": "農地所有適格法人である株式会社市川牧場の株式取得（連結子会社化）に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "1860",
+   "name": "戸田建設",
+   "kinds": [
+    "自社株買い"
+   ],
+   "time": "16:00",
+   "title": "一括取得型自己株式取得（ASR）における事後調整完了のお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "1888",
+   "name": "若築建設",
+   "kinds": [
+    "契約"
+   ],
+   "time": "16:00",
+   "title": "コミットメントライン契約に基づく借入の決定について",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "4287",
+   "name": "ジャストプランニング",
+   "kinds": [
+    "業績修正",
+    "子会社"
+   ],
+   "time": "16:00",
+   "title": "連結業績予想の修正に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "4762",
+   "name": "エックスネット",
+   "kinds": [
+    "業績修正"
+   ],
+   "time": "16:00",
+   "title": "「2027年３月期第２四半期（中間期）及び通期業績予想の修正」及び「第２四半期末配当（エクストラ配当）予想の修正」に関す",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "6380",
+   "name": "オリエンタルチエン工業",
+   "kinds": [
+    "提携"
+   ],
+   "time": "16:00",
+   "title": "Ｘ―ＡＩプロジェクト始動及び株式会社ＫＵＲＯＪＩＫＡとの業務提携に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "7043",
+   "name": "アルー",
+   "kinds": [
+    "月次"
+   ],
+   "time": "16:00",
+   "title": "2026年８月度　etudes月次KPI（速報）のお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "8508",
+   "name": "Ｊトラスト",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "16:00",
+   "title": "特定子会社の解散及び清算に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3640",
+   "name": "電算",
+   "kinds": [
+    "上方修正"
+   ],
+   "time": "15:50",
+   "title": "業績予想の修正（上方修正）に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "401A",
+   "name": "401A",
+   "kinds": [
+    "決算"
+   ],
+   "time": "15:45",
+   "title": "2026年7月期　決算短信（REIT）",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "198A",
+   "name": "ＰｏｓｔＰｒｉｍｅ",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "15:30",
+   "title": "（開示事項の変更）完全子会社であるTakaTrade株式会社の吸収合併に係る効力発生日の変更に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "2418",
+   "name": "ツカダ・グローバルホールディング",
+   "kinds": [
+    "提携"
+   ],
+   "time": "15:30",
+   "title": "連結子会社による「リーガロイヤルホテル大阪 ヴィニェット コレクション」の ウエディング事業業務提携に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "265A",
+   "name": "Ｈｍｃｏｍｍ",
+   "kinds": [
+    "特許"
+   ],
+   "time": "15:30",
+   "title": "ドライブバイ方式を活用した社会インフラ監視技術に関する特許出願及び今後の事業展開について",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3135",
+   "name": "マーケットエンタープライズ",
+   "kinds": [
+    "月次"
+   ],
+   "time": "15:30",
+   "title": "月次リユース売上高（速報）",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3167",
+   "name": "ＴＯＫＡＩホールディングス",
+   "kinds": [
+    "M&A"
+   ],
+   "time": "15:30",
+   "title": "（開示事項の変更）株式取得（連結子会社化）の日程延期に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "3321",
+   "name": "ミタチ産業",
+   "kinds": [
+    "業績修正"
+   ],
+   "time": "15:30",
+   "title": "業績予想の修正に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "5388",
+   "name": "クニミネ工業",
+   "kinds": [
+    "業績修正"
+   ],
+   "time": "15:30",
+   "title": "業績予想の修正に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "6286",
+   "name": "靜甲",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "15:30",
+   "title": "当社及び当社子会社の執行役員・フェローに対する譲渡制限付株式制度の導入に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "6696",
+   "name": "トラース・オン・プロダクト",
+   "kinds": [
+    "受注"
+   ],
+   "time": "15:30",
+   "title": "AIrux技術を応用した、省人化DXソリューションの受注に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "7539",
+   "name": "アイナボホールディングス",
+   "kinds": [
+    "配当修正"
+   ],
+   "time": "15:30",
+   "title": "配当予想の修正に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "7602",
+   "name": "レダックス",
+   "kinds": [
+    "M&A"
+   ],
+   "time": "15:30",
+   "title": "株式会社ハリカの事業を承継する会社の株式取得（連結子会社化）に向けたスポンサー契約締結に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "8841",
+   "name": "テーオーシー",
+   "kinds": [
+    "配当修正"
+   ],
+   "time": "15:30",
+   "title": "配当予想の修正（増配）に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "9227",
+   "name": "マイクロ波化学",
+   "kinds": [
+    "新株予約権",
+    "契約"
+   ],
+   "time": "15:30",
+   "title": "第三者割当による第８回新株予約権（行使価額修正条項付）の発行に係る払込完了に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "2982",
+   "name": "ＡＤワークスグループ",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "15:00",
+   "title": "連結子会社におけるホテル運営事業の開始に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "4507",
+   "name": "塩野義製薬",
+   "kinds": [
+    "承認"
+   ],
+   "time": "15:00",
+   "title": "組み換えタンパクワクチン「コブゴーズ筋注」の国内における一部変更承認の取得について",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "4523",
+   "name": "エーザイ",
+   "kinds": [
+    "承認"
+   ],
+   "time": "15:00",
+   "title": "早期アルツハイマー病治療剤「レケンビ」の皮下注製剤「レケンビ皮下注250 mgペン」、日本において承認取得",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": true
+  },
+  {
+   "code": "5923",
+   "name": "高田機工",
+   "kinds": [
+    "特益"
+   ],
+   "time": "14:30",
+   "title": "政策保有株式の売却及び投資有価証券売却益（特別利益）の計上に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "3077",
+   "name": "ホリイフードサービス",
+   "kinds": [
+    "優待",
+    "月次"
+   ],
+   "time": "14:00",
+   "title": "株主優待制度の拡充について",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "5943",
+   "name": "ノーリツ",
+   "kinds": [
+    "特益"
+   ],
+   "time": "14:00",
+   "title": "投資有価証券売却益（特別利益）の計上に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1343",
+   "name": "1343",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS 東証REIT指数連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1545",
+   "name": "1545",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS NASDAQ－１００（Ｒ）（為替ヘッジなし）連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1546",
+   "name": "1546",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS ダウ・ジョーンズ工業株３０種平均株価（為替ヘッジなし）連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1559",
+   "name": "1559",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS タイ株式SET50指数連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1560",
+   "name": "1560",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS FTSEブルサ・マレーシアKLCI連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1678",
+   "name": "1678",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS インド株式指数・Nifty 50連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "1699",
+   "name": "1699",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS NOMURA原油インデックス連動型上場投信 中間決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "2845",
+   "name": "2845",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS NASDAQ－１００（Ｒ）（為替ヘッジあり）連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "2846",
+   "name": "2846",
+   "kinds": [
+    "決算"
+   ],
+   "time": "13:00",
+   "title": "NEXT FUNDS ダウ・ジョーンズ工業株３０種平均株価（為替ヘッジあり）連動型上場投信 決算短信",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "6625",
+   "name": "ＪＡＬＣＯホールディングス",
+   "kinds": [
+    "子会社"
+   ],
+   "time": "12:30",
+   "title": "連結子会社における販売用不動産の売却に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "2164",
+   "name": "地域新聞社",
+   "kinds": [
+    "新株予約権"
+   ],
+   "time": "11:30",
+   "title": "第11回新株予約権（行使価額修正条項付）の取得に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "3512",
+   "name": "日本フエルト",
+   "kinds": [
+    "自社株買い"
+   ],
+   "time": "11:00",
+   "title": "自己株式立会外買付取引（ＴｏＳＴＮｅＴ－３）による自己株式の取得結果に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "×",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "4116",
+   "name": "大日精化工業",
+   "kinds": [
+    "自社株買い"
+   ],
+   "time": "11:00",
+   "title": "自己株式立会外買付取引（ToSTNeT-３）による自己株式の取得結果及び自己株式の取得終了に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  },
+  {
+   "code": "9602",
+   "name": "東宝",
+   "kinds": [
+    "特益"
+   ],
+   "time": "08:30",
+   "title": "投資有価証券売却益（特別利益）計上に関するお知らせ",
+   "price": null,
+   "r1": null,
+   "turnover_oku": null,
+   "sector": null,
+   "iss": "○",
+   "touch": [],
+   "after_close": false
+  }
+ ],
+ "news_total": 51,
+ "news_kinds": {
+  "契約": 3,
+  "業績修正": 6,
+  "上場廃止": 3,
+  "子会社": 7,
+  "自社株買い": 4,
+  "新株予約権": 3,
+  "M&A": 3,
+  "提携": 2,
+  "月次": 3,
+  "上方修正": 1,
+  "決算": 10,
+  "特許": 1,
+  "受注": 1,
+  "配当修正": 2,
+  "承認": 2,
+  "特益": 3,
+  "優待": 1
+ },
+ "earnings_tomorrow": [
+  {
+   "code": "2796",
+   "name": "ファーマライズホールディングス",
+   "type": "第１四半期",
+   "turnover_oku": null,
+   "iss": "○",
+   "r1": null
+  },
+  {
+   "code": "2989",
+   "name": "東海道リート投資法人",
+   "type": "-",
+   "turnover_oku": null,
+   "iss": "×",
+   "r1": null
+  },
+  {
+   "code": "3249",
+   "name": "産業ファンド投資法人",
+   "type": "-",
+   "turnover_oku": null,
+   "iss": "○",
+   "r1": null
+  },
+  {
+   "code": "3269",
+   "name": "アドバンス・レジデンス投資法人",
+   "type": "-",
+   "turnover_oku": null,
+   "iss": "○",
+   "r1": null
+  },
+  {
+   "code": "3463",
+   "name": "いちごホテルリート投資法人",
+   "type": "-",
+   "turnover_oku": null,
+   "iss": "×",
+   "r1": null
+  },
+  {
+   "code": "3471",
+   "name": "三井不動産ロジスティクスパーク投資法人",
+   "type": "-",
+   "turnover_oku": null,
+   "iss": "○",
+   "r1": null
+  }
+ ],
+ "earnings_tomorrow_total": 6,
+ "earnings_today_count": 1,
+ "ladder": [
+  "余力が衝突する日は フェード ＞ 極み売り ＞ 崩壊 の順に残す（崩壊を先に降ろす）",
+  "現金余力30万割れ: フェード②ゼロ＋極み売り新規停止／15万割れ: フェード①50万／戻すのは月末",
+  "現金余力100万到達: フェード①130万・崩壊100万へ",
+  "崩壊は◎(代金20億+)だけ・1日1本・100株が50万を超える高額株は撃たない",
+  "極上: 初日の引けが建値-1%以下なら翌朝処分／2日目の終値が建値+1%超なら同額追加（余力150万ある時だけ）"
+ ]
+}

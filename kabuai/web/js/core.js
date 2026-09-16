@@ -56,7 +56,7 @@ const ROUTES = [];   // {test:(hash)=>bool, view:(hash)=>html, nav:"live"}
 function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
-  ["live", "arena", "sell", "momentum", "explore"].forEach(k => {
+  ["plan", "live", "arena", "sell", "momentum", "explore"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }

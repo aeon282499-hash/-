@@ -1127,6 +1127,15 @@ def build() -> dict:
             except Exception as e:
                 print(f"[build] スコアボードJSON読込も失敗: {e}")
 
+    # ── 📋作戦（2026-09-17 本人依頼「デイトレ用に特化・ニュースを拾って明日狙う銘柄」）──
+    # 実弾4系統の明日の注文＋TDnet当日開示の材料＋明日の決算予定＋資金ラダー。plan_builder.py。非致命。
+    plan = None
+    try:
+        import plan_builder
+        plan = plan_builder.build_plan(rows, sell_watch, arena, data_date, _iss, name_map)
+    except Exception as _e:
+        print(f"[build] 📋作戦はスキップ（非致命）: {_e}")
+
     top = rows[:TOP_N]
     winnable = build_winnable(rows, data_date)
     print(f"[build] 🏆勝ちやすい順張り: 母集団{winnable.get('n_universe')} 価格帯内{winnable.get('n_band','-')} → {len(winnable.get('members', []))}件")
@@ -1162,6 +1171,7 @@ def build() -> dict:
         "signal_track": track,
         "ranking": top,
         "winnable": winnable,    # 🏆勝ちやすい順張り（2026-09-09）
+        "plan": plan,            # 📋作戦（2026-09-17）
     }
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
           f"(skip {n_skip} 履歴不足ほか) / {time.time()-t0:.1f}s")
