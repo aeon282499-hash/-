@@ -63,6 +63,8 @@ TOP_MEMBERS = 40                # 構成銘柄リストを載せるテーマ数�
 MEMBERS_CAP = 20                # 1テーマの構成銘柄リスト上限（代金順）
 TOP_FULL = 150                  # 完全な形で載せるテーマ数（それ以外は themes_rest に圧縮行で載せる・初日実測455KB/分→削減）
 TOP_SERIES = 40                 # スパークライン系列を載せるテーマ数＋手作り全部
+SECTOR_MEMBER_MIN_TOV = 1e8     # セクター構成銘柄は当日代金1億以上を全部載せる（2026-09-17・全銘柄だと660KB/分）
+SECTOR_MEMBERS_CAP = 80         # 1セクターの上限（代金順）
 PRICE_COLS = ("pDPP", "tDPP:T", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
 SESSION_START, SESSION_END = "08:58", "15:35"
 # 時刻別の想定進捗（累計代金が1日の何割まで来ているか・U字カーブの近似）。flow の分母に使う。
@@ -304,7 +306,8 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
             sec_members.setdefault(m["sector"], []).append(c)
     sector_groups = [g for g in (group(s, s, cs) for s, cs in sec_members.items()) if g]
     for g in sector_groups:
-        g["members"] = g["members"][:8]           # セクターは代金上位8だけ（全部だと重い）
+        # 2026-09-17 本人「ちゃんと銘柄を入れて」→ 代金1億以上は全部載せる（上限80・代金順）。1億未満は n との差で「省略」と表示
+        g["members"] = [c for c in g["members"] if stocks[c]["tov"] >= SECTOR_MEMBER_MIN_TOV][:SECTOR_MEMBERS_CAP]
     # 🎯土俵（前夜配信・板レコーダーが8:55にgit pull済み）の銘柄も常に載せる＝「土俵のいま」
     arena_codes: list[str] = []
     try:
@@ -364,7 +367,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
         "market": market,
         "themes": theme_groups, "themes_rest": themes_rest,
         "n_themes_kabutan": sum(1 for g in theme_groups if g["src"] == "kabutan") + len(themes_rest),
-        "sectors": sorted(sector_groups, key=lambda g: -(g["flow5"] if g["flow5"] is not None else -9)),
+        "sectors": sorted(sector_groups, key=lambda g: -(g["chg_w"] if g["chg_w"] is not None else -999)),
         "hot5": [m["code"] for m in hot5], "hot": [m["code"] for m in hot], "gain": [m["code"] for m in gain],
         "lose": [m["code"] for m in lose], "tovtop": [m["code"] for m in tovtop],
         "arena": [c for c in arena_codes if c in stocks],

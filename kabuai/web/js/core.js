@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5）
 const CFG = {
-  VERSION: "5.0.0",
+  VERSION: "5.1.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };

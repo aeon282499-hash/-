@@ -68,6 +68,8 @@ check("ライブ初期描画(受信前でも壊れない)", clean(hv) && hv.incl
 if (LIVEJ) {
   sandbox.liveApply(LIVEJ);
   hv = $get("#live-root").innerHTML;
+  check("ライブ受信後: 既定はセクター(v5.1)", clean(hv) && hv.includes("33業種") && (hv.match(/class="gcard/g) || []).length === 33);
+  sandbox.liveSetSeg("themes"); hv = $get("#live-root").innerHTML;
   check("ライブ受信後: テーマ一覧", clean(hv) && hv.includes("テーマ") && hv.includes("gcard"), `${(hv.match(/class="gcard/g) || []).length}カード`);
   check("ライブ: 市場KPI", hv.includes("市場全体") && hv.includes("kpi"));
   const key = LIVEJ.themes[0].key;
