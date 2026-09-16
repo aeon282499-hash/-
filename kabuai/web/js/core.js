@@ -56,7 +56,7 @@ const ROUTES = [];   // {test:(hash)=>bool, view:(hash)=>html, nav:"live"}
 function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
-  ["plan", "live", "arena", "sell", "momentum", "explore"].forEach(k => {
+  ["plan", "live", "arena", "data"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }
@@ -70,4 +70,14 @@ function render() {
   } catch (e) {
     $("#view").innerHTML = `<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${esc(e.message)}</div></div>`;
   }
+}
+
+// ── v5.2.1 タブ整理（2026-09-17 本人「タブがわかりづらい」）: いつ見るかで4本 ──
+//   📋朝の作戦(寄り前) / 🔥場中ライブ / 🎯前夜の準備(土俵+材料+明日の決算) / 📊データ(売り・EOD・探検はこの中でサブタブ)
+function whenBar(icon, when, what) {
+  return `<div class="banner info" style="margin-bottom:10px"><b>${icon} ${esc(when)}</b> … ${esc(what)}</div>`;
+}
+function dataSubNav(active) {
+  const t = [["sell", "#/sell", "🔻 売り"], ["momentum", "#/momentum", "🐵 EODランキング"], ["explore", "#/explore", "🧭 探検"]];
+  return `<div class="seg">${t.map(([k, h, l]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }

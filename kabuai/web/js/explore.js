@@ -18,13 +18,13 @@ const CAT_DEFS = {
   stop_high: ["🔥", "ストップ高", "値幅制限いっぱいまで買われた銘柄（張り付き含む）"] };
 function expReload(hash) { loadExplorer().then(() => { if ((location.hash || "#/") === hash) render(); }); }
 function viewExplore() {
-  if (!EXP) { expReload("#/explore"); return `<h2>🧭 銘柄探検</h2><div class="sk-wrap"><div class="sk"></div><div class="sk"></div></div>`; }
+  if (!EXP) { expReload("#/explore"); return `${dataSubNav("explore")}<h2>🧭 銘柄探検</h2><div class="sk-wrap"><div class="sk"></div><div class="sk"></div></div>`; }
   const c = EXP.counts || {};
   const cell = k => { const [e, l, d] = CAT_DEFS[k];
     return `<a class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" href="#/explore/${k}"><span style="font-size:20px">${e}</span>
       <span style="flex:1;min-width:0"><b>${l}</b><span class="note" style="display:block">${d}</span></span>
       <b style="font-size:18px;color:${(c[k] || 0) ? "var(--up)" : "var(--mut)"}">${c[k] || 0}</b><span class="muted" style="font-size:11px">件</span></a>`; };
-  return `<h2>🧭 銘柄探検 <span class="sub">${EXP.data_date || ""} 終値時点・優位性は未検証（勝率は出しません）</span></h2>
+  return `${dataSubNav("explore")}<h2>🧭 銘柄探検 <span class="sub">${EXP.data_date || ""} 終値時点・優位性は未検証（勝率は出しません）</span></h2>
     <div class="hh">スイング狙い</div>${["break60", "shodo", "shodo_wait", "nagi", "rising", "oshime"].map(cell).join("")}
     <div class="hh">デイトレ・短期</div>${["rebound", "stop_high"].map(cell).join("")}
     <div class="card note">${esc(EXP.note || "")} 状態は毎日引け後のバッチで更新。</div><p class="disc">${esc(DATA.disclaimer)}</p>`;

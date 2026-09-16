@@ -34,7 +34,7 @@ function sellHero() {
 }
 function viewSell() {
   const sw = DATA.sell_watch, members = (sw && sw.members) || [];
-  const head = `<h2>🔻 売り <span class="sub">${(sw && sw.date) || DATA.data_date || ""} 終値時点</span></h2>${sellHero()}${fadeSection()}
+  const head = `${dataSubNav("sell")}<h2>🔻 売り <span class="sub">${(sw && sw.date) || DATA.data_date || ""} 終値時点</span></h2>${sellHero()}${fadeSection()}
     <div class="hh">📉 モメンタム終了 <span class="sub">上昇が崩れた銘柄</span></div>
     <div class="warnbar">⚠️ <b>空売りの推奨ではありません。</b>直近1ヶ月で大きく上昇した銘柄の<b>上昇モメンタムが終わったサイン</b>。保有者の出口検討・高値づかみ回避に。</div>`;
   if (!members.length) return head + `<div class="card"><div class="empty">本日、モメンタム終了の条件に合致した銘柄はありません。</div></div><div class="card note">${esc((sw && sw.note) || "")}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;

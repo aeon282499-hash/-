@@ -1,12 +1,12 @@
 // boot.js — ルート登録と起動（v5）。ROUTESの並び＝前方一致の優先順。最後が既定(🔥ライブ)。
-route("#/search", "momentum", viewSearch);
-route("#/detail/", "momentum", h => viewDetail(decodeURIComponent(h.split("/")[2])));
+route("#/search", "data", viewSearch);
+route("#/detail/", "data", h => viewDetail(decodeURIComponent(h.split("/")[2])));
 route("#/plan", "plan", viewPlan);
-route("#/sell", "sell", viewSell);
+route("#/sell", "data", viewSell);
 route("#/arena", "arena", viewArena);
-route("#/momentum", "momentum", viewMomentum);
-route("#/explore/", "explore", h => viewExploreList(decodeURIComponent(h.split("/")[2])));
-route("#/explore", "explore", viewExplore);
+route("#/momentum", "data", viewMomentum);
+route("#/explore/", "data", h => viewExploreList(decodeURIComponent(h.split("/")[2])));
+route("#/explore", "data", viewExplore);
 route("#/about", "live", viewAbout);
 route("#/live", "live", viewLive);
 route("#/", "live", viewLive);
