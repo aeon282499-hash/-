@@ -24,7 +24,7 @@ def post(text):
     try: urllib.request.urlopen(req,timeout=20); log('posted: '+text.splitlines()[0])
     except Exception as e: log(f'post失敗 {e}: {text[:80]}')
 def mt5_running():
-    out=subprocess.run(['tasklist','/FI','IMAGENAME eq terminal64.exe'],capture_output=True).stdout.decode('cp932','ignore')
+    out=subprocess.run(['tasklist','/FI','IMAGENAME eq terminal64.exe'],capture_output=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)).stdout.decode('cp932','ignore')
     return 'terminal64.exe' in out
 def start_mt5():
     subprocess.Popen([os.path.join(r'C:\Program Files\XM Trading MT5','terminal64.exe'), '/config:'+os.path.join(HERE,'_start.ini')])
@@ -59,7 +59,7 @@ elif mode=='entry':
 elif mode=='test':
     post('🛠 XM監視テスト: MT5稼働中・EAハートビートOK。今後ここに「MT5停止」「建て漏れ」「朝の約定記録(9:20)」を流す。専用chが欲しければwebhookを作って .env の DISCORD_WEBHOOK_XM_URL に入れる。')
 elif mode=='daily':
-    r=subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True).stdout.decode('utf-8','ignore') if False else subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True)
+    r=subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)).stdout.decode('utf-8','ignore') if False else subprocess.run([sys.executable,'-X','utf8',os.path.join(HERE,'_fix_report.py'),'--days','1'],capture_output=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     out=[l for l in r.stdout.decode('utf-8','ignore').splitlines() if l.startswith('[')]
     age,body=heartbeat_age()
     txt='📒 XM 朝の記録\n'+('\n'.join(out) if out else '新規約定なし')+f'\n{body or "ハートビート無し"}'

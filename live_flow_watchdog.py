@@ -58,7 +58,7 @@ def post(text: str) -> None:
 
 def task_running() -> bool:
     try:
-        r = subprocess.run(["powershell", "-NoProfile", "-Command", f"(Get-ScheduledTask -TaskName '{TASK}').State"],
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", f"(Get-ScheduledTask -TaskName '{TASK}').State"], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                            capture_output=True, text=True, timeout=30)
         return "Running" in r.stdout
     except Exception:  # noqa: BLE001
@@ -66,7 +66,7 @@ def task_running() -> bool:
 
 
 def start_task() -> None:
-    subprocess.run(["powershell", "-NoProfile", "-Command", f"Start-ScheduledTask -TaskName '{TASK}'"], timeout=30)
+    subprocess.run(["powershell", "-NoProfile", "-Command", f"Start-ScheduledTask -TaskName '{TASK}'"], timeout=30, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def main() -> int:
