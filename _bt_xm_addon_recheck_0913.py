@@ -1,3 +1,4 @@
+# ⚠️2026-09-17判明: S[sym]["swap_long"]は負値(コスト)で格納されているのに legs() は「- swap_long」で引く＝スワップを収入として計上するバグ。正しい数字は _bt_xm_grid_0917.py(正値に置換+9/14-16実測)を見ること。
 """月曜(JST)の夜はフィルタ無し案: JP/US(月曜=週末レッグ後)・GER40(火曜JST=欧州月曜夜)。EA定義(直前レッグ・週末レッグ含む)でレッグを作り直し、ポートフォリオE[log]で比較。"""
 import pandas as pd, numpy as np
 D=pd.read_pickle('_xm_multi_hist.pkl'); H=D['h1']; S=D['spec']; JPY=148.0

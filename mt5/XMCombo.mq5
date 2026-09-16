@@ -18,7 +18,7 @@ input double InpStopBelowBalance = 25000;   // 残高がこの円を割ったら
 //--- A) 金 15分ショート
 input bool   InpGoldOn        = true;       // 金ショートを動かす
 input string InpGoldSymbol    = "GOLD.";    // 銘柄(Zero口座は GOLD.)
-input double InpGoldJpyPer001 = 50000;      // 0.01lotあたりの必要残高(円)
+input double InpGoldJpyPer001 = 25000;      // 0.01lotあたりの必要残高(円)。9/17: ゲート込みBSで5万→2.5万はE[log]+0.65・下位10%/DD/停止は不変(ゲートが悪い時期を切るため)・次段1.25万は実弾のゲート成績30回で判断
 input double InpGoldLotMax    = 1.00;       // 上限ロット
 input double InpGoldStopUsd   = 10.0;       // 損切り幅($/oz・0=無し)
 input int    InpGoldMaxSpread = 40;         // 許容スプレッド(pt=0.01$)
@@ -43,7 +43,7 @@ input int    InpJpMaxSpread   = 20;         // 許容スプレッド(pt=1円)
 input long   InpJpMagic       = 20260909;
 input int    InpJpAddHour     = 1;          // 追加判定の時刻JST(翌日01:00)・0=無効
 input double InpJpAddPct      = -0.5;       // 建値比がこの%以下なら同量を追加(BT: 01時≤-0.5% 残り区間+0.165%/回 t2.8 勝9/11・00-01時/-0.25〜-1.0で高原)
-input double InpJpAddMult     = 1.0;        // 追加量(元玉の倍率)
+input double InpJpAddMult     = 2.0;        // 追加量(元玉の倍率)。9/17: スワップ符号修正+実測コストで×1.0→×2.0はE[log]+0.36・DD中央-54%不変・停止0%・下位10%21→31万・最悪夜-1.8→-2.6万(6.7枚時)
 
 input bool   InpUsOn          = true;       // US500夜ドリフトを動かす(3本目・日経と同型・前夜≤0)
 input string InpUsSymbol      = "US500Cash";
