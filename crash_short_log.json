@@ -173,7 +173,11 @@
   "tov_oku": 127.7,
   "ma5_up": true,
   "loanable": "○",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": -5.948,
+  "result_yen": -17844,
+  "exec_date": "2026-09-15",
+  "exec_open": 2337.0,
+  "exec_close": 2476.0,
+  "gap_pct": -0.3
  }
 ]
