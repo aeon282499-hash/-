@@ -1,18 +1,4 @@
 {
-  "date": "2026-09-16",
-  "signals": [
-    {
-      "ticker": "7701.T",
-      "name": "島津製作所",
-      "direction": "BUY",
-      "prev_close": 3780.0,
-      "limit_price": 3815,
-      "days_cover": 0.2660263238599449,
-      "rsi": 35.38,
-      "deviation": -5.56,
-      "vol_ratio": 1.76,
-      "range_ratio": 1.68,
-      "turnover": 5438087800.0
-    }
-  ]
+  "date": "2026-09-17",
+  "signals": []
 }
