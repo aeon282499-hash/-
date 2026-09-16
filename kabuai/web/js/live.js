@@ -61,6 +61,7 @@ function liveRefresh() {
   const el = document.getElementById("live-root");
   if (el) el.innerHTML = liveBody();
   const a = document.getElementById("arena-live"); if (a && typeof arenaLiveInner === "function") a.innerHTML = arenaLiveInner();
+  const pl = document.getElementById("plan-live"); if (pl && typeof planLiveInner === "function") pl.innerHTML = planLiveInner();   // 📋作戦のいま（v5.2.2）
 }
 function liveClock() { const el = document.getElementById("live-clock"); if (el) el.innerHTML = liveClockInner(); }
 

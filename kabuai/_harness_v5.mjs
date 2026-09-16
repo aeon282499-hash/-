@@ -90,8 +90,13 @@ console.log("── 2) 🎯土俵 / 🔻売り / 🐵EOD / 🧭探検 ──");
 hv = go("#/arena"); check("土俵", clean(hv) && hv.includes("土俵"));
 hv = go("#/plan"); check("作戦(データ無しでも落ちない)", clean(hv) && hv.includes("作戦"));
 { const bak = DATA.plan; DATA.plan = JSON.parse(fs.readFileSync("_plan_sample.json", "utf8"));
-  hv = go("#/plan"); check("作戦: サンプル注入", clean(hv) && hv.includes("実弾の注文") && hv.includes("資金ラダー") && hv.includes("寄指") && hv.includes("寄り前に見る"));
+  hv = go("#/plan"); check("作戦: サンプル注入", clean(hv) && hv.includes("実弾の注文") && hv.includes("資金ラダー") && hv.includes("寄指"));
   hv = go("#/arena"); check("前夜の準備: 材料＋明日の決算", clean(hv) && hv.includes("材料") && hv.includes("明日の決算発表") && hv.includes("前夜"));
+  hv = go("#/plan"); check("作戦: 今やること＋保有＋答え合わせ", clean(hv) && /寄り前|場中|引け|前夜|休場|過去分/.test(hv) && hv.includes("保有中の玉と出口") && hv.includes("直近の答え合わせ") && hv.includes("現金余力"));
+  sandbox.planSetCash("20"); hv = view(); check("作戦: 現金余力20万→②ゼロ・崩壊なし", clean(hv) && hv.includes("②ゼロ") && hv.includes("今日は出さない"));
+  sandbox.planSetCash("120"); hv = view(); check("作戦: 現金余力120万→①130・崩壊100万", clean(hv) && hv.includes("①130万") && hv.includes("崩壊 100万"));
+  sandbox.planSetCash(""); localStorageShim.removeItem("kabuai_cash");
+  if (LIVEJ) { vm.runInContext("LIVE = " + JSON.stringify(LIVEJ), sandbox); const live = sandbox.planLiveInner(); check("作戦のいま(ライブ注入)", clean(live)); }
   DATA.plan = { ...DATA.plan, orders: [], paper: [], news: [], earnings_tomorrow: [] }; hv = go("#/plan"); check("作戦: 全部ゼロ件", clean(hv) && hv.includes("撃つ玉なし"));
   DATA.plan = bak; }
 hv = go("#/sell"); check("売り", clean(hv) && hv.includes("フェード") && hv.includes("モメンタム終了") && hv.includes("EODランキング"));

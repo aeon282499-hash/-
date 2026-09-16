@@ -140,6 +140,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 "note": " / ".join(x for x in (f"前日+{p.get('gain', 0):.1f}%", f"乖離+{p.get('dev25', 0):.0f}%", f"ATR{p.get('atr_pct', 0):.1f}%", reg) if x),
                 "warn": ("🚫売り禁＝ハイカラ在庫が要る（料の帯は配信を見る）" if p.get("jsf_stop") else "") or ("⚠️明日決算発表" if p["code"] in earn_codes else ""),
                 "iss": p.get("short_mark") or _iss(p["code"]),
+                "prev": (by_code.get(p["code"]) or {}).get("price"),
             })
     except Exception as e:
         print(f"[plan] フェード節スキップ: {e}")
@@ -155,7 +156,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 "order": f"寄指 売り {int(m['entry_min']):,}円以上 → 大引け成行で買い戻し" if m.get("entry_min") else "寄り成行 空売り → 大引け成行で買い戻し",
                 "note": " / ".join(x for x in (f"前日{m.get('r1', 0):+.1f}%", f"出来高{m.get('vol_x', 0):.1f}倍", f"代金{m.get('turnover_oku', 0):.0f}億", "◎" if m.get("strong") else "") if x),
                 "warn": ("高額株＝100株が50万超なら撃たない" if (m.get("price") or 0) * 100 > 500000 else "") or ("⚠️明日決算発表" if m["code"] in earn_codes else ""),
-                "iss": "○",
+                "iss": "○", "prev": m.get("price"),
             }
             (orders if m.get("strong") else paper).append(row)
     except Exception as e:
@@ -172,7 +173,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 "system": system, "pri": pri, "code": c4, "name": s.get("name") or _nm(c4), "side": side, "size": size,
                 "order": how(s), "note": " / ".join(x for x in (f"前日終値 {int(round(s.get('prev_close') or 0)):,}円", (f"RSI{s['rsi']:.0f}" if s.get("rsi") is not None else ""), (f"乖離{s['deviation']:+.1f}%" if s.get("deviation") is not None else "")) if x),
                 "warn": "⚠️明日決算発表＝保有中に決算をまたぐ" if c4 in earn_codes else "",
-                "iss": _iss(c4),
+                "iss": _iss(c4), "prev": s.get("prev_close"),
             })
     try:
         _sig_rows("today_signals_gokujo.json", "👑極上", 2, GOKUJO_SIZE, "買い",
@@ -240,11 +241,62 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                           "turnover_oku": r.get("turnover_oku"), "iss": _iss(c4), "r1": r.get("r1")})
     earn_rows.sort(key=lambda e: -(e["turnover_oku"] or 0))
 
-    print(f"[plan] {target_s}分: 注文{len(orders)}件 紙{len(paper)}件 材料{len(news)}社 明日決算{len(earn_rows)}社")
+    # ⑥ 保有中の玉と出口（実弾の3日持ち系統: 👑極上=shadow_exit_gokujo.json / 🔻極み売り=positions_sell.json）
+    holdings: list[dict] = []
+    try:
+        def _exit_day(entry_date: str) -> str:
+            d = datetime.strptime(entry_date, "%Y-%m-%d").date()
+            return next_trading_day(next_trading_day(d)).strftime("%Y-%m-%d")   # 3営業日目
+        for fname, system, side, size, rule in (
+                ("shadow_exit_gokujo.json", "👑極上", "買い", "150万", "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%"),
+                ("positions_sell.json", "🔻極み売り", "空売り", "100万", "3営業日目の大引けで買い戻し／損切り+2.5%")):
+            j = _load_json(fname) or []
+            lst = j.get("positions") if isinstance(j, dict) else j
+            for x in lst or []:
+                if x.get("status") != "open":
+                    continue
+                c4 = str(x.get("ticker", "")).replace(".T", "")[:4]
+                ed = str(x.get("entry_date") or x.get("signal_date") or "")
+                xd = _exit_day(ed) if ed else ""
+                holdings.append({
+                    "system": system, "code": c4, "name": x.get("name") or _nm(c4), "side": side, "size": size,
+                    "entry_date": ed, "entry_open": x.get("entry_open"), "hold_days": x.get("hold_days"),
+                    "exit_date": xd, "exit_today": xd == target_s, "rule": rule,
+                    "unrealized": x.get("unrealized_pnl"), "prev_close": x.get("prev_close"),
+                    "warn": "⚠️明日決算発表" if c4 in earn_codes else "",
+                })
+        holdings.sort(key=lambda h: (not h["exit_today"], h["system"]))
+    except Exception as e:
+        print(f"[plan] 保有節スキップ: {e}")
+
+    # ⑦ 直近の答え合わせ（各系統の帳簿・直近10本＝紙/実弾の別は表示で明記）
+    recent: list[dict] = []
+    def _rec(system: str, kind: str, items: list[tuple[str, str, float]]):
+        items = [x for x in items if x[2] is not None][-10:]
+        if not items:
+            return
+        w = sum(1 for x in items if x[2] > 0)
+        recent.append({"system": system, "kind": kind, "n": len(items), "win": w,
+                       "avg": round(sum(x[2] for x in items) / len(items), 2),
+                       "last": [{"date": x[0], "name": x[1], "pnl": round(x[2], 2)} for x in items[-5:][::-1]]})
+    try:
+        j = _load_json("positions_day_paper.json") or {}
+        _rec("🩳フェード", "紙①100/②50（実弾と同ルール）", [(x.get("entry_session") or x.get("signal_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (j.get("positions") or []) if x.get("status") == "closed"])
+        j = _load_json("crash_short_log.json") or []
+        _rec("💥崩壊", "紙30万（見送り除く・◎以外も含む）", [(x.get("exec_date") or x.get("d0") or "", x.get("name", ""), x.get("result_pct")) for x in j if x.get("result_pct") is not None and not x.get("skipped")])
+        j = _load_json("shadow_exit_gokujo.json") or []
+        lst = j.get("positions") if isinstance(j, dict) else j
+        _rec("👑極上", "帳簿150万", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
+        j = _load_json("positions_sell.json") or []
+        _rec("🔻極み売り", "帳簿100万×3", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in j if x.get("status") == "closed"])
+    except Exception as e:
+        print(f"[plan] 答え合わせ節スキップ: {e}")
+
+    print(f"[plan] {target_s}分: 注文{len(orders)}件 紙{len(paper)}件 保有{len(holdings)}件 材料{len(news)}社 明日決算{len(earn_rows)}社")
     return {
         "date": data_date, "target_date": target_s,
         "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M"),
-        "orders": orders, "paper": paper,
+        "orders": orders, "paper": paper, "holdings": holdings, "recent": recent,
         "news": news[:120], "news_total": len(news), "news_kinds": kinds,
         "earnings_tomorrow": earn_rows[:60], "earnings_tomorrow_total": len(earn_rows),
         "earnings_today_count": len(earn_today),
