@@ -1469,6 +1469,16 @@
       "close": 1568.0,
       "pnl": 0.61,
       "win": true
+    },
+    {
+      "date": "2026-09-16",
+      "ticker": "7701.T",
+      "name": "島津製作所",
+      "direction": "BUY",
+      "open": 3811.0,
+      "close": 3833.0,
+      "pnl": 0.58,
+      "win": true
     }
   ]
 }
