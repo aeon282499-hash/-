@@ -383,6 +383,43 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     }
 
 
+MINUTES_DIR = OUT_DIR / "minutes"       # 毎分の全銘柄断面（1行=1巡・fibo_daytrade.py が5分足にする）
+FIBO_LIVE = OUT_DIR / "fibo_live.json"   # fibo_daytrade.py --live が書く候補（payload["fibo"] に同梱）
+_MIN_KEYS = ("pDPP", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
+
+
+def append_minutes(raw: dict[str, dict], ts: str, log) -> None:
+    """1巡ぶんの断面を live_flow/minutes/YYYY-MM-DD.jsonl に1行追記（約2,500銘柄・約150KB/分）。失敗は握る。"""
+    try:
+        MINUTES_DIR.mkdir(parents=True, exist_ok=True)
+        row = {"ts": ts, "s": {}}
+        for code, r in raw.items():
+            vals = []
+            for k in _MIN_KEYS:
+                v = r.get(k)
+                try:
+                    vals.append(float(v) if v not in (None, "") else None)
+                except (TypeError, ValueError):
+                    vals.append(None)
+            row["s"][code] = vals
+        with open(MINUTES_DIR / f"{ts[:10]}.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"minutes追記失敗: {e}")
+
+
+def attach_fibo(payload: dict, log) -> None:
+    """fibo_daytrade.py --live の出力（3分以内の物だけ）を payload['fibo'] に同梱。銘柄は stocks に無くても良い（fibo側が値を持つ）。"""
+    try:
+        if not FIBO_LIVE.exists():
+            return
+        if time.time() - FIBO_LIVE.stat().st_mtime > 180:
+            return
+        payload["fibo"] = json.loads(FIBO_LIVE.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"fibo同梱失敗: {e}")
+
+
 def publish(payload: dict, log) -> bool:
     if not TOKEN_FILE.exists():
         log.warning("配信トークンなし（.tachibana/chimp_live_token.txt）→ 配信スキップ")
@@ -466,6 +503,8 @@ def main() -> int:
                 raise RuntimeError("時価が1件も取れない（API/セッション異常の疑い）")
             payload = aggregate(raw, uni, themes, st, datetime.now())
             n_sweep += 1
+            append_minutes(raw, payload["ts"], log)        # 毎分の断面を日別ファイルへ（フィボ押し目の5分足素材）
+            attach_fibo(payload, log)                        # fibo_daytrade.py が書く候補を同梱（無ければ何もしない）
             dump = Path(a.dump) if a.dump else OUT_DIR / "latest.json"
             dump.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
             top = payload["themes"][:3]

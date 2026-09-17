@@ -189,6 +189,7 @@ function liveBody() {
   const arena = (LIVE.arena || []).map(c => LIVE.stocks[c]).filter(Boolean);
   const arenaStrip = arena.length ? `<div class="hh">🎯 土俵のいま <span class="sub">前夜リストの銘柄・タップで詳細</span></div>
       <div class="card tight">${arena.map(m => stockRow(m, { showSector: true })).join("")}</div>` : "";
+  const fiboStrip = fiboInner();
   return `
     <div class="livebar" id="live-clock">${liveClockInner()}</div>
     ${dayNote}
@@ -203,6 +204,7 @@ function liveBody() {
       <div class="adbar"><i style="width:${advPct}%"></i></div>
     </div>
     ${arenaStrip}
+    ${fiboStrip}
     <div class="seg">${seg("sectors")}🏭 セクター</a>${seg("themes")}🔥 テーマ</a>${seg("stocks")}🚀 個別</a></div>
     ${body}
     <div class="legend"><b>本日</b>＝前日終値比の騰落率（セクター/テーマは代金加重）。<b>5分</b>＝直近5分の値動き。<b>上昇の割合</b>＝構成銘柄のうち上がっている割合。<b>資金の勢い</b>＝売買代金がふだんの何倍か（🔥は×2以上＝資金集中）。セクターの構成銘柄は当日代金1億以上を代金順に最大80本。数字は取引所の現在値（立花証券API）で約1分ごと。予測や推奨ではなく観測。</div>
@@ -212,3 +214,22 @@ function liveExplain() {
   return `<div class="card note">🔥ライブは、平日の場中にPC側の巡回（立花証券API・約1分で全銘柄一巡）が動いている間だけ流れます。EODの各タブ（🎯土俵・🔻売り・🐵EOD・🧭探検）はいつでも見られます。</div>`;
 }
 function viewLive() { return `<div id="live-root">${liveBody()}</div>`; }
+
+// ── 📐 フィボ押し目候補（fibo_daytrade.py --live が書き、LiveFlow が payload.fibo に同梱・2026-09-17）──
+// 紙・通知のみ。表示は「高値確定した波」とその押しの状態、紙の建玉。59日再生では基準線を超えていない（採否は本人判断）。
+function fiboInner() {
+  const f = LIVE && LIVE.fibo; if (!f || !(f.candidates || []).length && !(f.trades || []).length) return "";
+  const st = { entered: ["chip dn", "エントリー"], watch: ["chip wa", "押し待ち"], skip: ["chip", "見送り"] };
+  const row = c => { const s = st[c.status] || st.skip, sig = c.signal, fb = c.fib || {};
+    return `<a class="pickrow" href="#/detail/${c.code}"><div class="pk-nm"><b><span class="${s[0]}" style="font-weight:800">${s[1]}</span> ${esc(c.name)} <span class="chip">${esc(c.label)}／ランク${esc(c.rank)}</span></b>
+      <small>${c.code} ・ 起点${yen(c.origin)}→高値${yen(c.high)}（+${c.rise}%・${c.mins != null ? c.mins + "分" : "—"}・出来高${c.vol_ratio != null ? c.vol_ratio + "倍" : "?"}）${c.pull_low != null ? ` ・ 押し安値${yen(c.pull_low)}（${c.retrace}%）` : ""}</small>
+      <div class="chips"><span class="chip">38.2 ${yen(fb["38.2"])}</span><span class="chip">50 ${yen(fb["50"])}</span><span class="chip">61.8 ${yen(fb["61.8"])}</span><span class="chip">78.6 ${yen(fb["78.6"])}</span></div>
+      ${sig ? `<div class="chips"><span class="chip dn">エントリー ${yen(sig.entry)}／損切り ${yen(sig.stop)}／利確 ${yen(sig.tp1)}→${yen(sig.tp2)}／RR${sig.rr}／重なり${sig.overlap}点${(sig.overlap_items || []).length ? "（" + sig.overlap_items.join("・") + "）" : ""}</span></div>` : ""}
+      ${c.note ? `<div class="note" style="margin-top:2px">${esc(c.note)}</div>` : ""}</div></a>`; };
+  const trades = (f.trades || []).map(t => `<span class="chip ${t.closed ? (t.pnl_pct > 0 ? "pos" : "dn") : "wa"}">${esc(t.name)} ${t.closed ? `${esc(t.exit_type)} ${fmtPct1(t.pnl_pct)}` : `建値${yen(t.entry)} 損切${yen(t.stop)}${t.half ? "（半分利確済）" : ""}${t.last ? " 現在" + yen(t.last) : ""}`}</span>`).join("");
+  const cands = (f.candidates || []).filter(c => c.status !== "skip").slice(0, 12);
+  return `<div class="hh">📐 フィボ押し目候補 <span class="sub">${esc((f.ts || "").slice(11, 16))} 押し待ち${f.n_watch || 0}件・紙</span></div>
+    <div class="warnbar">⚠️ <b>紙・通知のみ（発注はしない）。</b>59日の再生では基準線を超えていません（n22・PF0.67）。表示は「その日最初の波の高値確定→押し」の観測。</div>
+    ${cands.length ? `<div class="card tight">${cands.map(row).join("")}</div>` : `<div class="card"><div class="empty">高値確定した波はまだありません。</div></div>`}
+    ${trades ? `<div class="chips" style="margin-top:6px">${trades}</div>` : ""}`;
+}

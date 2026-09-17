@@ -82,6 +82,12 @@ if (LIVEJ) {
   sandbox.liveSetSeg("stocks"); hv = $get("#live-root").innerHTML; check("ライブ: 個別(今きてる)", clean(hv));
   for (const t of ["hot", "gain", "tovtop", "lose"]) { sandbox.liveSetTab(t); hv = $get("#live-root").innerHTML; check(`ライブ: 個別タブ ${t}`, clean(hv) && hv.includes("srow")); }
   check("ライブ: 時計", clean(sandbox.liveClockInner()) && sandbox.liveClockInner().includes(LIVEJ.hhmm));
+  { // 📐フィボ候補（合成 payload.fibo）
+    const fb = { ts: "2026-09-17 10:25:00", n_watch: 1, candidates: [{ code: "9130", name: "共栄タンカー", label: "ギャップ", rank: "強", origin: 1806, high: 2099, rise: 16.2, mins: 25, vol_ratio: 11.1, fib: { "38.2": 1987, "50": 1952, "61.8": 1918, "78.6": 1869 }, pull_low: 1911, retrace: 64, status: "entered", note: "★エントリー 1948", signal: { entry: 1948, stop: 1890, tp1: 2006, tp2: 2045, rr: 1.0, overlap: 0, overlap_items: [] } }], trades: [{ code: "9130", name: "共栄タンカー", entry: 1948, stop: 1890, half: false, last: 1960, closed: false }] };
+    vm.runInContext("LIVE.fibo = " + JSON.stringify(fb), sandbox); sandbox.liveRefresh(); hv = $get("#live-root").innerHTML;
+    check("ライブ: 📐フィボ候補(合成)", clean(hv) && hv.includes("フィボ押し目候補") && hv.includes("共栄タンカー") && hv.includes("エントリー"));
+    vm.runInContext("delete LIVE.fibo", sandbox); sandbox.liveRefresh(); hv = $get("#live-root").innerHTML; check("ライブ: フィボ無しでも通る", clean(hv) && !hv.includes("フィボ押し目候補"));
+  }
   sandbox.liveSetSeg("themes");
 } else console.log("  (live_flow/latest.json なし→ライブ受信後の検査はスキップ)");
 hv = go("#/about"); check("使い方", clean(hv) && hv.includes("ライブの数字"));
