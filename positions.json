@@ -2863,12 +2863,12 @@
     "prev_close": 8027.0,
     "limit_price": 8100,
     "entry_open": 8094.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 2.162,
     "unrealized_pnl": 0.766,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-09-17"
   },
   {
     "signal_date": "2026-09-15",
@@ -2879,12 +2879,12 @@
     "prev_close": 1259.0,
     "limit_price": 1271,
     "entry_open": 1257.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -0.199,
     "unrealized_pnl": -1.511,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-09-17"
   },
   {
     "signal_date": "2026-09-15",
@@ -2895,12 +2895,12 @@
     "prev_close": 1555.0,
     "limit_price": 1570,
     "entry_open": 1558.5,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 3.433,
     "unrealized_pnl": 2.214,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-09-17"
   },
   {
     "signal_date": "2026-09-16",
@@ -2912,9 +2912,9 @@
     "limit_price": 3815,
     "entry_open": 3811.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.577,
+    "unrealized_pnl": 1.837,
     "exit_type": null,
     "exit_date": null
   }

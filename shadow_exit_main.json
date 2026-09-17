@@ -1285,11 +1285,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 8094.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 2.162,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-09-17"
   },
   {
     "signal_date": "2026-09-16",
@@ -1304,7 +1304,7 @@
     "live_stop": 3.0,
     "entry_open": 3811.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null
