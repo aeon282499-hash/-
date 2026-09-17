@@ -5,11 +5,13 @@ src=sys.argv[1] if len(sys.argv)>1 else '_xm_stocks_h1.pkl'
 d=pickle.load(open(src,'rb')); print('銘柄',len(d),src)
 ev=[]
 for s,v in d.items():
-    h=v['h1'].copy(); sp=v['spec']
-    if len(h)<2000: continue
-    h['t']=pd.to_datetime(h['time'],unit='s'); h['date']=h.t.dt.normalize(); h=h[h.t.dt.dayofweek<5]
-    pt=sp.get('point') or 0.01
-    g=h.groupby('date').agg(o=('open','first'),c=('close','last'),hi=('high','max'),lo=('low','min'),spo=('spread','first'),spc=('spread','last'),n=('close','size'))
+    sp=v['spec']; pt=sp.get('point') or 0.01
+    if 'd' in v: g=v['d'].copy()
+    else:
+        h=v['h1'].copy()
+        if len(h)<2000: continue
+        h['t']=pd.to_datetime(h['time'],unit='s'); h['date']=h.t.dt.normalize(); h=h[h.t.dt.dayofweek<5]
+        g=h.groupby('date').agg(o=('open','first'),c=('close','last'),hi=('high','max'),lo=('low','min'),spo=('spread','first'),spc=('spread','last'),n=('close','size'))
     g=g[(g.n>=3)&(g.o>0)&(g.c>0)]
     if len(g)<500: continue
     reg=sp['path'].split(chr(92))[1]
