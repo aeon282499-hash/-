@@ -3,7 +3,7 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100/②50）・💥崩壊◎（50万・寄指）・👑極上（150万・寄指）・🔻極み売り（3×100万）
+  ① 実弾の注文     … 🩳フェード GO（①100/②50・寄り成行）・💥崩壊◎（50万・寄指）・👑極上（150万・寄指）・🔻極み売り（3×100万）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
   ② 紙の対照       … 極み買い3×100万（紙）・崩壊の20億未満（撃たない）
   ③ 📰 材料        … 当日のTDnet適時開示（決算/上方修正/自社株買い/提携…）を全社、貸借・代金・前日比・触れる系統つき
@@ -27,6 +27,71 @@ JST = timezone(timedelta(hours=9))
 
 # 実弾ルール（2026-09-17時点・数字は memory/project_* と同じ。ここは表示用の定数）
 FADE_SIZES = ("①100万", "②50万")
+# フェードの執行＝寄り成行（daytrade_paper.FADE_ENTRY_MARKET=True・下寄りでも建てる・2026-07-28〜）。
+# min_entry(前日終値)は「約定判定に使わない参考価格」なので作戦の注文文に寄指とは書かない
+# （2026-09-18 本人「売りフェードは寄り指→成り行き」＝作戦タブが寄指と出ていた誤表示の修正）。
+# 売り禁(ハイカラ在庫で売る玉)だけ料の帯で注文種別が変わる: 料÷株価 ≤0.45%→成行 / 〜0.66%→当日中指値@前終
+# / 〜1.46%→寄付限定@前終 / 超→撃たない（配信 daytrade_paper の💰行と同じ式）。
+FADE_CAPITAL = {1: 1_000_000, 2: 500_000}
+FADE_EDGE = {"ok": 0.45, "mid": 0.66, "lim": 1.46}
+
+
+def _fade_rules():
+    """daytrade_paper の本物の定数/株数関数を使う（取れなければ上の表示用定数）。"""
+    try:
+        if str(PARENT) not in sys.path:
+            sys.path.insert(0, str(PARENT))
+        import daytrade_paper as dp
+        return (dp.capital_for_rank, dp._shares_for,
+                {"ok": dp.FADE_EDGE_PCT_GAPDN, "mid": dp.FADE_EDGE_PCT_INTRA, "lim": dp.FADE_EDGE_PCT_MAIN},
+                bool(dp.FADE_ENTRY_MARKET))
+    except Exception:
+        def _cap(rk): return FADE_CAPITAL.get(int(rk or 1), FADE_CAPITAL[1])
+        def _sh(px, rk=1):
+            if not px or px <= 0: return 0
+            cap = _cap(rk)
+            if int(rk or 1) >= 2 and px * 100 > cap: return 0
+            return max(100, int(cap / px / 100) * 100)
+        return _cap, _sh, dict(FADE_EDGE), True
+
+
+def _rng(a: int, b: int) -> str:
+    return f"{a}" if a == b else f"{a}〜{b}"
+
+
+def fade_order_text(prev_close, rank: int, jsf_stop: bool) -> tuple[str, str, int]:
+    """(注文文, 売り禁の料の帯/警告, 株数)。配信文(daytrade_paper)と同じ言い方に揃える。"""
+    cap_for, shares_for, edge, market = _fade_rules()
+    shares = shares_for(prev_close, rank) if prev_close else 0
+    cap = cap_for(rank)
+    if shares == 0:
+        return (f"撃たない（値がさ＝100株が{cap // 10000}万に収まらない）", "", 0)
+    if not market:
+        order = f"寄指 売り {prev_close:,.0f}円以上 → 大引け成行で買い戻し"
+    elif shares > 5_000:
+        order = (f"指値 {prev_close - 1:,.0f}円・執行条件は当日中（{shares // 100}単元＝51単元以上は成行の空売り不可）"
+                 f" → 大引け成行で買い戻し")
+    else:
+        order = f"寄り成行 空売り {shares:,}株 → 大引け成行で買い戻し"
+    warn = ""
+    if jsf_stop:
+        ok = int(edge["ok"] / 100 * cap // shares)
+        mid = int(edge["mid"] / 100 * cap // shares)
+        lim = int(edge["lim"] / 100 * cap // shares)
+        yd = f"当日中の指値{prev_close:,.0f}円"
+        yb = f"寄付限定の指値{prev_close:,.0f}円"
+        if lim < 1:
+            band = "1円/株でもエッジ超え → 撃たない"
+        elif ok < 1:
+            band = f"成行は使わない ／ 〜{lim}円/株→{yb} ／ {lim + 1}円〜→撃たない"
+        elif lim > mid > ok:
+            band = f"〜{ok}円/株→成行 ／ {_rng(ok + 1, mid)}円→{yd} ／ {_rng(mid + 1, lim)}円→{yb} ／ {lim + 1}円〜→撃たない"
+        elif lim > ok:
+            band = f"〜{ok}円/株→成行 ／ {_rng(ok + 1, lim)}円→{yb} ／ {lim + 1}円〜→撃たない"
+        else:
+            band = f"〜{ok}円/株→成行 ／ {ok + 1}円〜→撃たない"
+        warn = f"🚫売り禁＝ハイカラ在庫が要る。SBIのプレミアム料(円/株)で注文種別を決める: {band}"
+    return order, warn, shares
 CRASH_SIZE = "50万"
 GOKUJO_SIZE = "150万"
 KIWAMI_SELL_SIZE = "100万×最大3"
@@ -133,14 +198,18 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         gos = [p for p in (fd.get("picks") or []) if p.get("verdict") == "GO"]
         for i, p in enumerate(gos[:2]):
             reg = p.get("reg_note") or ""
+            prev = (by_code.get(p["code"]) or {}).get("price") or p.get("min_entry")
+            # 執行は寄り成行（寄指ではない）。売り禁だけ料の帯で種別が変わる＝配信の💰行と同じ式。
+            order, band, shares = fade_order_text(prev, i + 1, bool(p.get("jsf_stop")))
+            warns = [w for w in (band, "⚠️明日決算発表" if p["code"] in earn_codes else "") if w]
             orders.append({
                 "system": "🩳フェード", "pri": 1, "code": p["code"], "name": p["name"],
-                "side": "空売り", "size": FADE_SIZES[i],
-                "order": f"寄指 売り {int(round(p['min_entry'])):,}円以上 → 大引け成行で買い戻し" if p.get("min_entry") else "寄り成行 空売り → 大引け成行で買い戻し",
+                "side": "空売り", "size": FADE_SIZES[i], "shares": shares,
+                "order": order,
                 "note": " / ".join(x for x in (f"前日+{p.get('gain', 0):.1f}%", f"乖離+{p.get('dev25', 0):.0f}%", f"ATR{p.get('atr_pct', 0):.1f}%", reg) if x),
-                "warn": ("🚫売り禁＝ハイカラ在庫が要る（料の帯は配信を見る）" if p.get("jsf_stop") else "") or ("⚠️明日決算発表" if p["code"] in earn_codes else ""),
+                "warn": " ／ ".join(warns),
                 "iss": p.get("short_mark") or _iss(p["code"]),
-                "prev": (by_code.get(p["code"]) or {}).get("price"),
+                "prev": prev,
             })
     except Exception as e:
         print(f"[plan] フェード節スキップ: {e}")
