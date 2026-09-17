@@ -258,9 +258,17 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 c4 = str(x.get("ticker", "")).replace(".T", "")[:4]
                 ed = str(x.get("entry_date") or x.get("signal_date") or "")
                 xd = _exit_day(ed) if ed else ""
+                # 何日目＝建て日を1日目として target までの営業日数（帳簿の hold_days は前回更新時点の値なので使わない）
+                try:
+                    _d = datetime.strptime(ed, "%Y-%m-%d").date(); _n = 1
+                    while _d < target and _n < 30:
+                        _d = next_trading_day(_d); _n += 1
+                    day_no = _n
+                except Exception:
+                    day_no = x.get("hold_days")
                 holdings.append({
                     "system": system, "code": c4, "name": x.get("name") or _nm(c4), "side": side, "size": size,
-                    "entry_date": ed, "entry_open": x.get("entry_open"), "hold_days": x.get("hold_days"),
+                    "entry_date": ed, "entry_open": x.get("entry_open"), "hold_days": day_no,
                     "exit_date": xd, "exit_today": xd == target_s, "rule": rule,
                     "unrealized": x.get("unrealized_pnl"), "prev_close": x.get("prev_close"),
                     "warn": "⚠️明日決算発表" if c4 in earn_codes else "",

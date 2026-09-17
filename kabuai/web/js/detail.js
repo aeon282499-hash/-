@@ -55,6 +55,7 @@ function renderDetail(s) {
         <div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:800">${esc(s.name)}</div>
           <div class="pchip muted" style="font-size:12px">${s.code}${i.sector ? " ・ " + esc(i.sector) : ""} ・ ${yen(i.price)} ${pctTag(i.r1)}</div></div>
         <div>${ftagChip(futRow)}</div></div>
+      ${planBannerFor(s.code)}
       ${sigChips({ signals: s.signals, futures_tag: null }) || `<div class="nosig">本日、参考シグナルの点灯はありません</div>`}
       <div class="ret3">
         <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>
@@ -154,4 +155,14 @@ function viewSearch() {
     <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
     <div class="note" style="margin:8px 2px 12px">✅＝過去検証で勝てた「買いの型」が出ている銘柄。<b style="color:#ffd93d">☆</b>でウォッチ保存。</div>
     <div id="searchres">${searchResults(SEARCH_Q)}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
+}
+
+// 📋作戦の注文/保有に入っている銘柄は、詳細の先頭に「今日の作戦」を出す（v5.2.3）
+function planBannerFor(code) {
+  const p = DATA && DATA.plan; if (!p) return "";
+  const o = (p.orders || []).find(x => x.code === code), h = (p.holdings || []).find(x => x.code === code), pp = (p.paper || []).find(x => x.code === code);
+  if (o) return `<div class="banner dn" style="margin:8px 0"><b>📋 今日の作戦: ${esc(o.system)} ${esc(o.side)} ${esc(o.size)}</b><br><span style="font-size:12.5px">${esc(o.order)}</span>${o.warn ? `<br><span style="font-size:12px">${esc(o.warn)}</span>` : ""}</div>`;
+  if (h) return `<div class="banner dn" style="margin:8px 0"><b>📦 保有中: ${esc(h.system)} ${esc(h.side)} ${esc(h.size)}・建値 ${yen(h.entry_open)}（${h.hold_days != null ? h.hold_days + "日目" : ""}）</b><br><span style="font-size:12.5px">${h.exit_today ? "今日が出口日＝大引け成行" : "出口 " + esc(h.exit_date || "") + "（3営業日目の大引け）"}／${esc(h.rule)}</span></div>`;
+  if (pp) return `<div class="banner info" style="margin:8px 0"><b>📝 紙の対照: ${esc(pp.system)}</b> … ${esc(pp.size)}</div>`;
+  return "";
 }

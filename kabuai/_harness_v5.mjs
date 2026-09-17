@@ -122,6 +122,7 @@ for (const c of codes) {
   go(`#/detail/${c}`); await sandbox.loadStockDetail(c);
   const d = $get("#dbody").innerHTML; check(`詳細 ${c}`, clean(d) && d.includes("日足") || clean(d) && d.includes("EODデータ"), d.includes("🔥 いま") ? "ライブあり" : "");
 }
+{ const pc = ((DATA.plan || {}).orders || [])[0]; if (pc) { go(`#/detail/${pc.code}`); await sandbox.loadStockDetail(pc.code); const d = $get("#dbody").innerHTML; check(`詳細 ${pc.code}: 作戦バナー`, clean(d) && d.includes("今日の作戦")); } }
 sandbox.toggleWatch(codes[0]); check("ウォッチ追加", sandbox.isWatched(codes[0]));
 lsStore["kabuai_pos"] = JSON.stringify([{ code: codes[0], name: "テスト", entry: 1000, date: "2026-09-01", shares: 100 }]);
 hv = go("#/momentum"); check("持ち株コーチ描画", clean(hv) && hv.includes("持ち株コーチ"));

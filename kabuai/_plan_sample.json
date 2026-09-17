@@ -1,34 +1,8 @@
 {
  "date": "2026-09-16",
  "target_date": "2026-09-17",
- "generated_at": "2026-09-17 08:43",
+ "generated_at": "2026-09-17 10:52",
  "orders": [
-  {
-   "system": "🩳フェード",
-   "pri": 1,
-   "code": "4813",
-   "name": "ＡＣＣＥＳＳ",
-   "side": "空売り",
-   "size": "②50万",
-   "order": "寄指 売り 447円以上 → 大引け成行で買い戻し",
-   "note": "前日+9.0% / 乖離+20% / ATR8.3%",
-   "warn": "",
-   "iss": "○",
-   "prev": null
-  },
-  {
-   "system": "🩳フェード",
-   "pri": 1,
-   "code": "5707",
-   "name": "東邦亜鉛",
-   "side": "空売り",
-   "size": "①100万",
-   "order": "寄指 売り 1,154円以上 → 大引け成行で買い戻し",
-   "note": "前日+9.4% / 乖離+25% / ATR6.9%",
-   "warn": "",
-   "iss": "○",
-   "prev": null
-  },
   {
    "system": "💥崩壊",
    "pri": 3,
@@ -53,7 +27,7 @@
    "size": "150万",
    "entry_date": "2026-09-15",
    "entry_open": 1558.5,
-   "hold_days": 2,
+   "hold_days": 3,
    "exit_date": "2026-09-17",
    "exit_today": true,
    "rule": "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%",
@@ -69,7 +43,7 @@
    "size": "100万",
    "entry_date": "2026-09-15",
    "entry_open": 2122.5,
-   "hold_days": 2,
+   "hold_days": 3,
    "exit_date": "2026-09-17",
    "exit_today": true,
    "rule": "3営業日目の大引けで買い戻し／損切り+2.5%",

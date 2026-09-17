@@ -19,6 +19,7 @@ function viewMomentum() {
   const mk = DATA.market || {};
   const segs = mk.segments ? Object.values(mk.segments).filter(s => s && s.available).map(s => `<span class="chip">${esc(String(s.label || "").split("市場")[0])} ${s.score}<b>[${esc(s.grade)}]</b>${esc(s.regime || "")}</span>`).join("") : "";
   return `
+    ${dataSubNav("momentum")}
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length ? `<span class="tag">⭐ ${WATCH.length}</span>` : ""}</a>
     <div id="poscoach">${posCoach()}</div>
     ${WATCH.length ? `<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>` : ""}
@@ -28,7 +29,7 @@ function viewMomentum() {
         <div class="kpi"><div class="l">20日</div><div class="v ${cls(mk.trail20_pct)}">${fmtPct1(mk.trail20_pct)}</div><div class="s">等加重</div></div>
         <div class="kpi"><div class="l">25MA乖離</div><div class="v ${cls(mk.ma_dev_pct)}">${fmtPct1(mk.ma_dev_pct)}</div><div class="s">等加重</div></div></div>
       ${segs ? `<div class="chips" style="margin-top:8px">${segs}</div>` : ""}</div>` : ""}
-    ${dataSubNav("momentum")}<h2>🐵 モメンタム <span class="sub">${DATA.data_date || ""} 終値・強さ/過熱ランキング</span></h2>
+    <h2>🐵 モメンタム <span class="sub">${DATA.data_date || ""} 終値・強さ/過熱ランキング</span></h2>
     <div class="warnbar">⚠️ <b>買い推奨ではありません。</b>過去データでは S ほど翌10日の平均リターンがマイナス（過熱の目印）。眺める／ウォッチ用。</div>
     <div class="gchips">${chip("all", `すべて ${rk.length}`)}${chip("S", `S ${gc.S || 0}`)}${chip("A", `A ${gc.A || 0}`)}${chip("B", `B ${gc.B || 0}`)}${chip("C", "C")}${chip("D", "D")}</div>
     <div class="card tight">${rows || `<div class="empty">該当なし</div>`}</div>

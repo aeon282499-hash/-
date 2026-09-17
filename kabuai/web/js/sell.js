@@ -6,7 +6,7 @@ function fadeSection() {
   const chipReg = p => p.reg_note ? ` <span class="chip ${p.jsf_stop ? "dn" : "wa"}">${esc(p.reg_note)}</span>` : "";
   const row = (p, go) => `<a class="pickrow" href="#/detail/${p.code}">
     <div class="pk-nm"><b>${esc(p.name)}${go ? ' <span class="chip dn" style="font-weight:800">🔴 GO</span>' : ' <span class="chip">見送り</span>'}</b>
-      <small>${p.code} ・ 前日<b class="pos">+${p.gain != null ? Number(p.gain).toFixed(1) : "—"}%</b>${p.dev25 != null ? ` ・ 25MA乖離+${Number(p.dev25).toFixed(0)}%` : ""}${p.atr_pct != null ? ` ・ ATR${Number(p.atr_pct).toFixed(1)}%` : ""}${p.vol_ratio != null ? ` ・ 出来高${Number(p.vol_ratio).toFixed(1)}倍` : ""}</small>
+      <small>${p.code} ・ 前日<b class="pos">+${p.gain != null ? Number(p.gain).toFixed(1) : "—"}%</b>${p.dev25 != null ? ` ・ 25MA乖離${Number(p.dev25) >= 0 ? "+" : ""}${Number(p.dev25).toFixed(0)}%` : ""}${p.atr_pct != null ? ` ・ ATR${Number(p.atr_pct).toFixed(1)}%` : ""}${p.vol_ratio != null ? ` ・ 出来高${Number(p.vol_ratio).toFixed(1)}倍` : ""}</small>
       <div class="chips">${go ? `<span class="chip dn">寄指 売り ${yen(p.min_entry)}以上 → 引けで買い戻し</span>` : `<span class="chip">${esc(p.nogo_reason || "GO基準未満")}</span>`}${chipReg(p)}</div></div></a>`;
   let body;
   if (!picks.length) body = `<div class="empty">本日は候補なし（前日+5%以上で売れる銘柄がゼロ）</div>`;
