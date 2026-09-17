@@ -22,6 +22,12 @@ from fibo_daytrade import (Bar, DayContext, WaveEngine, Signal, Skip, hm, minute
                            trading_days, bars_of, ROOT, LOG_CSV, STATE_JSON, TIME_STOP_MIN, FLAT_ALL_AT,
                            MAX_CONSEC_LOSS, COOLDOWN_MIN, HALF_LOT_TRADES)
 
+try:   # Discord webhook は .env（ローカルのPCタスクで動くので GitHub Secrets ではなく .env に置く）
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except Exception:
+    pass
+
 MINUTES_DIR = ROOT / "live_flow" / "minutes"
 FIBO_LIVE_JSON = ROOT / "live_flow" / "fibo_live.json"
 WEBHOOK_ENV = "DISCORD_WEBHOOK_FIBO_URL"
