@@ -179,5 +179,50 @@
   "exec_open": 2337.0,
   "exec_close": 2476.0,
   "gap_pct": -0.3
+ },
+ {
+  "ticker": "4588.T",
+  "code": "4588",
+  "name": "オンコリスバイオファーマ",
+  "d0": "2026-09-16",
+  "close": 5800.0,
+  "r1": -9.23,
+  "volx": 2.37,
+  "runup": 86.8,
+  "tov_oku": 96.9,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "485A.T",
+  "code": "485A",
+  "name": "パワーエックス",
+  "d0": "2026-09-16",
+  "close": 2085.0,
+  "r1": -13.12,
+  "volx": 2.2,
+  "runup": 49.5,
+  "tov_oku": 171.3,
+  "ma5_up": false,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "581A.T",
+  "code": "581A",
+  "name": "ＧＯ",
+  "d0": "2026-09-16",
+  "close": 3145.0,
+  "r1": -8.31,
+  "volx": 2.69,
+  "runup": 30.9,
+  "tov_oku": 121.2,
+  "ma5_up": false,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
