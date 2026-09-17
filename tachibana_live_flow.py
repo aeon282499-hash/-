@@ -323,11 +323,17 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     intraday = state in ("am", "pm", "lunch")
     sort_key = "flow5" if intraday else "flow"
     theme_groups.sort(key=lambda g: -(g[sort_key] if g[sort_key] is not None else -9))
-    top_members = set(g["key"] for g in theme_groups[:TOP_MEMBERS]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
-    top_series = set(g["key"] for g in theme_groups[:TOP_SERIES]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
+    # 2026-09-17 本人「テーマに銘柄が入ってない」: フロント(v5.1)の既定並びが騰落率(chg_w)になったので、
+    # 資金の並び(flow5/flow)の上位だけに構成銘柄を載せると既定表示の上位が空になる。
+    # → 構成銘柄は「資金・騰落率・5分の動き」それぞれの上位TOP_MEMBERSの和集合＋手作り全部に載せる。
+    def _top_keys(k: str, n: int) -> set[str]:
+        return set(g["key"] for g in sorted(theme_groups, key=lambda g: -(g.get(k) if g.get(k) is not None else -9))[:n])
+    hand_keys = set(g["key"] for g in theme_groups if g["src"] == "hand")
+    top_members = _top_keys(sort_key, TOP_MEMBERS) | _top_keys("chg_w", TOP_MEMBERS) | _top_keys("d5_w", TOP_MEMBERS) | hand_keys
+    top_series = _top_keys(sort_key, TOP_SERIES) | hand_keys
     for g in theme_groups:
         g["members"] = g["members"][:MEMBERS_CAP] if g["key"] in top_members else []
-    full_keys = set(g["key"] for g in theme_groups[:TOP_FULL]) | set(g["key"] for g in theme_groups if g["src"] == "hand")
+    full_keys = _top_keys(sort_key, TOP_FULL) | _top_keys("chg_w", TOP_FULL) | hand_keys
     themes_rest = [[g["key"], g["label"], g["n"], g["flow5"], g["flow"], g["chg_w"], g["up_ratio"], g["tov"]]
                    for g in theme_groups if g["key"] not in full_keys]
     theme_groups = [g for g in theme_groups if g["key"] in full_keys]
