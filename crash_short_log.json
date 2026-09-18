@@ -192,8 +192,12 @@
   "tov_oku": 96.9,
   "ma5_up": true,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": -8.434,
+  "result_yen": -25302,
+  "exec_date": "2026-09-17",
+  "exec_open": 5810.0,
+  "exec_close": 6300.0,
+  "gap_pct": 0.17
  },
  {
   "ticker": "485A.T",
@@ -207,8 +211,12 @@
   "tov_oku": 171.3,
   "ma5_up": false,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 3.112,
+  "result_yen": 9336,
+  "exec_date": "2026-09-17",
+  "exec_open": 2185.0,
+  "exec_close": 2117.0,
+  "gap_pct": 4.8
  },
  {
   "ticker": "581A.T",
@@ -222,7 +230,11 @@
   "tov_oku": 121.2,
   "ma5_up": false,
   "loanable": "○",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": -1.113,
+  "result_yen": -3339,
+  "exec_date": "2026-09-17",
+  "exec_open": 3145.0,
+  "exec_close": 3180.0,
+  "gap_pct": 0.0
  }
 ]
