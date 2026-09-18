@@ -29,6 +29,14 @@ input long   InpGoldMagic     = 20260908;
 input int    InpGoldGateN     = 40;         // 自己判断ゲート: 直近N回(紙でも毎日計測)の平均$/ozが閾値超の時だけ撃つ(0=無効)。BT: 10年+233→+539$・2016-24 -217→+92
 input double InpGoldGateThr   = 0.10;       // 閾値 $/oz
 //--- B) 日経225 夜ドリフト
+//--- 9/19 本人「徐々にロット増やして・フル全自動」: 残高ラダー。残高がしきい値以上なら各レッグの単位残高を÷k(=枚数×k)。BS(修正コスト・金ゲート込み): ×1固定E[log]5.09/DD-54% → ≥10万×1.25 5.71/DD-63% → ≥30万×1.5 6.01/DD-74%・停止0%。×2はE[log]低下(オーバーKelly)なので3段目は既定off
+input double InpScale1Bal     = 100000;     // 残高がこれ以上で単位×InpScale1(0=無効)
+input double InpScale1        = 1.25;
+input double InpScale2Bal     = 300000;     // 残高がこれ以上で単位×InpScale2(0=無効)
+input double InpScale2        = 1.5;
+input double InpScale3Bal     = 0;          // 3段目(0=無効)。×2.0はBSでE[log]4.79に低下＝入れない
+input double InpScale3        = 2.0;
+
 input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
 input string InpJpSymbol      = "JP225Cash";
 input double InpJpJpyPerLot   = 8750;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
@@ -158,12 +166,26 @@ void CloseAll(string sym, long magic, string tag)
       }
    }
 }
-double LotGold()
+double g_lastK = 0;
+double LotGoldK(double k);
+double LotIdxK(string sym, double jpyPerUnit, double unit, double lotMax, double k);
+double ScaleK()
 {
-   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / InpGoldJpyPer001) * 0.01;
+   double b = AccountInfoDouble(ACCOUNT_BALANCE), k = 1.0;
+   if(InpScale1Bal > 0 && b >= InpScale1Bal) k = InpScale1;
+   if(InpScale2Bal > 0 && b >= InpScale2Bal) k = InpScale2;
+   if(InpScale3Bal > 0 && b >= InpScale3Bal) k = InpScale3;
+   if(k < 1.0) k = 1.0;
+   if(k != g_lastK) { PrintFormat("[ラダー] 残高%.0f円 → 単位×%.2f(枚数%.2f倍) 金%.2f 日経%.1f US500%.1f GER40%.1f", b, k, k, LotGoldK(k), LotIdxK(InpJpSymbol, InpJpJpyPerLot, 1.0, InpJpLotMax, k), LotIdxK(InpUsSymbol, InpUsJpyPer01, 0.1, InpUsLotMax, k), LotIdxK(InpDeSymbol, InpDeJpyPer01, 0.1, InpDeLotMax, k)); g_lastK = k; }
+   return k;
+}
+double LotGoldK(double k)
+{
+   double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / (InpGoldJpyPer001 / k)) * 0.01;
    double vmin = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
    lot = MathMax(vmin, MathMin(InpGoldLotMax, lot)); return NormalizeDouble(MathFloor(lot / vstep) * vstep, 2);
 }
+double LotGold() { return LotGoldK(ScaleK()); }
 //--- 前夜リターン: 当日9:00JSTのH1始値 ÷ 前日15:00JSTのH1始値 - 1（%）。取れなければ NA_PCT(呼び側で再試行)
 double PrevNightPct(string sym)
 {
@@ -180,13 +202,15 @@ double PrevNightPct(string sym)
    return (o9 / o15 - 1.0) * 100.0;
 }
 
-double LotIdx(string sym, double jpyPerUnit, double unit, double lotMax)
+double LotIdxK(string sym, double jpyPerUnit, double unit, double lotMax, double k)
 {
+   jpyPerUnit /= k;
    double vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
    if(vstep <= 0) vstep = vmin;
    double lot = MathFloor(AccountInfoDouble(ACCOUNT_BALANCE) / jpyPerUnit * unit / vstep + 1e-9) * vstep;   // 残高÷単位残高×単位lot をvstep刻みで切り捨て
    lot = MathMax(vmin, MathMin(lotMax, lot)); return NormalizeDouble(lot, 2);
 }
+double LotIdx(string sym, double jpyPerUnit, double unit, double lotMax) { return LotIdxK(sym, jpyPerUnit, unit, lotMax, ScaleK()); }
 double LotJp() { return LotIdx(InpJpSymbol, InpJpJpyPerLot, 1.0, InpJpLotMax); }
 double LotUs() { return LotIdx(InpUsSymbol, InpUsJpyPer01, 0.1, InpUsLotMax); }
 double LotDe() { return LotIdx(InpDeSymbol, InpDeJpyPer01, 0.1, InpDeLotMax); }
@@ -281,6 +305,7 @@ int OnInit()
    PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
                InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, InpGdOn ? "on" : "off", LotGd(), InpGdJpyPer001, InpGdEntryHour, InpGdExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
+   PrintFormat("[ラダー設定] ≥%.0f円×%.2f / ≥%.0f円×%.2f / ≥%.0f円×%.2f → 今の残高%.0f円は×%.2f", InpScale1Bal, InpScale1, InpScale2Bal, InpScale2, InpScale3Bal, InpScale3, AccountInfoDouble(ACCOUNT_BALANCE), ScaleK());
    WarmSeries();
    EventSetTimer(5);
    return INIT_SUCCEEDED;
