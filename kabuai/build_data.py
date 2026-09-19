@@ -922,8 +922,10 @@ def build() -> dict:
         _banned: list = []
         # data_date終値を「信号日」にする（<比較なので+1日。朝build=今日の寄り用/夜build=翌営業日用）
         _fade_today = (datetime.strptime(data_date, "%Y-%m-%d") + timedelta(days=1)).date()
+        _mcap = _dp.fetch_mcap_map(_tok2, _dp._prev_trading_day(_fade_today)) if _iss else {}   # 急騰前の時価総額（2026-09-19）
         _picks = (_dp.daily_top_fades(data, _fade_today, _iss, ratio_map=_ratio,
-                                      alert_map=_alert, excluded_out=_banned) if _iss else [])
+                                      alert_map=_alert, excluded_out=_banned,
+                                      mcap_map=_mcap) if _iss else [])
         for p in _picks:
             _c4 = str(p["ticker"]).replace(".T", "")[:4]
             _nm = name_map.get(p["ticker"]) or name_map.get(_c4) or p.get("name") or _c4
@@ -937,6 +939,8 @@ def build() -> dict:
                 "borrow": p.get("borrow", ""), "reg_note": p.get("reg_note", ""),
                 "jsf_stop": bool(p.get("jsf_stop")),
                 "verdict": p.get("verdict"), "nogo_reason": p.get("nogo_reason", ""),
+                # 時価総額(億・急騰前)と🏢大型(≥1000億)。10年で大型は件あたり≤0（2026-09-19・表示のみ）
+                "mcap_oku": p.get("mcap_oku"), "big_cap": bool(p.get("big_cap")),
             })
             for r in rows:                      # 詳細チャートを必ず出せるよう export 対象化
                 if r["code"] == _c4:

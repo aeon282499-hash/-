@@ -51,7 +51,7 @@ function planSizes(cash) {
   if (cash < 30) return { fade1: "①100万", fade2: "なし", kiwami_sell: "新規停止", crash: "なし", gokujo: "150万×1", level: "30万割れ＝②ゼロ・売り新規停止", cls: "dn" };
   if (cash < 50) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "なし（余裕がない）", gokujo: "150万×1", level: "通常（崩壊は見送り）", cls: "" };
   if (cash < 100) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "50万", gokujo: "150万×1", level: "通常", cls: "" };
-  return { fade1: "①130万", fade2: "②50万", kiwami_sell: "100万×3", crash: "100万", gokujo: "150万×2（2枠目を開ける・要切替）", level: "100万到達＝①130・崩壊100万・極上2枠", cls: "pos" };
+  return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", kiwami_sell: "100万×3", crash: "100万", gokujo: "150万×2（2枠目を開ける・要切替）", level: "100万到達＝①130(小型)・崩壊100万・極上2枠", cls: "pos" };
 }
 function planSizeFor(o, sz) {
   if (!sz) return null;

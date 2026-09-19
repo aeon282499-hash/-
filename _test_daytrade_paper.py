@@ -737,6 +737,43 @@ def test_weekly_no_data_no_send():
     check("週次: 確定なしならマーカーを立てない", "last_weekly_report" not in b)
 
 
+# ---------------------------------------------------------------- 時価総額（2026-09-19）
+def test_mcap_map():
+    """時価総額(急騰前・億)を候補に付け、≥1000億に🏢大型フラグ。既定は表示のみ(GOのまま)・切替で大型はNO-GO。"""
+    import screener
+    screener.fetch_tse_universe = lambda *a, **k: []
+    today = date(2026, 7, 15)
+    data = {"9999.T": _flat_then(21), "6666.T": _flat_then(18)}
+    iss = {"9999": "2", "6666": "2"}
+    mm = {"9999": 1500, "6666": 250}
+    picks = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+    check("時価総額(億)が候補に付く", picks[0]["mcap_oku"] == 1500 and picks[1]["mcap_oku"] == 250)
+    check("≥1000億に🏢大型フラグ・既定(表示のみ)ではGOのまま",
+          picks[0]["big_cap"] is True and picks[1]["big_cap"] is False and picks[0]["verdict"] == "GO")
+    check("FADE_MCAP_MAX_OKU の既定は None(表示のみ)", dp.FADE_MCAP_MAX_OKU is None and dp.FADE_MCAP_BIG_OKU == 1000)
+    old = dp.FADE_MCAP_MAX_OKU
+    dp.FADE_MCAP_MAX_OKU = 1000
+    try:
+        p2 = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+        check("切替ON: 大型はNO-GO・小型が#1 GOに繰り上がる",
+              p2[0]["ticker"] == "6666.T" and p2[0]["verdict"] == "GO" and p2[0]["rank"] == 1
+              and p2[1]["ticker"] == "9999.T" and p2[1]["verdict"] == "NOGO" and "時価総額" in p2[1]["nogo_reason"])
+        p3 = dp.daily_top_fades(data, today, iss)          # 時価総額が取れない日は除外しない（フェイルオープン）
+        check("切替ONでも時価総額不明なら従来どおりGO", p3[0]["verdict"] == "GO" and p3[0].get("mcap_oku") is None and p3[0]["big_cap"] is False)
+    finally:
+        dp.FADE_MCAP_MAX_OKU = old
+    book = base_book([])
+    added = dp.record(book, picks, data, iss, today)
+    check("紙台帳に時価総額と大型フラグを記帳（小型には big_cap を書かない）",
+          added[0].get("mcap_oku") == 1500 and added[0].get("big_cap") is True and "big_cap" not in added[1] and added[1].get("mcap_oku") == 250)
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        dp.send_report([], [], picks, dp.cumulative_stats(base_book([])), today, dry=True)
+    out = buf.getvalue()
+    check("配信に時価総額と🏢大型が出る（小型には🏢なし）", "時価総額1,500億🏢大型" in out and "時価総額250億" in out and out.count("🏢大型") == 1)
+
+
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
                test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
@@ -749,7 +786,8 @@ def run_all():
                test_monthly_stats, test_monthly_era_capital,
                test_monthly_combo_september,
                test_monthly_send_guard, test_monthly_no_data_no_send,
-               test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send]:
+               test_weekly_stats, test_weekly_send_guard, test_weekly_no_data_no_send,
+               test_mcap_map]:
         print(f"\n▶ {fn.__name__}")
         fn()
     print(f"\n==== {PASS} PASS / {FAIL} FAIL ====")

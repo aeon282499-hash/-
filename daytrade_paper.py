@@ -139,6 +139,47 @@ def fetch_iss_map(token) -> dict:
     return {}
 
 
+def fetch_mcap_map(token, basis_day) -> dict:
+    """{code4: 時価総額(億円)} を J-Quants /equities/valuation から（2026-09-19）。
+    BT(_bt_fade_newdata_0919.py)と同じく『急騰日より前の最新断面』＝急騰前の時価総額を使う。
+    取れなければ {}（配信に時価総額が出ないだけ・判定はフェイルオープン＝除外しない）。"""
+    if not token:
+        return {}
+    try:
+        from screener import _jquants_get, is_common_stock_code
+        cur = _prev_trading_day(basis_day)            # basis_day=急騰日 → その前営業日の断面
+        for _ in range(7):
+            rows, key = [], None
+            for _page in range(10):
+                q = {"date": cur.strftime("%Y-%m-%d")}
+                if key:
+                    q["pagination_key"] = key
+                d = _jquants_get("/equities/valuation", token, q)
+                k = next((x for x in d if x != "pagination_key"), None)
+                rows += (d.get(k) or []) if k else []
+                key = d.get("pagination_key")
+                if not key:
+                    break
+            if rows:
+                out = {}
+                for r in rows:
+                    c = str(r.get("Code", ""))
+                    if not is_common_stock_code(c):
+                        continue
+                    try:
+                        mc = float(r.get("MktCap") or 0)       # 百万円
+                    except (TypeError, ValueError):
+                        continue
+                    if mc > 0:
+                        out[c[:4]] = int(round(mc / 100))      # 億円
+                print(f"[paper] 時価総額 {cur} 断面 {len(out)}銘柄")
+                return out
+            cur -= timedelta(days=1)
+    except Exception as e:
+        print(f"[paper] 時価総額取得失敗: {e} → 表示なし（判定は変えない）")
+    return {}
+
+
 def fetch_ratio_map(token) -> dict:
     """{code4: 信用倍率(買残/売残)} を直近週の margin-interest から。売残0は99(=借りやすい)。取れなければ {}。"""
     try:
@@ -411,6 +452,16 @@ FADE_MIN_GAP_UP_PCT = 0.0
 # （2026-07-28までは「撃つのは1番だけ・2番は代替」と配信していたが、上位1本の数字だけを見た
 #   誤りだった。2番を足すと年+15.8万増えて勝ち年11/11は変わらない＝2本が正しい。）
 PAPER_MAX_PICKS = 2
+# ── 時価総額（2026-09-19 本人「新データで銘柄選定を」→ J-Quants /equities/valuation・10年 2017-26 の層別）────────
+# 急騰前の時価総額で候補を分けると 10年で単調: <300億 +1.1%/件 → 300〜700億 +0.47 → 700〜1000億 +0.11 →
+# 1000〜3000億 -0.12 → >3000億 -0.15（17-21/22-26の両半期で同じ向き・勝率は61%→49%）。
+# 大型(≥1000億)を撃たない: 10年+1,507→+1,593万/PF1.54→1.66/DD-86→-60/12か月最悪-69→-60（利益の上乗せは2024-26に偏る）。
+# ただし26年の代理検証は不成立（立花の平均売買代金は時価総額と相関0.66で、代金上位は09-16では最良の玉）＝10年だけの証拠。
+# → 既定は「表示のみ」: 配信に時価総額と🏢大型を出し、紙台帳に記帳して帯別に実測する。
+#   実弾ルールにするなら FADE_MCAP_MAX_OKU=1000（≥1000億をNO-GOにして撃たない）。
+#   根拠 _bt_fade_newdata_0919.py / _bt_fade_mcap_rule_0919.py / _bt_fade_mcap_proxy26_0919.py
+FADE_MCAP_BIG_OKU = 1000        # 🏢大型の表示しきい値（億円）
+FADE_MCAP_MAX_OKU = None        # None=表示のみ ／ 1000=時価総額≥1000億は撃たない（本人判断で切替）
 
 
 def fade_nogo_reason(gain: float, atr_pct: float, dev25: float) -> str | None:
@@ -442,7 +493,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     ratio_map: dict | None = None, alert_map: dict | None = None,
                     excluded_out: list | None = None,
                     tov_min: float | None = None,
-                    capital: float | None = None) -> list[dict]:
+                    capital: float | None = None,
+                    mcap_map: dict | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を乖離+ATRの順位平均で返す（各GO/NO-GO判定付き・空なら[]）。
     候補＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) × 出来高6倍未満 × 代金3億以上。
     GO判定: 前日+7%(DAILY_PICK_GAIN_MIN) × ATR5%以上 × 25MA乖離12%以上。未達はNO-GO（理由付きで後ろ）。
@@ -550,6 +602,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
             "_dev_raw": dev,
             "_atr_raw": atr_pct,
             "_gain_raw": gain,
+            # 時価総額(億円・急騰前の断面・2026-09-19)。無ければ None＝表示なし・判定不変
+            "mcap_oku": (mcap_map or {}).get(_code4(tk)),
         })
     if not cands:
         return []
@@ -573,6 +627,11 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
     # （10年で2件・計-3.3万の実害を _audit_fade_rankpool.py で確認）。
     for x in cands:
         x["_nogo"] = fade_nogo_reason(x["_gain_raw"], x["_atr_raw"], x["_dev_raw"])
+        x["big_cap"] = bool(x.get("mcap_oku") is not None and x["mcap_oku"] >= FADE_MCAP_BIG_OKU)
+        # 大型を撃たない設定（既定OFF）: NO-GO群に回す＝小型がGO側で繰り上がる（BTの除外と同じ挙動）
+        if (x["_nogo"] is None and FADE_MCAP_MAX_OKU is not None
+                and x.get("mcap_oku") is not None and x["mcap_oku"] >= FADE_MCAP_MAX_OKU):
+            x["_nogo"] = f"時価総額{x['mcap_oku']:,}億≧{FADE_MCAP_MAX_OKU:,}億（大型は撃たない）"
 
     # 順位（乖離+ATRの順位平均）は **GO玉はGO玉の中だけ** で付ける（2026-08-01修正）。
     # 従来は閾値未達のNO-GO玉まで含む全候補で順位を付けていたが、順位の平均は母集団に
@@ -806,9 +865,11 @@ def record(book: dict, signals: list[dict], data: dict, iss_map: dict, today) ->
                 rec["shares"] = _shares_for(float(_px), s.get("rank") or 1)
             # 選定2軸と補助指標も記帳する（2026-08-02）。どんな玉が実弾で滑る/建てられないかを
             # 後で層別分析するため（jsf_stop・rankと同じ思想）。旧記帳には無いキー＝Noneは書かない。
-            for k in ("dev25", "atr_pct", "vol_ratio", "range_pct"):
+            for k in ("dev25", "atr_pct", "vol_ratio", "range_pct", "mcap_oku"):
                 if s.get(k) is not None:
                     rec[k] = s.get(k)
+            if s.get("big_cap"):                        # 🏢大型(時価総額≥1000億)＝帯別の実測用（2026-09-19）
+                rec["big_cap"] = True
         book["positions"].append(rec)
         added.append(rec)
 
@@ -888,7 +949,11 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             # 選定材料の行(前日+X%/出来高×/レンジ%/信用倍率grade)を撤去。執行に要る
             # 貸借マーク・規制注記だけ残す。判定・台帳・友達ミラーの仕組みは無変更＝表示のみ。
             lines.append(line1)
-            lines.append(f"   貸借{sh['mark']}{reg}")
+            # 時価総額(急騰前)と🏢大型（2026-09-19・10年で≥1000億は件あたり≤0＝本人が見送りを選べるように表示のみ）
+            mc_txt = ""
+            if p.get("mcap_oku"):
+                mc_txt = f"　時価総額{p['mcap_oku']:,}億" + ("🏢大型" if p.get("big_cap") else "")
+            lines.append(f"   貸借{sh['mark']}{reg}{mc_txt}")
             # 51単元(5,100株)以上の空売りは価格規制で成行が出せない（低位株の解禁で初めて
             # 実弾到達・2026-08-24 WIZE 27円=370単元が初例）。トリガー外(前日比-10%未満の
             # 下落なし)なら指値に価格制限は無いので、1円下の指値で寄り板寄せに参加すれば
@@ -1375,6 +1440,7 @@ def run(today=None, signals=None, dry=False):
         fetch_failed = True
     ratio_map = fetch_ratio_map(tok) if data else {}
     alert_map = fetch_alert_map(tok) if data else {}
+    mcap_map = fetch_mcap_map(tok, _prev_trading_day(today)) if data else {}   # 急騰日の前営業日の断面（2026-09-19）
     banned: list = []   # 売り禁(日証金申込停止)で除外した銘柄（配信で可視化）
     # ── 鮮度ガード（2026-09-09 監査）: start/end 指定の取得は最終営業日の欠落を検知しない
     # （screener の欠落リトライは lookback モード限定）。当日足が無いまま選定すると last_mkt が
@@ -1399,7 +1465,8 @@ def run(today=None, signals=None, dry=False):
         picks = []
     else:
         picks = daily_top_fades(data, today, _LAST_ISS, ratio_map=ratio_map,
-                                alert_map=alert_map, excluded_out=banned)   # 上位2（各GO/NO-GO+借りやすさ）
+                                alert_map=alert_map, excluded_out=banned,
+                                mcap_map=mcap_map)   # 上位2（各GO/NO-GO+借りやすさ+時価総額）
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
 
     # 紙記帳＝GOの上位3 ＋ ライブBUY発火のみ（見送りは記帳しない）

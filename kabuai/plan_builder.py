@@ -98,7 +98,7 @@ KIWAMI_SELL_SIZE = "100万×最大3"
 LADDER = [
     "余力が衝突する日は フェード ＞ 極み売り ＞ 崩壊 の順に残す（崩壊を先に降ろす）",
     "現金余力30万割れ: フェード②ゼロ＋極み売り新規停止／15万割れ: フェード①50万／戻すのは月末",
-    "現金余力100万到達: フェード①130万・崩壊100万へ",
+    "現金余力100万到達: フェード①130万（時価総額300億以下の小型だけ・中型は100万のまま・🏢大型1000億以上は撃たない＝10年+2,009万/DD-79 vs 一律130万 +1,979/DD-105）・崩壊100万・極上2枠へ",
     "崩壊は◎(代金20億+)だけ・1日1本・100株が50万を超える高額株は撃たない",
     "極上: 1銘柄150万まで（勝ち乗せなし）／初日の引けが建値-1%以下なら翌朝処分／現金余力100万到達で2枠目（別銘柄150万・合計300万）を開ける",
 ]
@@ -201,12 +201,16 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
             prev = (by_code.get(p["code"]) or {}).get("price") or p.get("min_entry")
             # 執行は寄り成行（寄指ではない）。売り禁だけ料の帯で種別が変わる＝配信の💰行と同じ式。
             order, band, shares = fade_order_text(prev, i + 1, bool(p.get("jsf_stop")))
-            warns = [w for w in (band, "⚠️明日決算発表" if p["code"] in earn_codes else "") if w]
+            # 🏢大型（時価総額≥1000億・2026-09-19）: 10年で件あたり≤0・勝率49〜53%＝撃つなら②サイズか見送り（本人判断）
+            big = (f"🏢大型（時価総額{p['mcap_oku']:,}億）＝10年で期待値ゼロ・撃つなら②サイズか見送り"
+                   if p.get("big_cap") and p.get("mcap_oku") else "")
+            warns = [w for w in (band, "⚠️明日決算発表" if p["code"] in earn_codes else "", big) if w]
             orders.append({
                 "system": "🩳フェード", "pri": 1, "code": p["code"], "name": p["name"],
                 "side": "空売り", "size": FADE_SIZES[i], "shares": shares,
                 "order": order,
-                "note": " / ".join(x for x in (f"前日+{p.get('gain', 0):.1f}%", f"乖離+{p.get('dev25', 0):.0f}%", f"ATR{p.get('atr_pct', 0):.1f}%", reg) if x),
+                "note": " / ".join(x for x in (f"前日+{p.get('gain', 0):.1f}%", f"乖離+{p.get('dev25', 0):.0f}%", f"ATR{p.get('atr_pct', 0):.1f}%",
+                                               (f"時価総額{p['mcap_oku']:,}億" if p.get("mcap_oku") else ""), reg) if x),
                 "warn": " ／ ".join(warns),
                 "iss": p.get("short_mark") or _iss(p["code"]),
                 "prev": prev,
