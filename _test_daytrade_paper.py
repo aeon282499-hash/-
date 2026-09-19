@@ -746,32 +746,39 @@ def test_mcap_map():
     data = {"9999.T": _flat_then(21), "6666.T": _flat_then(18)}
     iss = {"9999": "2", "6666": "2"}
     mm = {"9999": 1500, "6666": 250}
-    picks = dp.daily_top_fades(data, today, iss, mcap_map=mm)
-    check("時価総額(億)が候補に付く", picks[0]["mcap_oku"] == 1500 and picks[1]["mcap_oku"] == 250)
-    check("≥1000億に🏢大型フラグ・既定(表示のみ)ではGOのまま",
-          picks[0]["big_cap"] is True and picks[1]["big_cap"] is False and picks[0]["verdict"] == "GO")
-    check("FADE_MCAP_MAX_OKU の既定は None(表示のみ)", dp.FADE_MCAP_MAX_OKU is None and dp.FADE_MCAP_BIG_OKU == 1000)
+    check("FADE_MCAP_MAX_OKU=1000（2026-09-19 本人採用: 時価総額≥1000億は撃たない）", dp.FADE_MCAP_MAX_OKU == 1000 and dp.FADE_MCAP_BIG_OKU == 1000)
+    p2 = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+    check("時価総額(億)が候補に付く", p2[0]["mcap_oku"] == 250 and p2[1]["mcap_oku"] == 1500)
+    check("既定: 大型はNO-GO・小型が#1 GOに繰り上がる",
+          p2[0]["ticker"] == "6666.T" and p2[0]["verdict"] == "GO" and p2[0]["rank"] == 1 and p2[0]["big_cap"] is False
+          and p2[1]["ticker"] == "9999.T" and p2[1]["verdict"] == "NOGO" and p2[1]["big_cap"] is True and "時価総額" in p2[1]["nogo_reason"])
+    p3 = dp.daily_top_fades(data, today, iss)          # 時価総額が取れない日は除外しない（フェイルオープン）
+    check("時価総額不明なら従来どおりGO（フェイルオープン）", p3[0]["verdict"] == "GO" and p3[0].get("mcap_oku") is None and p3[0]["big_cap"] is False)
     old = dp.FADE_MCAP_MAX_OKU
-    dp.FADE_MCAP_MAX_OKU = 1000
+    dp.FADE_MCAP_MAX_OKU = None
     try:
-        p2 = dp.daily_top_fades(data, today, iss, mcap_map=mm)
-        check("切替ON: 大型はNO-GO・小型が#1 GOに繰り上がる",
-              p2[0]["ticker"] == "6666.T" and p2[0]["verdict"] == "GO" and p2[0]["rank"] == 1
-              and p2[1]["ticker"] == "9999.T" and p2[1]["verdict"] == "NOGO" and "時価総額" in p2[1]["nogo_reason"])
-        p3 = dp.daily_top_fades(data, today, iss)          # 時価総額が取れない日は除外しない（フェイルオープン）
-        check("切替ONでも時価総額不明なら従来どおりGO", p3[0]["verdict"] == "GO" and p3[0].get("mcap_oku") is None and p3[0]["big_cap"] is False)
+        picks = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+        check("None(表示のみ)に戻せば大型もGOのまま・🏢フラグだけ付く",
+              picks[0]["ticker"] == "9999.T" and picks[0]["verdict"] == "GO" and picks[0]["big_cap"] is True and picks[1]["big_cap"] is False)
+        book = base_book([])
+        added = dp.record(book, picks, data, iss, today)
+        check("紙台帳に時価総額と大型フラグを記帳（小型には big_cap を書かない）",
+              added[0].get("mcap_oku") == 1500 and added[0].get("big_cap") is True and "big_cap" not in added[1] and added[1].get("mcap_oku") == 250)
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            dp.send_report([], [], picks, dp.cumulative_stats(base_book([])), today, dry=True)
+        out = buf.getvalue()
+        check("配信に時価総額と🏢大型が出る（小型には🏢なし）", "時価総額1,500億🏢大型" in out and "時価総額250億" in out and out.count("🏢大型") == 1)
     finally:
         dp.FADE_MCAP_MAX_OKU = old
-    book = base_book([])
-    added = dp.record(book, picks, data, iss, today)
-    check("紙台帳に時価総額と大型フラグを記帳（小型には big_cap を書かない）",
-          added[0].get("mcap_oku") == 1500 and added[0].get("big_cap") is True and "big_cap" not in added[1] and added[1].get("mcap_oku") == 250)
+    # 既定(1000)の配信: 大型はGOに入らない＝配信に出ない・小型だけ「時価総額250億」で出る
     import io, contextlib
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        dp.send_report([], [], picks, dp.cumulative_stats(base_book([])), today, dry=True)
-    out = buf.getvalue()
-    check("配信に時価総額と🏢大型が出る（小型には🏢なし）", "時価総額1,500億🏢大型" in out and "時価総額250億" in out and out.count("🏢大型") == 1)
+        dp.send_report([], [], p2, dp.cumulative_stats(base_book([])), today, dry=True)
+    out2 = buf.getvalue()
+    check("既定の配信: 大型は出ず小型だけ（🏢なし）", "時価総額250億" in out2 and "1,500億" not in out2 and "🏢" not in out2)
 
 
 def run_all():
