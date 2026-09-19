@@ -2,7 +2,7 @@
 """_test_gokujo.py — 「スイング極上」(1枠×150万・乗せなし・5日出来高トレンド≤1.09) のテスト（2026-09-05・2026-09-19 R14で150万×1/乗せ停止に更新）。
 
 ①screener.calc_vol_trend5 がBT(_bt_kiwami_gokujo_0905.py)と同じ式 ②main.py の極上ファイル生成ロジック(vt5フィルタ→score順)
-③shadow_exit.record_signals(gokujo)=専用ファイルのみ・1枠・150万・値がさ1万円 ④配信文面(👑/1銘柄/150万) ⑤週次は買いだけ ⑧勝ち乗せは停止(ADDON_FRAC=0)
+③shadow_exit.record_signals(gokujo)=専用ファイルのみ・1枠・150万・値がさ1万円 ④配信文面(👑/1銘柄/150万) ⑤週次は買いだけ ⑧勝ち乗せは有効(ADDON_FRAC=1.0・2026-09-19深夜 復活)
 ⑥kiwami_close が極上台帳を読む ⑦極み/通常版の挙動が不変（既存キーのslots/size/px_cap）
 実行: python -X utf8 _test_gokujo.py
 """
@@ -120,11 +120,13 @@ check("処分指示のタイトルは👑極上", e[0]["title"].startswith("👑
 e2 = KC.build_embeds([{"ticker": "2222.T", "name": "枯れA", "reason_type": "RSI", "rsi_now": 55.0, "current_price": 2050.0, "entry_open": 2010.0, "today_hold": 2}], [], TODAY, op)
 check("既定(極み)のタイトルは従来どおり⚡極み", e2[0]["title"].startswith("⚡【極み"))
 
-# ── ⑧ 勝ち乗せは停止（2026-09-19 本人「1銘柄150万MAX」）・処分通知側も同じ設定を見る ──
-check("極上 1枠×150万・乗せ停止(ADDON_FRAC=0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 1 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 0.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
-check("kiwami_close も乗せ停止を参照", KC._GOKUJO_ADDON_FRAC == 0.0)
-e3 = KC.build_embeds([{"ticker": "2222.T", "name": "枯れA", "reason_type": "HOLD", "rsi_now": 40.0, "current_price": 2100.0, "entry_open": 2010.0, "today_hold": 1}], [], TODAY, op, brand="極上")
-check("初日+4.5%でも『同額を追加』を出さない", not any("同額を追加" in (x.get("description") or "") for x in e3))
+# ── ⑧ 勝ち乗せ有効（2026-09-19 深夜 本人「1かな」で復活・同額150・1銘柄最大300万）・処分通知側も同じ設定を見る ──
+check("極上 1枠×150万・同額乗せ(ADDON_FRAC=1.0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 1 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 1.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
+check("kiwami_close も同じ乗せ設定を参照", KC._GOKUJO_ADDON_FRAC == 1.0)
+e3 = KC.build_embeds([], [{"ticker": "2222.T", "name": "枯れA", "rsi_now": 40.0, "current_price": 2100.0, "entry_open": 2010.0, "today_hold": 1}], TODAY, op, brand="極上")
+check("初日+4.5%なら『同額を追加』を出す", any("同額を追加" in (x.get("description") or "") for x in e3))
+e4 = KC.build_embeds([], [{"ticker": "2222.T", "name": "枯れA", "rsi_now": 40.0, "current_price": 2020.0, "entry_open": 2010.0, "today_hold": 1}], TODAY, op, brand="極上")
+check("初日+0.5%(閾値+1%未満)では出さない", not any("同額を追加" in (x.get("description") or "") for x in e4))
 
 # ── ⑦ run_shadow が極上キーを含む（送信はモック） ──
 sent = []
