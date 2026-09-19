@@ -49,6 +49,10 @@ TIER_LEDGERS = {"main": ("大資金", "shadow_exit_main.json",  "DISCORD_WEBHOOK
                 "small": ("小資金", "shadow_exit_small.json", "DISCORD_WEBHOOK_SHADOW_SMALL_URL"),
                 # 極上（2026-09-05・1枠×300万・出口は極みと同じ）。台帳/配信先だけ別。
                 "gokujo": ("極上",  "shadow_exit_gokujo.json", "DISCORD_WEBHOOK_GOKUJO_URL")}
+try:                                   # 極上の勝ち乗せは shadow_exit の設定に従う（2026-09-19: 1銘柄150万上限で停止＝0.0）
+    from shadow_exit import GOKUJO_ADDON_FRAC as _GOKUJO_ADDON_FRAC
+except Exception:
+    _GOKUJO_ADDON_FRAC = 0.0
 
 
 def load_open(key: str = "main") -> list[dict]:
@@ -210,7 +214,7 @@ def build_embeds(targets: list[dict], checked: list[dict], today: date,
                              f"{px_str} → **明朝 寄り成行で処分**（OCOは取消）")
                 continue
             # 極上だけ（2026-09-14 本人承認・勝ち乗せ）: 保有1日目の引けが建値+1%超なら翌朝の寄り成行で同額追加
-            if (not sell) and brand == "極上" and hold == 1 and price is not None and entry and price > entry * 1.01:
+            if (not sell) and brand == "極上" and _GOKUJO_ADDON_FRAC > 0 and hold == 1 and price is not None and entry and price > entry * 1.01:
                 lines.append(f"🔼 **{name}** ({ticker}) 1日目 — 引け {(price-entry)/entry*100:+.2f}%（建値比+1%超）"
                              f"{px_str} → **明朝 寄り成行で同額を追加**（勝ち乗せ・OCOは2玉分に）")
                 continue

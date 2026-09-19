@@ -105,9 +105,11 @@ SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEY
 # 台帳=shadow_exit_gokujo.json・配信=DISCORD_WEBHOOK_GOKUJO_URL（本人専用ch）。通常版・極みの台帳/配信には触れない。
 GOKUJO_KEY        = "gokujo"
 GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
-GOKUJO_SIZE       = 2_000_000   # 2026-09-19 本人「買いで使えるのは300〜400万」: 150万→200万（同額乗せで最大400万・_bt_gokujo_round9_capital_freq_0919.py a2: 26年+638万/年利6.1%/DD-116・10年+534万 PF1.72 最悪年+16＝資金≤400万で利益/DD比が最良。1×300+乗せ100(a4)は+808万だがDD-168/最悪年-63）
-#   （旧: 2026-09-14 300万→150万＝9/8 _report_300man_0908.md・保証金50万前提。9/14〜9/18の150万玉は台帳の size で保持）
-GOKUJO_MAX_SLOTS  = 1
+GOKUJO_SIZE       = 1_500_000   # 2026-09-19 夜 本人「買いは300万・1銘柄は150万MAX・現金余力50万も加味」→ 200万→150万・乗せなし（R14 _bt_gokujo_round14_cap150_0919.py）
+#   1銘柄≤150万なので同額乗せ(1銘柄300万)は不可。制約内の最良は 2×150万(10年+475万/DD-52/12か月最悪-44万)だが現金50万では受け皿ぎりぎり
+#   → 1×150万(10年+300万/DD-25/12か月最悪-23万・-30万割れ0%)で始め、現金余力100万到達で GOKUJO_MAX_SLOTS=2（ラダー: 10年+450万/最悪年+1）。
+#   （旧: 9/19朝 200万＋同額乗せ=最大400万(a2 10年+534)・9/14 150万＋乗せ・9/5 300万。過去玉は台帳の size で保持）
+GOKUJO_MAX_SLOTS  = 1           # 現金余力100万到達で 2 に切り替える（2枠目=別銘柄150万・R14 b: 2枠目は現金≥100万の時だけ=10年+450万/DD-52/最悪年+1）
 # 2026-09-14 本人承認「初日引けの処分」: 保有1日目の終値が建値比 -GOKUJO_DAY1_CUT_PCT% 以下なら翌朝の寄りで処分（日中-3%の損切りは残す）。
 # 26年(立花・_bt_buy_untested6_26y.py): 極上1×150万 PF1.24→1.30・+300→+352万・4分割すべて改善・最悪年-37→-34。
 # 公式10年(J-Quants・決算除外/NOFILL/買残1.2): PF1.53→1.66・+256→+296万(+16%)・勝ち年10/10維持・勝率57.9→57.0。
@@ -120,7 +122,7 @@ GOKUJO_DAY1_CUT_PCT = 1.0
 # 公式10年(J-Quants): PF1.66→1.76・+296→+386万・勝ち年10/10。追加玉=該当22%・平均+0.34%・勝率58%・最悪-4.5%。
 # 台帳: addon_open/addon_date/addon_size を記録し、決済時に addon_pnl_pct を書く。週次/月次は追加玉の円も合算。
 GOKUJO_ADDON_PCT  = 1.0
-GOKUJO_ADDON_FRAC = 1.0
+GOKUJO_ADDON_FRAC = 0.0   # 2026-09-19 夜 停止（本人「1銘柄は150万MAX」＝乗せると1銘柄300万になる）。1.0に戻せば同額乗せが復活（R14: 1×150＋乗せ150=10年+378万 vs 乗せなし+300万）
 GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
 GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
 GOKUJO_WEBHOOK_ENV = "DISCORD_WEBHOOK_GOKUJO_URL"
@@ -516,7 +518,7 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
                 closed += 1
                 break
             # 極上だけ: 初日終値が建値×(1+1%)より上 → 2日目の寄り成行で同額追加（2026-09-14 本人承認・勝ち乗せ）
-            if (is_gokujo and pos["hold_days"] == 2 and prev_close is not None and op and op > 0
+            if (is_gokujo and GOKUJO_ADDON_FRAC > 0 and pos["hold_days"] == 2 and prev_close is not None and op and op > 0
                     and prev_close > eo * (1 + GOKUJO_ADDON_PCT / 100)):
                 pos["addon_open"] = op
                 pos["addon_date"] = d_str
@@ -898,8 +900,9 @@ def send_discord(today: date, key: str = "main") -> bool:
         except Exception:
             exit_str = "3営業日後"
         waku = f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄・枠内）" if n_in > 1 else "📦 **#1 を買う**（枠内）"
-        if key == GOKUJO_KEY:
-            waku = "📦 **#1 を買う**（1銘柄・最大保有1）"
+        if key == GOKUJO_KEY:     # 極上は枠数を明示（2026-09-19: 1枠・現金余力100万到達で2枠へ）
+            waku = (f"📦 **#1〜#{n_in} を買う**（{n_in}銘柄・最大保有{max_slots(key)}）" if n_in > 1
+                    else f"📦 **#1 を買う**（1銘柄・最大保有{max_slots(key)}）")
         # 【2026-09-02 本人指示「銘柄と値段くらいで・ロジックばれたくない」】文面から
         # 指標値(RSI/乖離/出来高/代金)・🔥極み帯マーク・保有ルール行・
         # 前日終値(寄指÷前日で寄指係数が割れる)を撤去。判定・台帳・JSONは無変更＝表示のみ。
@@ -1206,7 +1209,7 @@ def monthly_report(today: date) -> bool:
     def _embed(rows: list[dict], *, sell: bool, funded: set | None,
                key: str = "main") -> dict | None:
         tier_size = TIER_FILES[key][2]
-        slots = 1 if key == GOKUJO_KEY else 3   # 極上は1枠×GOKUJO_SIZE（2026-09-05は300万・2026-09-14から150万）
+        slots = max_slots(key) if key == GOKUJO_KEY else 3   # 極上は GOKUJO_MAX_SLOTS 枠×GOKUJO_SIZE（2026-09-19: 1枠×150万・現金100万到達で2枠）
         # 月次だけは大資金にもラベルを付ける（2026-09-01 本人「大資金中資金小資金わかりやすく」。
         # シグナル/週次は従来どおり _tier_sfx＝大資金無印のまま）。
         sfx = "・" + TIER_FILES[key][3]
