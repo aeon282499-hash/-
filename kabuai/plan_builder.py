@@ -3,7 +3,7 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100/②50・寄り成行）・💥崩壊◎（50万・寄指）・👑極上（150万・寄指）・🔻極み売り（3×100万）
+  ① 実弾の注文     … 🩳フェード GO（①100/②50・寄り成行）・💥崩壊◎（50万・寄指）・👑極上（200万・寄指）・🔻極み売り（3×100万）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
   ② 紙の対照       … 極み買い3×100万（紙）・崩壊の20億未満（撃たない）
   ③ 📰 材料        … 当日のTDnet適時開示（決算/上方修正/自社株買い/提携…）を全社、貸借・代金・前日比・触れる系統つき
@@ -93,14 +93,14 @@ def fade_order_text(prev_close, rank: int, jsf_stop: bool) -> tuple[str, str, in
         warn = f"🚫売り禁＝ハイカラ在庫が要る。SBIのプレミアム料(円/株)で注文種別を決める: {band}"
     return order, warn, shares
 CRASH_SIZE = "50万"
-GOKUJO_SIZE = "150万"
+GOKUJO_SIZE = "200万"   # 2026-09-19 150万→200万（同額乗せで最大400万）
 KIWAMI_SELL_SIZE = "100万×最大3"
 LADDER = [
     "余力が衝突する日は フェード ＞ 極み売り ＞ 崩壊 の順に残す（崩壊を先に降ろす）",
     "現金余力30万割れ: フェード②ゼロ＋極み売り新規停止／15万割れ: フェード①50万／戻すのは月末",
     "現金余力100万到達: フェード①130万・崩壊100万へ",
     "崩壊は◎(代金20億+)だけ・1日1本・100株が50万を超える高額株は撃たない",
-    "極上: 初日の引けが建値-1%以下なら翌朝処分／2日目の終値が建値+1%超なら同額追加（余力150万ある時だけ）",
+    "極上: 初日の引けが建値-1%以下なら翌朝処分／2日目の終値が建値+1%超なら同額追加（余力200万ある時だけ・本玉と合わせ最大400万）",
 ]
 
 
@@ -231,7 +231,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
     except Exception as e:
         print(f"[plan] 崩壊節スキップ: {e}")
 
-    # ③ 👑極上（150万・寄指上限）/ 極み買い（紙）/ 🔻極み売り（3×100万）
+    # ③ 👑極上（200万・寄指上限）/ 極み買い（紙）/ 🔻極み売り（3×100万）
     def _sig_rows(fname: str, system: str, pri: int, size: str, side: str, how, to_list: list):
         j = _load_json(fname)
         if not j or str(j.get("date", "")) != target_s:
@@ -317,7 +317,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
             d = datetime.strptime(entry_date, "%Y-%m-%d").date()
             return next_trading_day(next_trading_day(d)).strftime("%Y-%m-%d")   # 3営業日目
         for fname, system, side, size, rule in (
-                ("shadow_exit_gokujo.json", "👑極上", "買い", "150万", "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%"),
+                ("shadow_exit_gokujo.json", "👑極上", "買い", "200万", "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%"),
                 ("positions_sell.json", "🔻極み売り", "空売り", "100万", "3営業日目の大引けで買い戻し／損切り+2.5%")):
             j = _load_json(fname) or []
             lst = j.get("positions") if isinstance(j, dict) else j
@@ -363,7 +363,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         _rec("💥崩壊", "紙30万（見送り除く・◎以外も含む）", [(x.get("exec_date") or x.get("d0") or "", x.get("name", ""), x.get("result_pct")) for x in j if x.get("result_pct") is not None and not x.get("skipped")])
         j = _load_json("shadow_exit_gokujo.json") or []
         lst = j.get("positions") if isinstance(j, dict) else j
-        _rec("👑極上", "帳簿150万", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
+        _rec("👑極上", "帳簿200万(9/18まで150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
         j = _load_json("positions_sell.json") or []
         _rec("🔻極み売り", "帳簿100万×3", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in j if x.get("status") == "closed"])
     except Exception as e:

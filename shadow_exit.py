@@ -105,7 +105,8 @@ SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEY
 # 台帳=shadow_exit_gokujo.json・配信=DISCORD_WEBHOOK_GOKUJO_URL（本人専用ch）。通常版・極みの台帳/配信には触れない。
 GOKUJO_KEY        = "gokujo"
 GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
-GOKUJO_SIZE       = 1_500_000   # 2026-09-14 本人決定: 300万→150万（9/8 _report_300man_0908.md: 極上150+①100/②50=10年+1,607万/DD-95・保証金50万前提。買いは9/10決定で紙運用のまま）
+GOKUJO_SIZE       = 2_000_000   # 2026-09-19 本人「買いで使えるのは300〜400万」: 150万→200万（同額乗せで最大400万・_bt_gokujo_round9_capital_freq_0919.py a2: 26年+638万/年利6.1%/DD-116・10年+534万 PF1.72 最悪年+16＝資金≤400万で利益/DD比が最良。1×300+乗せ100(a4)は+808万だがDD-168/最悪年-63）
+#   （旧: 2026-09-14 300万→150万＝9/8 _report_300man_0908.md・保証金50万前提。9/14〜9/18の150万玉は台帳の size で保持）
 GOKUJO_MAX_SLOTS  = 1
 # 2026-09-14 本人承認「初日引けの処分」: 保有1日目の終値が建値比 -GOKUJO_DAY1_CUT_PCT% 以下なら翌朝の寄りで処分（日中-3%の損切りは残す）。
 # 26年(立花・_bt_buy_untested6_26y.py): 極上1×150万 PF1.24→1.30・+300→+352万・4分割すべて改善・最悪年-37→-34。
