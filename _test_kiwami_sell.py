@@ -75,7 +75,7 @@ def test_record():
     ok(n == 3, f"3枠で打ち止め（記帳{n}件）")
     ok(len(rows) == 3, f"台帳は3件（{len(rows)}）")
     ok(all(r["direction"] == "SELL" for r in rows), "BUYは混入しない")
-    ok(all(r["stop_pct"] == 2.5 for r in rows), "stop_pct=2.5 が入る")
+    ok(all(r["stop_pct"] == 4.0 for r in rows), "stop_pct=4.0 が入る")  # 2026-09-22 損切2.5→4.0%
     ok([r["ticker"] for r in rows] == ["1111.T", "2222.T", "3333.T"], "上から3件を採用")
     ok(os.path.exists("_shadow_skipped_sell.json"), "見送りが記録される")
     ok(json.load(open("_shadow_skipped_sell.json", encoding="utf-8"))["names"] == ["D"],
@@ -149,15 +149,17 @@ def test_exit():
     SE.advance_sell(p, date(2026, 7, 6), {"1111.T": df3})
     ok(p[0]["exit_type"] == "STOP", "同日に両方タッチしたらSTOP優先（本番と同順）")
 
-    # 期限3日
+    # 期限5日（2026-09-22 保有3→5日にしたので足を5本にする）
     df4 = mkdf([("2026-07-01", 1000, 1005, 995, 1000),
                 ("2026-07-02", 1000, 1005, 995, 1000),
                 ("2026-07-03", 1000, 1005, 995, 998),
-                ("2026-07-06", 1000, 1005, 995, 1000)])
+                ("2026-07-06", 1000, 1005, 995, 1000),
+                ("2026-07-07", 1000, 1005, 995, 999),
+                ("2026-07-08", 1000, 1005, 995, 1000)])
     p = pos()
-    SE.advance_sell(p, date(2026, 7, 7), {"1111.T": df4})
-    ok(p[0]["exit_type"] in ("MAXHOLD", "RSI"), f"3日で手仕舞い（{p[0]['exit_type']}）")
-    ok(p[0]["hold_days"] == 3, f"保有日数3（{p[0]['hold_days']}）")
+    SE.advance_sell(p, date(2026, 7, 9), {"1111.T": df4})
+    ok(p[0]["exit_type"] in ("MAXHOLD", "RSI"), f"最大5日で手仕舞い（{p[0]['exit_type']}）")  # 2026-09-22 3→5日
+    ok(p[0]["hold_days"] == SE.SELL_MAX_HOLD, f"保有日数{SE.SELL_MAX_HOLD}（{p[0]['hold_days']}）")
 
     # エントリー日が未到来なら pending のまま
     p = pos()
@@ -220,19 +222,20 @@ def test_close_reader():
     fb = KC.load_open_sell()
     ok(fb == [], "極み台帳が空でも通常版へフォールバックしない（2026-09-03監査で撤去・+2.5%損切り済み玉の誤通知防止）")
 
-    json.dump([{"ticker": "1111.T", "direction": "SELL", "status": "open", "stop_pct": 2.5},
-               {"ticker": "2222.T", "direction": "SELL", "status": "closed", "stop_pct": 2.5}],
+    json.dump([{"ticker": "1111.T", "direction": "SELL", "status": "open", "stop_pct": 4.0},
+               {"ticker": "2222.T", "direction": "SELL", "status": "closed", "stop_pct": 4.0}],
               open("kiwami_sell.json", "w", encoding="utf-8"), ensure_ascii=False)
     rows = KC.load_open_sell()
     ok(len(rows) == 1 and rows[0]["ticker"] == "1111.T",
        "極み台帳があればそちらを使い、保有中だけ返す")
-    ok(rows[0]["stop_pct"] == 2.5, "stop_pct=2.5 が15時チェックへ渡る")
+    ok(rows[0]["stop_pct"] == 4.0, "stop_pct=4.0 が15時チェックへ渡る")
 
 
 # ────────────────────────── ⑤ 定数 ──────────────────────────
 def test_consts():
     print("\n■ ⑤ 定数")
-    ok(SE.SELL_STOP_PCT == 2.5, "SELL_STOP_PCT = 2.5")
+    ok(SE.SELL_STOP_PCT == 4.0 and SE.SELL_MAX_HOLD == 5 and SE.SELL_RSI_EXIT == 45.0,
+       "SELL_STOP_PCT=4.0 / SELL_MAX_HOLD=5 / SELL_RSI_EXIT=45.0（2026-09-22 新出口）")
     ok(SE.SELL_MAX_SLOTS == 3, "SELL_MAX_SLOTS = 3")
     ok(SE.LIVE_STOP == 3.0, "通常版の LIVE_STOP は 3.0 のまま（触っていない）")
     ok(SE.TAKE_PROFIT == 5.0, "利確は5.0のまま")

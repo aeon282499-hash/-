@@ -91,7 +91,22 @@ def kiwami_px_cap(key: str) -> int:
 # 「採ってよいが期待しすぎない」水準。他7軸（利確TP×保有日数/前日比/RSI/乖離/ATR上限/
 # 売買代金/地合いゲート強度）はすべて棄却＝現行がピンポイントで正しい位置にある。
 # 特にATR上限2.5→3.0でPF0.91に転落、ゲート撤廃でPF0.97＝この2つは崖。
-SELL_STOP_PCT  = 2.5    # 極みだけ。通常版は tracker.STOP_LOSS=3.0 のまま（触らない）
+# ── 2026-09-22 極み売りの出口を変更（_bt_sell_rules_0922.py 〜 _rules3_0922.py・172セル）──
+# 損切2.5→4.0% / 最大保有3→5日 / RSI手仕舞い≤50→≤45（BTでは≤45と「撤廃」が完全に同値＝
+# RSI45まで落ちる玉が存在しない。安全弁として閾値は残す）。利確-5%・寄り成行建て・
+# 寄りギャップ利確・日経25MAゲート・3枠×100万・業種cap2・現行スコア順は据え置き。
+#   26年 玉278→230 勝率45.0→53.0% PF1.17→1.45 +45→+125万 DD-36→-34 最悪年-17→-16
+#        4時代すべて改善（+13/-26/+11/+47 → +42/-3/+31/+55）※09-16の負けが-26→-3万
+#   20年 勝ち年10/20→14/20 PF1.35→1.41 +102万  10年 PF1.54 +86万  5年 PF1.73 年+11万
+#   真のOOS(01-16で決めて17-26で検証): PF1.39→1.49 / +58→+78万
+# 面の形: 保有は1→5日で単調に良くなり**5日が天井**（6-12日はガタついて頭打ち・DDは悪化）。
+#         損切は3.0(+94)→4.0(+125)→5.0(+115) の山の頂点。8.0が+137だが凸凹でカーブフィット。
+# 効かなかったもの: トレーリング(2-4%で壊滅)・建値ストップ・分割利確・時間強制手仕舞い
+#                   ・寄りギャップ利確の停止(+96万に悪化)・選定順の変更(ランダムでz+1.59＝噪音)
+#                   ・入口の締め(vr>=2はプラセボz+0.69で偽陽性)・ゲートを3日リターンに変更
+SELL_STOP_PCT  = 4.0    # 旧2.5。極みだけ。通常版は tracker.STOP_LOSS=3.0 のまま（触らない）
+SELL_MAX_HOLD  = 5      # 旧3。⚠ MAX_HOLD(=3)は買いと共有なので別定数にする（買いは3日が最適）
+SELL_RSI_EXIT  = 45.0   # 旧50。BTでは45以下＝撤廃と同値
 SELL_MAX_SLOTS = 3      # 買いと独立の3枠（BT公式+116.9万は150万×3枠シム＝100万玉は×2/3で年+7.8万）
 KIWAMI_SELL_LEDGER = "kiwami_sell.json"
 SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEYS=("main",)と同方針）
@@ -315,7 +330,7 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
 # ══════════════════════════════════════════════════════════════════════════
 #  極みの売り台帳（2026-07-29新設）
 #  通常版と入口は完全に同一（同じ today_sell_signals.json を読む）。違うのは
-#    ①踏み上げ損切りが +2.5%（通常版+3.0%）
+#    ①踏み上げ損切りが +4.0%（通常版+3.0%）・最大保有5日・RSI手仕舞い≤45（2026-09-22変更）
 #    ②同時保有3枠まで（通常版は上限なし）
 #  の2点だけ。通常版の positions_sell.json は読まないし書かない＝完全に独立。
 # ══════════════════════════════════════════════════════════════════════════
@@ -446,10 +461,10 @@ def advance_sell(rows: list[dict], today: date, all_data: dict) -> int:
                 closed += 1
                 break
             rsi_now = calc_rsi(df[df.index <= dt_idx]["Close"].dropna())
-            rsi_exit = rsi_now is not None and rsi_now <= 50      # SELLは50以下で手仕舞い
+            rsi_exit = rsi_now is not None and rsi_now <= SELL_RSI_EXIT   # 2026-09-22 50→45
             rsi_exit = close_decisions.apply(rsi_exit, d_str, "kiwami", "SELL",
                                              pos["ticker"], _decisions)   # 14:55判定優先
-            if rsi_exit or pos["hold_days"] >= MAX_HOLD:
+            if rsi_exit or pos["hold_days"] >= SELL_MAX_HOLD:              # 2026-09-22 3→5日
                 pos.update(pnl_pct=round((eo - cl) / eo * 100, 3),
                            exit_type="RSI" if rsi_exit else "MAXHOLD",
                            exit_date=d_str, status="closed")
@@ -1136,7 +1151,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
 
     帳簿は翌朝 run_shadow が確定するため、金曜15:40時点では当日決済分が open のまま。
     通常版と同じくコピーに対して当日引けまでドライランしてから集計する（保存はしない）。
-    sell_positions には極みの売り台帳(kiwami_sell.json・損切り+2.5%)を渡す。
+    sell_positions には極みの売り台帳(kiwami_sell.json・損切り+4%)を渡す。
     """
     import copy
     from datetime import timedelta
@@ -1237,7 +1252,7 @@ def weekly_report(today: date, all_data: dict | None, sell_positions: list[dict]
         "description": "\n".join([sell_txt, _hold_line(sell_holds),
                                   f"\n📊 週間合計（空売り）: **{sell_yen:+,}円**"]),
         "color": _COLOR_WIN if sell_yen >= 0 else _COLOR_LOSE,
-        "footer": {"text": f"1件{tier_size // 10000}万・3枠・踏み上げ損切り+2.5%(通常版+3%)・利確-5%・RSI≤50/3日で決済"},
+        "footer": {"text": f"1件{tier_size // 10000}万・3枠・踏み上げ損切り+4%・利確-5%・RSI≤45/最大5日で決済"},
     }], env=SHADOW_SELL_TIER_WEBHOOK_ENV.get(key, SHADOW_SELL_WEBHOOK_ENV))
     return ok_buy and ok_sell
 
@@ -1308,7 +1323,7 @@ def monthly_report(today: date) -> bool:
             "color": _COLOR_WIN if ann >= 0 else _COLOR_LOSE,
             "footer": {"text": f"※{slots}枠×1件{tier_size // 10000}万・"
                                f"年間%は月利の和・資金枠に収まる分のみ集計・"
-                               f"損切り{'+2.5%' if sell else '-3%(通常版と同じ)'}"},
+                               f"損切り{'+4%' if sell else '-3%(通常版と同じ)'}"},
         }
 
     # 2026-08-28 本人指示: 月次chは1本＝大/中/小の買い＋売り(大)をまとめて1通で送る
