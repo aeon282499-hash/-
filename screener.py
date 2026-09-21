@@ -838,6 +838,34 @@ def calc_vol_trend5(df: pd.DataFrame) -> float | None:
     return round(float(vol.iloc[-5:].mean()) / base, 3)
 
 
+def calc_updn_vol(df: pd.DataFrame) -> float | None:
+    """上げ日/下げ日の出来高比＝直近20営業日の「上昇日の平均出来高 ÷ 下落日の平均出来高」
+    （極上の入口条件・2026-09-21 R22）。t=最終足=判定基準日。
+
+    古典では「上げで出来高が増え下げで枯れる」のが健全な押し目とされるが、**極上では逆**で、
+    この比が高い銘柄（＝健全に見える押し目）を買うと負ける。上位25%(>1.091)を外すと
+    26年+333→+469万 / PF1.28→1.47 / DD-88→-47 / 20年の玉勝率52.1→55.4%・勝ち年14→16/20。
+    効き方は「悪い玉を避ける」のではなく「枠が空いて良い候補が繰り上がる」＝DAY1CUTと同型
+    （消えた玉は26年で+30万のほぼトントン、入った玉が+166万）。
+    根拠: _bt_gokujo_round22_classic_0921.py / _round22b_updnvol_0921.py
+      プラセボ(同数ランダム除去200回) 26年z=+3.66・PF z=+4.15（ランダムが同等以上 0.0%）
+      閾値はp55〜p90の全域で改善（高原）・前半だけで閾値を決めた真のOOSも通過
+    ⚠ 12ヶ月ローリングでマイナスが27ヶ月続いた期間がある（2020後半〜2022）。
+       効かない時期があっても外さないこと。"""
+    close = df["Close"].dropna()
+    vol = df["Volume"].dropna()
+    if len(close) < 22 or len(vol) < 21:
+        return None
+    r = close.iloc[-21:].diff().dropna().to_numpy()      # 直近20日の日次変化
+    v = vol.iloc[-len(r):].to_numpy(dtype=float)
+    if len(r) < 20 or len(v) != len(r):
+        return None
+    up, dn = v[r > 0], v[r < 0]
+    if len(up) < 2 or len(dn) < 2 or dn.mean() <= 0:
+        return None
+    return round(float(up.mean() / dn.mean()), 3)
+
+
 def calc_turnover(df: pd.DataFrame) -> float | None:
     if len(df) < 2:
         return None
@@ -994,6 +1022,7 @@ def judge_signal_pre(ticker: str, name: str, df: pd.DataFrame) -> dict | None:
         "prev_close":  last_close,
         "reason":      reason,
         "vt5":         calc_vol_trend5(df),   # 極上の入口条件（2026-09-05）・通常版/極みは使わない
+        "updn_vol":    calc_updn_vol(df),     # 極上の入口条件（2026-09-21 R22）・通常版/極みは使わない
     }
 
 

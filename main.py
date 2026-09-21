@@ -430,11 +430,17 @@ def main() -> None:
                 # 根拠: _bt_kiwami_gokujo_0905.py 10年 1枠×300万=+536万/勝率57.9%/件+0.45%/DD-51万、
                 # 26年 17-21 年+55万/22-26 年+55万。vt5欠損は見送り（BTは有限値のみ）。
                 try:
-                    from shadow_exit import GOKUJO_VT5_MAX, GOKUJO_SIG_FILE, GOKUJO_SIZE, GOKUJO_PX_CAP
+                    from shadow_exit import (GOKUJO_VT5_MAX, GOKUJO_SIG_FILE, GOKUJO_SIZE,
+                                             GOKUJO_PX_CAP, GOKUJO_UPDN_MAX)
                     from screener import MARGIN_DC_POOL_MAX as _dc_pool
+                    # updn_vol（上げ日/下げ日の出来高比・2026-09-21 R22）が高い玉は外す。
+                    # 欠損は vt5 と同じく見送り（BTは有限値のみで評価している）。
                     _g_pool = [c for c in all_buy
                                if c.get("vt5") is not None and c["vt5"] <= GOKUJO_VT5_MAX
-                               and (c.get("prev_close") or 0) <= GOKUJO_PX_CAP]
+                               and (c.get("prev_close") or 0) <= GOKUJO_PX_CAP
+                               and (GOKUJO_UPDN_MAX is None
+                                    or (c.get("updn_vol") is not None
+                                        and c["updn_vol"] < GOKUJO_UPDN_MAX))]
                     _g_tier = {"key": "gokujo", "label": "極上", "size": GOKUJO_SIZE}
                     gokujo_signals, _ = _select_tier_signals(
                         _g_pool, [], _g_tier, [], [], MAX_SIGNALS, dc_max=_dc_pool,
@@ -448,6 +454,7 @@ def main() -> None:
                                          "limit_price": yose_limit_price(s.get("prev_close", 0) or 0),
                                          "days_cover": s.get("days_cover"),
                                          "vt5": s.get("vt5"),
+                                         "updn_vol": s.get("updn_vol"),
                                          "rsi": s.get("rsi"),
                                          "deviation": s.get("deviation"),
                                          "vol_ratio": s.get("vol_ratio"),
@@ -455,7 +462,8 @@ def main() -> None:
                                          "turnover": s.get("turnover", 0)}
                                         for s in gokujo_signals],
                         }, f, ensure_ascii=False, indent=2)
-                    print(f"[main-極上] vt5≤{GOKUJO_VT5_MAX} 候補{len(_g_pool)}件 → 選定{len(gokujo_signals)}件 → {GOKUJO_SIG_FILE}")
+                    print(f"[main-極上] vt5≤{GOKUJO_VT5_MAX} / updn_vol<{GOKUJO_UPDN_MAX} "
+                          f"候補{len(_g_pool)}件 → 選定{len(gokujo_signals)}件 → {GOKUJO_SIG_FILE}")
                 except Exception as _ge:
                     print(f"[main-極上] 生成失敗（極上は当日見送り・他の配信に影響なし）: {_ge}")
 
