@@ -61,7 +61,6 @@ jobs:
       contents: write
     env:
       DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
-      DISCORD_WEBHOOK_PEAD_URL: ${{ secrets.DISCORD_WEBHOOK_PEAD_URL }}
       DISCORD_WEBHOOK_EARNINGS_MID_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_MID_URL }}
       DISCORD_WEBHOOK_EARNINGS_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_SMALL_URL }}
       PYTHONIOENCODING: utf-8
@@ -92,55 +91,6 @@ jobs:
           done
           git diff --cached --quiet && exit 0
           git commit -m "chore: update earnings reminder marker [skip ci]"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push origin main && break
-            echo "push retry $i"; sleep 5
-          done
-
-  # ── PEAD紙・買いシグナル（2026-08-06 本人「買えみたいにわかりやすく」）──
-  # 寄り値確定後の9:31に「今日の大引けで買う（紙）」を配信。実弾なし・記帳は翌朝run。
-  pead-signal:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: pead-signal
-      cancel-in-progress: false
-    env:
-      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
-      DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
-      DISCORD_WEBHOOK_PEAD_URL: ${{ secrets.DISCORD_WEBHOOK_PEAD_URL }}
-      PYTHONIOENCODING: utf-8
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: パッケージインストール
-        run: pip install -r requirements.txt
-
-      - name: 9:31 JSTまで待つ（寄り値確定後）
-        run: |
-          while [ "$(TZ=Asia/Tokyo date +%H%M)" -lt "0931" ]; do sleep 60; done
-
-      - name: 最新の台帳を取り込む（並走コミット反映＝二重配信ガード）
-        run: git pull --rebase origin main || true
-
-      - name: PEAD紙・買いシグナル配信
-        run: python main_pead_paper.py --signal
-
-      - name: シグナル記録コミット
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          [ -f positions_pead_paper.json ] && git add positions_pead_paper.json
-          git diff --cached --quiet && exit 0
-          git commit -m "chore: update pead paper signal marker [skip ci]"
           for i in 1 2 3; do
             git pull --rebase origin main && git push origin main && break
             echo "push retry $i"; sleep 5
@@ -181,10 +131,9 @@ jobs:
       # 友達用フェード（板の厚い玉のみ・2026-08-12・未設定なら無言スキップ）
       DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
       DISCORD_WEBHOOK_DAY_EXTRA_URLS: ${{ secrets.DISCORD_WEBHOOK_DAY_EXTRA_URLS }}
-      # 2026-09-04監査: この job は main_earnings_preview.py(8:20予備リスト) と main_pead_paper.py(朝の答え合わせ) も
-      # 回すのに決算/PEAD の webhook が無く、両方とも「送信スキップ」で黙って未配信だった
+      # 2026-09-04監査: この job は main_earnings_preview.py(8:20予備リスト) を回すのに決算の
+      # webhook が無く「送信スキップ」で黙って未配信だった（2026-09-21: 決算追撃は廃止）
       DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}
-      DISCORD_WEBHOOK_PEAD_URL: ${{ secrets.DISCORD_WEBHOOK_PEAD_URL }}
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
       TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
@@ -248,11 +197,6 @@ jobs:
         continue-on-error: true
         run: python build_dashboard.py
 
-      - name: PEAD専業・紙運用（実弾なし・2026-07-12見送り判定のforward検証）
-        # 2026-08-05 本人「決算後に買って利益を積み上げたい」→復活パス=紙運用で稼働
-        continue-on-error: true
-        run: python main_pead_paper.py
-
       - name: 決算持ち越し 朝の予備リスト配信（非公式・15:06本配信の先読み）
         # 2026-08-06 本人依頼。昨日終値ベースの圏内リスト＋15:06時点の空き枠見込み
         continue-on-error: true
@@ -274,7 +218,7 @@ jobs:
             today_signals_mid.json today_sell_signals_mid.json \
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
-            positions_pead_paper.json earnings_preview_state.json \
+            earnings_preview_state.json \
             today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
             today_signals_theme.json logs/theme_diag.jsonl \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json _shadow_skipped_gokujo.json \

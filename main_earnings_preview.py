@@ -17,14 +17,20 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
 import main_earnings_hold as eh
-from main_pead_paper import jst_today
+
+# 2026-09-21 決算追撃(main_pead_paper)の廃止に伴いインライン化（旧: from main_pead_paper import jst_today）
+JST = timezone(timedelta(hours=9))
+
+
+def jst_today() -> date:
+    return datetime.now(JST).date()
 
 STATE_PATH = "earnings_preview_state.json"
 PRICE_CAP = 5_000.0
