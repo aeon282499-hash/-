@@ -62,8 +62,8 @@ TIERS = [
         "sell_sig_file":    "today_sell_signals_mid.json",
         "buy_history_file": "trade_history_mid.json",
         "sell_history_file": "trade_history_sell_mid.json",
-        "buy_webhook":      os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip(),
-        "sell_webhook":     os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip(),
+        "buy_webhook":      "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
+        "sell_webhook":     "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
     },
     {
         "key":              "small",
@@ -74,8 +74,8 @@ TIERS = [
         "sell_sig_file":    "today_sell_signals_small.json",
         "buy_history_file": "trade_history_small.json",
         "sell_history_file": "trade_history_sell_small.json",
-        "buy_webhook":      os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip(),
-        "sell_webhook":     os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
+        "buy_webhook":      "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
+        "sell_webhook":     "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
     },
 ]
 

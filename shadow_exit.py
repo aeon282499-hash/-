@@ -105,7 +105,14 @@ SELL_SIG_FILE      = "today_sell_signals.json"    # 大資金のみ（NOTIFY_KEY
 # 台帳=shadow_exit_gokujo.json・配信=DISCORD_WEBHOOK_GOKUJO_URL（本人専用ch）。通常版・極みの台帳/配信には触れない。
 GOKUJO_KEY        = "gokujo"
 GOKUJO_SIG_FILE   = "today_signals_gokujo.json"   # main.py が vt5≤GOKUJO_VT5_MAX で選定して書く
-GOKUJO_SIZE       = 1_500_000   # 2026-09-19 夜 本人「買いは300万・1銘柄は150万MAX・現金余力50万も加味」→ 200万→150万（R14 _bt_gokujo_round14_cap150_0919.py）
+# 2026-09-21 本人決定「ルール通り300万にして」＝買い枠300万を1銘柄に全部入れる。
+# 極み(買い)を廃止して買いが極上一本になったので、300万の枠を極上が独占する形。
+# BT(1枠×300万・updn_volフィルタ込み・乗せなし): 26年+983万/年利12.6%/DD-95万/勝ち年19/26
+#                                                10年+764万/年利25.5%/DD-52万/勝ち年10/10
+# 2枠×150万は同じ300万で年利15.2%（2枠目が下位玉になる）＝1枠×サイズが正しい。
+# 参加率は中央値0.058%・最大0.148%（代金中央値49.6億）＝板は制約にならない。
+# ⚠ DD・最悪月も倍になる: 10年DD -26→-52万 / 最悪月 -12→-25万 / 26年最悪年 -32→-64万。
+GOKUJO_SIZE       = 3_000_000   # 旧: 1_500_000（2026-09-19 R14「1銘柄150万MAX」）
 #   2026-09-19 深夜 R15後 本人「1かな」＝勝ち乗せ復活（1銘柄は本玉150万＋乗せ150万＝最大300万・R14参考行: 10年+378万/PF1.69/最悪年+10/勝年10/10・12か月最悪-32万・-30万割れ起点2%）。
 #   R15 B: 追加買いの中で正のエッジがあるのは勝ち乗せだけ（追加玉+0.28%/勝率56.9%・ナンピンは全型エッジなし）。制約内の最良は 2×150万(10年+475万/DD-52/12か月最悪-44万)だが現金50万では受け皿ぎりぎり
 #   → 1×150万(10年+300万/DD-25/12か月最悪-23万・-30万割れ0%)で始め、現金余力100万到達で GOKUJO_MAX_SLOTS=2（ラダー: 10年+450万/最悪年+1）。
@@ -123,7 +130,10 @@ GOKUJO_DAY1_CUT_PCT = 1.0
 # 公式10年(J-Quants): PF1.66→1.76・+296→+386万・勝ち年10/10。追加玉=該当22%・平均+0.34%・勝率58%・最悪-4.5%。
 # 台帳: addon_open/addon_date/addon_size を記録し、決済時に addon_pnl_pct を書く。週次/月次は追加玉の円も合算。
 GOKUJO_ADDON_PCT  = 1.0
-GOKUJO_ADDON_FRAC = 1.0   # 2026-09-19 深夜 復活（本人「1かな」・R15）。同日夜に一度0.0で停止していた（1銘柄150万MAX）。0.0に戻せば乗せなし(10年+300万)に戻る
+# 2026-09-21 本玉を300万にしたので停止。本玉300万＋同額乗せ＝1銘柄600万となり、
+# 本人の「買い300万」の枠を倍に超えてしまうため。乗せを戻すなら本玉を150万に戻すこと。
+# （履歴: 2026-09-19 深夜に本人「1かな」で 1.0 に復活 → 同日夜は0.0で停止していた）
+GOKUJO_ADDON_FRAC = 0.0   # 旧: 1.0
 GOKUJO_PX_CAP     = 10_000                        # BTと同じ値がさカット（300万でも1万円超は買わない）
 GOKUJO_VT5_MAX    = 1.09                          # 10年候補の下位20%分位（26年は1.1〜1.6が高原）
 # 2026-09-21 R22: 上げ日/下げ日の出来高比（直近20日）が高い＝古典で言う「健全な押し目」の玉を外す。
@@ -786,8 +796,10 @@ SHADOW_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_URL"           # 極み・買い（
 # 中/小資金の極み買い（2026-08-28 本人「中小資金も極みシグナルと同じようにして」）
 SHADOW_TIER_WEBHOOK_ENV = {
     "main":  SHADOW_WEBHOOK_ENV,
-    "mid":   "DISCORD_WEBHOOK_SHADOW_MID_URL",
-    "small": "DISCORD_WEBHOOK_SHADOW_SMALL_URL",
+    # 2026-09-21 本人「中と小は誰も見てない・裏で紙だけ」→ 存在しないenv名にして配信だけ止める。
+    # ※ dictから消すと .get(key, SHADOW_WEBHOOK_ENV) で大資金chへ誤爆するので消してはいけない。
+    "mid":   "_DISABLED_SHADOW_MID",
+    "small": "_DISABLED_SHADOW_SMALL",
     GOKUJO_KEY: GOKUJO_WEBHOOK_ENV,          # 極上・買い（2026-09-05・本人専用ch）
 }
 # 2026-09-21 本人「極みにも極上を流してあげて」: 極み"買い"を廃止したので（26年PF1.00・年利0.2%・
@@ -797,9 +809,7 @@ SHADOW_TIER_WEBHOOK_ENV = {
 #    株数は150万基準のままなので、ミラー側には注記を1枚足して誤解を防ぐ（_GOKUJO_MIRROR_NOTE）。
 # ⚠ ミラーの送信失敗が本体の再送ガード(_POST_FAILED)を立てないようにする。立てると main.py が
 #    「未送信」と誤認して全体を再送し、極上ch側が二重投稿になる。
-GOKUJO_MIRROR_ENV = ("DISCORD_WEBHOOK_SHADOW_URL",
-                     "DISCORD_WEBHOOK_SHADOW_MID_URL",
-                     "DISCORD_WEBHOOK_SHADOW_SMALL_URL")
+GOKUJO_MIRROR_ENV = ("DISCORD_WEBHOOK_SHADOW_URL",)   # 2026-09-21 中/小は紙だけ→大資金chのみ
 _GOKUJO_MIRROR_NOTE = {
     "description": ("ℹ️ これは**極上**（1枠×150万）の配信です。2026-09-21 に極み（買い）を廃止し、"
                     "買いは極上へ一本化しました。**株数は150万基準**なので、資金に応じて調整してください。"),
@@ -811,8 +821,8 @@ SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り（
 # 配信だけ資金別に株数を付けて各chへ。
 SHADOW_SELL_TIER_WEBHOOK_ENV = {
     "main":  SHADOW_SELL_WEBHOOK_ENV,
-    "mid":   "DISCORD_WEBHOOK_SHADOW_SELL_MID_URL",
-    "small": "DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL",
+    "mid":   "_DISABLED_SHADOW_SELL_MID",     # 2026-09-21 中/小は紙だけ（配信停止）
+    "small": "_DISABLED_SHADOW_SELL_SMALL",
 }
 # 週次/月次レポートの専用チャンネル（2026-08-09 本人がwebhook新設・secretsに登録済み）。
 # 未設定なら従来どおり買いチャンネルへフォールバック（ローカル等でも壊れない）。

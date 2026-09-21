@@ -56,8 +56,8 @@ TIERS = [
         "size":          500_000,
         "buy_pos_file":  "positions_mid.json",
         "sell_pos_file": "positions_sell_mid.json",
-        "buy_webhook":   os.getenv("DISCORD_WEBHOOK_BUY_MID_URL", "").strip(),
-        "sell_webhook": os.getenv("DISCORD_WEBHOOK_SELL_MID_URL", "").strip(),
+        "buy_webhook":   "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
+        "sell_webhook": "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
         "public_mirror": False,
     },
     {
@@ -67,8 +67,8 @@ TIERS = [
         "size":          300_000,
         "buy_pos_file":  "positions_small.json",
         "sell_pos_file": "positions_sell_small.json",
-        "buy_webhook":   os.getenv("DISCORD_WEBHOOK_BUY_SMALL_URL", "").strip(),
-        "sell_webhook": os.getenv("DISCORD_WEBHOOK_SELL_SMALL_URL", "").strip(),
+        "buy_webhook":   "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
+        "sell_webhook": "",  # 2026-09-21 中/小は紙だけ（配信停止・生成と記帳は継続）
         "public_mirror": False,
     },
 ]
