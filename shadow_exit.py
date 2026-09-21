@@ -790,6 +790,22 @@ SHADOW_TIER_WEBHOOK_ENV = {
     "small": "DISCORD_WEBHOOK_SHADOW_SMALL_URL",
     GOKUJO_KEY: GOKUJO_WEBHOOK_ENV,          # 極上・買い（2026-09-05・本人専用ch）
 }
+# 2026-09-21 本人「極みにも極上を流してあげて」: 極み"買い"を廃止したので（26年PF1.00・年利0.2%・
+# DSR0.02＝試行10回でもノイズで説明できる水準／極上は26年PF1.47・DSR0.997）、
+# 極み買いのch(大/中/小)が無音にならないよう、極上の配信を同じ内容でミラーする。
+# ⚠ 極上は「1枠×150万」の単一ルール。極み買いのような資金別サイズ(大100/中50/小30万)は無い。
+#    株数は150万基準のままなので、ミラー側には注記を1枚足して誤解を防ぐ（_GOKUJO_MIRROR_NOTE）。
+# ⚠ ミラーの送信失敗が本体の再送ガード(_POST_FAILED)を立てないようにする。立てると main.py が
+#    「未送信」と誤認して全体を再送し、極上ch側が二重投稿になる。
+GOKUJO_MIRROR_ENV = ("DISCORD_WEBHOOK_SHADOW_URL",
+                     "DISCORD_WEBHOOK_SHADOW_MID_URL",
+                     "DISCORD_WEBHOOK_SHADOW_SMALL_URL")
+_GOKUJO_MIRROR_NOTE = {
+    "description": ("ℹ️ これは**極上**（1枠×150万）の配信です。2026-09-21 に極み（買い）を廃止し、"
+                    "買いは極上へ一本化しました。**株数は150万基準**なので、資金に応じて調整してください。"),
+    "color": 0x95A5A6,
+}
+
 SHADOW_SELL_WEBHOOK_ENV = "DISCORD_WEBHOOK_SHADOW_SELL_URL" # 極み・売り（大資金）
 # 中/小資金の極み売り（2026-08-28 本人「売りもチャンネルを統合」）。台帳(kiwami_sell.json)は1本のまま、
 # 配信だけ資金別に株数を付けて各chへ。
@@ -839,6 +855,22 @@ def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
             print(f"[shadow] Discord送信失敗: {e}（試行{attempt + 1}）")
     _POST_FAILED = True   # 3回とも失敗＝main.py が送信済みガードを立てないようにする（2026-09-03監査）
     return False
+
+
+def _mirror_post(embeds: list[dict], envs=GOKUJO_MIRROR_ENV) -> int:
+    """極上の配信を極みchへミラーする（2026-09-21）。
+    未設定のenvはスキップ。**失敗しても _POST_FAILED を立てない**（本体の再送＝二重投稿を誘発しないため）。
+    戻り値=実際に送れたch数。"""
+    global _POST_FAILED
+    saved = _POST_FAILED
+    sent = 0
+    for env in envs:
+        if not os.getenv(env, "").strip():
+            continue
+        if _shadow_post(embeds + [_GOKUJO_MIRROR_NOTE], env):
+            sent += 1
+    _POST_FAILED = saved
+    return sent
 
 
 def _price_str(v: float | None) -> str:
@@ -990,7 +1022,12 @@ def send_discord(today: date, key: str = "main") -> bool:
     if not embeds:
         print(f"[shadow-{key}] 配信対象なし → 送信しない")
         return False
-    return _shadow_post(embeds, SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
+    ok = _shadow_post(embeds, SHADOW_TIER_WEBHOOK_ENV.get(key, SHADOW_WEBHOOK_ENV))
+    if key == GOKUJO_KEY:                       # 極上 → 極みch(大/中/小)へミラー（2026-09-21）
+        n_mirror = _mirror_post(embeds)
+        if n_mirror:
+            print(f"[shadow-{key}] 極みchへミラー配信 {n_mirror}件")
+    return ok
 
 
 def _tier_sfx(key: str) -> str:
