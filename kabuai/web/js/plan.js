@@ -47,23 +47,23 @@ function planSetCash(v) { try { const n = Number(String(v).replace(/[^\d.]/g, ""
 function planSizes(cash) {
   // 単位: 万円。ラダー（memory/project_daytrade_signal・project_sellwatch_short_candidate）
   if (cash == null) return null;
-  if (cash < 15) return { fade1: "①50万", fade2: "なし", kiwami_sell: "新規停止", crash: "なし", gokujo: "150万×1（乗せなし）", level: "15万割れ＝縮小", cls: "dn" };
-  if (cash < 30) return { fade1: "①100万", fade2: "なし", kiwami_sell: "新規停止", crash: "なし", gokujo: "150万×1（乗せなし）", level: "30万割れ＝②ゼロ・売り新規停止", cls: "dn" };
-  if (cash < 50) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "なし（余裕がない）", gokujo: "150万＋勝ち乗せ150", level: "通常（崩壊は見送り）", cls: "" };
-  if (cash < 100) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "50万", gokujo: "150万＋勝ち乗せ150", level: "通常", cls: "" };
-  return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", kiwami_sell: "100万×3", crash: "100万", gokujo: "150万×2＋勝ち乗せ（2枠目を開ける・要切替）", level: "100万到達＝①130(小型)・崩壊100万・極上2枠", cls: "pos" };
+  if (cash < 15) return { fade1: "①50万", fade2: "なし", kiwami_sell: "新規停止", crash: "📄紙", gokujo: "300万×1", level: "15万割れ＝縮小", cls: "dn" };
+  if (cash < 30) return { fade1: "①100万", fade2: "なし", kiwami_sell: "新規停止", crash: "📄紙", gokujo: "300万×1", level: "30万割れ＝②ゼロ・売り新規停止", cls: "dn" };
+  if (cash < 50) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
+  if (cash < 100) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
+  return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "100万到達＝①130(小型)へ", cls: "pos" };
 }
 function planSizeFor(o, sz) {
   if (!sz) return null;
   if (o.system.startsWith("🩳")) return o.size.startsWith("①") ? sz.fade1 : sz.fade2;
-  if (o.system.startsWith("💥")) return /撃たない/.test(o.size) ? o.size : sz.crash;
+  if (o.system.startsWith("💥")) return "📄紙（実弾から外した・2026-09-22）";
   if (o.system.startsWith("🔻極み売り")) return sz.kiwami_sell;
   if (o.system.startsWith("👑")) return sz.gokujo;
   return null;
 }
 function planCashBox(cash, sz) {
   const val = cash == null ? "" : String(cash);
-  const table = sz ? `<div class="chips" style="margin-top:6px"><span class="chip ${sz.cls}">${esc(sz.level)}</span><span class="chip">フェード ${esc(sz.fade1)}／${esc(sz.fade2)}</span><span class="chip">崩壊 ${esc(sz.crash)}</span><span class="chip">極み売り ${esc(sz.kiwami_sell)}</span><span class="chip">極上 ${esc(sz.gokujo)}</span></div>`
+  const table = sz ? `<div class="chips" style="margin-top:6px"><span class="chip ${sz.cls}">${esc(sz.level)}</span><span class="chip">フェード ${esc(sz.fade1)}／${esc(sz.fade2)}</span><span class="chip">極み売り ${esc(sz.kiwami_sell)}</span><span class="chip">極上 ${esc(sz.gokujo)}</span></div>`
     : `<div class="note" style="margin-top:4px">現金余力（万円）を入れると、今日のサイズがラダー通りに決まります（端末に保存）。</div>`;
   return `<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>💰 現金余力</b>
       <input id="plan-cash" inputmode="decimal" value="${esc(val)}" placeholder="例 50" style="width:80px;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf2);color:var(--tx)"> <span class="muted">万円</span>
@@ -126,7 +126,7 @@ function viewPlan() {
   const live = orders.filter(o => !(sz && /なし|停止/.test(planSizeFor(o, sz) || "")));
   const lead = orders.length
     ? `<div class="banner dn">🔴 <b>今日の実弾 ${live.length}本</b>：書いてある注文をそのまま出す。日計り（フェード/崩壊）は<b>必ず大引けで手仕舞い</b>。${live.length < orders.length ? `<br><span style="font-size:12px">現金余力のラダーで ${orders.length - live.length}本は今日出さない。</span>` : ""}</div>`
-    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:12px">フェードGO・💥崩壊◎・極上・極み売りの4系統すべて該当なし＝撃たないのが正解の日。</span></div>`;
+    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:12px">フェードGO・極上・極み売りの3系統すべて該当なし＝撃たないのが正解の日。</span></div>`;
   const ordersHtml = `<div class="hh">🔴 実弾の注文 <span class="sub">フェード①100/②50・崩壊◎50・極上150×1・極み売り3×100</span></div>${lead}${orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : ""}`;
   // ② 保有中の玉と出口
   const holdHtml = holdings.length ? `<div class="hh" style="margin-top:14px">📦 保有中の玉と出口 <span class="sub">${holdings.filter(h => h.exit_today).length}本が今日出口</span></div><div class="card tight">${holdings.map(planHoldRow).join("")}</div>` : "";
