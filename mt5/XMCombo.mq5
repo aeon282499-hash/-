@@ -24,14 +24,16 @@ input double InpGoldStopUsd   = 10.0;       // 損切り幅($/oz・0=無し)
 input int    InpGoldMaxSpread = 40;         // 許容スプレッド(pt=0.01$)
 input int    InpGoldHourLon   = 10;         // 売り時刻 ロンドン(時)
 input int    InpGoldMinLon    = 15;         // 売り時刻 ロンドン(分)
-input int    InpGoldHoldMin   = 15;         // 保有分数
+input int    InpGoldHoldMin   = 17;         // 保有分数。9/22夜: 20→17(10:15→10:32)。文献Caminschi&Heaney(2014 JFM)「値決めの結果公表後には有意なリターンが無い」の予言どおり、公表後は戻す(1分解剖で10:32はt-4.60)。既存グリッドは出口が5分刻み(range(625,676,5))で10:31-10:33を一度も評価していなかった。1分刻みで埋めると11年+145,051→+165,693円(+14%)・直近2年+116,244→+139,996(+20%)・t5.67→6.44・勝ち年5→6/9・上位3日除去+121,516→+140,943。10:31(+5%)10:33(+2%)も現行超えで帯になっており17分はその中心かつ頂点。⚠️出口軸は幅が狭い(±2分の24セルで現行超え7)・改善は後半偏重(前+2.8/後+6.0)
 input long   InpGoldMagic     = 20260908;
 input int    InpGoldGateN     = 40;         // 自己判断ゲート: 直近N回(紙でも毎日計測)の平均$/ozが閾値超の時だけ撃つ(0=無効)。BT: 10年+233→+539$・2016-24 -217→+92
-input double InpGoldGateThr   = 0.10;       // 閾値 $/oz
+input double InpGoldGateThr   = 0.10;       // 閾値 $/oz(AM用)
+input double InpGoldMonMult   = 2.0;       // 金AMの月曜だけロット倍率。9/22: 値決めフローは週末明けが最大＝ゲート無し全2,751玉で月+0.549$/oz vs 他+0.014(差のt+3.47)・前後半とも同符号(+1.5/+2.4)・隣接窓でも再現。2倍で10年+101,164→+145,051円/勝ち年4→5/9/t5.64→5.67。⚠️弱点=前半の差のt1.51・月曜の利益の80%が2025-26年→2027年に再判定[X4]
+input double InpGoldPmGateThr = 0.00;       // 閾値 $/oz(PM用)。9/22: PMは0.00の方が11年+48,202→+52,820円・直近2年+42,500→+42,608円と両期間で上。AMは0.10のまま(0.00だと11年が落ちる)
 input bool   InpGoldPmOn      = true;       // PM値決め(ロンドン15:00)直前5分ショート(9/19採用: 10年%t5.5・10/11年+・XM M5 17ヶ月t3.7・現行に足してE[log]5.09→5.66・DD不変・同サイズ/同ゲート/同SL)
 input int    InpGoldPmHourLon = 14;         // 売り時刻 ロンドン(時)
-input int    InpGoldPmMinLon  = 55;         // 売り時刻 ロンドン(分)
-input int    InpGoldPmHoldMin = 5;          // 保有分数(15分窓はnet-0.01で不可・5分だけ生きる)
+input int    InpGoldPmMinLon  = 53;         // 売り時刻 ロンドン(分)。9/22夜: 55→53。AMと同じ文献由来の修正(公表後を持たない)。14:53→15:03 は11年+52,820→+89,479円(+69%)・直近2年+42,608→+79,448(+86%)・t2.21→3.27・勝ち年5→7/11・上位3日除去+34,525→+63,665。周囲±2分の24セル中19が現行超え=尾根(AMと違い幅がある)
+input int    InpGoldPmHoldMin = 10;         // 保有分数。10分のまま(入口を14:53へ2分前倒ししたので出口は15:03)。9/22夜のグリッド上位は全部14:52-14:54入り×15:01-15:04出に固まる。※旧コメントの「PM10分は不可」は14:50→15:00の話で別窓
 input long   InpGoldPmMagic   = 20260919;
 //--- B) 日経225 夜ドリフト
 //--- 9/19 本人「徐々にロット増やして・フル全自動」: 残高ラダー。残高がしきい値以上なら各レッグの単位残高を÷k(=枚数×k)。BS(修正コスト・金ゲート込み): ×1固定E[log]5.09/DD-54% → ≥10万×1.25 5.71/DD-63% → ≥30万×1.5 6.01/DD-74%・停止0%。×2はE[log]低下(オーバーKelly)なので3段目は既定off
@@ -46,8 +48,8 @@ input bool   InpJpOn          = true;       // 日経夜ドリフトを動かす
 input string InpJpSymbol      = "JP225Cash";
 input double InpJpJpyPerLot   = 8750;       // 1.0lot(名目約6.5万円)あたりの必要残高(円)
 input double InpJpLotMax      = 500.0;
-input int    InpJpEntryHour   = 15;         // 買い時刻 JST
-input int    InpJpExitHour    = 9;          // 手仕舞い時刻 JST
+input int    InpJpEntryHour   = 15;         // 買い時刻 JST。9/22夜に14時へ変更したが同日中に差し戻し: 変更根拠だった朝のグリッドが「15→09だけ金曜建て(EAは建てない)を含む」不公平比較だった。EA準拠(月〜木)で測り直すと合算は3%差の団子で、校正済みポートフォリオシムでは15:00→09:00がE[log]+8.75/停止0%/5年下位10%28.6万 と最良(14:00→05:00は+8.02/停止4%/5.5万)
+input int    InpJpExitHour    = 9;         // 手仕舞い時刻 JST。同上で09:00へ差し戻し。05:00(米株の引け)はスワップ0泊だがUS500の1回%が+0.0717→+0.0408と落ち、複利+破産込みで負ける。PrevNightPct のパラメータ化(9/22)はそのまま維持
 input bool   InpJpHoldWeekend = false;      // 金曜も建てて月曜朝に閉じる
 input bool   InpJpPrevNightFilter = true;   // 前夜(前日15:00→当日9:00)が上げなら見送る(15年+82→+99%・XM t=3.2・月勝率58→61%)
 input double InpJpPrevNightMax = 0.0;       // 前夜の上げがこの%以下の日だけ建てる
@@ -60,21 +62,21 @@ input double InpJpAddMult     = 2.0;        // 追加量(元玉の倍率)。9/17
 
 input bool   InpUsOn          = true;       // US500夜ドリフトを動かす(3本目・日経と同型・前夜≤0)
 input string InpUsSymbol      = "US500Cash";
-input double InpUsJpyPer01    = 31250;      // 0.1lot(名目約11万円)あたりの必要残高(円)
+input double InpUsJpyPer01    = 40000;      // 0.1lot(名目約11万円)あたりの必要残高(円)。9/22: 校正済みポートフォリオシムで指数を薄くすると全停止0%のまま 1年中央10.2→11.7万・1年下位10% 6.0→6.2万・5年下位10% 28.6→32.0万・DD-74→-73%。金(t5.6)に比べ指数(t2.5-3.9)は薄い方が良い
 input double InpUsLotMax      = 50.0;
 input int    InpUsMaxSpread   = 150;        // 許容スプレッド(pt=0.01$)
 input long   InpUsMagic       = 20260913;
 
 input bool   InpDeOn          = true;       // GER40 欧州の夜(01:00JST買→16:00JST売・火〜金JST・直前レッグ≤0)
 input string InpDeSymbol      = "GER40Cash";
-input double InpDeJpyPer01    = 50000;      // 0.1lot(名目約46万円)あたりの必要残高(円)
+input double InpDeJpyPer01    = 65000;      // 0.1lot(名目約46万円)あたりの必要残高(円)。9/22: 同上でUS500と一緒に薄くした
 input double InpDeLotMax      = 50.0;
 input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
 input int    InpDeEntryHour   = 1;          // 買い時刻 JST
 input int    InpDeExitHour    = 16;         // 手仕舞い時刻 JST
 input long   InpDeMagic       = 20260914;
 
-input bool   InpGdOn          = true;       // 金 04:00JST買→22:00JST売(火〜金JST・直前レッグ≤0・t3.6 勝10/11)
+input bool   InpGdOn          = false;      // 9/22停止: αではなくβと判明。同じ時間の常時買い+463,940円/t2.90に対しレッグは+185,916/t1.57、しかも「直前レッグ≤0」で選んだ日の平均+0.917$/oz < 全日平均+1.446$/oz＝フィルタが平均より悪い日を選んでいる。残高12万で自動起動する前に切る
 input double InpGdJpyPer001   = 120000;     // 0.01lot(=1oz・名目約65万円)あたりの必要残高(円)。残高12万未満は0枚
 input double InpGdLotMax      = 1.00;
 input int    InpGdMaxSpread   = 40;         // 許容スプレッド(pt=0.01$)
@@ -82,7 +84,7 @@ input int    InpGdEntryHour   = 4;          // 買い時刻 JST
 input int    InpGdExitHour    = 22;         // 手仕舞い時刻 JST
 input long   InpGdMagic       = 20260915;
 //--- C) 金 Globex再開買い（サーバー01:05買→03:00売・13年t8.2・14/14年・0.01lot=名目68万円）
-input int    InpGxMode        = 1;          // 0=off / 1=紙(仮想約定をログとFilesに記録) / 2=実弾(残高がInpGxMinBalance以上のときだけ)
+input int    InpGxMode        = 0;          // 9/22停止: 週明け/日替わり再開のクオート人工物と確定(24通貨ペア横断で同型・ペッグのEURDKKでt+15.6・USDHKDでt+13.2)。紙でも計測する意味なし          // 0=off / 1=紙(仮想約定をログとFilesに記録) / 2=実弾(残高がInpGxMinBalance以上のときだけ)
 input double InpGxMinBalance  = 200000;     // 実弾に切り替える残高(円)・未満なら紙のまま
 input int    InpGxEntryHourSrv = 1;         // 建て時刻 サーバー(時)・メンテ明け01:05
 input int    InpGxEntryMinSrv  = 5;
@@ -195,8 +197,8 @@ double PrevNightPct(string sym)
 {
    datetime srvOff = TimeTradeServer() - TimeGMT();          // サーバー時刻 - GMT
    datetime jst = NowJST(); datetime dayJ = DayOf(jst);
-   datetime t9  = dayJ + 9 * 3600 - 9 * 3600 + srvOff;       // 当日09:00JST をサーバー時刻に
-   datetime t15 = dayJ - 86400 + 15 * 3600 - 9 * 3600 + srvOff; // 前日15:00JST
+   datetime t9  = dayJ + InpJpExitHour * 3600 - 9 * 3600 + srvOff;   // 当日の手仕舞い時刻JST をサーバー時刻に(9/22: 9固定をやめてレッグと揃えた。揃えないと直近2年で-59,812円)
+   datetime t15 = dayJ - 86400 + InpJpEntryHour * 3600 - 9 * 3600 + srvOff; // 前日の建て時刻JST
    MqlDateTime dw; TimeToStruct(jst, dw);
    if(dw.day_of_week == 1) t15 -= 3 * 86400;                  // 月曜は金曜15:00
    int b9 = iBarShift(sym, PERIOD_H1, t9, true), b15 = iBarShift(sym, PERIOD_H1, t15, true);
@@ -301,8 +303,8 @@ int OnInit()
 {
    if(AnotherInstanceRunning()) { Print("XMCombo は別チャートで稼働中なので起動しません"); ExpertRemove(); return INIT_FAILED; }
    trade.SetDeviationInPoints(30);
-   g_fixAM.Setup("金", InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin, InpGoldMagic);
-   g_fixPM.Setup("金PM", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, InpGoldPmMagic);
+   g_fixAM.Setup("金", InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin, InpGoldMagic, InpGoldGateThr, InpGoldMonMult);
+   g_fixPM.Setup("金PM", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, InpGoldPmMagic, InpGoldPmGateThr);
    if((InpGoldOn || InpGoldPmOn || InpGdOn) && !SymbolSelect(InpGoldSymbol, true)) { Print("銘柄が見つからない: ", InpGoldSymbol); return INIT_FAILED; }
    if(InpJpOn && !SymbolSelect(InpJpSymbol, true)) { Print("銘柄が見つからない: ", InpJpSymbol); return INIT_FAILED; }
    if(InpUsOn && !SymbolSelect(InpUsSymbol, true)) { Print("銘柄が見つからない: ", InpUsSymbol); return INIT_FAILED; }
@@ -311,7 +313,7 @@ int OnInit()
    PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
                InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, InpGdOn ? "on" : "off", LotGd(), InpGdJpyPer001, InpGdEntryHour, InpGdExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
-   PrintFormat("[金PM] %s 売London%02d:%02d→%d分 lot=%.2f(AMと同サイズ/同ゲートN%d閾%.2f/同SL) magic=%I64d", InpGoldPmOn ? "on" : "off", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, LotGold(), InpGoldGateN, InpGoldGateThr, InpGoldPmMagic);
+   PrintFormat("[金PM] %s 売London%02d:%02d→%d分 lot=%.2f(AMと同サイズ/同ゲートN%d閾%.2f/同SL) magic=%I64d", InpGoldPmOn ? "on" : "off", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, LotGold(), InpGoldGateN, InpGoldPmGateThr, InpGoldPmMagic);
    PrintFormat("[ラダー設定] ≥%.0f円×%.2f / ≥%.0f円×%.2f / ≥%.0f円×%.2f → 今の残高%.0f円は×%.2f", InpScale1Bal, InpScale1, InpScale2Bal, InpScale2, InpScale3Bal, InpScale3, AccountInfoDouble(ACCOUNT_BALANCE), ScaleK());
    WarmSeries();
    EventSetTimer(5);
@@ -324,11 +326,11 @@ void OnDeinit(const int reason) { EventKillTimer(); }
 class CFixLeg
 {
 public:
-   string   tag; int hourLon, minLon, holdMin; long magic;
+   string   tag; int hourLon, minLon, holdMin; long magic; double gateThr; double monMult;
    double   hist[]; datetime histDay[]; datetime recDay; bool init; int initTries;
    datetime entryDay, entryTime;
-   void Setup(string t, int h, int m, int hold, long mg)
-   { tag = t; hourLon = h; minLon = m; holdMin = hold; magic = mg; recDay = 0; init = false; initTries = 0; entryDay = 0; entryTime = 0; ArrayResize(hist, 0); ArrayResize(histDay, 0); }
+   void Setup(string t, int h, int m, int hold, long mg, double gthr, double mmult = 1.0)
+   { tag = t; hourLon = h; minLon = m; holdMin = hold; magic = mg; gateThr = gthr; monMult = mmult; recDay = 0; init = false; initTries = 0; entryDay = 0; entryTime = 0; ArrayResize(hist, 0); ArrayResize(histDay, 0); }
    bool Window(datetime lonDay, double &res)
    {
       datetime srvOff = TimeTradeServer() - TimeGMT();
@@ -360,14 +362,14 @@ public:
       initTries++;
       if(n < InpGoldGateN && initTries < 60) return;          // M1履歴の読込待ち(5秒×60)
       init = true;
-      PrintFormat("[%sゲート] 履歴%d本を復元 直近%d回平均=%+.3f$/oz (閾値%.2f・%s)", tag, n, InpGoldGateN, GateMean(), InpGoldGateThr, GateOpen() ? "稼働" : "休止");
+      PrintFormat("[%sゲート] 履歴%d本を復元 直近%d回平均=%+.3f$/oz (閾値%.2f・%s)", tag, n, InpGoldGateN, GateMean(), gateThr, GateOpen() ? "稼働" : "休止");
    }
    double GateMean()
    {
       int n = ArraySize(hist); if(n == 0) return 0; int k = MathMin(n, InpGoldGateN); double s = 0;
       for(int i = n - k; i < n; i++) s += hist[i]; return s / k;
    }
-   bool GateOpen() { if(InpGoldGateN <= 0) return true; if(ArraySize(hist) < InpGoldGateN) return true; return GateMean() > InpGoldGateThr; }
+   bool GateOpen() { if(InpGoldGateN <= 0) return true; if(ArraySize(hist) < InpGoldGateN) return true; return GateMean() > gateThr; }
    void GateRecord()
    {
       if(InpGoldGateN <= 0) return;
@@ -404,11 +406,23 @@ public:
       if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 2 && !HasPos(InpGoldSymbol, magic) && entryDay != today)
       {
          if(Halted()) { entryDay = today; return; }
-         if(!GateOpen()) { PrintFormat("[%s] ゲート休止: 直近%d回平均%+.3f$/oz ≤ %.2f → 撃たない(紙で計測は継続)", tag, InpGoldGateN, GateMean(), InpGoldGateThr); entryDay = today; return; }
+         if(!GateOpen()) { PrintFormat("[%s] ゲート休止: 直近%d回平均%+.3f$/oz ≤ %.2f → 撃たない(紙で計測は継続)", tag, InpGoldGateN, GateMean(), gateThr); entryDay = today; return; }
          int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
          entryDay = today;
          if(spread > InpGoldMaxSpread) { PrintFormat("[%s] スプレッド%dpt > %d 見送り", tag, spread, InpGoldMaxSpread); return; }
          double lots = LotGold();
+         if(monMult > 1.0)
+         {
+            MqlDateTime dl; TimeToStruct(NowLondon(), dl);
+            if(dl.day_of_week == 1)
+            {
+               double vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
+               double big = NormalizeDouble(MathFloor(lots * monMult / vstep + 1e-9) * vstep, 2);
+               big = MathMin(big, InpGoldLotMax);
+               PrintFormat("[%s] 月曜なのでロット×%.1f: %.2f → %.2f", tag, monMult, lots, big);
+               lots = big;
+            }
+         }
          if(!CanTrade()) { PrintFormat("[%s][デモ以外] 売りシグナル lot=%.2f（発注せず）", tag, lots); return; }
          double slpx = InpGoldStopUsd > 0 ? NormalizeDouble(SymbolInfoDouble(InpGoldSymbol, SYMBOL_ASK) + InpGoldStopUsd, (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_DIGITS)) : 0.0;
          trade.SetExpertMagicNumber(magic);

@@ -49,9 +49,9 @@ if mode=='health':
     else: log('OK '+(body or ''))
 elif mode=='entry':
     leg=sys.argv[sys.argv.index('--leg')+1]; txt=expert_log_today(); today=dt.datetime.now().strftime('%H:')
-    if leg=='金PM':   # 建て時刻はロンドン14:55(夏22:55/冬23:55 JST)。まだ過ぎていなければ黙って終わる
+    if leg=='金PM':   # 建て時刻はロンドン14:53(夏22:53/冬23:53 JST・9/22にEAを14:55→14:53へ)。まだ過ぎていなければ黙って終わる
         from zoneinfo import ZoneInfo
-        ent=dt.datetime.now(ZoneInfo('Europe/London')).replace(hour=14,minute=55,second=0,microsecond=0).astimezone()
+        ent=dt.datetime.now(ZoneInfo('Europe/London')).replace(hour=14,minute=53,second=0,microsecond=0).astimezone()
         if dt.datetime.now().astimezone()<ent+dt.timedelta(minutes=3): log('金PM まだ建て時刻前'); sys.exit(0)
     pat={'日経':r'\[日経\] (買い|前夜|月曜)','US500':r'\[US500\] (買い|前夜|月曜)','GER40':r'\[GER40\] (買い|直前)','金':r'\[金\] (売り|スプレッド|ゲート)','金PM':r'\[金PM\] (売り|スプレッド|ゲート)'}[leg]
     hits=re.findall(r'^(\d\d:\d\d:\d\d).*'+pat,txt,flags=re.M)

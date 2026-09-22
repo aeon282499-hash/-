@@ -5,7 +5,7 @@
 import sys, os, datetime as dt, csv
 import MetaTrader5 as mt5
 
-MAGICS = {20260908: "GOLD.", 20260909: "JP225Cash", 20260913: "US500Cash", 20260914: "GER40Cash", 20260915: "GOLD.", 20260919: "GOLD."}   # 金15分S / 日経夜 / US500夜 / GER40夜 / 金昼 / 金PM5分S
+MAGICS = {20260908: "GOLD.", 20260909: "JP225Cash", 20260913: "US500Cash", 20260914: "GER40Cash", 20260915: "GOLD.", 20260919: "GOLD."}   # 金20分S(9/22〜) / 日経夜 / US500夜 / GER40夜 / 金昼 / 金PM10分S(9/22〜)
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fix_trades.csv")
 days = int(sys.argv[sys.argv.index("--days") + 1]) if "--days" in sys.argv else 1
 
