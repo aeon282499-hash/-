@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-09-22 10:42:39",
-  "date": "2026-09-22",
+  "generated_at": "2026-09-23 10:36:28",
+  "date": "2026-09-23",
   "tier_summary": {
     "S": 5,
     "A": 19,
@@ -31,7 +31,7 @@
     "QBTS": 3.45,
     "RGTI": 4.89,
     "S": 5.73,
-    "SOX": 4.29,
+    "SOX": 2.06,
     "TSLA": 3.03,
     "TSM": 2.41,
     "VRT": 0.59,
@@ -74,7 +74,7 @@
         "ASML"
       ],
       "policy": "経済安保・先端半導体の国内検査体制",
-      "us_tailwind": 2.82
+      "us_tailwind": 2.08
     },
     {
       "theme": "フィジカルAI_ヒューマノイド",
@@ -355,7 +355,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": 3.45
+      "us_tailwind": 3.13
     },
     {
       "theme": "商社_資源",
@@ -647,7 +647,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.82,
+      "us_tailwind": 2.08,
       "score": 104.2,
       "tier": "S",
       "init_stars": 2,
@@ -688,7 +688,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.82,
+      "us_tailwind": 2.08,
       "score": 104.2,
       "tier": "S",
       "init_stars": 3,
@@ -979,7 +979,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 3.45,
+      "us_tailwind": 3.13,
       "score": 86.1,
       "tier": "A",
       "init_stars": 3,
@@ -1222,7 +1222,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.82,
+      "us_tailwind": 2.08,
       "score": 80.2,
       "tier": "A",
       "init_stars": 3,
@@ -1757,7 +1757,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 3.45,
+      "us_tailwind": 3.13,
       "score": 68.1,
       "tier": "B",
       "init_stars": 3,
@@ -2316,7 +2316,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 3.45,
+      "us_tailwind": 3.13,
       "score": 62.1,
       "tier": "B",
       "init_stars": 3,
@@ -2512,7 +2512,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.82,
+      "us_tailwind": 2.08,
       "score": 60.2,
       "tier": "B",
       "init_stars": 2,
@@ -2853,7 +2853,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 3.45,
+      "us_tailwind": 3.13,
       "score": 54.1,
       "tier": "B",
       "init_stars": 3,
