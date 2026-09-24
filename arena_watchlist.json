@@ -1,602 +1,588 @@
 {
- "date": "2026-09-18",
- "target_date": "2026-09-24",
- "generated_at": "2026-09-18 18:28",
- "universe": 643,
+ "date": "2026-09-24",
+ "target_date": "2026-09-25",
+ "generated_at": "2026-09-24 18:28",
+ "universe": 596,
  "rows": [
-  {
-   "code": "2962",
-   "name": "テクニスコ",
-   "close": 2231.0,
-   "chg": 21.85,
-   "gap": 2.18,
-   "range_pct": 19.66,
-   "atr_pct": 7.0,
-   "turnover_oku": 42.8,
-   "tov_ratio": 8.84,
-   "dev25": 33.41,
-   "r5": 26.19,
-   "shortable": "×",
-   "sector": "金属製品",
-   "materials": [
-    {
-     "time": "13:30",
-     "kind": "受注",
-     "title": "大口受注に関するお知らせ"
-    }
-   ],
-   "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）",
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 103.5
-  },
-  {
-   "code": "4446",
-   "name": "Ｌｉｎｋ−Ｕグループ",
-   "close": 795.0,
-   "chg": 10.57,
-   "gap": -0.97,
-   "range_pct": 18.92,
-   "atr_pct": 6.96,
-   "turnover_oku": 12.2,
-   "tov_ratio": 52.43,
-   "dev25": -5.2,
-   "r5": -13.59,
-   "shortable": "○",
-   "sector": "情報･通信業",
-   "materials": [],
-   "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）",
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 98.5
-  },
-  {
-   "code": "6905",
-   "name": "コーセル",
-   "close": 1371.0,
-   "chg": 3.86,
-   "gap": 0.76,
-   "range_pct": 13.48,
-   "atr_pct": 3.07,
-   "turnover_oku": 22.7,
-   "tov_ratio": 14.65,
-   "dev25": 4.02,
-   "r5": 6.53,
-   "shortable": "○",
-   "sector": "電気機器",
-   "materials": [
-    {
-     "time": "11:30",
-     "kind": "決算",
-     "title": "2027年５月期 第１四半期決算短信〔日本基準〕（連結）"
-    },
-    {
-     "time": "11:30",
-     "kind": "業績修正",
-     "title": "第２四半期（中間期）および通期業績予想の修正に関するお知らせ"
-    }
-   ],
-   "flags": [
-    "前日+3%↑＝寄り高→日中垂れやすい",
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 97.8
-  },
-  {
-   "code": "6203",
-   "name": "豊和工業",
-   "close": 2538.0,
-   "chg": 5.35,
-   "gap": -1.91,
-   "range_pct": 11.87,
-   "atr_pct": 13.94,
-   "turnover_oku": 129.0,
-   "tov_ratio": 11.94,
-   "dev25": 38.34,
-   "r5": -10.76,
-   "shortable": "○",
-   "sector": "機械",
-   "materials": [],
-   "flags": [
-    "前日+3%↑＝寄り高→日中垂れやすい",
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 96.4
-  },
   {
    "code": "4075",
    "name": "ブレインズテクノロジー",
-   "close": 1591.0,
-   "chg": 23.24,
-   "gap": 6.97,
-   "range_pct": 20.14,
-   "atr_pct": 16.22,
-   "turnover_oku": 30.2,
-   "tov_ratio": 11.47,
-   "dev25": 36.3,
-   "r5": 32.14,
+   "close": 1537.0,
+   "chg": -3.39,
+   "gap": 0.44,
+   "range_pct": 15.02,
+   "atr_pct": 16.51,
+   "turnover_oku": 26.3,
+   "tov_ratio": 9.84,
+   "dev25": 28.87,
+   "r5": 33.07,
    "shortable": "×",
+   "sector": "情報･通信業",
+   "materials": [],
+   "flags": [
+    "代金6倍超＝本物の材料と過熱の両面"
+   ],
+   "heat": 91.8
+  },
+  {
+   "code": "3905",
+   "name": "データセクション",
+   "close": 1807.0,
+   "chg": 17.19,
+   "gap": 22.7,
+   "range_pct": 13.88,
+   "atr_pct": 5.63,
+   "turnover_oku": 265.1,
+   "tov_ratio": 6.85,
+   "dev25": 13.02,
+   "r5": 21.85,
+   "shortable": "○",
    "sector": "情報･通信業",
    "materials": [],
    "flags": [
     "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）",
     "代金6倍超＝本物の材料と過熱の両面"
    ],
-   "heat": 94.6
-  },
-  {
-   "code": "4933",
-   "name": "Ｉ−ｎｅ",
-   "close": 2370.0,
-   "chg": 4.68,
-   "gap": -4.42,
-   "range_pct": 12.15,
-   "atr_pct": 4.71,
-   "turnover_oku": 19.2,
-   "tov_ratio": 26.96,
-   "dev25": 52.82,
-   "r5": 67.14,
-   "shortable": "○",
-   "sector": "化学",
-   "materials": [],
-   "flags": [
-    "前日+3%↑＝寄り高→日中垂れやすい",
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 89.7
-  },
-  {
-   "code": "485A",
-   "name": "パワーエックス",
-   "close": 2404.0,
-   "chg": 13.56,
-   "gap": 0.14,
-   "range_pct": 14.36,
-   "atr_pct": 8.35,
-   "turnover_oku": 389.3,
-   "tov_ratio": 3.67,
-   "dev25": 24.74,
-   "r5": 12.07,
-   "shortable": "×",
-   "sector": "電気機器",
-   "materials": [],
-   "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
-   ],
-   "heat": 89.3
-  },
-  {
-   "code": "6433",
-   "name": "ヒーハイスト",
-   "close": 1331.0,
-   "chg": 0.45,
-   "gap": -1.66,
-   "range_pct": 10.34,
-   "atr_pct": 6.76,
-   "turnover_oku": 11.2,
-   "tov_ratio": 12.51,
-   "dev25": 18.92,
-   "r5": 18.31,
-   "shortable": "×",
-   "sector": "機械",
-   "materials": [],
-   "flags": [
-    "代金6倍超＝本物の材料と過熱の両面"
-   ],
-   "heat": 76.3
-  },
-  {
-   "code": "4052",
-   "name": "フィーチャ",
-   "close": 985.0,
-   "chg": 15.88,
-   "gap": 0.24,
-   "range_pct": 22.82,
-   "atr_pct": 21.55,
-   "turnover_oku": 74.3,
-   "tov_ratio": 1.84,
-   "dev25": 29.67,
-   "r5": -11.9,
-   "shortable": "×",
-   "sector": "情報･通信業",
-   "materials": [],
-   "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
-   ],
-   "heat": 75.4
-  },
-  {
-   "code": "9984",
-   "name": "ソフトバンクグループ",
-   "close": 6315.0,
-   "chg": 1.09,
-   "gap": 2.45,
-   "range_pct": 5.17,
-   "atr_pct": 6.95,
-   "turnover_oku": 5701.9,
-   "tov_ratio": 2.02,
-   "dev25": 10.45,
-   "r5": -3.44,
-   "shortable": "○",
-   "sector": "情報･通信業",
-   "materials": [],
-   "flags": [],
-   "heat": 75.0
-  },
-  {
-   "code": "4440",
-   "name": "ヴィッツ",
-   "close": 2459.0,
-   "chg": 16.54,
-   "gap": -0.81,
-   "range_pct": 22.13,
-   "atr_pct": 17.16,
-   "turnover_oku": 60.5,
-   "tov_ratio": 1.86,
-   "dev25": 43.25,
-   "r5": -6.29,
-   "shortable": "○",
-   "sector": "情報･通信業",
-   "materials": [],
-   "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
-   ],
-   "heat": 74.5
+   "heat": 90.4
   },
   {
    "code": "6191",
    "name": "エアトリ",
-   "close": 1644.0,
-   "chg": -0.9,
-   "gap": 0.18,
-   "range_pct": 3.86,
-   "atr_pct": 6.36,
-   "turnover_oku": 16.3,
-   "tov_ratio": 24.81,
-   "dev25": 65.19,
-   "r5": 53.22,
+   "close": 1545.0,
+   "chg": -6.02,
+   "gap": 0.0,
+   "range_pct": 6.75,
+   "atr_pct": 7.18,
+   "turnover_oku": 25.4,
+   "tov_ratio": 34.05,
+   "dev25": 50.99,
+   "r5": -7.21,
    "shortable": "○",
    "sector": "サービス業",
    "materials": [],
    "flags": [
     "代金6倍超＝本物の材料と過熱の両面"
    ],
-   "heat": 73.7
+   "heat": 86.1
   },
   {
-   "code": "4588",
-   "name": "オンコリスバイオファーマ",
-   "close": 6770.0,
-   "chg": 7.46,
-   "gap": -0.48,
-   "range_pct": 11.11,
-   "atr_pct": 9.18,
-   "turnover_oku": 184.9,
-   "tov_ratio": 1.97,
-   "dev25": 42.33,
-   "r5": 17.94,
-   "shortable": "×",
-   "sector": "医薬品",
+   "code": "6526",
+   "name": "ソシオネクスト",
+   "close": 2300.0,
+   "chg": 15.0,
+   "gap": 4.9,
+   "range_pct": 10.38,
+   "atr_pct": 4.19,
+   "turnover_oku": 418.9,
+   "tov_ratio": 3.8,
+   "dev25": 17.28,
+   "r5": 23.69,
+   "shortable": "○",
+   "sector": "電気機器",
    "materials": [],
    "flags": [
     "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
    ],
-   "heat": 72.0
+   "heat": 75.9
   },
   {
-   "code": "338A",
-   "name": "ＺｅｎｍｕＴｅｃｈ",
-   "close": 3420.0,
-   "chg": 8.4,
-   "gap": -0.48,
-   "range_pct": 14.74,
-   "atr_pct": 13.12,
-   "turnover_oku": 36.0,
-   "tov_ratio": 1.65,
-   "dev25": 37.78,
-   "r5": 5.07,
+   "code": "9984",
+   "name": "ソフトバンクグループ",
+   "close": 6352.0,
+   "chg": 0.59,
+   "gap": 4.32,
+   "range_pct": 7.81,
+   "atr_pct": 7.19,
+   "turnover_oku": 5450.5,
+   "tov_ratio": 1.4,
+   "dev25": 10.73,
+   "r5": 8.79,
+   "shortable": "○",
+   "sector": "情報･通信業",
+   "materials": [],
+   "flags": [],
+   "heat": 75.6
+  },
+  {
+   "code": "6862",
+   "name": "ミナトホールディングス",
+   "close": 5590.0,
+   "chg": 7.92,
+   "gap": 3.09,
+   "range_pct": 14.86,
+   "atr_pct": 6.64,
+   "turnover_oku": 38.4,
+   "tov_ratio": 3.55,
+   "dev25": 38.96,
+   "r5": 35.68,
    "shortable": "×",
+   "sector": "電気機器",
+   "materials": [],
+   "flags": [
+    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
+   ],
+   "heat": 75.2
+  },
+  {
+   "code": "3907",
+   "name": "シリコンスタジオ",
+   "close": 2175.0,
+   "chg": 5.07,
+   "gap": 1.45,
+   "range_pct": 13.77,
+   "atr_pct": 10.81,
+   "turnover_oku": 23.9,
+   "tov_ratio": 2.52,
+   "dev25": 6.68,
+   "r5": 11.25,
+   "shortable": "×",
+   "sector": "情報･通信業",
+   "materials": [],
+   "flags": [
+    "前日+3%↑＝寄り高→日中垂れやすい"
+   ],
+   "heat": 71.1
+  },
+  {
+   "code": "4588",
+   "name": "オンコリスバイオファーマ",
+   "close": 5990.0,
+   "chg": -11.52,
+   "gap": -2.07,
+   "range_pct": 12.85,
+   "atr_pct": 10.58,
+   "turnover_oku": 142.4,
+   "tov_ratio": 1.34,
+   "dev25": 23.34,
+   "r5": -2.76,
+   "shortable": "×",
+   "sector": "医薬品",
+   "materials": [],
+   "flags": [
+    "前日-7%↓＝投げ継続も反発もある・板で判断"
+   ],
+   "heat": 70.3
+  },
+  {
+   "code": "6227",
+   "name": "ＡＩメカテック",
+   "close": 6610.0,
+   "chg": 7.13,
+   "gap": 3.24,
+   "range_pct": 10.21,
+   "atr_pct": 6.74,
+   "turnover_oku": 141.5,
+   "tov_ratio": 2.56,
+   "dev25": 8.06,
+   "r5": 21.28,
+   "shortable": "○",
+   "sector": "機械",
+   "materials": [],
+   "flags": [
+    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
+   ],
+   "heat": 68.6
+  },
+  {
+   "code": "8848",
+   "name": "レオパレス２１",
+   "close": 1021.0,
+   "chg": -1.83,
+   "gap": -0.96,
+   "range_pct": 1.63,
+   "atr_pct": 4.17,
+   "turnover_oku": 95.8,
+   "tov_ratio": 14.48,
+   "dev25": 43.79,
+   "r5": 47.76,
+   "shortable": "○",
+   "sector": "不動産業",
+   "materials": [],
+   "flags": [
+    "代金6倍超＝本物の材料と過熱の両面"
+   ],
+   "heat": 68.1
+  },
+  {
+   "code": "2962",
+   "name": "テクニスコ",
+   "close": 2270.0,
+   "chg": 1.75,
+   "gap": 1.3,
+   "range_pct": 11.43,
+   "atr_pct": 7.3,
+   "turnover_oku": 19.7,
+   "tov_ratio": 4.06,
+   "dev25": 32.85,
+   "r5": 24.86,
+   "shortable": "×",
+   "sector": "金属製品",
+   "materials": [],
+   "flags": [],
+   "heat": 67.6
+  },
+  {
+   "code": "4440",
+   "name": "ヴィッツ",
+   "close": 2750.0,
+   "chg": 11.83,
+   "gap": -1.46,
+   "range_pct": 21.96,
+   "atr_pct": 15.94,
+   "turnover_oku": 44.4,
+   "tov_ratio": 1.24,
+   "dev25": 54.6,
+   "r5": 28.81,
+   "shortable": "○",
    "sector": "情報･通信業",
    "materials": [],
    "flags": [
     "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
    ],
-   "heat": 69.7
+   "heat": 67.5
   },
   {
-   "code": "6862",
-   "name": "ミナトホールディングス",
-   "close": 5180.0,
-   "chg": 15.62,
-   "gap": 0.67,
-   "range_pct": 15.07,
-   "atr_pct": 6.36,
-   "turnover_oku": 26.2,
-   "tov_ratio": 2.42,
-   "dev25": 30.93,
-   "r5": 20.19,
-   "shortable": "×",
-   "sector": "電気機器",
+   "code": "4933",
+   "name": "Ｉ−ｎｅ",
+   "close": 2409.0,
+   "chg": 1.65,
+   "gap": -0.84,
+   "range_pct": 6.12,
+   "atr_pct": 4.94,
+   "turnover_oku": 10.4,
+   "tov_ratio": 14.67,
+   "dev25": 51.56,
+   "r5": 66.83,
+   "shortable": "○",
+   "sector": "化学",
    "materials": [],
    "flags": [
-    "前日+7%↑＝翌日は寄り天が平常（26年BT・買い向きでない）"
+    "代金6倍超＝本物の材料と過熱の両面"
    ],
-   "heat": 68.1
+   "heat": 66.9
+  },
+  {
+   "code": "5801",
+   "name": "古河電気工業",
+   "close": 3807.0,
+   "chg": -2.41,
+   "gap": 0.77,
+   "range_pct": 4.54,
+   "atr_pct": 6.25,
+   "turnover_oku": 756.0,
+   "tov_ratio": 0.88,
+   "dev25": -1.8,
+   "r5": -0.99,
+   "shortable": "○",
+   "sector": "非鉄金属",
+   "materials": [
+    {
+     "time": "15:30",
+     "kind": "業績修正",
+     "title": "投資有価証券の売却および特別利益の計上見込み並びに2027年3月期第２四半期（中間期）連結業績予想の修正に関するお知らせ"
+    }
+   ],
+   "flags": [],
+   "heat": 66.3
+  },
+  {
+   "code": "6976",
+   "name": "太陽誘電",
+   "close": 8935.0,
+   "chg": -4.69,
+   "gap": 1.99,
+   "range_pct": 7.21,
+   "atr_pct": 6.75,
+   "turnover_oku": 2445.4,
+   "tov_ratio": 0.94,
+   "dev25": -3.25,
+   "r5": 2.54,
+   "shortable": "○",
+   "sector": "電気機器",
+   "materials": [],
+   "flags": [],
+   "heat": 64.4
   }
  ],
  "materials_extra": [
   {
-   "code": "6954",
-   "name": "ファナック",
-   "close": 5852.0,
-   "chg": 1.0,
-   "gap": 1.73,
-   "range_pct": 2.07,
-   "atr_pct": 2.76,
-   "turnover_oku": 275.0,
-   "tov_ratio": 1.07,
-   "dev25": -1.71,
-   "r5": 2.04,
+   "code": "8411",
+   "name": "みずほフィナンシャルグループ",
+   "close": 8280.0,
+   "chg": -2.53,
+   "gap": -0.94,
+   "range_pct": 2.01,
+   "atr_pct": 2.83,
+   "turnover_oku": 812.1,
+   "tov_ratio": 1.2,
+   "dev25": -2.41,
+   "r5": -5.8,
    "shortable": "○",
-   "sector": "電気機器",
-   "materials": [
-    {
-     "time": "15:30",
-     "kind": "自社株買い",
-     "title": "自己株式の取得状況および取得終了に関するお知らせ"
-    }
-   ],
-   "flags": [],
-   "heat": 53.5
-  },
-  {
-   "code": "1878",
-   "name": "大東建託",
-   "close": 3352.0,
-   "chg": -1.18,
-   "gap": -0.47,
-   "range_pct": 1.15,
-   "atr_pct": 1.7,
-   "turnover_oku": 70.9,
-   "tov_ratio": 1.71,
-   "dev25": 1.21,
-   "r5": 1.64,
-   "shortable": "○",
-   "sector": "不動産業",
+   "sector": "銀行業",
    "materials": [
     {
      "time": "16:00",
-     "kind": "契約",
-     "title": "財務上の特約が付された金銭消費貸借契約の締結について"
+     "kind": "自社株買い",
+     "title": "自己株式の取得状況および取得終了ならびに自己株式の消却に関するお知らせ"
+    }
+   ],
+   "flags": [],
+   "heat": 60.6
+  },
+  {
+   "code": "8697",
+   "name": "日本取引所グループ",
+   "close": 2274.0,
+   "chg": 1.72,
+   "gap": 0.0,
+   "range_pct": 2.55,
+   "atr_pct": 2.4,
+   "turnover_oku": 96.5,
+   "tov_ratio": 1.4,
+   "dev25": 2.12,
+   "r5": 2.64,
+   "shortable": "○",
+   "sector": "その他金融業",
+   "materials": [
+    {
+     "time": "12:00",
+     "kind": "業績修正",
+     "title": "業績予想及び配当予想の修正に関するお知らせ"
+    }
+   ],
+   "flags": [],
+   "heat": 51.9
+  },
+  {
+   "code": "9531",
+   "name": "東京瓦斯",
+   "close": 6167.0,
+   "chg": -2.25,
+   "gap": -0.54,
+   "range_pct": 2.17,
+   "atr_pct": 2.51,
+   "turnover_oku": 89.2,
+   "tov_ratio": 1.54,
+   "dev25": -0.61,
+   "r5": -3.43,
+   "shortable": "○",
+   "sector": "電気･ガス業",
+   "materials": [
+    {
+     "time": "14:00",
+     "kind": "自社株買い",
+     "title": "自己株式の取得状況及び取得終了に関するお知らせ"
+    }
+   ],
+   "flags": [],
+   "heat": 52.1
+  },
+  {
+   "code": "1803",
+   "name": "清水建設",
+   "close": 2350.5,
+   "chg": -0.32,
+   "gap": 0.78,
+   "range_pct": 1.38,
+   "atr_pct": 3.17,
+   "turnover_oku": 71.8,
+   "tov_ratio": 0.96,
+   "dev25": -1.49,
+   "r5": -1.16,
+   "shortable": "○",
+   "sector": "建設業",
+   "materials": [
+    {
+     "time": "16:50",
+     "kind": "新株予約権",
+     "title": "2031年満期ユーロ円建取得条項付転換社債型新株予約権付社債及び2033年満期ユーロ円建取得条項付転換社債型新株予約権付"
+    },
+    {
+     "time": "16:50",
+     "kind": "自社株買い",
+     "title": "自己株式の取得枠拡大及び自己株式の取得状況に関するお知らせ"
+    },
+    {
+     "time": "16:50",
+     "kind": "自社株買い",
+     "title": "自己株式立会外買付取引（ToSTNeT-3）による自己株式の買付けに関するお知らせ"
     }
    ],
    "flags": [
     "値幅小＝デイトレ向きでない"
    ],
-   "heat": 49.0
+   "heat": 44.2
   },
   {
    "code": "9831",
    "name": "ヤマダホールディングス",
-   "close": 715.7,
-   "chg": -1.26,
-   "gap": 0.12,
-   "range_pct": 2.01,
-   "atr_pct": 1.9,
-   "turnover_oku": 68.3,
-   "tov_ratio": 2.59,
-   "dev25": 1.04,
-   "r5": -0.28,
+   "close": 719.4,
+   "chg": 0.52,
+   "gap": -0.34,
+   "range_pct": 1.61,
+   "atr_pct": 1.85,
+   "turnover_oku": 46.9,
+   "tov_ratio": 1.78,
+   "dev25": 1.37,
+   "r5": -0.19,
    "shortable": "○",
    "sector": "小売業",
    "materials": [
     {
-     "time": "15:30",
-     "kind": "自社株買い",
-     "title": "従業員持株会向け譲渡制限付株式インセンティブとしての自己株式の処分の払込完了及び一部失権に関するお知らせ"
+     "time": "08:30",
+     "kind": "子会社",
+     "title": "資産効率の最大化に向けた 中国における特定子会社の異動（持分譲渡）に関するお知らせ"
     }
    ],
    "flags": [],
-   "heat": 56.3
+   "heat": 48.5
   },
   {
-   "code": "3038",
-   "name": "神戸物産",
-   "close": 3037.0,
-   "chg": -3.37,
-   "gap": -0.95,
-   "range_pct": 2.77,
-   "atr_pct": 4.12,
-   "turnover_oku": 66.3,
-   "tov_ratio": 1.33,
-   "dev25": 3.5,
-   "r5": 2.41,
-   "shortable": "○",
-   "sector": "卸売業",
+   "code": "6613",
+   "name": "ＱＤレーザ",
+   "close": 2175.0,
+   "chg": 4.32,
+   "gap": 1.29,
+   "range_pct": 5.37,
+   "atr_pct": 6.53,
+   "turnover_oku": 42.1,
+   "tov_ratio": 0.87,
+   "dev25": 4.42,
+   "r5": 10.35,
+   "shortable": "×",
+   "sector": "電気機器",
    "materials": [
     {
-     "time": "15:30",
-     "kind": "月次",
-     "title": "2026年８月度　月次IRニュース"
+     "time": "11:30",
+     "kind": "特損",
+     "title": "（変更）「特別損失の計上に関するお知らせ」の一部変更について"
     }
    ],
-   "flags": [],
-   "heat": 52.3
+   "flags": [
+    "前日+3%↑＝寄り高→日中垂れやすい"
+   ],
+   "heat": 53.2
   },
   {
-   "code": "9007",
-   "name": "小田急電鉄",
-   "close": 1799.5,
-   "chg": -2.68,
-   "gap": -0.22,
-   "range_pct": 2.57,
-   "atr_pct": 1.56,
-   "turnover_oku": 53.2,
-   "tov_ratio": 2.69,
-   "dev25": 0.96,
-   "r5": -0.33,
+   "code": "9009",
+   "name": "京成電鉄",
+   "close": 1337.5,
+   "chg": -2.76,
+   "gap": -1.24,
+   "range_pct": 3.2,
+   "atr_pct": 2.2,
+   "turnover_oku": 27.8,
+   "tov_ratio": 1.16,
+   "dev25": -1.57,
+   "r5": -4.46,
    "shortable": "○",
    "sector": "陸運業",
    "materials": [
     {
-     "time": "15:30",
-     "kind": "月次",
-     "title": "2026年8月　月次営業概況（速報）に関するお知らせ"
+     "time": "16:30",
+     "kind": "M&A",
+     "title": "千葉日石株式会社の株式取得（子会社化）に関するお知らせ"
     }
    ],
    "flags": [],
-   "heat": 56.1
+   "heat": 43.9
   },
   {
-   "code": "3003",
-   "name": "ヒューリック",
-   "close": 1740.0,
-   "chg": -1.33,
-   "gap": -0.14,
-   "range_pct": 1.28,
-   "atr_pct": 1.72,
-   "turnover_oku": 51.6,
-   "tov_ratio": 1.82,
-   "dev25": -1.33,
-   "r5": -0.03,
+   "code": "4716",
+   "name": "日本オラクル",
+   "close": 9145.0,
+   "chg": -1.73,
+   "gap": -0.8,
+   "range_pct": 1.32,
+   "atr_pct": 2.49,
+   "turnover_oku": 26.2,
+   "tov_ratio": 1.37,
+   "dev25": -0.71,
+   "r5": -2.33,
    "shortable": "○",
-   "sector": "不動産業",
+   "sector": "情報･通信業",
    "materials": [
     {
      "time": "15:30",
-     "kind": "M&A",
-     "title": "株式会社SQUEEZE（証券コード：558A）株式の買集め行為に該当する株式取得についてのお知らせ"
+     "kind": "決算",
+     "title": "2027年5月期第1四半期決算短信〔日本基準〕(非連結)"
     }
    ],
    "flags": [
     "値幅小＝デイトレ向きでない"
    ],
-   "heat": 48.5
+   "heat": 42.5
   },
   {
-   "code": "6770",
-   "name": "アルプスアルパイン",
-   "close": 2218.0,
-   "chg": -1.84,
-   "gap": 0.77,
-   "range_pct": 3.52,
-   "atr_pct": 3.29,
-   "turnover_oku": 39.9,
-   "tov_ratio": 1.29,
-   "dev25": 0.26,
-   "r5": 0.09,
+   "code": "6997",
+   "name": "日本ケミコン",
+   "close": 2795.0,
+   "chg": 0.29,
+   "gap": 1.79,
+   "range_pct": 3.37,
+   "atr_pct": 6.35,
+   "turnover_oku": 22.3,
+   "tov_ratio": 0.92,
+   "dev25": 0.97,
+   "r5": 7.33,
    "shortable": "○",
    "sector": "電気機器",
    "materials": [
     {
      "time": "17:00",
-     "kind": "特益",
-     "title": "日本精機株式会社株式の売却結果及び 投資有価証券売却益（特別利益）の計上に関するお知らせ"
+     "kind": "子会社",
+     "title": "シンガポールにおける当社シンガポール子会社に対する判決に関するお知らせ"
     }
    ],
    "flags": [],
-   "heat": 49.5
+   "heat": 46.4
   },
   {
-   "code": "7380",
-   "name": "十六フィナンシャルグループ",
-   "close": 2723.0,
-   "chg": 3.18,
-   "gap": 0.49,
-   "range_pct": 4.21,
-   "atr_pct": 3.11,
-   "turnover_oku": 30.5,
-   "tov_ratio": 3.17,
-   "dev25": 4.64,
-   "r5": 3.42,
-   "shortable": "○",
-   "sector": "銀行業",
-   "materials": [
-    {
-     "time": "15:00",
-     "kind": "配当修正",
-     "title": "2027年３月期中間配当予想の修正（設立５周年記念配当）に関するお知らせ"
-    }
-   ],
-   "flags": [
-    "前日+3%↑＝寄り高→日中垂れやすい"
-   ],
-   "heat": 60.9
-  },
-  {
-   "code": "8020",
-   "name": "兼松",
-   "close": 2318.5,
-   "chg": -1.63,
-   "gap": 0.02,
-   "range_pct": 1.65,
-   "atr_pct": 2.24,
-   "turnover_oku": 28.8,
-   "tov_ratio": 2.28,
-   "dev25": 3.25,
-   "r5": 2.45,
-   "shortable": "○",
-   "sector": "卸売業",
-   "materials": [
-    {
-     "time": "16:00",
-     "kind": "M&A",
-     "title": "株式会社IDAJ 及びその子会社等の株式取得（連結子会社化）に関するお知らせ"
-    }
-   ],
-   "flags": [],
-   "heat": 49.9
-  },
-  {
-   "code": "6941",
-   "name": "山一電機",
-   "close": 8020.0,
-   "chg": 4.56,
-   "gap": 1.96,
-   "range_pct": 3.26,
-   "atr_pct": 4.68,
-   "turnover_oku": 27.4,
-   "tov_ratio": 1.42,
-   "dev25": 2.3,
-   "r5": 5.11,
+   "code": "6592",
+   "name": "マブチモーター",
+   "close": 1721.5,
+   "chg": 0.85,
+   "gap": -0.12,
+   "range_pct": 1.52,
+   "atr_pct": 2.18,
+   "turnover_oku": 14.1,
+   "tov_ratio": 0.74,
+   "dev25": -0.35,
+   "r5": 3.55,
    "shortable": "○",
    "sector": "電気機器",
    "materials": [
     {
-     "time": "15:30",
-     "kind": "子会社",
-     "title": "連結子会社株式の一部譲渡に関するお知らせ"
+     "time": "12:30",
+     "kind": "自社株買い",
+     "title": "自己株式の取得状況及び取得終了に関するお知らせ"
     }
    ],
-   "flags": [
-    "前日+3%↑＝寄り高→日中垂れやすい"
-   ],
-   "heat": 50.4
+   "flags": [],
+   "heat": 31.2
   }
  ],
  "board_codes": [
-  "2962",
-  "4446",
-  "6905",
-  "6203",
   "4075",
-  "4933",
-  "485A",
-  "6433",
-  "4052",
-  "9984",
-  "4440",
+  "3905",
   "6191",
-  "4588",
-  "338A",
+  "6526",
+  "9984",
   "6862",
+  "3907",
+  "4588",
+  "6227",
   "8848",
-  "2327",
-  "1721",
-  "3652",
-  "6834"
+  "2962",
+  "4440",
+  "4933",
+  "5801",
+  "6976",
+  "6594",
+  "6330",
+  "485A",
+  "8411",
+  "5301"
  ],
  "note": "方向は付けない。前夜データで『翌日日中に上がる銘柄』は選べない（26年BT+AI OOSで確定）。ここは人と注文が集まる土俵の一覧。勝負は板と歩み値・9〜10時・最小単元・全記録。",
  "rules": [

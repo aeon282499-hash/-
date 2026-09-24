@@ -1479,7 +1479,7 @@
       "basis_date": "2026-09-18",
       "prev_close": 2459.0,
       "limit_price": 2459.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 16.54,
       "short": {
         "mark": "○",
@@ -1492,7 +1492,14 @@
       "dev25": 43.3,
       "atr_pct": 17.16,
       "vol_ratio": 1.0,
-      "range_pct": 19.0
+      "range_pct": 19.0,
+      "entry_session": "2026-09-24",
+      "entry_open": 2423.0,
+      "entry_close": 2750.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -13.496,
+      "pnl_yen": -130800,
+      "win": false
     },
     {
       "ticker": "219A.T",
@@ -1502,7 +1509,7 @@
       "basis_date": "2026-09-18",
       "prev_close": 2662.0,
       "limit_price": 2662.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 8.21,
       "short": {
         "mark": "○",
@@ -1515,11 +1522,66 @@
       "dev25": 15.0,
       "atr_pct": 5.55,
       "vol_ratio": 1.6,
-      "range_pct": 8.6
+      "range_pct": 8.6,
+      "entry_session": "2026-09-24",
+      "entry_open": 2635.0,
+      "entry_close": 2710.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -2.846,
+      "pnl_yen": -7500,
+      "win": false
+    },
+    {
+      "ticker": "4440.T",
+      "name": "ヴィッツ",
+      "direction": "SELL",
+      "signal_date": "2026-09-25",
+      "basis_date": "2026-09-24",
+      "prev_close": 2750.0,
+      "limit_price": 2750.0,
+      "status": "pending",
+      "daily_gain": 11.83,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 300,
+      "dev25": 54.6,
+      "atr_pct": 15.94,
+      "vol_ratio": 0.6,
+      "range_pct": 19.6,
+      "mcap_oku": 98
+    },
+    {
+      "ticker": "3905.T",
+      "name": "データセクション",
+      "direction": "SELL",
+      "signal_date": "2026-09-25",
+      "basis_date": "2026-09-24",
+      "prev_close": 1807.0,
+      "limit_price": 1807.0,
+      "status": "pending",
+      "daily_gain": 17.19,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "shares": 200,
+      "dev25": 13.0,
+      "atr_pct": 5.63,
+      "vol_ratio": 4.7,
+      "range_pct": 11.8,
+      "mcap_oku": 590
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-24",
+  "last_report_date": "2026-09-25",
   "last_monthly_report": "2026-08",
   "last_weekly_report": "2026-W38"
 }
