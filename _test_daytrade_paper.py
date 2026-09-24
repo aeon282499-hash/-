@@ -150,7 +150,7 @@ def test_settle_limit_day():
     check("旧記帳は寄成(寄980→引990=-10円)", book2["positions"][0]["pnl_yen"] == -10000)
     check("指値価格は呼値で切り上げ", dp.fade_day_limit_price(2750) == 2778
           and dp.fade_day_limit_price(4990) == 5040 and dp.fade_day_limit_price(1807) == 1826)
-    check("②は指値にしない", not dp.fade_uses_day_limit(2) and dp.fade_uses_day_limit(1))
+    check("①②とも指値(2026-09-25そろえた)", dp.fade_uses_day_limit(2) and dp.fade_uses_day_limit(1))
 
 
 def test_settle_pending_kept():
@@ -564,7 +564,9 @@ def test_premium_pershare_line():
 
     # アスタリスク実例: 2,165円。期待バンドは定数から動的に計算＝玉サイズ変更(70万⇔100万)に追従
     # （2026-08-15再導出 GAPDN0.45%/MAIN1.46%。例: 100万=400株なら11円/36円・70万=300株なら10円/34円）
-    # 寄成で撃つ②の売り禁玉（2026-09-25〜①は指値なので寄成の4帯は②で確認）
+    # 寄成で撃つ玉の売り禁4帯（2026-09-25〜①②とも指値＝寄成版は FADE_LIMIT_RANKS=(1,) にして②で確認）
+    _saved = dp.FADE_LIMIT_RANKS
+    dp.FADE_LIMIT_RANKS = (1,)
     cap = dp.capital_for_rank(2)
     sh_a = int(cap / 2165 / 100) * 100
     ok = int(dp.FADE_EDGE_PCT_GAPDN / 100 * cap // sh_a)
@@ -579,6 +581,9 @@ def test_premium_pershare_line():
     check(f"寄付限定帯={mid + 1}〜{lim}円", f"{mid + 1}〜{lim}円→寄付限定の指値¥2,165" in d)
     check(f"{lim + 1}円〜は撃たない（見送り）", f"{lim + 1}円〜→撃たない（見送り）" in d)
     check("貸借○の玉には出さない（1回だけ）", d.count("SBIのプレミアム料") == 1)
+    d_old = _desc([_pick(1, "3156.T", 1510, False), _pick(2, "6522.T", 2165, False)])
+    check("(1,)なら②は寄り成行", "寄り成行** " in d_old and "②50万円は**9:00寄り成行**" in d_old)
+    dp.FADE_LIMIT_RANKS = _saved
 
     # ①の売り禁玉（前終+1%当日中指値の帯）: 2,165円→指値2,187円・100万=400株
     cap1 = dp.capital_for_rank(1)
@@ -588,7 +593,8 @@ def test_premium_pershare_line():
     d1 = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 1510, False)])
     check("①は指値¥2,187・当日中", "指値¥2,187・当日中" in d1)
     check("見出しに前終+1%当日中", "前日終値+1%の指値・執行条件は当日中" in d1)
-    check("②は寄り成行のまま", "寄り成行** " in d1)
+    check("②も指値(1510→1526)", "指値¥1,526・当日中" in d1 and "寄り成行** " not in d1)
+    check("見出しは①②とも", "①100万円・②50万円とも" in d1)
     check(f"①の帯 〜{in_ps}円/株はこのまま", f"〜{in_ps}円/株→このまま（当日中の指値¥2,187）" in d1)
     check(f"①の帯 {in_ps + 1}〜{op_ps}円は寄付限定", f"{in_ps + 1}〜{op_ps}円→執行条件を寄付限定に" in d1)
     check(f"①の帯 {op_ps + 1}円〜は今日は#2だけ", f"{op_ps + 1}円〜→撃たない（今日は#2だけ）" in d1)

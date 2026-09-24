@@ -1563,7 +1563,7 @@
       "signal_date": "2026-09-25",
       "basis_date": "2026-09-24",
       "prev_close": 1807.0,
-      "limit_price": 1807.0,
+      "limit_price": 1826.0,
       "status": "pending",
       "daily_gain": 17.19,
       "short": {
@@ -1578,7 +1578,8 @@
       "atr_pct": 5.63,
       "vol_ratio": 4.7,
       "range_pct": 11.8,
-      "mcap_oku": 590
+      "mcap_oku": 590,
+      "entry_mode": "limit_day"
     }
   ],
   "expired": [],

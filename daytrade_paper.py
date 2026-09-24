@@ -435,7 +435,9 @@ FADE_EDGE_PCT_INTRA = 0.66     # 下に寄って前終まで戻った玉の gros
 #   寄付限定は約定41%・26年-29%で不可。+2%以上は総額が細り、+3%以上は26年で寄成割れ。
 # 約定判定(settle): 寄値≥指値→寄値 / 高値≥指値→指値 / 届かず→SKIP(0円)。②は寄成のまま。
 # 戻すなら FADE_LIMIT_RANKS = ()（記帳済み pending は記帳時の entry_mode で決済される）。
-FADE_LIMIT_RANKS = (1,)
+# 2026-09-25 同日 本人「そろえて」→ ②も+1%（26年: ②+270→+350万・②勝率58.5→60.6%・②PF1.26→1.47・
+#   4時代とも+・17/26年で指値勝ち・全体+3,066→+3,147万/DD-92→-95。2026年だけは②-12万）。
+FADE_LIMIT_RANKS = (1, 2)
 FADE_LIMIT_UP_PCT = 1.0
 # 売り禁(ハイカラ)の料の帯・①指値版。+1%指値で建つ玉の gross 期待値（26年①・上位3玉除去）:
 #   場中約定 +1.005%(n1,069) / 寄り約定 +1.436%(n1,166)
@@ -975,7 +977,11 @@ def cumulative_stats(book: dict) -> dict:
 
 
 def _FADE_EXEC_LABEL() -> str:
-    return (f"①前終+{FADE_LIMIT_UP_PCT:g}%指値/②寄成" if FADE_LIMIT_RANKS else "寄り成行")
+    if not FADE_LIMIT_RANKS:
+        return "寄り成行"
+    if fade_uses_day_limit(1) and fade_uses_day_limit(2):
+        return f"①②前終+{FADE_LIMIT_UP_PCT:g}%指値"
+    return f"①前終+{FADE_LIMIT_UP_PCT:g}%指値/②寄成"
 
 
 def _fmt_pf(pf):
@@ -999,7 +1005,11 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
 
     # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
-        if FADE_LIMIT_RANKS:
+        if fade_uses_day_limit(1) and fade_uses_day_limit(2):
+            head = (f"🎯 ①{CAPITAL_BY_RANK[1] // 10000}万円・②{CAPITAL_BY_RANK[2] // 10000}万円とも"
+                    f"**前日終値+{FADE_LIMIT_UP_PCT:g}%の指値・執行条件は当日中**で信用売り"
+                    f"（寄りがそれ以上なら寄り値で約定／届かなければ見送り）")
+        elif FADE_LIMIT_RANKS:
             head = (f"🎯 ①{CAPITAL_BY_RANK[1] // 10000}万円は**前日終値+{FADE_LIMIT_UP_PCT:g}%の指値・執行条件は当日中**"
                     f"（寄りがそれ以上なら寄り値で約定／届かなければ見送り）・"
                     f"②{CAPITAL_BY_RANK[2] // 10000}万円は**9:00寄り成行**（どちらも信用売り）")
@@ -1294,7 +1304,7 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成(9/25〜①は前終+1%当日中指値)・紙の理論値"
+        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成(9/25〜①②は前終+1%当日中指値)・紙の理論値"
                            f"（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜・"
                            f"月利%分母:〜7月50万/8月100万/9月〜150万）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
@@ -1431,7 +1441,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"寄成→引成(9/25〜①は前終+1%当日中指値)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
+        "footer": {"text": f"寄成→引成(9/25〜①②は前終+1%当日中指値)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
                            f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
