@@ -1,4 +1,20 @@
 {
-  "date": "2026-09-24",
-  "signals": []
+  "date": "2026-09-25",
+  "signals": [
+    {
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "prev_close": 6039.0,
+      "limit_price": 6090,
+      "days_cover": 0.21040075224503502,
+      "vt5": 1.051,
+      "updn_vol": 0.872,
+      "rsi": 40.49,
+      "deviation": -3.55,
+      "vol_ratio": 2.4,
+      "range_ratio": 1.34,
+      "turnover": 7454667000.0
+    }
+  ]
 }

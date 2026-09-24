@@ -1,4 +1,40 @@
 {
-  "date": "2026-09-24",
-  "signals": []
+  "date": "2026-09-25",
+  "signals": [
+    {
+      "ticker": "7203.T",
+      "name": "トヨタ自動車",
+      "direction": "BUY",
+      "prev_close": 2969.0,
+      "limit_price": 2998
+    },
+    {
+      "ticker": "8002.T",
+      "name": "丸紅",
+      "direction": "BUY",
+      "prev_close": 4878.0,
+      "limit_price": 4925
+    },
+    {
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "prev_close": 2974.0,
+      "limit_price": 3000
+    },
+    {
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
+      "direction": "BUY",
+      "prev_close": 4507.0,
+      "limit_price": 4550
+    },
+    {
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "prev_close": 6039.0,
+      "limit_price": 6090
+    }
+  ]
 }

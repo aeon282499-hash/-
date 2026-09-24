@@ -1,4 +1,70 @@
 {
-  "date": "2026-09-24",
-  "signals": []
+  "date": "2026-09-25",
+  "signals": [
+    {
+      "ticker": "7203.T",
+      "name": "トヨタ自動車",
+      "direction": "BUY",
+      "prev_close": 2969.0,
+      "limit_price": 2998,
+      "days_cover": 0.6833188186851579,
+      "rsi": 43.03,
+      "deviation": -2.99,
+      "vol_ratio": 2.05,
+      "range_ratio": 0.77,
+      "turnover": 140868805000.0
+    },
+    {
+      "ticker": "8002.T",
+      "name": "丸紅",
+      "direction": "BUY",
+      "prev_close": 4878.0,
+      "limit_price": 4925,
+      "days_cover": 0.5738645053050441,
+      "rsi": 42.56,
+      "deviation": -2.37,
+      "vol_ratio": 2.27,
+      "range_ratio": 0.55,
+      "turnover": 47657640000.0
+    },
+    {
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "prev_close": 2974.0,
+      "limit_price": 3000,
+      "days_cover": 0.13383988037048028,
+      "rsi": 38.56,
+      "deviation": -3.64,
+      "vol_ratio": 2.07,
+      "range_ratio": 0.78,
+      "turnover": 7956343750.0
+    },
+    {
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
+      "direction": "BUY",
+      "prev_close": 4507.0,
+      "limit_price": 4550,
+      "days_cover": 0.13010750068046276,
+      "rsi": 38.48,
+      "deviation": -3.68,
+      "vol_ratio": 2.54,
+      "range_ratio": 0.89,
+      "turnover": 8182149200.0
+    },
+    {
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "prev_close": 6039.0,
+      "limit_price": 6090,
+      "days_cover": 0.21040075224503502,
+      "rsi": 40.49,
+      "deviation": -3.55,
+      "vol_ratio": 2.4,
+      "range_ratio": 1.34,
+      "turnover": 7454667000.0
+    }
+  ]
 }
