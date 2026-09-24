@@ -3,7 +3,7 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100/②50・寄り成行）・👑極上（300万×1・寄指）・🔻極み売り（3×100万）
+  ① 実弾の注文     … 🩳フェード GO（①100=前終+1%当日中指値/②50=寄り成行）・👑極上（300万×1・寄指）・🔻極み売り（3×100万）
                        ※ 2026-09-22 本人決定で実弾は この3系統だけ。💥崩壊は実弾から外した（年+8.0万に対しDD-112万・01-08 PF0.77）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
   ② 紙の対照       … 💥崩壊（全部紙・2026-09-22〜）・極み買い（2026-09-21 廃止＝出さない）
@@ -28,6 +28,8 @@ JST = timezone(timedelta(hours=9))
 
 # 実弾ルール（2026-09-17時点・数字は memory/project_* と同じ。ここは表示用の定数）
 FADE_SIZES = ("①100万", "②50万")
+# 2026-09-25〜 ①は「前日終値+1%・当日中指値」（daytrade_paper.FADE_LIMIT_RANKS / fade_day_limit_price）。
+#   売り禁の①は料の帯も指値版（fade_limit_premium_band）。②は下の寄り成行ルールのまま。
 # フェードの執行＝寄り成行（daytrade_paper.FADE_ENTRY_MARKET=True・下寄りでも建てる・2026-07-28〜）。
 # min_entry(前日終値)は「約定判定に使わない参考価格」なので作戦の注文文に寄指とは書かない
 # （2026-09-18 本人「売りフェードは寄り指→成り行き」＝作戦タブが寄指と出ていた誤表示の修正）。
@@ -56,6 +58,17 @@ def _fade_rules():
         return _cap, _sh, dict(FADE_EDGE), True
 
 
+def _dp():
+    """daytrade_paper（①指値ルールの本物）。取れなければ None＝寄成表示に落ちる。"""
+    try:
+        if str(PARENT) not in sys.path:
+            sys.path.insert(0, str(PARENT))
+        import daytrade_paper as dp
+        return dp if hasattr(dp, "fade_uses_day_limit") else None
+    except Exception:
+        return None
+
+
 def _rng(a: int, b: int) -> str:
     return f"{a}" if a == b else f"{a}〜{b}"
 
@@ -67,6 +80,16 @@ def fade_order_text(prev_close, rank: int, jsf_stop: bool) -> tuple[str, str, in
     cap = cap_for(rank)
     if shares == 0:
         return (f"撃たない（値がさ＝100株が{cap // 10000}万に収まらない）", "", 0)
+    dp = _dp()
+    if dp is not None and dp.fade_uses_day_limit(rank):
+        lp = dp.fade_day_limit_price(prev_close)
+        order = (f"指値 {lp:,.0f}円・執行条件は当日中 空売り {shares:,}株 → 大引け成行で買い戻し"
+                 f"（寄りが{lp:,.0f}円以上なら寄り値で約定・届かなければ見送り）")
+        warn = ""
+        if jsf_stop:
+            warn = ("🚫売り禁＝ハイカラ在庫が要る。SBIのプレミアム料(円/株)で決める: "
+                    + dp.fade_limit_premium_band(rank, shares, lp, "撃たない"))
+        return order, warn, shares
     if not market:
         order = f"寄指 売り {prev_close:,.0f}円以上 → 大引け成行で買い戻し"
     elif shares > 5_000:
@@ -202,7 +225,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         for i, p in enumerate(gos[:2]):
             reg = p.get("reg_note") or ""
             prev = (by_code.get(p["code"]) or {}).get("price") or p.get("min_entry")
-            # 執行は寄り成行（寄指ではない）。売り禁だけ料の帯で種別が変わる＝配信の💰行と同じ式。
+            # 執行は①=前終+1%当日中指値/②=寄り成行（2026-09-25〜）。売り禁は料の帯で種別が変わる＝配信の💰行と同じ式。
             order, band, shares = fade_order_text(prev, i + 1, bool(p.get("jsf_stop")))
             # 🏢大型（時価総額≥1000億・2026-09-19）: 10年で件あたり≤0・勝率49〜53%＝撃つなら②サイズか見送り（本人判断）
             big = (f"🏢大型（時価総額{p['mcap_oku']:,}億）＝10年で期待値ゼロ・撃つなら②サイズか見送り"

@@ -124,6 +124,35 @@ def test_settle_sell_skip():
 
 
 # ---------------------------------------------------------------- pending / expired
+def test_settle_limit_day():
+    """2026-09-25〜 ①の前終+1%当日中指値: 寄り約定/場中約定/届かず見送り の3通り。"""
+    def pos(tk):
+        return {"ticker": tk, "name": "X", "direction": "SELL", "signal_date": "2026-07-15",
+                "basis_date": "2026-07-14", "prev_close": 1000.0, "limit_price": 1010.0,
+                "entry_mode": "limit_day", "shares": 1000, "rank": 1, "status": "pending"}
+    base = ("2026-07-14", 950, 1000, 940, 1000, 1e6)
+    data = {"A.T": mkdf([base, ("2026-07-15", 1030, 1060, 950, 960, 1e6)]),   # 寄り≥指値
+            "B.T": mkdf([base, ("2026-07-15", 980, 1040, 970, 990, 1e6)]),    # 下寄り→場中で到達
+            "C.T": mkdf([base, ("2026-07-15", 980, 1009, 900, 910, 1e6)])}    # 届かず
+    book = base_book([pos("A.T"), pos("B.T"), pos("C.T")])
+    dp.settle(book, data, date(2026, 7, 16))
+    a, b, c = book["positions"]
+    check("寄り約定=寄値1030で+70円×1000株", a["exit_type"] == "CLOSE" and a["pnl_yen"] == 70000
+          and a["entry_fill"] == 1030)
+    check("場中約定=指値1010で+20円×1000株", b["exit_type"] == "CLOSE" and b["pnl_yen"] == 20000
+          and b["entry_fill"] == 1010)
+    check("場中約定のpnl%は指値基準", abs(b["pnl_pct"] - (1010 - 990) / 1010 * 100) < 1e-3)
+    check("届かず=SKIP・0円", c["exit_type"] == "SKIP" and c["pnl_yen"] == 0
+          and "届かず" in c.get("skip_reason", ""))
+    # 旧記帳(entry_modeなし)は寄成のまま
+    old = pos("B.T"); old.pop("entry_mode"); old["limit_price"] = 1000.0
+    book2 = base_book([old]); dp.settle(book2, data, date(2026, 7, 16))
+    check("旧記帳は寄成(寄980→引990=-10円)", book2["positions"][0]["pnl_yen"] == -10000)
+    check("指値価格は呼値で切り上げ", dp.fade_day_limit_price(2750) == 2778
+          and dp.fade_day_limit_price(4990) == 5040 and dp.fade_day_limit_price(1807) == 1826)
+    check("②は指値にしない", not dp.fade_uses_day_limit(2) and dp.fade_uses_day_limit(1))
+
+
 def test_settle_pending_kept():
     pos = [{"ticker": "1301.T", "name": "A", "direction": "BUY",
             "signal_date": "2026-07-15", "basis_date": "2026-07-14",
@@ -188,7 +217,10 @@ def test_record_and_dedup():
     added = dp.record(book, sigs, data, iss, date(2026, 7, 15))
     check("記帳1件", len(added) == 1)
     check("basis_date=07-14(当日前の最終足)", book["positions"][0]["basis_date"] == "2026-07-14")
-    check("limit_price=min指値", book["positions"][0]["limit_price"] == 1070)
+    # 2026-09-25〜 ①(rank省略=1)は前終+1%当日中指値: 1070×1.01=1080.7→呼値切り上げ1081
+    check("①はlimit_day記帳", book["positions"][0].get("entry_mode") == "limit_day")
+    check("limit_price=前終+1%(切り上げ)", book["positions"][0]["limit_price"] == 1081)
+    check("株数は前日終値基準", book["positions"][0]["shares"] == dp._shares_for(1070, 1))
     check("SELLにshort付与", book["positions"][0]["short"]["mark"] == "○")
     # 同じ(ticker,signal_date)は重複記帳しない
     added2 = dp.record(book, sigs, data, iss, date(2026, 7, 15))
@@ -532,21 +564,34 @@ def test_premium_pershare_line():
 
     # アスタリスク実例: 2,165円。期待バンドは定数から動的に計算＝玉サイズ変更(70万⇔100万)に追従
     # （2026-08-15再導出 GAPDN0.45%/MAIN1.46%。例: 100万=400株なら11円/36円・70万=300株なら10円/34円）
-    cap = dp.CAPITAL_PER_TRADE
+    # 寄成で撃つ②の売り禁玉（2026-09-25〜①は指値なので寄成の4帯は②で確認）
+    cap = dp.capital_for_rank(2)
     sh_a = int(cap / 2165 / 100) * 100
     ok = int(dp.FADE_EDGE_PCT_GAPDN / 100 * cap // sh_a)
     lim = int(dp.FADE_EDGE_PCT_MAIN / 100 * cap // sh_a)
-    d = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 5510, False)])
+    d = _desc([_pick(1, "3156.T", 1510, False), _pick(2, "6522.T", 2165, True)])
     check("売り禁玉に円/株の判断行が出る", "SBIのプレミアム料を見て" in d)
     check(f"成行のままの上限={ok}円/株", f"〜{ok}円/株→成行のまま" in d)
     mid = int(dp.FADE_EDGE_PCT_INTRA / 100 * cap // sh_a)
     # 2026-09-12 3帯化: 〜ok成行 / ok+1〜mid 当日中指値 / mid+1〜lim 寄付限定 / lim+1〜撃たない
-    check(f"当日中指値帯={ok + 1}〜{mid}円", f"{ok + 1}〜{mid}円→当日中の指値¥2,165" in d)
+    check(f"当日中指値帯={ok + 1}〜{mid}円", f"{ok + 1}〜{mid}円→当日中の指値¥2,165" in d
+          or (ok + 1 > mid))
     check(f"寄付限定帯={mid + 1}〜{lim}円", f"{mid + 1}〜{lim}円→寄付限定の指値¥2,165" in d)
-    # 2026-08-21 2本実弾化: #1を見送っても#2はもう建っているので「#2に振り替え」でなく「今日は#2だけ」
-    check(f"{lim + 1}円〜は撃たない（今日は#2だけ）",
-          f"{lim + 1}円〜→撃たない（今日は#2だけ）" in d)
+    check(f"{lim + 1}円〜は撃たない（見送り）", f"{lim + 1}円〜→撃たない（見送り）" in d)
     check("貸借○の玉には出さない（1回だけ）", d.count("SBIのプレミアム料") == 1)
+
+    # ①の売り禁玉（前終+1%当日中指値の帯）: 2,165円→指値2,187円・100万=400株
+    cap1 = dp.capital_for_rank(1)
+    sh1 = int(cap1 / 2165 / 100) * 100
+    in_ps = int(dp.FADE_EDGE_PCT_LIM1_INTRA / 100 * cap1 // sh1)
+    op_ps = int(dp.FADE_EDGE_PCT_LIM1_OPEN / 100 * cap1 // sh1)
+    d1 = _desc([_pick(1, "6522.T", 2165, True), _pick(2, "3156.T", 1510, False)])
+    check("①は指値¥2,187・当日中", "指値¥2,187・当日中" in d1)
+    check("見出しに前終+1%当日中", "前日終値+1%の指値・執行条件は当日中" in d1)
+    check("②は寄り成行のまま", "寄り成行** " in d1)
+    check(f"①の帯 〜{in_ps}円/株はこのまま", f"〜{in_ps}円/株→このまま（当日中の指値¥2,187）" in d1)
+    check(f"①の帯 {in_ps + 1}〜{op_ps}円は寄付限定", f"{in_ps + 1}〜{op_ps}円→執行条件を寄付限定に" in d1)
+    check(f"①の帯 {op_ps + 1}円〜は今日は#2だけ", f"{op_ps + 1}円〜→撃たない（今日は#2だけ）" in d1)
 
     # 超低位株（多株数）: 50円→20,000株なら1円/株でもエッジ超え＝原則見送り
     d2 = _desc([_pick(1, "9999.T", 50, True)])
@@ -783,7 +828,7 @@ def test_mcap_map():
 
 def run_all():
     for fn in [test_shortability, test_settle_buy_win, test_settle_buy_skip,
-               test_settle_sell_win, test_settle_sell_skip, test_settle_pending_kept,
+               test_settle_sell_win, test_settle_sell_skip, test_settle_limit_day, test_settle_pending_kept,
                test_settle_today_not_closed, test_settle_halt_skip, test_settle_expired,
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion,

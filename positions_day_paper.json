@@ -1538,7 +1538,7 @@
       "signal_date": "2026-09-25",
       "basis_date": "2026-09-24",
       "prev_close": 2750.0,
-      "limit_price": 2750.0,
+      "limit_price": 2778.0,
       "status": "pending",
       "daily_gain": 11.83,
       "short": {
@@ -1553,7 +1553,8 @@
       "atr_pct": 15.94,
       "vol_ratio": 0.6,
       "range_pct": 19.6,
-      "mcap_oku": 98
+      "mcap_oku": 98,
+      "entry_mode": "limit_day"
     },
     {
       "ticker": "3905.T",
