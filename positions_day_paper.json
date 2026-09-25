@@ -1539,7 +1539,7 @@
       "basis_date": "2026-09-24",
       "prev_close": 2750.0,
       "limit_price": 2778.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 11.83,
       "short": {
         "mark": "○",
@@ -1554,7 +1554,15 @@
       "vol_ratio": 0.6,
       "range_pct": 19.6,
       "mcap_oku": 98,
-      "entry_mode": "limit_day"
+      "entry_mode": "limit_day",
+      "entry_session": "2026-09-25",
+      "entry_open": 2700.0,
+      "entry_close": 2585.0,
+      "entry_fill": 2778.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 6.947,
+      "pnl_yen": 57900,
+      "win": true
     },
     {
       "ticker": "3905.T",
@@ -1564,7 +1572,7 @@
       "basis_date": "2026-09-24",
       "prev_close": 1807.0,
       "limit_price": 1826.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 17.19,
       "short": {
         "mark": "○",
@@ -1579,11 +1587,19 @@
       "vol_ratio": 4.7,
       "range_pct": 11.8,
       "mcap_oku": 590,
-      "entry_mode": "limit_day"
+      "entry_mode": "limit_day",
+      "entry_session": "2026-09-25",
+      "entry_open": 1919.0,
+      "entry_close": 2077.0,
+      "entry_fill": 1919.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -8.233,
+      "pnl_yen": -31600,
+      "win": false
     }
   ],
   "expired": [],
-  "last_report_date": "2026-09-25",
+  "last_report_date": "2026-09-28",
   "last_monthly_report": "2026-08",
-  "last_weekly_report": "2026-W38"
+  "last_weekly_report": "2026-W39"
 }
