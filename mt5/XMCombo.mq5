@@ -21,16 +21,22 @@ input string InpGoldSymbol    = "GOLD.";    // 銘柄(Zero口座は GOLD.)
 input double InpGoldJpyPer001 = 25000;      // 0.01lotあたりの必要残高(円)。9/17: ゲート込みBSで5万→2.5万はE[log]+0.65・下位10%/DD/停止は不変(ゲートが悪い時期を切るため)・次段1.25万は実弾のゲート成績30回で判断
 input double InpGoldLotMax    = 1.00;       // 上限ロット
 input double InpGoldStopUsd   = 10.0;       // 損切り幅($/oz・0=無し)
+input double InpGoldCostUsd   = 0.593;      // ゲートの紙成績から引く往復コスト($/oz)。9/23: 実約定から逆算(スプレッド0.14+手数料0.453)。旧値0.21のままだと閾値0.00(=$0.593で校正)よりゲートが$0.38/oz緩くなる(レビュー指摘)
 input int    InpGoldMaxSpread = 40;         // 許容スプレッド(pt=0.01$)
 input int    InpGoldHourLon   = 10;         // 売り時刻 ロンドン(時)
-input int    InpGoldMinLon    = 15;         // 売り時刻 ロンドン(分)
-input int    InpGoldHoldMin   = 17;         // 保有分数。9/22夜: 20→17(10:15→10:32)。文献Caminschi&Heaney(2014 JFM)「値決めの結果公表後には有意なリターンが無い」の予言どおり、公表後は戻す(1分解剖で10:32はt-4.60)。既存グリッドは出口が5分刻み(range(625,676,5))で10:31-10:33を一度も評価していなかった。1分刻みで埋めると11年+145,051→+165,693円(+14%)・直近2年+116,244→+139,996(+20%)・t5.67→6.44・勝ち年5→6/9・上位3日除去+121,516→+140,943。10:31(+5%)10:33(+2%)も現行超えで帯になっており17分はその中心かつ頂点。⚠️出口軸は幅が狭い(±2分の24セルで現行超え7)・改善は後半偏重(前+2.8/後+6.0)
+input int    InpGoldMinLon    = 19;       // 売り時刻 ロンドン(分)。9/22夜: 15→19。決済10:32固定で建てを1分刻みに振ると、金額は10:15が最大だが校正済みポートフォリオシム(E[log]×全停止0%)では10:19が最良=同じ金2.5万サイズで1年中央7.7→9.2万(+19%)・DD-73→-69%・E[log]は同等。t も4.93→5.74と上昇(建てを遅らせるほど単調に上がる)。本人の裁量も18:19-18:28で6戦6勝と一致
+input int    InpGoldHoldMin   = 13;       // 保有分数。建て10:19・決済10:32(=値決め10:30の2分後・1分解剖で累計がここでピーク)
 input long   InpGoldMagic     = 20260908;
 input int    InpGoldGateN     = 40;         // 自己判断ゲート: 直近N回(紙でも毎日計測)の平均$/ozが閾値超の時だけ撃つ(0=無効)。BT: 10年+233→+539$・2016-24 -217→+92
-input double InpGoldGateThr   = 0.10;       // 閾値 $/oz(AM用)
+input double InpGoldGateThr   = 0.00;       // 閾値 $/oz(AM用)。9/22夜: 実勢コスト$0.593(実約定から逆算・BT前提$0.21の2.8倍)×XM自身のM1 11.3年で引き直し。0.10→0.00で 11年+99,108→+107,643円・t+4.02→+4.31・前期t+1.4→+2.1・勝ち年4→5/12・最大DD-11,706→-8,567(全軸で改善)。※ゲート無しは実勢コストだと-109,823円/t-5.12＝ゲートは必須
+input double InpGoldFriMult   = 0.5;       // 金AMの金曜だけロット倍率。9/22夜: 新窓(10:19→10:32)で曜日別を測ると金曜は1回+0.199$/oz vs 他+1.096(差のt-2.40)と有意に弱い。x0.5でt+5.74→+5.82・金額はほぼ同じ。※ロット刻み0.01なので小さい残高では四捨五入で0.02等になる
+input bool   InpSkipUkHoliday = true;      // 英国の銀行休業日はLBMAオークション自体が開催されないので撃たない。9/22夜: 除外で11年+116,274→+124,065円・t+5.74→+6.28・前期t+2.5→+2.9・最大DD-7,887→-5,178(全軸改善)。該当は594玉中14玉。窓のティック数も休業日686 vs 通常1054で「オークション無し」と整合。米国祝日は逆に除外すると悪化(t5.52)するので対象外
 input double InpGoldMonMult   = 2.0;       // 金AMの月曜だけロット倍率。9/22: 値決めフローは週末明けが最大＝ゲート無し全2,751玉で月+0.549$/oz vs 他+0.014(差のt+3.47)・前後半とも同符号(+1.5/+2.4)・隣接窓でも再現。2倍で10年+101,164→+145,051円/勝ち年4→5/9/t5.64→5.67。⚠️弱点=前半の差のt1.51・月曜の利益の80%が2025-26年→2027年に再判定[X4]
+input double InpGoldVolOrThr  = 0;          // 9/23: ボラ併用ゲート(AM)。金の20日実現ボラ(確定D1終値・年率%)がこの値を超えたらP&Lゲートが休止でも撃つ(0=無効)。発見=値決めの落差は$/ozでボラに比例(20日ボラ四分位Q4だけ両半期プラス・r+0.28)・コストは$固定→高ボラ時は直近40回が負けていても期待値が正。閾値20〜28%が高原・22で11.3年+813→+886$/t6.31→6.51/DD-27,899→-22,374円/2026除外+222→+295$(t3.36→3.71)/最悪日不変。BT=ロンドン日足とサーバー日足で相関0.99・結果同一
+input double InpGoldPmVolOrThr = 0;         // 同・PM用。25%で11.3年+385→+466$/t2.29→2.66/2026除外+204→+266$/DD-51,676→-57,724円(DDだけ悪化・PMはAMより弱い)
+input double InpGoldPmUpSkipPct = 0;       // 9/24: PMだけ「建て時の価格が前日(サーバー日足)終値比+この%超なら撃たない」(0=無効)。_bt_gold_pm_upday_0924.py: +0.5%で11.3年+466→+568$/t2.62→3.58/DD-77→-53$/プラセボp=0.001・閾値+0.3〜+1.0%で全部+100〜148$。⚠️落ちる玉の損の大半は2026年(-96$)で2025年は逆(+51$)・2026除外の上乗せは+6$だけ。AMに同じ除外をかけると-196$(AMは上げ日でも勝つ)なのでPM専用
 input double InpGoldPmGateThr = 0.00;       // 閾値 $/oz(PM用)。9/22: PMは0.00の方が11年+48,202→+52,820円・直近2年+42,500→+42,608円と両期間で上。AMは0.10のまま(0.00だと11年が落ちる)
-input bool   InpGoldPmOn      = true;       // PM値決め(ロンドン15:00)直前5分ショート(9/19採用: 10年%t5.5・10/11年+・XM M5 17ヶ月t3.7・現行に足してE[log]5.09→5.66・DD不変・同サイズ/同ゲート/同SL)
+input bool   InpGoldPmOn      = true;       // 9/22夜に再開: 一度OFFにしたのは私が誤った窓(14:55→15:05)で測ったため。正しい窓14:53→15:03は実勢コスト$0.593でも11年+82,600円/t+2.76(95セル中1位)。日本時間 夏22:53→23:03 / 冬23:53→00:03
 input int    InpGoldPmHourLon = 14;         // 売り時刻 ロンドン(時)
 input int    InpGoldPmMinLon  = 53;         // 売り時刻 ロンドン(分)。9/22夜: 55→53。AMと同じ文献由来の修正(公表後を持たない)。14:53→15:03 は11年+52,820→+89,479円(+69%)・直近2年+42,608→+79,448(+86%)・t2.21→3.27・勝ち年5→7/11・上位3日除去+34,525→+63,665。周囲±2分の24セル中19が現行超え=尾根(AMと違い幅がある)
 input int    InpGoldPmHoldMin = 10;         // 保有分数。10分のまま(入口を14:53へ2分前倒ししたので出口は15:03)。9/22夜のグリッド上位は全部14:52-14:54入り×15:01-15:04出に固まる。※旧コメントの「PM10分は不可」は14:50→15:00の話で別窓
@@ -58,14 +64,16 @@ input int    InpJpMaxSpread   = 20;         // 許容スプレッド(pt=1円)
 input long   InpJpMagic       = 20260909;
 input int    InpJpAddHour     = 1;          // 追加判定の時刻JST(翌日01:00)・0=無効
 input double InpJpAddPct      = -0.5;       // 建値比がこの%以下なら同量を追加(BT: 01時≤-0.5% 残り区間+0.165%/回 t2.8 勝9/11・00-01時/-0.25〜-1.0で高原)
-input double InpJpAddMult     = 2.0;        // 追加量(元玉の倍率)。9/17: スワップ符号修正+実測コストで×1.0→×2.0はE[log]+0.36・DD中央-54%不変・停止0%・下位10%21→31万・最悪夜-1.8→-2.6万(6.7枚時)
+input double InpJpAddMult     = 1.0;        // 追加量(元玉の倍率)。9/23: 2.0→1.0(本人選択A)。9月を今のロットで回すと9/8・9/10の追加x2で-25,580/-53,684円(1晩で残高の半分)。x2はE[log]+0.36だが尻尾が太く、追加後43.8枚だと-2.6%で全停止に届く(9/10は-2.69%)
 
-input bool   InpUsOn          = true;       // US500夜ドリフトを動かす(3本目・日経と同型・前夜≤0)
-input string InpUsSymbol      = "US500Cash";
-input double InpUsJpyPer01    = 40000;      // 0.1lot(名目約11万円)あたりの必要残高(円)。9/22: 校正済みポートフォリオシムで指数を薄くすると全停止0%のまま 1年中央10.2→11.7万・1年下位10% 6.0→6.2万・5年下位10% 28.6→32.0万・DD-74→-73%。金(t5.6)に比べ指数(t2.5-3.9)は薄い方が良い
+input bool   InpUsOn          = true;       // US系の夜ドリフト。9/22深夜: US500→US100(ナスダック100)に置換。時間軸ずらし地図(92,160セル)で床超えはUS100の22h保有だけ・校正済みE[log]シムでUS500(16→15)をUS100(21→翌19)に置換するとE[log]+6.62→+8.01/5年下位10%16→34万/1年下位10%6.0→6.5万・停止0%のまま。代償=DD中央-61→-85%(本人「儲かるなら実施」)
+input string InpUsSymbol      = "US100Cash";       // 9/22深夜: US500Cash→US100Cash。手数料ゼロ・コスト率0.0095%(全銘柄最安)・US500との相関+0.77・金とは+0.11
+input double InpUsJpyPer01    = 50000;      // 0.1lot(US100: 名目約3,050USD≒46万円)あたりの必要残高(円)。9/22深夜: US100置換のサイズ振り(30k〜100k)でE[log]は40k(+7.83)と50k(+7.81)が同率、50kの方が1年中央9.0万(40kは8.6)・DD-82%(40kは-85%)・5年中央11,272万で最良→50,000。現行(US500 16→15・40k)はE[log]+6.62/DD-61%/1年中央9.3万/1年下位10%6.0万。置換後は1年下位10%6.5万・停止0%のままだがDD中央-61→-82%が代償
 input double InpUsLotMax      = 50.0;
-input int    InpUsMaxSpread   = 150;        // 許容スプレッド(pt=0.01$)
-input long   InpUsMagic       = 20260913;
+input int    InpUsMaxSpread   = 600;       // 許容スプレッド(pt=0.01$)。US100の実測290pt(US500の80ptから引き上げ)
+input int    InpUsEntryHour   = 21;       // US100の買い時刻 JST(=サーバー15:00・NY寄り前)。地図の最良セル 建て14:45〜15:15→翌13:00
+input int    InpUsExitHour    = 19;       // US100の手仕舞い時刻 JST(翌日・=サーバー13:00)。保有22時間
+input long   InpUsMagic       = 20260924;       // US100レッグ用に更新(US500時代の20260913と履歴を分ける)
 
 input bool   InpDeOn          = true;       // GER40 欧州の夜(01:00JST買→16:00JST売・火〜金JST・直前レッグ≤0)
 input string InpDeSymbol      = "GER40Cash";
@@ -75,6 +83,7 @@ input int    InpDeMaxSpread   = 400;        // 許容スプレッド(pt=0.01EUR)
 input int    InpDeEntryHour   = 1;          // 買い時刻 JST
 input int    InpDeExitHour    = 16;         // 手仕舞い時刻 JST
 input long   InpDeMagic       = 20260914;
+input bool   InpDePrevWeekend = false;      // 9/26: 月曜夜(JST火曜01:00建て)の判定に週末(土01:00→月16:00JST)の動きを使う。false=従来(26hルールで週末を飛ばし木曜夜のレッグで判定)。_bt_xm_monday_wkd_0926.py/_ger_monday_robust: 従来の火曜は+0.059%/回 t1.20(後半t-0.52・週末≤0との一致率0.497=実質ランダム)→週末≤0で+0.154% t2.69(前2.30/後1.41・勝ち年8/10・同数ランダム1000回でp=0.013・外れる側は+0.004%)。レッグ全体873回+45.1%→857回+63.0%。弱点=2020年が利益の6割・上位3日除去t2.08
 
 input bool   InpGdOn          = false;      // 9/22停止: αではなくβと判明。同じ時間の常時買い+463,940円/t2.90に対しレッグは+185,916/t1.57、しかも「直前レッグ≤0」で選んだ日の平均+0.917$/oz < 全日平均+1.446$/oz＝フィルタが平均より悪い日を選んでいる。残高12万で自動起動する前に切る
 input double InpGdJpyPer001   = 120000;     // 0.01lot(=1oz・名目約65万円)あたりの必要残高(円)。残高12万未満は0枚
@@ -93,6 +102,24 @@ input int    InpGxMaxSpread   = 25;         // 許容スプレッド(pt=0.01$)�
 input double InpGxJpyPer001   = 20000;      // 0.01lotあたりの必要残高(円)
 input double InpGxLotMax      = 0.10;
 input long   InpGxMagic       = 20260910;
+//--- D) 金 大台ブレイク（2026-09-27 G1発見・既定off＝本人承認後に_deploy_combo_pending.ps1でon）
+//   大台($100の倍数)に「その日(サーバー日)初めて下から」触れたら、その+$1に買いの逆指値を置く→約定したら15分後に決済。
+//   機構=Osler(2005): 大台のすぐ上に溜まった損切り(売り方)・ブレイク買いの逆指値が連鎖して加速する。
+//   BT(_bt_gold_rn_break_0927.py・親の独立再現 _verify_gold_x00_0927.py): XM M1 2015-26 年25回・コスト抜き+0.0575%(t4.42)・
+//   今のコスト率0.0138%後+0.0437%(≒$1.87/oz・t3.36)・前後半t2.20/2.61・11/12年・上位3玉除去t2.92・Dukascopyでt4.19。
+//   $100格子を+$5〜95ずらした偽の格子は効果ゼロ(+$50でもコスト後t1.32・前半マイナス)＝大台そのものの効果。下抜けの売りは弱いので買いだけ。
+//   ⚠️BTは逆指値の約定=大台+$1(窓で飛び越えた時は足の始値)。実弾の滑りは未測定→最初は小さいロットで実測する。
+input bool   InpRnOn          = false;
+input double InpRnStep        = 100.0;      // 大台の刻み($)
+input double InpRnDelta       = 1.0;        // 上抜けの幅($)。BIDが大台+δ に届いたら買い(逆指値はASK基準なので+その時のスプレッド)
+input int    InpRnArmMin      = 60;         // 大台に触れてから何分以内の上抜けだけ買うか(過ぎたら逆指値を取り消す)
+input int    InpRnHoldMin     = 15;         // 保有分数(時間決済)
+input double InpRnStopUsd     = 10.0;       // 損切り幅($/oz・0=無し)。BTは無しが最良だが$10でもt2.69・発動11%→事故の上限として付ける
+input double InpRnLot         = 0.02;       // 固定ロット(G1推奨: 最初は0.02〜0.03・0.10だと2026年DD-10万円)
+input int    InpRnMaxSpread   = 40;         // 許容スプレッド(pt=0.01$)
+input int    InpRnStartSrvMin = 120;        // 触れた判定と建ての時間帯(サーバー時刻の分): 02:00〜
+input int    InpRnEndSrvMin   = 1364;       // 〜22:44(手仕舞いが23:00のロールオーバー帯に入らないように)
+input long   InpRnMagic       = 20260927;
 
 CTrade   trade;
 datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0, g_jpAddDay = 0, g_gdEntryDay = 0, g_gdExitDay = 0;
@@ -117,7 +144,7 @@ void WarmSeries()
    if(InpJpOn) iTime(InpJpSymbol, PERIOD_H1, 1);
    if(InpUsOn) iTime(InpUsSymbol, PERIOD_H1, 1);
    if(InpDeOn) iTime(InpDeSymbol, PERIOD_H1, 1);
-   if(InpGoldOn || InpGoldPmOn || InpGdOn) { iTime(InpGoldSymbol, PERIOD_H1, 1); iTime(InpGoldSymbol, PERIOD_M1, 1); }
+   if(InpGoldOn || InpGoldPmOn || InpGdOn || InpRnOn) { iTime(InpGoldSymbol, PERIOD_H1, 1); iTime(InpGoldSymbol, PERIOD_M1, 1); }
 }
 //--- 足が取れない時: 建て時刻から10分間は5秒ごとに再試行(true=まだ待つ)、過ぎたらフィルタ無しで建てる(false)
 datetime g_naLogMin = 0;
@@ -174,6 +201,7 @@ void CloseAll(string sym, long magic, string tag)
 }
 double g_lastK = 0;
 double LotGoldK(double k);
+double RealizedVol20(string sym);
 double LotIdxK(string sym, double jpyPerUnit, double unit, double lotMax, double k);
 double ScaleK()
 {
@@ -193,14 +221,14 @@ double LotGoldK(double k)
 }
 double LotGold() { return LotGoldK(ScaleK()); }
 //--- 前夜リターン: 当日9:00JSTのH1始値 ÷ 前日15:00JSTのH1始値 - 1（%）。取れなければ NA_PCT(呼び側で再試行)
-double PrevNightPct(string sym)
+double PrevNightPct(string sym, int eh, int xh)
 {
    datetime srvOff = TimeTradeServer() - TimeGMT();          // サーバー時刻 - GMT
    datetime jst = NowJST(); datetime dayJ = DayOf(jst);
-   datetime t9  = dayJ + InpJpExitHour * 3600 - 9 * 3600 + srvOff;   // 当日の手仕舞い時刻JST をサーバー時刻に(9/22: 9固定をやめてレッグと揃えた。揃えないと直近2年で-59,812円)
-   datetime t15 = dayJ - 86400 + InpJpEntryHour * 3600 - 9 * 3600 + srvOff; // 前日の建て時刻JST
+   datetime t9  = dayJ + xh * 3600 - 9 * 3600 + srvOff;   // 当日の手仕舞い時刻JST をサーバー時刻に(9/22: 9固定をやめてレッグと揃えた。揃えないと直近2年で-59,812円)
+   datetime t15 = dayJ - 86400 + eh * 3600 - 9 * 3600 + srvOff; // 前日の建て時刻JST
    MqlDateTime dw; TimeToStruct(jst, dw);
-   if(dw.day_of_week == 1) t15 -= 3 * 86400;                  // 月曜は金曜15:00
+   if(dw.day_of_week == 1) t15 -= 3 * 86400;                  // 月曜は金曜の建て時刻(実際は月曜無条件なので参照されない)
    int b9 = iBarShift(sym, PERIOD_H1, t9, true), b15 = iBarShift(sym, PERIOD_H1, t15, true);
    if(b9 < 0 || b15 < 0) return NA_PCT;
    double o9 = iOpen(sym, PERIOD_H1, b9), o15 = iOpen(sym, PERIOD_H1, b15);
@@ -221,7 +249,7 @@ double LotJp() { return LotIdx(InpJpSymbol, InpJpJpyPerLot, 1.0, InpJpLotMax); }
 double LotUs() { return LotIdx(InpUsSymbol, InpUsJpyPer01, 0.1, InpUsLotMax); }
 double LotDe() { return LotIdx(InpDeSymbol, InpDeJpyPer01, 0.1, InpDeLotMax); }
 //--- 直前レッグ: 直近の exitH 足(now以前)と、その前の entryH 足。間隔が26h超(週末跨ぎ)なら一つ前のexitH足へ戻る。取れなければ0(=建てる)
-double PrevLegPct(string sym, int entryH, int exitH)
+double PrevLegPct(string sym, int entryH, int exitH, bool weekendOk = false)
 {
    datetime srvOff = TimeTradeServer() - TimeGMT();
    datetime now = TimeTradeServer();
@@ -236,6 +264,9 @@ double PrevLegPct(string sym, int entryH, int exitH)
       datetime tA = tE - (exitH - entryH) * 3600;                       // 同日 entryH
       if(entryH > exitH) tA -= 86400;
       int bA = iBarShift(sym, PERIOD_H1, tA, true);
+      // weekendOk: 同日のentryH足が無い(=週明けで市場が閉まっていた)時は、その前の直近のentryH足まで戻る(最大3日)
+      //   GER40の月16:00JST足なら 土01:00JST(=金曜夜の建て時刻) → 直前レッグ=週末の動き
+      for(int k = 1; weekendOk && bA < 0 && k <= 3; k++) bA = iBarShift(sym, PERIOD_H1, tA - k * 86400, true);
       if(bA < 0) continue;
       double oA = iOpen(sym, PERIOD_H1, bA), oE = iOpen(sym, PERIOD_H1, bE);
       if(oA <= 0 || oE <= 0) continue;
@@ -286,7 +317,7 @@ void DeTick()
       if(Halted()) { g_deEntryDay = today; return; }
       int spread = (int)SymbolInfoInteger(InpDeSymbol, SYMBOL_SPREAD);
       if(spread > InpDeMaxSpread) { PrintFormat("[GER40] スプレッド%dpt > %d 見送り(再試行)", spread, InpDeMaxSpread); return; }
-      double pn = PrevLegPct(InpDeSymbol, InpDeEntryHour, InpDeExitHour);
+      double pn = PrevLegPct(InpDeSymbol, InpDeEntryHour, InpDeExitHour, InpDePrevWeekend);
       if(pn == NA_PCT) { if(NaRetry("GER40", InpDeEntryHour, dt, jst)) return; pn = 0.0; }
       if(pn > 0.0) { PrintFormat("[GER40] 直前レッグ%+.2f%% > 0 なので見送り", pn); g_deEntryDay = today; return; }
       PrintFormat("[GER40] 直前レッグ%+.2f%% → 建てる", pn);
@@ -303,17 +334,23 @@ int OnInit()
 {
    if(AnotherInstanceRunning()) { Print("XMCombo は別チャートで稼働中なので起動しません"); ExpertRemove(); return INIT_FAILED; }
    trade.SetDeviationInPoints(30);
-   g_fixAM.Setup("金", InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin, InpGoldMagic, InpGoldGateThr, InpGoldMonMult);
-   g_fixPM.Setup("金PM", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, InpGoldPmMagic, InpGoldPmGateThr);
+   g_fixAM.Setup("金", InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin, InpGoldMagic, InpGoldGateThr, InpGoldMonMult, InpGoldFriMult, InpGoldVolOrThr);
+   g_fixPM.Setup("金PM", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, InpGoldPmMagic, InpGoldPmGateThr, 1.0, 1.0, InpGoldPmVolOrThr, InpGoldPmUpSkipPct);
    if((InpGoldOn || InpGoldPmOn || InpGdOn) && !SymbolSelect(InpGoldSymbol, true)) { Print("銘柄が見つからない: ", InpGoldSymbol); return INIT_FAILED; }
    if(InpJpOn && !SymbolSelect(InpJpSymbol, true)) { Print("銘柄が見つからない: ", InpJpSymbol); return INIT_FAILED; }
    if(InpUsOn && !SymbolSelect(InpUsSymbol, true)) { Print("銘柄が見つからない: ", InpUsSymbol); return INIT_FAILED; }
    if(InpDeOn && !SymbolSelect(InpDeSymbol, true)) { Print("銘柄が見つからない: ", InpDeSymbol); return INIT_FAILED; }
    if(!CanTrade()) Print("⚠ デモ口座ではないので発注しません(InpDemoOnly=true)");
-   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US500%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
+   PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
                InpJpOn ? "on" : "off", LotJp(), InpJpJpyPerLot, InpJpLotMax, InpJpEntryHour, InpJpExitHour, InpJpHoldWeekend ? "on" : "off", InpJpPrevNightFilter ? "on" : "off", InpJpMondayFree ? "on" : "off", InpJpAddHour, InpJpAddPct, InpJpAddMult, InpUsOn ? "on" : "off", LotUs(), InpUsJpyPer01, InpUsLotMax, InpDeOn ? "on" : "off", LotDe(), InpDeJpyPer01, InpDeLotMax, InpDeEntryHour, InpDeExitHour, InpGdOn ? "on" : "off", LotGd(), InpGdJpyPer001, InpGdEntryHour, InpGdExitHour, UkDst(TimeGMT()) ? "夏" : "冬");
    PrintFormat("[金PM] %s 売London%02d:%02d→%d分 lot=%.2f(AMと同サイズ/同ゲートN%d閾%.2f/同SL) magic=%I64d", InpGoldPmOn ? "on" : "off", InpGoldPmHourLon, InpGoldPmMinLon, InpGoldPmHoldMin, LotGold(), InpGoldGateN, InpGoldPmGateThr, InpGoldPmMagic);
+   PrintFormat("[GER40] 月曜夜(JST火曜)の判定 = %s", InpDePrevWeekend ? "週末(土01:00→月16:00JST)の動き" : "木曜夜のレッグ(従来)");
+   PrintFormat("[大台] %s 刻み$%.0f 上抜け+$%.1f 触れてから%d分以内 保有%d分 SL$%.1f lot=%.2f 時間帯サーバー%02d:%02d〜%02d:%02d magic=%I64d",
+               InpRnOn ? "on" : "off", InpRnStep, InpRnDelta, InpRnArmMin, InpRnHoldMin, InpRnStopUsd, InpRnLot,
+               InpRnStartSrvMin / 60, InpRnStartSrvMin % 60, InpRnEndSrvMin / 60, InpRnEndSrvMin % 60, InpRnMagic);
+   PrintFormat("[金ボラ併用ゲート] AM>%.0f%% PM>%.0f%% (0=無効) 今の20日実現ボラ=%.1f%%", InpGoldVolOrThr, InpGoldPmVolOrThr, RealizedVol20(InpGoldSymbol));
+   PrintFormat("[金PM上げ日スキップ] 前日終値比 > +%.2f%% なら撃たない (0=無効)", InpGoldPmUpSkipPct);
    PrintFormat("[ラダー設定] ≥%.0f円×%.2f / ≥%.0f円×%.2f / ≥%.0f円×%.2f → 今の残高%.0f円は×%.2f", InpScale1Bal, InpScale1, InpScale2Bal, InpScale2, InpScale3Bal, InpScale3, AccountInfoDouble(ACCOUNT_BALANCE), ScaleK());
    WarmSeries();
    EventSetTimer(5);
@@ -321,16 +358,34 @@ int OnInit()
 }
 void OnDeinit(const int reason) { EventKillTimer(); }
 
-//--- 値決め直前ショートのレッグ。AM(10:15→10:30)とPM(14:55→15:00)をロンドン時刻で同じ仕組みで動かす。ゲート履歴・建玉状態はレッグごとに独立
-//    窓の紙の結果($/oz・SL・コスト$0.21): London day の 開始始値 - 終了始値
+//--- 英国(イングランド)の銀行休業日 2026-2031。LBMAのオークションが開催されない日
+string g_ukHol[] = {"2026.01.01","2026.04.03","2026.04.06","2026.05.04","2026.05.25","2026.08.31","2026.12.25","2026.12.28","2027.01.01","2027.03.26","2027.03.29","2027.05.03","2027.05.31","2027.08.30","2027.12.27","2027.12.28","2028.01.03","2028.04.14","2028.04.17","2028.05.01","2028.05.29","2028.08.28","2028.12.25","2028.12.26","2029.01.01","2029.03.30","2029.04.02","2029.05.07","2029.05.28","2029.08.27","2029.12.25","2029.12.26","2030.01.01","2030.04.19","2030.04.22","2030.05.06","2030.05.27","2030.08.26","2030.12.25","2030.12.26","2031.01.01","2031.04.11","2031.04.14","2031.05.05","2031.05.26","2031.08.25","2031.12.25","2031.12.26"};
+bool IsUkHoliday(datetime lonDay)
+{
+   string d = TimeToString(lonDay, TIME_DATE);
+   for(int k = 0; k < ArraySize(g_ukHol); k++) if(g_ukHol[k] == d) return true;
+   return false;
+}
+//--- 20日実現ボラ(年率%)。確定したD1終値20本の対数リターン標準偏差×sqrt(252)。当日の未確定足(shift0)は使わない(BTのshift(1)と同じ)。取れなければ-1
+double RealizedVol20(string sym)
+{
+   double c[]; if(CopyClose(sym, PERIOD_D1, 1, 21, c) < 21) return -1.0;
+   double r[20], s = 0; for(int i = 0; i < 20; i++) { if(c[i] <= 0 || c[i + 1] <= 0) return -1.0; r[i] = MathLog(c[i + 1] / c[i]); s += r[i]; }
+   double m = s / 20, v = 0; for(int i = 0; i < 20; i++) v += (r[i] - m) * (r[i] - m);
+   return MathSqrt(v / 19) * MathSqrt(252.0) * 100.0;
+}
+//--- 値決め直前ショートのレッグ。AM(10:19→10:32)とPM(14:53→15:03)をロンドン時刻で同じ仕組みで動かす。ゲート履歴・建玉状態はレッグごとに独立
+//    窓の紙の結果($/oz・SL・コストInpGoldCostUsd=実勢$0.593): London day の 開始始値 - 終了始値
 class CFixLeg
 {
 public:
-   string   tag; int hourLon, minLon, holdMin; long magic; double gateThr; double monMult;
+   string   tag; int hourLon, minLon, holdMin; long magic; double gateThr; double monMult; double friMult; double volThr; double upSkip;
    double   hist[]; datetime histDay[]; datetime recDay; bool init; int initTries;
    datetime entryDay, entryTime;
-   void Setup(string t, int h, int m, int hold, long mg, double gthr, double mmult = 1.0)
-   { tag = t; hourLon = h; minLon = m; holdMin = hold; magic = mg; gateThr = gthr; monMult = mmult; recDay = 0; init = false; initTries = 0; entryDay = 0; entryTime = 0; ArrayResize(hist, 0); ArrayResize(histDay, 0); }
+   void Setup(string t, int h, int m, int hold, long mg, double gthr, double mmult = 1.0, double fmult = 1.0, double vthr = 0.0, double upsk = 0.0)
+   { upSkip = upsk; tag = t; hourLon = h; minLon = m; holdMin = hold; magic = mg; gateThr = gthr; monMult = mmult; friMult = fmult; volThr = vthr; recDay = 0; init = false; initTries = 0; entryDay = 0; entryTime = 0; ArrayResize(hist, 0); ArrayResize(histDay, 0); }
+   //--- ボラ併用: 20日実現ボラが閾値超なら P&Lゲートが休止でも撃つ(閾値0=無効)
+   bool VolOpen() { if(volThr <= 0) return false; double v = RealizedVol20(InpGoldSymbol); return v > volThr; }
    bool Window(datetime lonDay, double &res)
    {
       datetime srvOff = TimeTradeServer() - TimeGMT();
@@ -341,7 +396,7 @@ public:
       double o1 = iOpen(InpGoldSymbol, PERIOD_M1, b1), o2 = iOpen(InpGoldSymbol, PERIOD_M1, b2);
       if(o1 <= 0 || o2 <= 0) return false;
       double hi = 0; for(int b = b1; b > b2; b--) hi = MathMax(hi, iHigh(InpGoldSymbol, PERIOD_M1, b));
-      res = (InpGoldStopUsd > 0 && hi >= o1 + InpGoldStopUsd) ? -InpGoldStopUsd - 0.21 : (o1 - o2) - 0.21;
+      res = (InpGoldStopUsd > 0 && hi >= o1 + InpGoldStopUsd) ? -InpGoldStopUsd - InpGoldCostUsd : (o1 - o2) - InpGoldCostUsd;
       return true;
    }
    void GateAppend(datetime lonDay, double r)
@@ -355,7 +410,7 @@ public:
       {
          datetime day = today - d * 86400; MqlDateTime dt; TimeToStruct(day, dt);
          if(dt.day_of_week == 0 || dt.day_of_week == 6) continue;
-         double r; if(Window(day, r)) { GateAppend(day, r); got++; }
+         double r; if(!(InpSkipUkHoliday && IsUkHoliday(day)) && Window(day, r)) { GateAppend(day, r); got++; }
       }
       int n = ArraySize(hist);   // 古い→新しい順
       for(int i = 0; i < n / 2; i++) { double t = hist[i]; hist[i] = hist[n - 1 - i]; hist[n - 1 - i] = t; datetime td = histDay[i]; histDay[i] = histDay[n - 1 - i]; histDay[n - 1 - i] = td; }
@@ -382,10 +437,10 @@ public:
       for(datetime day = from; day < today; day += 86400)         // 抜けた営業日を補完
       {
          MqlDateTime dd; TimeToStruct(day, dd); if(dd.day_of_week == 0 || dd.day_of_week == 6) continue;
-         double rb; if(Window(day, rb)) GateAppend(day, rb);
+         double rb; if(!(InpSkipUkHoliday && IsUkHoliday(day)) && Window(day, rb)) GateAppend(day, rb);
       }
       double r; if(!Window(today, r)) return;
-      GateAppend(today, r); recDay = today;
+      if(!(InpSkipUkHoliday && IsUkHoliday(today))) GateAppend(today, r); recDay = today;
       PrintFormat("[%sゲート] 今日の窓%+.2f$/oz → 直近%d回平均%+.3f (%s)", tag, r, InpGoldGateN, GateMean(), GateOpen() ? "稼働" : "休止");
    }
    void Tick()
@@ -406,11 +461,35 @@ public:
       if(dt.day_of_week >= 1 && dt.day_of_week <= 5 && nowMin >= entMin && nowMin < entMin + 2 && !HasPos(InpGoldSymbol, magic) && entryDay != today)
       {
          if(Halted()) { entryDay = today; return; }
-         if(!GateOpen()) { PrintFormat("[%s] ゲート休止: 直近%d回平均%+.3f$/oz ≤ %.2f → 撃たない(紙で計測は継続)", tag, InpGoldGateN, GateMean(), gateThr); entryDay = today; return; }
+         if(!GateOpen())
+         {
+            if(VolOpen()) PrintFormat("[%s] P&Lゲートは休止(直近%d回平均%+.3f$/oz ≤ %.2f)だが 20日ボラ%.1f%% > %.0f%% → ボラ併用で撃つ", tag, InpGoldGateN, GateMean(), gateThr, RealizedVol20(InpGoldSymbol), volThr);
+            else { PrintFormat("[%s] ゲート休止: 直近%d回平均%+.3f$/oz ≤ %.2f (20日ボラ%.1f%%) → 撃たない(紙で計測は継続)", tag, InpGoldGateN, GateMean(), gateThr, RealizedVol20(InpGoldSymbol)); entryDay = today; return; }
+         }
          int spread = (int)SymbolInfoInteger(InpGoldSymbol, SYMBOL_SPREAD);
          entryDay = today;
          if(spread > InpGoldMaxSpread) { PrintFormat("[%s] スプレッド%dpt > %d 見送り", tag, spread, InpGoldMaxSpread); return; }
+         if(InpSkipUkHoliday && IsUkHoliday(today))
+         { PrintFormat("[%s] 英国銀行休業日=LBMAオークション無し → 撃たない", tag); entryDay = today; return; }
+         if(upSkip > 0)
+         {
+            double pc = iClose(InpGoldSymbol, PERIOD_D1, 1), bid = SymbolInfoDouble(InpGoldSymbol, SYMBOL_BID);
+            if(pc > 0 && bid > 0 && (bid / pc - 1.0) * 100.0 > upSkip)
+            { PrintFormat("[%s] 前日終値%.2f→今%.2f (%+.2f%% > +%.2f%%) の上げ日 → 撃たない", tag, pc, bid, (bid / pc - 1.0) * 100.0, upSkip); return; }
+         }
          double lots = LotGold();
+         {
+            MqlDateTime df; TimeToStruct(NowLondon(), df);
+            if(df.day_of_week == 5 && friMult != 1.0)
+            {
+               double vstep = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_STEP);
+               double vmin  = SymbolInfoDouble(InpGoldSymbol, SYMBOL_VOLUME_MIN);
+               double f = NormalizeDouble(MathRound(lots * friMult / vstep + 1e-9) * vstep, 2);
+               f = MathMax(vmin, f);
+               PrintFormat("[%s] 金曜なのでロットx%.2f: %.2f → %.2f", tag, friMult, lots, f);
+               lots = f;
+            }
+         }
          if(monMult > 1.0)
          {
             MqlDateTime dl; TimeToStruct(NowLondon(), dl);
@@ -434,22 +513,22 @@ public:
 };
 CFixLeg g_fixAM, g_fixPM;
 
-void IdxTick(string sym, long magic, double lots, int maxSpread, string tag, datetime &entryDay, datetime &exitDay)
+void IdxTick(string sym, long magic, double lots, int maxSpread, string tag, datetime &entryDay, datetime &exitDay, int eh, int xh)
 {
    datetime jst = NowJST(); MqlDateTime dt; TimeToStruct(jst, dt); datetime today = DayOf(jst);
-   if(dt.hour >= InpJpExitHour && dt.hour < InpJpEntryHour && HasPos(sym, magic) && exitDay != today)
+   if(dt.hour >= xh && dt.hour < eh && HasPos(sym, magic) && exitDay != today)
    { if(CanTrade()) CloseAll(sym, magic, tag); if(!HasPos(sym, magic)) exitDay = today; else PrintFormat("[%s] 決済が残っている → 5秒後に再試行", tag); return; }
    bool okDay = (dt.day_of_week >= 1 && dt.day_of_week <= 4) || (InpJpHoldWeekend && dt.day_of_week == 5);
-   if(dt.hour >= InpJpEntryHour && okDay && !HasPos(sym, magic) && entryDay != today)
+   if(dt.hour >= eh && okDay && !HasPos(sym, magic) && entryDay != today)
    {
-      if(dt.hour >= InpJpEntryHour + 3) { PrintFormat("[%s] %02d時以降なので今日は建てない", tag, dt.hour); entryDay = today; return; }
+      if(dt.hour >= eh + 3) { PrintFormat("[%s] %02d時以降なので今日は建てない", tag, dt.hour); entryDay = today; return; }
       if(Halted()) { entryDay = today; return; }
       int spread = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
       if(spread > maxSpread) { PrintFormat("[%s] スプレッド%dpt > %d 見送り(再試行)", tag, spread, maxSpread); return; }
       if(InpJpPrevNightFilter && !(InpJpMondayFree && dt.day_of_week == 1))
       {
-         double pn = PrevNightPct(sym);
-         if(pn == NA_PCT) { if(NaRetry(tag, InpJpEntryHour, dt, jst)) return; pn = 0.0; }
+         double pn = PrevNightPct(sym, eh, xh);
+         if(pn == NA_PCT) { if(NaRetry(tag, eh, dt, jst)) return; pn = 0.0; }
          if(pn > InpJpPrevNightMax) { PrintFormat("[%s] 前夜%+.2f%% > %.2f%% なので今夜は見送り", tag, pn, InpJpPrevNightMax); entryDay = today; return; }
          PrintFormat("[%s] 前夜%+.2f%% → 建てる", tag, pn);
       }
@@ -488,8 +567,8 @@ void JpAddTick()
    else PrintFormat("[日経追加] 失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
    g_jpAddDay = today;
 }
-void JpTick() { IdxTick(InpJpSymbol, InpJpMagic, LotJp(), InpJpMaxSpread, "日経", g_jpEntryDay, g_jpExitDay); JpAddTick(); }
-void UsTick() { IdxTick(InpUsSymbol, InpUsMagic, LotUs(), InpUsMaxSpread, "US500", g_usEntryDay, g_usExitDay); }
+void JpTick() { IdxTick(InpJpSymbol, InpJpMagic, LotJp(), InpJpMaxSpread, "日経", g_jpEntryDay, g_jpExitDay, InpJpEntryHour, InpJpExitHour); JpAddTick(); }
+void UsTick() { string ustag = (StringFind(InpUsSymbol, "US100") >= 0) ? "US100" : "US500"; IdxTick(InpUsSymbol, InpUsMagic, LotUs(), InpUsMaxSpread, ustag, g_usEntryDay, g_usExitDay, InpUsEntryHour, InpUsExitHour); }
 
 double LotGx()
 {
@@ -555,6 +634,128 @@ void Heartbeat()
    FileWriteString(h, StringFormat("%s balance=%.0f equity=%.0f positions=%d connected=%d", TimeToString(now, TIME_DATE | TIME_MINUTES | TIME_SECONDS), AccountInfoDouble(ACCOUNT_BALANCE), AccountInfoDouble(ACCOUNT_EQUITY), PositionsTotal(), (int)TerminalInfoInteger(TERMINAL_CONNECTED)));
    FileClose(h);
 }
+//--- D) 金 大台ブレイク（入力は InpRn*・既定off）
+datetime g_rnDay = 0;            // サーバー日(0時)
+double   g_rnDone[];             // その日に触れた大台(1日1回)
+datetime g_rnArmTime = 0;        // 大台に触れた足の時刻(サーバー)。再起動後は0→逆指値の発注時刻で代用
+bool RnDone(double L) { for(int i = 0; i < ArraySize(g_rnDone); i++) if(MathAbs(g_rnDone[i] - L) < 1e-6) return true; return false; }
+void RnMarkDone(double L) { int n = ArraySize(g_rnDone); ArrayResize(g_rnDone, n + 1); g_rnDone[n] = L; }
+ulong RnPendingTicket()
+{
+   for(int i = OrdersTotal() - 1; i >= 0; i--)
+   {
+      ulong tk = OrderGetTicket(i);
+      if(tk > 0 && OrderGetString(ORDER_SYMBOL) == InpGoldSymbol && OrderGetInteger(ORDER_MAGIC) == InpRnMagic) return tk;
+   }
+   return 0;
+}
+datetime RnPosTime()
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong tk = PositionGetTicket(i);
+      if(tk > 0 && PositionSelectByTicket(tk) && PositionGetString(POSITION_SYMBOL) == InpGoldSymbol && PositionGetInteger(POSITION_MAGIC) == InpRnMagic)
+         return (datetime)PositionGetInteger(POSITION_TIME);
+   }
+   return 0;
+}
+//--- 当日(サーバー日)の、足 b より古い足の高値の最大(足 b は含まない)。当日の足が無ければ -1、未ロードなら -2
+double RnDayHighBefore(int b, datetime sday)
+{
+   double h = -1.0;
+   for(int k = b + 1; k < 1500; k++)
+   {
+      datetime t = iTime(InpGoldSymbol, PERIOD_M1, k);
+      if(t <= 0) return -2.0;
+      if(t < sday) break;
+      double x = iHigh(InpGoldSymbol, PERIOD_M1, k);
+      if(x > h) h = x;
+   }
+   return h;
+}
+void RnTick()
+{
+   string sym = InpGoldSymbol;
+   datetime srv = TimeTradeServer();
+   datetime sday = DayOf(srv);
+   int smin = (int)((srv - sday) / 60);
+   // 1) 建玉: 保有分数で時間決済(損切りはブローカー側のSL)
+   datetime pt = RnPosTime();
+   if(pt > 0)
+   {
+      if(srv >= pt + InpRnHoldMin * 60)
+      {
+         if(CanTrade()) CloseAll(sym, InpRnMagic, "大台");
+         if(RnPosTime() > 0) Print("[大台] 決済が残っている → 5秒後に再試行");
+      }
+      return;
+   }
+   // 2) 待機中の逆指値: 触れてから InpRnArmMin 分・時間帯の終わり・日替わりで取り消し
+   ulong ot = RnPendingTicket();
+   if(ot > 0 && OrderSelect(ot))
+   {
+      datetime setup = (datetime)OrderGetInteger(ORDER_TIME_SETUP);
+      datetime base = (g_rnArmTime > 0) ? g_rnArmTime : setup;
+      if(srv > base + InpRnArmMin * 60 || smin > InpRnEndSrvMin || sday != DayOf(setup))
+      {
+         trade.SetExpertMagicNumber(InpRnMagic);
+         if(trade.OrderDelete(ot)) PrintFormat("[大台] 逆指値を取り消し(期限/時間帯外) #%I64u", ot);
+         else PrintFormat("[大台] 逆指値の取り消し失敗 #%I64u ret=%d", ot, trade.ResultRetcode());
+         g_rnArmTime = 0;
+      }
+      return;
+   }
+   // 3) 日替わりリセット・時間帯
+   if(sday != g_rnDay) { g_rnDay = sday; ArrayResize(g_rnDone, 0); g_rnArmTime = 0; }
+   if(smin < InpRnStartSrvMin || smin > InpRnEndSrvMin) return;
+   if(Halted()) return;
+   // 4) 触れた判定(BTと同じ): 直前の足の終値 < L ≤ その足の高値、かつ当日のそれより前の高値 < L。
+   //    足0(今の足)に加えて足1も見る＝5秒の見回りの隙間で分をまたいだ時も見逃さない
+   for(int b = 1; b >= 0; b--)
+   {
+      datetime bt = iTime(sym, PERIOD_M1, b);
+      datetime pbt = iTime(sym, PERIOD_M1, b + 1);
+      if(bt <= 0 || pbt <= 0 || bt < sday || pbt < sday) continue;      // 直前の足が前日なら判定しない(BTと同じ)
+      int bmin = (int)((bt - sday) / 60);
+      if(bmin < InpRnStartSrvMin || bmin > InpRnEndSrvMin) continue;
+      double pc = iClose(sym, PERIOD_M1, b + 1);
+      double hb = iHigh(sym, PERIOD_M1, b);
+      if(pc <= 0 || hb <= 0) continue;
+      double L = MathFloor(pc / InpRnStep) * InpRnStep + InpRnStep;   // 直前終値の上の最初の大台
+      if(hb < L || RnDone(L)) continue;
+      double dh = RnDayHighBefore(b, sday);
+      if(dh == -2.0) return;                                           // 足が未ロード→次の5秒で
+      RnMarkDone(L);
+      if(dh >= L) continue;                                            // 当日すでに触れていた大台
+      if(srv > bt + InpRnArmMin * 60) continue;
+      // 5) 注文: BIDが L+δ に届いた時 = ASKが L+δ+スプレッド。今すでに超えていたら成行(BTの「窓で飛び越えた時は始値」に相当)
+      double bid = SymbolInfoDouble(sym, SYMBOL_BID), ask = SymbolInfoDouble(sym, SYMBOL_ASK);
+      int spread = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
+      if(spread > InpRnMaxSpread) { PrintFormat("[大台] $%.0fに触れたがスプレッド%dpt > %d なので見送り", L, spread, InpRnMaxSpread); return; }
+      int dg = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+      double trig = NormalizeDouble(L + InpRnDelta + (ask - bid), dg);
+      double vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+      double lot = MathMax(vmin, NormalizeDouble(MathFloor(InpRnLot / vstep + 1e-9) * vstep, 2));
+      if(!CanTrade()) { PrintFormat("[大台][デモ以外] $%.0fに触れた → 買い逆指値%.2f lot=%.2f（発注せず）", L, trig, lot); return; }
+      trade.SetExpertMagicNumber(InpRnMagic);
+      g_rnArmTime = bt;
+      if(ask >= trig)
+      {
+         double sl = (InpRnStopUsd > 0) ? NormalizeDouble(ask - InpRnStopUsd, dg) : 0.0;
+         if(trade.Buy(lot, sym, 0, sl, 0, "rn-mkt")) PrintFormat("[大台] $%.0f 上抜け済み → 成行買い lot=%.2f @%.2f SL=%.2f", L, lot, trade.ResultPrice(), sl);
+         else PrintFormat("[大台] 成行買い失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      }
+      else
+      {
+         double sl = (InpRnStopUsd > 0) ? NormalizeDouble(trig - InpRnStopUsd, dg) : 0.0;
+         if(trade.BuyStop(lot, trig, sym, sl, 0, ORDER_TIME_GTC, 0, "rn-stop"))
+            PrintFormat("[大台] $%.0f に今日初めて下から触れた → 買い逆指値 %.2f lot=%.2f SL=%.2f（%d分で取り消し・約定後%d分で決済）", L, trig, lot, sl, InpRnArmMin, InpRnHoldMin);
+         else PrintFormat("[大台] 逆指値の発注失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+      }
+      return;
+   }
+}
+
 void OnTimer()
 {
    Heartbeat(); WarmSeries();
@@ -567,5 +768,6 @@ void OnTimer()
    if(InpUsOn) UsTick();
    if(InpDeOn) DeTick();
    if(InpGdOn) GdTick();
+   if(InpRnOn) RnTick();
 }
 //+------------------------------------------------------------------+

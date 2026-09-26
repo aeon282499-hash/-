@@ -1,4 +1,4 @@
-﻿# _deploy_combo.ps1 — 本番(9/27 07:40 配備・本人「ゴールドはいれていいよ」): 金12,500円/0.01・GER40月曜夜=週末判定・金の大台ブレイク(InpRnOn=true・0.02lot固定・$100の大台に今日初めて下から触れた後+$1上抜けで買い→15分・SL$10)。_deploy_combo_pending.ps1 と同一内容。
+﻿# _deploy_combo_pending.ps1 — 9/27 07:40 配備済み＝本番(_deploy_combo.ps1)と同一。次の未承認の変更はここに入れて、承認後に実行。
 # 統合EA XMCombo をコンパイルし、_start.ini の[StartUp]を XMCombo に切替えて正常終了→再起動→起動確認
 
 $code = @'
