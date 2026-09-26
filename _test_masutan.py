@@ -131,7 +131,12 @@ try:
     def fake_post(embed, dry):
         posted.append(embed); return True
 
-    os.environ.pop(MS.WEBHOOK_ENV, None)
+    os.environ.pop(MS.WEBHOOK_ENV, None); os.environ.pop(MS.WEBHOOK_FALLBACK_ENV, None)   # 手元の.envで本当に投稿しないように
+    os.environ[MS.WEBHOOK_FALLBACK_ENV] = "https://example.invalid/fallback"
+    check("⑪専用URLが無い時は俺専用(極上ch)のURLを使う", MS._webhook_url() == "https://example.invalid/fallback")
+    os.environ[MS.WEBHOOK_ENV] = "https://example.invalid/own"
+    check("⑪専用URLがあればそちらを優先", MS._webhook_url() == "https://example.invalid/own")
+    os.environ.pop(MS.WEBHOOK_ENV, None); os.environ.pop(MS.WEBHOOK_FALLBACK_ENV, None)
     today = date.fromisoformat(sig_day)
     # 状態の初期化は days[20] 以降を読ませる
     MS._save(MS.STATE_FILE, {"last_pubdate": days[20], "episodes": {}, "closed": [], "sent": []})

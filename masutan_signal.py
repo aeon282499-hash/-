@@ -55,6 +55,12 @@ SIG_FILE = "masutan_signals.json"
 BOOK_FILE = "positions_masutan.json"
 CAL_FILE = "market_calendar.csv"
 WEBHOOK_ENV = "DISCORD_WEBHOOK_MASUTAN_URL"
+WEBHOOK_FALLBACK_ENV = "DISCORD_WEBHOOK_GOKUJO_URL"   # 2026-09-27 本人「webhookは俺専用に配信」＝専用chを作らず、俺専用サーバーの極上chへ(タイトル🔥増担で見分ける)
+
+
+def _webhook_url() -> str:
+    """専用URLが無ければ俺専用サーバー(極上ch)のURL。どちらも無ければ空＝投稿しない"""
+    return (os.environ.get(WEBHOOK_ENV, "").strip() or os.environ.get(WEBHOOK_FALLBACK_ENV, "").strip())
 
 # 値幅制限（普通株・前日終値→制限値幅）。ストップ高/安の張り付き判定に使う（9/26 BTと同じ表）
 _LIM = [(100, 30), (200, 50), (500, 80), (700, 100), (1000, 150), (1500, 300), (2000, 400), (3000, 500),
@@ -466,9 +472,9 @@ def build_embed(today: date, rows: list, events: list, names: dict, n_reg: int, 
 
 
 def post_discord(embed: dict, dry: bool) -> bool:
-    url = os.environ.get(WEBHOOK_ENV, "").strip()
+    url = _webhook_url()
     if not url:
-        print(f"[masutan] {WEBHOOK_ENV} 未設定 → 投稿しない（JSONとログだけ）")
+        print(f"[masutan] {WEBHOOK_ENV} も {WEBHOOK_FALLBACK_ENV} も未設定 → 投稿しない（JSONとログだけ）")
         return False
     if dry:
         print("[masutan] --dry → 投稿しない")
@@ -542,7 +548,7 @@ def run(today: date, dry: bool = False, force: bool = False, token: str | None =
     _save(SIG_FILE, {k: v for k, v in out.items() if k != "embed"})
     _save(BOOK_FILE, book)
     posted = post_fn(embed, dry)
-    if posted or not os.environ.get(WEBHOOK_ENV, "").strip():
+    if posted or not _webhook_url():
         sent.append(today.isoformat())
         del sent[:-30]
     _save(STATE_FILE, state)
