@@ -3,7 +3,7 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100=前終+1%当日中指値/②50=寄り成行）・👑極上（300万×1・寄指）・🔻極み売り（3×100万）
+  ① 実弾の注文     … 🩳フェード GO（①100=前終+1%当日中指値/②50=寄り成行）・👑極上（150万×1＝縮小中・寄指）・🔻極み売り（3×100万）
                        ※ 2026-09-22 本人決定で実弾は この3系統だけ。💥崩壊は実弾から外した（年+8.0万に対しDD-112万・01-08 PF0.77）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
   ② 紙の対照       … 💥崩壊（全部紙・2026-09-22〜）・極み買い（2026-09-21 廃止＝出さない）
@@ -117,7 +117,7 @@ def fade_order_text(prev_close, rank: int, jsf_stop: bool) -> tuple[str, str, in
         warn = f"🚫売り禁＝ハイカラ在庫が要る。SBIのプレミアム料(円/株)で注文種別を決める: {band}"
     return order, warn, shares
 CRASH_SIZE = "紙（実弾から外した・2026-09-22）"
-GOKUJO_SIZE = "300万"   # 2026-09-21 本人決定「ルール通り300万」。勝ち乗せ無し（GOKUJO_ADDON_FRAC=0.0）・1枠だけ
+GOKUJO_SIZE = "150万"   # 2026-09-27 縮小モード中(shadow_exit.GOKUJO_SIZE=150万)・9/30に現金余力55万以上なら"300万"へ戻す。旧: "300万"(9/21本人決定)。勝ち乗せ無し・1枠だけ
 KIWAMI_SELL_SIZE = "100万×最大3"
 LADDER = [
     "実弾は🩳フェード・👑極上・🔻極み売り の3系統だけ（2026-09-22 本人決定で💥崩壊を外した）",
@@ -125,7 +125,7 @@ LADDER = [
     "現金余力30万割れ: フェード②ゼロ＋極み売り新規停止／15万割れ: フェード①50万／戻すのは月末",
     "現金余力100万到達: フェード①130万（時価総額300億以下の小型だけ・中型は100万のまま・🏢大型1000億以上は撃たない＝10年+2,009万/DD-79 vs 一律130万 +1,979/DD-105）",
     "フェード: 時価総額1000億以上の大型は撃たない（2026-09-19採用・自動で候補から外れて小型が繰り上がる。10年で大型の急騰は翌日落ちない=件あたり-0.1%・小型は+1.1%）",
-    "極上: 300万×1枠（勝ち乗せ無し）／初日の引けが建値-1%以下なら翌朝処分／3営業日目の大引けで売り・損切り-3%・利確+5%",
+    "極上: 150万×1枠（縮小モード中・9/30に余力55万以上なら300万へ戻す・勝ち乗せ無し）／初日の引けが建値-1%以下なら翌朝処分／3営業日目の大引けで売り・損切り-3%・利確+5%",
     "極み売り: 100万×最大3枠／損切り+4%・利確-5%・RSI≤45か5営業日目の大引けで買い戻し（2026-09-22 出口変更）",
 ]
 
@@ -395,7 +395,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         _rec("💥崩壊", "紙のみ（2026-09-22 実弾から外した）", [(x.get("exec_date") or x.get("d0") or "", x.get("name", ""), x.get("result_pct")) for x in j if x.get("result_pct") is not None and not x.get("skipped")])
         j = _load_json("shadow_exit_gokujo.json") or []
         lst = j.get("positions") if isinstance(j, dict) else j
-        _rec("👑極上", "帳簿300万×1(9/21〜・9/14-20は150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
+        _rec("👑極上", "帳簿150万×1(9/28分〜縮小中・9/21-26は300万・9/14-20は150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
         j = _load_json("positions_sell.json") or []
         _rec("🔻極み売り", "帳簿100万×3", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in j if x.get("status") == "closed"])
     except Exception as e:
