@@ -1479,6 +1479,56 @@
       "close": 3833.0,
       "pnl": 0.58,
       "win": true
+    },
+    {
+      "date": "2026-09-25",
+      "ticker": "7203.T",
+      "name": "トヨタ自動車",
+      "direction": "BUY",
+      "open": 2990.0,
+      "close": 2989.5,
+      "pnl": -0.02,
+      "win": false
+    },
+    {
+      "date": "2026-09-25",
+      "ticker": "8002.T",
+      "name": "丸紅",
+      "direction": "BUY",
+      "open": 4910.0,
+      "close": 4916.0,
+      "pnl": 0.12,
+      "win": true
+    },
+    {
+      "date": "2026-09-25",
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "open": 2958.0,
+      "close": 3016.0,
+      "pnl": 1.96,
+      "win": true
+    },
+    {
+      "date": "2026-09-25",
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
+      "direction": "BUY",
+      "open": 4508.0,
+      "close": 4510.0,
+      "pnl": 0.04,
+      "win": true
+    },
+    {
+      "date": "2026-09-25",
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "open": 6022.0,
+      "close": 6044.0,
+      "pnl": 0.37,
+      "win": true
     }
   ]
 }
