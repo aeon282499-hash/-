@@ -107,6 +107,13 @@ def load_open_sell() -> list[dict]:
 def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
     import requests
 
+    try:                                     # 2026-09-27 本人「極みは廃止・極上だけ」→ 極みのchへは送らない（極上の15時の指示は送る）
+        from shadow_exit import KIWAMI_DELIVERY_OFF as _off
+    except Exception:
+        _off = True
+    if _off and str(env).startswith("DISCORD_WEBHOOK_SHADOW"):
+        print(f"[kiwami_close] {env} は極み廃止(2026-09-27)で送らない（判定の記録は継続）")
+        return False
     url = os.getenv(env, "").strip()
     if not url:
         print(f"[kiwami_close] {env} 未設定 → 無送信")

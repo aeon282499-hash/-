@@ -45,25 +45,25 @@ function planNow(target_date) {
 function planCash() { try { const v = localStorage.getItem("kabuai_cash"); return v == null ? null : Number(v); } catch (e) { return null; } }
 function planSetCash(v) { try { const n = Number(String(v).replace(/[^\d.]/g, "")); if (isFinite(n)) localStorage.setItem("kabuai_cash", String(n)); } catch (e) { /* ignore */ } render(); }
 function planSizes(cash) {
-  // 単位: 万円。ラダー（memory/project_daytrade_signal・project_sellwatch_short_candidate）
+  // 単位: 万円。フェードは2026-09-26 本人決定のラダー（40万未満①50／40万台①60／50〜54万①70／55万〜①100・55万未満は②を撃たない）。
+  // 極上は55万未満=縮小の150万・55万以上で300万（2026-09-24〜）。🔻極み売りは2026-09-27 本人「極みは廃止・極上だけ」で廃止。
   if (cash == null) return null;
-  if (cash < 15) return { fade1: "①50万", fade2: "なし", kiwami_sell: "新規停止", crash: "📄紙", gokujo: "300万×1", level: "15万割れ＝縮小", cls: "dn" };
-  if (cash < 30) return { fade1: "①100万", fade2: "なし", kiwami_sell: "新規停止", crash: "📄紙", gokujo: "300万×1", level: "30万割れ＝②ゼロ・売り新規停止", cls: "dn" };
-  if (cash < 50) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
-  if (cash < 100) return { fade1: "①100万", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
-  return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", kiwami_sell: "100万×3", crash: "📄紙", gokujo: "300万×1", level: "100万到達＝①130(小型)へ", cls: "pos" };
+  if (cash < 40) return { fade1: "①50万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "40万未満＝縮小（フェード①50だけ）", cls: "dn" };
+  if (cash < 50) return { fade1: "①60万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "40万台＝縮小（フェード①60だけ）", cls: "dn" };
+  if (cash < 55) return { fade1: "①70万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "50〜54万＝縮小（フェード①70だけ）", cls: "dn" };
+  if (cash < 100) return { fade1: "①100万", fade2: "②50万", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
+  return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", crash: "📄紙", gokujo: "300万×1", level: "100万到達＝①130(小型)へ", cls: "pos" };
 }
 function planSizeFor(o, sz) {
   if (!sz) return null;
   if (o.system.startsWith("🩳")) return o.size.startsWith("①") ? sz.fade1 : sz.fade2;
   if (o.system.startsWith("💥")) return "📄紙（実弾から外した・2026-09-22）";
-  if (o.system.startsWith("🔻極み売り")) return sz.kiwami_sell;
   if (o.system.startsWith("👑")) return sz.gokujo;
   return null;
 }
 function planCashBox(cash, sz) {
   const val = cash == null ? "" : String(cash);
-  const table = sz ? `<div class="chips" style="margin-top:6px"><span class="chip ${sz.cls}">${esc(sz.level)}</span><span class="chip">フェード ${esc(sz.fade1)}／${esc(sz.fade2)}</span><span class="chip">極み売り ${esc(sz.kiwami_sell)}</span><span class="chip">極上 ${esc(sz.gokujo)}</span></div>`
+  const table = sz ? `<div class="chips" style="margin-top:6px"><span class="chip ${sz.cls}">${esc(sz.level)}</span><span class="chip">フェード ${esc(sz.fade1)}／${esc(sz.fade2)}</span><span class="chip">極上 ${esc(sz.gokujo)}</span></div>`
     : `<div class="note" style="margin-top:4px">現金余力（万円）を入れると、今日のサイズがラダー通りに決まります（端末に保存）。</div>`;
   return `<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>💰 現金余力</b>
       <input id="plan-cash" inputmode="decimal" value="${esc(val)}" placeholder="例 50" style="width:80px;padding:6px 8px;border:1px solid var(--ln);border-radius:8px;background:var(--sf2);color:var(--tx)"> <span class="muted">万円</span>
@@ -126,8 +126,8 @@ function viewPlan() {
   const live = orders.filter(o => !(sz && /なし|停止/.test(planSizeFor(o, sz) || "")));
   const lead = orders.length
     ? `<div class="banner dn">🔴 <b>今日の実弾 ${live.length}本</b>：書いてある注文をそのまま出す。日計り（フェード/崩壊）は<b>必ず大引けで手仕舞い</b>。${live.length < orders.length ? `<br><span style="font-size:12px">現金余力のラダーで ${orders.length - live.length}本は今日出さない。</span>` : ""}</div>`
-    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:12px">フェードGO・極上・極み売りの3系統すべて該当なし＝撃たないのが正解の日。</span></div>`;
-  const ordersHtml = `<div class="hh">🔴 実弾の注文 <span class="sub">フェード①100/②50・崩壊◎50・極上150×1・極み売り3×100</span></div>${lead}${orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : ""}`;
+    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:12px">フェードGO・極上の2系統とも該当なし＝撃たないのが正解の日。</span></div>`;
+  const ordersHtml = `<div class="hh">🔴 実弾の注文 <span class="sub">フェード①／②・極上（サイズは💰現金余力のラダーで決まる）</span></div>${lead}${orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : ""}`;
   // ② 保有中の玉と出口
   const holdHtml = holdings.length ? `<div class="hh" style="margin-top:14px">📦 保有中の玉と出口 <span class="sub">${holdings.filter(h => h.exit_today).length}本が今日出口</span></div><div class="card tight">${holdings.map(planHoldRow).join("")}</div>` : "";
   // ③ 紙・撃たない
@@ -156,6 +156,6 @@ function planSections(p) {
   const earnHtml = `<div class="hh" style="margin-top:14px">📅 明日の決算発表 <span class="sub">${p.earnings_tomorrow_total || 0}社（JPX予定表）</span></div>
     ${earn.length ? `<details class="card"><summary style="cursor:pointer;font-weight:700">一覧（代金順・上位${earn.length}）</summary><div class="list" style="margin-top:6px">${earn.map(planEarnRow).join("")}</div></details>`
       : `<div class="card"><div class="empty">明日の決算発表予定はありません。</div></div>`}
-    <div class="note" style="margin-top:6px">決算持ち越し（紙・休止中）と決算追撃（紙・9:30判定）は別配信。3日持つ極上/極み売りの玉が決算をまたぐ時は上の注文に⚠️を出しています。</div>`;
+    <div class="note" style="margin-top:6px">決算持ち越し（紙・休止中）と決算追撃（紙・9:30判定）は別配信。3日持つ極上の玉が決算をまたぐ時は上の注文に⚠️を出しています。</div>`;
   return { newsHtml, earnHtml };
 }

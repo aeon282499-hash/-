@@ -50,13 +50,24 @@ with tempfile.TemporaryDirectory() as d:
         _orig = requests.post
         requests.post = lambda *a, **k: _R()
         import time as _time; _orig_sleep = _time.sleep; _time.sleep = lambda s: None
+        _gk = os.environ.get("DISCORD_WEBHOOK_GOKUJO_URL")
         try:
+            # 2026-09-27 極み廃止: 極みのchは URL があっても送らず・失敗扱いにもしない（再送を誘発しない）
             os.environ["DISCORD_WEBHOOK_SHADOW_URL"] = "https://example.invalid/hook"
+            se._POST_FAILED = False
             r = se._shadow_post([{"title": "x"}], "DISCORD_WEBHOOK_SHADOW_URL")
+            t("極み廃止: 極みchは送らず・フラグも立たない", r is False and se._POST_FAILED is False and se.KIWAMI_DELIVERY_OFF)
+            # HTTP失敗の扱いは生きているch（極上）で確かめる
+            os.environ["DISCORD_WEBHOOK_GOKUJO_URL"] = "https://example.invalid/hook"
+            r = se._shadow_post([{"title": "x"}], "DISCORD_WEBHOOK_GOKUJO_URL")
             t("HTTP 502×3 → False かつ _POST_FAILED=True", r is False and se._POST_FAILED is True)
         finally:
             requests.post = _orig; _time.sleep = _orig_sleep
             os.environ.pop("DISCORD_WEBHOOK_SHADOW_URL", None)
+            os.environ.pop("DISCORD_WEBHOOK_GOKUJO_URL", None)
+            if _gk is not None:
+                os.environ["DISCORD_WEBHOOK_GOKUJO_URL"] = _gk
+            se._POST_FAILED = False
     finally:
         os.chdir(cwd)
 t("decision_scope", se.decision_scope("main") == "kiwami" and se.decision_scope("mid") == "kiwami_mid")

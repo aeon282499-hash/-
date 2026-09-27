@@ -3,13 +3,14 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100=前終+1%当日中指値/②50=寄り成行）・👑極上（150万×1＝縮小中・寄指）・🔻極み売り（3×100万）
-                       ※ 2026-09-22 本人決定で実弾は この3系統だけ。💥崩壊は実弾から外した（年+8.0万に対しDD-112万・01-08 PF0.77）
+  ① 実弾の注文     … 🩳フェード GO（①100/②50＝どちらも前終+1%当日中指値）・👑極上（150万×1＝縮小中・寄指）
+                       ※ 実弾は この2系統だけ。2026-09-27 本人「極みは廃止・極上だけ」で🔻極み売りを外した。
+                         2026-09-22 に💥崩壊を実弾から外した（年+8.0万に対しDD-112万・01-08 PF0.77）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
   ② 紙の対照       … 💥崩壊（全部紙・2026-09-22〜）・極み買い（2026-09-21 廃止＝出さない）
   ③ 📰 材料        … 当日のTDnet適時開示（決算/上方修正/自社株買い/提携…）を全社、貸借・代金・前日比・触れる系統つき
   ④ 明日の決算予定 … JPXの決算発表予定（jpx_earnings_schedule.json）。保有をまたぐ玉に⚠️
-  ⑤ 資金ラダー     … 余力が衝突した時の降ろす順（フェード＞極上＞極み売り）と縮小ライン
+  ⑤ 資金ラダー     … 余力が衝突した時の降ろす順（フェード＞極上）と縮小ライン
 
 データ源は親リポの既存JSON（today_signals_gokujo/today_sell_signals/today_signals_kiwami/jpx_earnings_schedule）と
 arena_watchlist.fetch_tdnet_all（TDnet日別一覧・150秒上限）。取れない物は空で通す（ビルドを落とさない）。
@@ -120,13 +121,12 @@ CRASH_SIZE = "紙（実弾から外した・2026-09-22）"
 GOKUJO_SIZE = "150万"   # 2026-09-27 縮小モード中(shadow_exit.GOKUJO_SIZE=150万)・9/30に現金余力55万以上なら"300万"へ戻す。旧: "300万"(9/21本人決定)。勝ち乗せ無し・1枠だけ
 KIWAMI_SELL_SIZE = "100万×最大3"
 LADDER = [
-    "実弾は🩳フェード・👑極上・🔻極み売り の3系統だけ（2026-09-22 本人決定で💥崩壊を外した）",
-    "余力が衝突する日は フェード ＞ 極上 ＞ 極み売り の順に残す",
-    "現金余力30万割れ: フェード②ゼロ＋極み売り新規停止／15万割れ: フェード①50万／戻すのは月末",
+    "実弾は🩳フェード・👑極上 の2系統だけ（2026-09-27 本人「極みは廃止・極上だけ」で🔻極み売りを外した・9/22に💥崩壊を外した）",
+    "余力が衝突する日は フェード ＞ 極上 の順に残す",
+    "フェードの現金余力ラダー（2026-09-26 本人決定）: 40万未満①50万／40万台①60万／50〜54万①70万／55万〜①100万＋②50万（55万未満は②を撃たない・下げは翌営業日・上げは週末に切り替え）",
     "現金余力100万到達: フェード①130万（時価総額300億以下の小型だけ・中型は100万のまま・🏢大型1000億以上は撃たない＝10年+2,009万/DD-79 vs 一律130万 +1,979/DD-105）",
     "フェード: 時価総額1000億以上の大型は撃たない（2026-09-19採用・自動で候補から外れて小型が繰り上がる。10年で大型の急騰は翌日落ちない=件あたり-0.1%・小型は+1.1%）",
     "極上: 150万×1枠（縮小モード中・9/30に余力55万以上なら300万へ戻す・勝ち乗せ無し）／初日の引けが建値-1%以下なら翌朝処分／3営業日目の大引けで売り・損切り-3%・利確+5%",
-    "極み売り: 100万×最大3枠／損切り+4%・利確-5%・RSI≤45か5営業日目の大引けで買い戻し（2026-09-22 出口変更）",
 ]
 
 
@@ -225,7 +225,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         for i, p in enumerate(gos[:2]):
             reg = p.get("reg_note") or ""
             prev = (by_code.get(p["code"]) or {}).get("price") or p.get("min_entry")
-            # 執行は①=前終+1%当日中指値/②=寄り成行（2026-09-25〜）。売り禁は料の帯で種別が変わる＝配信の💰行と同じ式。
+            # 執行は①②とも前終+1%当日中指値（2026-09-25〜・daytrade_paper.FADE_LIMIT_RANKS）。売り禁は料の帯で種別が変わる＝配信の💰行と同じ式。
             order, band, shares = fade_order_text(prev, i + 1, bool(p.get("jsf_stop")))
             # 🏢大型（時価総額≥1000億・2026-09-19）: 10年で件あたり≤0・勝率49〜53%＝撃つなら②サイズか見送り（本人判断）
             big = (f"🏢大型（時価総額{p['mcap_oku']:,}億）＝10年で期待値ゼロ・撃つなら②サイズか見送り"
@@ -261,7 +261,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
     except Exception as e:
         print(f"[plan] 崩壊節スキップ: {e}")
 
-    # ③ 👑極上（150万×1＋勝ち乗せ150・寄指上限）/ 極み買い（紙）/ 🔻極み売り（3×100万）
+    # ③ 👑極上（150万×1・寄指上限）。極み買い(9/21)・🔻極み売り(9/27)は廃止＝出さない
     def _sig_rows(fname: str, system: str, pri: int, size: str, side: str, how, to_list: list):
         j = _load_json(fname)
         if not j or str(j.get("date", "")) != target_s:
@@ -277,9 +277,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
     try:
         _sig_rows("today_signals_gokujo.json", "👑極上", 2, GOKUJO_SIZE, "買い",
                   lambda s: (f"寄指 買い {int(round(s['limit_price'])):,}円以下 → 3営業日目の大引けで売り（初日引け-1%以下なら翌朝処分）" if s.get("limit_price") else "寄り成行 買い → 3営業日目の大引けで売り"), orders)
-        _sig_rows("today_sell_signals.json", "🔻極み売り", 2, KIWAMI_SELL_SIZE, "空売り",
-                  lambda s: "寄り成行 空売り → RSI≤45か5営業日目の大引けで買い戻し（損切り+4%・利確-5%）", orders)
-        # 極み買いは 2026-09-21 廃止（極上へ一本化）。紙の対照としても出さない
+        # 極み買いは 2026-09-21・🔻極み売りは 2026-09-27 本人「極みは廃止・極上だけ」で廃止＝出さない
     except Exception as e:
         print(f"[plan] 極み/極上節スキップ: {e}")
     orders.sort(key=lambda o: (o["pri"], o["system"], o["code"]))
@@ -339,7 +337,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                           "turnover_oku": r.get("turnover_oku"), "iss": _iss(c4), "r1": r.get("r1")})
     earn_rows.sort(key=lambda e: -(e["turnover_oku"] or 0))
 
-    # ⑥ 保有中の玉と出口（実弾の3日持ち系統: 👑極上=shadow_exit_gokujo.json / 🔻極み売り=positions_sell.json）
+    # ⑥ 保有中の玉と出口（実弾の3日持ち系統: 👑極上=shadow_exit_gokujo.json。🔻極み売りは 2026-09-27 廃止）
     holdings: list[dict] = []
     try:
         def _exit_day(entry_date: str, hold: int = 3) -> str:
@@ -349,8 +347,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 d = next_trading_day(d)
             return d.strftime("%Y-%m-%d")
         for fname, system, side, size, hold, rule in (
-                ("shadow_exit_gokujo.json", "👑極上", "買い", GOKUJO_SIZE, 3, "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%・利確+5%"),
-                ("positions_sell.json", "🔻極み売り", "空売り", "100万", 5, "RSI≤45か5営業日目の大引けで買い戻し／損切り+4%・利確-5%（RSIで早まるので期限は最長）")):
+                ("shadow_exit_gokujo.json", "👑極上", "買い", GOKUJO_SIZE, 3, "3営業日目の大引けで売り／初日の引けが建値-1%以下なら翌朝処分／損切り-3%・利確+5%"),):
             j = _load_json(fname) or []
             lst = j.get("positions") if isinstance(j, dict) else j
             for x in lst or []:
@@ -396,8 +393,6 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         j = _load_json("shadow_exit_gokujo.json") or []
         lst = j.get("positions") if isinstance(j, dict) else j
         _rec("👑極上", "帳簿150万×1(9/28分〜縮小中・9/21-26は300万・9/14-20は150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
-        j = _load_json("positions_sell.json") or []
-        _rec("🔻極み売り", "帳簿100万×3", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in j if x.get("status") == "closed"])
     except Exception as e:
         print(f"[plan] 答え合わせ節スキップ: {e}")
 

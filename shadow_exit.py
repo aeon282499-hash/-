@@ -825,7 +825,15 @@ SHADOW_TIER_WEBHOOK_ENV = {
 #    株数は150万基準のままなので、ミラー側には注記を1枚足して誤解を防ぐ（_GOKUJO_MIRROR_NOTE）。
 # ⚠ ミラーの送信失敗が本体の再送ガード(_POST_FAILED)を立てないようにする。立てると main.py が
 #    「未送信」と誤認して全体を再送し、極上ch側が二重投稿になる。
-GOKUJO_MIRROR_ENV = ("DISCORD_WEBHOOK_SHADOW_URL",)   # 2026-09-21 中/小は紙だけ→大資金chのみ
+GOKUJO_MIRROR_ENV = ()   # 2026-09-27 極み廃止でミラーも止めた（9/21〜9/27は ("DISCORD_WEBHOOK_SHADOW_URL",) ＝大資金chへ）
+# 2026-09-27 本人「売買シグナル極みは廃止でいいよ・極上だけでいいや」→ 極みのch（DISCORD_WEBHOOK_SHADOW_*＝
+# 買い/売り/週次/月次・大中小）への送信を _shadow_post の入口で全部止める。極上（DISCORD_WEBHOOK_GOKUJO_URL）の
+# 配信・週次・月次（極上の分だけ極上chへ）・台帳の記録（紙）はそのまま。戻すなら False に（ミラーは上を戻す）。
+KIWAMI_DELIVERY_OFF = True
+
+
+def _is_kiwami_env(env: str) -> bool:
+    return str(env).startswith("DISCORD_WEBHOOK_SHADOW")
 _GOKUJO_MIRROR_NOTE = {
     "description": ("ℹ️ これは**極上**（1枠×150万）の配信です。2026-09-21 に極み（買い）を廃止し、"
                     "買いは極上へ一本化しました。**株数は150万基準**なので、資金に応じて調整してください。"),
@@ -863,6 +871,9 @@ def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
     import requests
     global _POST_FAILED
 
+    if KIWAMI_DELIVERY_OFF and _is_kiwami_env(env):     # 極みは廃止（2026-09-27）＝送らない・失敗扱いにもしない（再送を誘発しない）
+        print(f"[shadow] {env} は極み廃止(2026-09-27)で送らない（台帳の記録は継続）")
+        return False
     url = os.getenv(env, "").strip()
     if not url:
         print(f"[shadow] {env} 未設定 → 配信スキップ（台帳の記録は継続）")
@@ -1329,14 +1340,16 @@ def monthly_report(today: date) -> bool:
 
     # 2026-08-28 本人指示: 月次chは1本＝大/中/小の買い＋売り(大)をまとめて1通で送る
     embeds = []
-    for _k in BUY_NOTIFY_KEYS:       # 大/中/小＋極上（極上は1枠で資金枠を再適用）
+    # 2026-09-27 極み廃止 → 極上の分だけを極上chへ（極みの買い・売り・反発指標は出さない）
+    for _k in ((GOKUJO_KEY,) if KIWAMI_DELIVERY_OFF else BUY_NOTIFY_KEYS):   # 大/中/小＋極上（極上は1枠で資金枠を再適用）
         rows_k = load_ledger(_k)
         e = _embed(rows_k, sell=False, funded=_slot_funded(rows_k, 1 if _k == GOKUJO_KEY else slots), key=_k)
         if e:
             embeds.append(e)
-    sell_embed = _embed(load_sell_ledger(), sell=True, funded=None)   # 売り台帳は記帳時3枠制限済み
-    if sell_embed:
-        embeds.append(sell_embed)
+    if not KIWAMI_DELIVERY_OFF:
+        sell_embed = _embed(load_sell_ledger(), sell=True, funded=None)   # 売り台帳は記帳時3枠制限済み
+        if sell_embed:
+            embeds.append(sell_embed)
 
     if not embeds:
         print("[shadow] 月次: 今年の確定分なし → 送信しない")
@@ -1345,16 +1358,17 @@ def monthly_report(today: date) -> bool:
     # 通常版との差の併記（📊通算 通常vs極み）は 2026-08-09 本人指示
     # 「合計差とかの案内いらない」で廃止。必要になれば _pairs("main") から再計算できる。
 
-    # 反発指標（止め時の合図・表示専用・2026-09-03）。失敗しても月次本体は送る。
-    try:
-        from kiwami_rebound_gauge import compute_live, gauge_embed
-        g = compute_live(today)
-        if g:
-            embeds.append(gauge_embed(g))
-            print(f"[shadow] 反発指標 {g['date']}: {g['value']:+.3f}")
-    except Exception as e:
-        print(f"[shadow] 反発指標の計算スキップ: {e}")
-    return _shadow_post(embeds, env=_report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
+    # 反発指標（止め時の合図・表示専用・2026-09-03）。失敗しても月次本体は送る。極み廃止後は出さない。
+    if not KIWAMI_DELIVERY_OFF:
+        try:
+            from kiwami_rebound_gauge import compute_live, gauge_embed
+            g = compute_live(today)
+            if g:
+                embeds.append(gauge_embed(g))
+                print(f"[shadow] 反発指標 {g['date']}: {g['value']:+.3f}")
+        except Exception as e:
+            print(f"[shadow] 反発指標の計算スキップ: {e}")
+    return _shadow_post(embeds, env=GOKUJO_WEBHOOK_ENV if KIWAMI_DELIVERY_OFF else _report_env(SHADOW_MONTHLY_WEBHOOK_ENV))
 
 
 def backfill(days: int = 120) -> None:
