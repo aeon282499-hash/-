@@ -121,6 +121,34 @@ input int    InpRnStartSrvMin = 120;        // 触れた判定と建ての時間
 input int    InpRnEndSrvMin   = 1364;       // 〜22:44(手仕舞いが23:00のロールオーバー帯に入らないように)
 input long   InpRnMagic       = 20260927;
 
+//--- E) 金 ドル衝撃（2026-09-28 G3・既定off＝配備は _deploy_combo_pending.ps1）
+//   EURUSD/USDCHF/USDJPY の15分の対数変化を、過去20暦日(28,800分・その分は含まない・3000値以上)の15分変化の標準偏差で割って z。
+//   USD合成 zu=(−zEURUSD＋zUSDCHF＋zUSDJPY)/3。3つの向きがそろい |zu|≥4 の分を「発生」とし(15分以内に続く発生は最初だけ)、
+//   金の15分変化が同じ向き(ドル安なら上)に動き始めていたら、次の分に金をその向きに建て、30分後に成行で決済。
+//   サーバー23:00〜02:00にかかる取引・金の足が30分以上途切れた後の60分は撃たない。
+//   BT(_bt_gold_usdshock_robust_0927.py・XM 2015-26): n1838 粗+0.0366%(t4.90)・実コスト後+0.0195%(t2.61)。
+//   独立の確認(Dukascopy 2006-14・xm-gold-ea/research/r3_usdshock_confirm.py): n1250 粗+0.0430%(t4.25)・今のコスト率後t2.88・8/9年。
+//   売り(ドル高→金売り)は2期間とも上位の日を抜くとゼロ → 既定は買いだけ(InpDsSide=1)。効き目はドル由来の動きだけ(金自身の急変は続かない)。
+input int    InpDsMode        = 0;          // 0=off / 1=紙(判定と仮想の損益をログとFilesに記録) / 2=実弾
+input int    InpDsSide        = 1;          // 1=買いだけ / 0=両方 / -1=売りだけ
+input double InpDsLot         = 0.01;       // 固定ロット
+input double InpDsK           = 4.0;        // |zu| のしきい値
+input int    InpDsLookMin     = 15;         // 変化を見る分数
+input int    InpDsHoldMin     = 30;         // 保有分数(建てた分の頭から)
+input int    InpDsDeclMin     = 15;         // この分数以内に続く発生は同じ塊(最初だけ撃つ)
+input int    InpDsWinMin      = 28800;      // 標準偏差の窓(分)=20暦日
+input int    InpDsMinN        = 3000;       // 標準偏差に要る値の数
+input double InpDsStopUsd     = 0.0;        // 事故用の損切り($/oz・0=無し)
+input int    InpDsMaxSpread   = 40;         // 許容スプレッド(pt=0.01$)
+input int    InpDsValidStartMin = 120;      // 発生として数える時間帯(サーバー時刻の分): 02:00〜
+input int    InpDsValidEndMin   = 1379;     // 〜22:59
+input int    InpDsTradeEndMin   = 1349;     // 撃つのはこの分まで(保有30分が23:00にかからない: 22:29)
+input int    InpDsSelfTestMin = 0;          // 起動時に過去この本数の金の分足で z を計算して Files の XMCombo_ds_selftest.csv に書く(Pythonの双子と突き合わせる検証用・0=しない)
+input string InpDsEurUsd      = "EURUSD.";
+input string InpDsUsdChf      = "USDCHF.";
+input string InpDsUsdJpy      = "USDJPY.";
+input long   InpDsMagic       = 20260928;
+
 CTrade   trade;
 datetime g_jpEntryDay = 0, g_jpExitDay = 0, g_usEntryDay = 0, g_usExitDay = 0, g_deEntryDay = 0, g_deExitDay = 0, g_jpAddDay = 0, g_gdEntryDay = 0, g_gdExitDay = 0;
 datetime g_gxDay = 0; double g_gxPaperEntry = 0.0; datetime g_gxPaperTime = 0; bool g_gxPaperOpen = false; datetime g_gxWaitStart = 0;
@@ -340,6 +368,8 @@ int OnInit()
    if(InpJpOn && !SymbolSelect(InpJpSymbol, true)) { Print("銘柄が見つからない: ", InpJpSymbol); return INIT_FAILED; }
    if(InpUsOn && !SymbolSelect(InpUsSymbol, true)) { Print("銘柄が見つからない: ", InpUsSymbol); return INIT_FAILED; }
    if(InpDeOn && !SymbolSelect(InpDeSymbol, true)) { Print("銘柄が見つからない: ", InpDeSymbol); return INIT_FAILED; }
+   if(InpDsMode > 0 && (!SymbolSelect(InpGoldSymbol, true) || !SymbolSelect(InpDsEurUsd, true) || !SymbolSelect(InpDsUsdChf, true) || !SymbolSelect(InpDsUsdJpy, true)))
+   { Print("[ドル衝撃] 銘柄が見つからない → ドル衝撃だけ止める(他は動かす)"); }
    if(!CanTrade()) Print("⚠ デモ口座ではないので発注しません(InpDemoOnly=true)");
    PrintFormat("XMCombo 起動: 残高%.0f円 全停止ライン%.0f円 | 金再開買い mode=%d(2=実弾は残高%.0f以上) | 金%s lot=%.2f(%.0f円ごと0.01・上限%.2f) SL$%.1f 売London%02d:%02d→%d分 | 日経%s lot=%.1f(%.0f円ごと1.0・上限%.1f) 買%02d:00JST→売%02d:00 週末%s 前夜フィルタ%s(月曜無条件%s) 追加%02d時≤%.2f%%x%.1f | US%s lot=%.1f(%.0f円ごと0.1・上限%.1f) | GER40%s lot=%.1f(%.0f円ごと0.1・上限%.1f) 買%02d:00JST→売%02d:00 火〜金 直前レッグ≤0 | 金昼%s lot=%.2f(%.0f円ごと0.01) 買%02d→売%02dJST | UK-DST=%s",
                AccountInfoDouble(ACCOUNT_BALANCE), InpStopBelowBalance, InpGxMode, InpGxMinBalance, InpGoldOn ? "on" : "off", LotGold(), InpGoldJpyPer001, InpGoldLotMax, InpGoldStopUsd, InpGoldHourLon, InpGoldMinLon, InpGoldHoldMin,
@@ -349,6 +379,18 @@ int OnInit()
    PrintFormat("[大台] %s 刻み$%.0f 上抜け+$%.1f 触れてから%d分以内 保有%d分 SL$%.1f lot=%.2f 時間帯サーバー%02d:%02d〜%02d:%02d magic=%I64d",
                InpRnOn ? "on" : "off", InpRnStep, InpRnDelta, InpRnArmMin, InpRnHoldMin, InpRnStopUsd, InpRnLot,
                InpRnStartSrvMin / 60, InpRnStartSrvMin % 60, InpRnEndSrvMin / 60, InpRnEndSrvMin % 60, InpRnMagic);
+   if(InpDsMode > 0)
+   {
+      datetime mm = iTime(InpGoldSymbol, PERIOD_M1, 1);
+      int nE = 0, nC = 0, nJ = 0;
+      double sE = DsSigma(InpDsEurUsd, mm, nE), sC = DsSigma(InpDsUsdChf, mm, nC), sJ = DsSigma(InpDsUsdJpy, mm, nJ);
+      PrintFormat("[ドル衝撃] mode=%d(%s) %s lot=%.2f |zu|≥%.1f 変化%d分 保有%d分 塊%d分 SL$%.0f 時間帯サーバー%02d:%02d〜%02d:%02d(撃つのは〜%02d:%02d) magic=%I64d | 15分σ(20日) EUR=%.6f(n%d) CHF=%.6f(n%d) JPY=%.6f(n%d)",
+                  InpDsMode, InpDsMode == 2 ? "実弾" : "紙", InpDsSide == 1 ? "買いだけ" : (InpDsSide == -1 ? "売りだけ" : "両方"), InpDsLot, InpDsK, InpDsLookMin, InpDsHoldMin, InpDsDeclMin, InpDsStopUsd,
+                  InpDsValidStartMin / 60, InpDsValidStartMin % 60, InpDsValidEndMin / 60, InpDsValidEndMin % 60, InpDsTradeEndMin / 60, InpDsTradeEndMin % 60, InpDsMagic,
+                  sE, nE, sC, nC, sJ, nJ);
+      DsSelfTest();
+   }
+   else Print("[ドル衝撃] off");
    PrintFormat("[金ボラ併用ゲート] AM>%.0f%% PM>%.0f%% (0=無効) 今の20日実現ボラ=%.1f%%", InpGoldVolOrThr, InpGoldPmVolOrThr, RealizedVol20(InpGoldSymbol));
    PrintFormat("[金PM上げ日スキップ] 前日終値比 > +%.2f%% なら撃たない (0=無効)", InpGoldPmUpSkipPct);
    PrintFormat("[ラダー設定] ≥%.0f円×%.2f / ≥%.0f円×%.2f / ≥%.0f円×%.2f → 今の残高%.0f円は×%.2f", InpScale1Bal, InpScale1, InpScale2Bal, InpScale2, InpScale3Bal, InpScale3, AccountInfoDouble(ACCOUNT_BALANCE), ScaleK());
@@ -756,6 +798,209 @@ void RnTick()
    }
 }
 
+//--- E) 金 ドル衝撃（入力は InpDs*・既定off）。判定は1分ごと・直前に確定した金の足の分 m で BT と同じ式
+datetime g_dsLastEval = 0;       // 判定した分(足の時刻・サーバー)
+datetime g_dsLastEvent = 0;      // 最後の「発生」の分(撃たなかった発生も・15分の塊の判定)
+datetime g_dsPaperEntry = 0; double g_dsPaperPx = 0.0; int g_dsPaperDir = 0;
+int DsSgn(double x) { return x > 0 ? 1 : (x < 0 ? -1 : 0); }
+void DsRecord(string line)
+{
+   int h = FileOpen("XMCombo_dollarshock.csv", FILE_READ | FILE_WRITE | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
+   if(h == INVALID_HANDLE) return;
+   FileSeek(h, 0, SEEK_END); FileWriteString(h, line + "\r\n"); FileClose(h);
+}
+//--- 足の時刻 t(分の頭・サーバー)の終値。その分に足が無ければ -1
+double DsCloseAt(string sym, datetime t)
+{
+   int sh = iBarShift(sym, PERIOD_M1, t, true);
+   if(sh < 0) return -1.0;
+   return iClose(sym, PERIOD_M1, sh);
+}
+//--- 15分の対数変化の標準偏差: 窓=[m−Win分, m−1分] の各分のうち「その分と15分前の両方に足がある」値(母標準偏差・BTの rolling と同じ)。
+//    値が InpDsMinN 未満・足が未ロードなら -1。n に値の数を返す
+double DsSigma(string sym, datetime m, int &n)
+{
+   n = 0;
+   MqlRates r[];
+   datetime from = m - (datetime)(InpDsWinMin + InpDsLookMin) * 60;
+   datetime to = m - 60;
+   int cnt = CopyRates(sym, PERIOD_M1, from, to, r);                 // 古い順
+   if(cnt <= 0) return -1.0;
+   datetime lo = m - (datetime)InpDsWinMin * 60;
+   double s = 0.0, ss = 0.0;
+   int j = 0;
+   for(int i = 0; i < cnt; i++)
+   {
+      datetime t = r[i].time;
+      datetime tp = t - InpDsLookMin * 60;
+      while(j < i && r[j].time < tp) j++;
+      if(t < lo) continue;
+      if(j < i && r[j].time == tp && r[j].close > 0 && r[i].close > 0)
+      {
+         double x = MathLog(r[i].close / r[j].close);
+         s += x; ss += x * x; n++;
+      }
+   }
+   if(n < InpDsMinN) return -1.0;
+   double mu = s / n, var = ss / n - mu * mu;
+   return var > 0 ? MathSqrt(var) : -1.0;
+}
+//--- z = 15分の対数変化 ÷ 標準偏差。使えなければ ok=false
+double DsZ(string sym, datetime m, bool &ok)
+{
+   ok = false;
+   double c = DsCloseAt(sym, m), c0 = DsCloseAt(sym, m - InpDsLookMin * 60);
+   if(c <= 0 || c0 <= 0) return 0.0;
+   int n = 0;
+   double sd = DsSigma(sym, m, n);
+   if(sd <= 0) return 0.0;
+   ok = true;
+   return MathLog(c / c0) / sd;
+}
+//--- 金の足が30分以上途切れた後の60分以内か(BTの after_gap と同じ: [m−59分, m] の金の足のどれかの直前の空白が30分超)
+bool DsAfterGap(datetime m)
+{
+   int sm = iBarShift(InpGoldSymbol, PERIOD_M1, m, true);
+   if(sm < 0) return true;
+   for(int k = sm; k < sm + 70; k++)
+   {
+      datetime tb = iTime(InpGoldSymbol, PERIOD_M1, k);
+      if(tb <= 0) return true;                                         // 足が未ロード→撃たない側に倒す
+      if(tb < m - 59 * 60) break;
+      datetime tp = iTime(InpGoldSymbol, PERIOD_M1, k + 1);
+      if(tp <= 0) return true;
+      if(tb - tp > 30 * 60) return true;
+   }
+   return false;
+}
+//--- 検証用: 過去 InpDsSelfTestMin 本の金の分足で z を計算して書く(時間帯の条件なし・Pythonの双子と数字を突き合わせる)
+void DsSelfTest()
+{
+   if(InpDsSelfTestMin <= 0) return;
+   int h = FileOpen("XMCombo_ds_selftest.csv", FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(h == INVALID_HANDLE) { Print("[ドル衝撃] 自己テストのファイルを開けない"); return; }
+   FileWriteString(h, "m,zE,zC,zJ,zu,yg\r\n");
+   uint t0 = GetTickCount();
+   int nOut = 0;
+   for(int k = InpDsSelfTestMin; k >= 1; k--)
+   {
+      datetime m = iTime(InpGoldSymbol, PERIOD_M1, k);
+      if(m <= 0) continue;
+      double gc = DsCloseAt(InpGoldSymbol, m), gc0 = DsCloseAt(InpGoldSymbol, m - InpDsLookMin * 60);
+      if(gc <= 0 || gc0 <= 0) continue;
+      bool a, b, c;
+      double zE = DsZ(InpDsEurUsd, m, a);
+      if(!a) continue;
+      double zC = DsZ(InpDsUsdChf, m, b);
+      if(!b) continue;
+      double zJ = DsZ(InpDsUsdJpy, m, c);
+      if(!c) continue;
+      FileWriteString(h, StringFormat("%s,%.6f,%.6f,%.6f,%.6f,%.8f\r\n", TimeToString(m, TIME_DATE | TIME_MINUTES), zE, zC, zJ, (-zE + zC + zJ) / 3.0, MathLog(gc / gc0)));
+      nOut++;
+   }
+   FileClose(h);
+   PrintFormat("[ドル衝撃] 自己テスト: 過去%d本の金の分足のうち%d分で z を計算して XMCombo_ds_selftest.csv に書いた（%.1f秒）", InpDsSelfTestMin, nOut, (GetTickCount() - t0) / 1000.0);
+}
+datetime DsPosTime()
+{
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong tk = PositionGetTicket(i);
+      if(tk > 0 && PositionSelectByTicket(tk) && PositionGetString(POSITION_SYMBOL) == InpGoldSymbol && PositionGetInteger(POSITION_MAGIC) == InpDsMagic)
+         return (datetime)PositionGetInteger(POSITION_TIME);
+   }
+   return 0;
+}
+void DsTick()
+{
+   string sym = InpGoldSymbol;
+   datetime srv = TimeTradeServer();
+   // 1) 時間決済: 建てた分の頭から InpDsHoldMin 分(BTは m+1 の始値で建てて m+1+H の始値で決済)
+   if(InpDsMode == 2)
+   {
+      datetime pt = DsPosTime();
+      if(pt > 0 && srv >= pt - (pt % 60) + InpDsHoldMin * 60)
+      {
+         if(CanTrade()) CloseAll(sym, InpDsMagic, "ドル衝撃");
+         if(DsPosTime() > 0) Print("[ドル衝撃] 決済が残っている → 5秒後に再試行");
+      }
+   }
+   if(InpDsMode == 1 && g_dsPaperEntry > 0 && srv >= g_dsPaperEntry + InpDsHoldMin * 60)
+   {
+      double x = (g_dsPaperDir > 0) ? SymbolInfoDouble(sym, SYMBOL_BID) : SymbolInfoDouble(sym, SYMBOL_ASK);
+      double pnl = g_dsPaperDir * (x - g_dsPaperPx);
+      PrintFormat("[ドル衝撃][紙] 決済 %s %.2f→%.2f %+.2f$/oz", g_dsPaperDir > 0 ? "買い" : "売り", g_dsPaperPx, x, pnl);
+      DsRecord(StringFormat("%s,paper_exit,%d,%.2f,%.2f,%.2f", TimeToString(srv, TIME_DATE | TIME_SECONDS), g_dsPaperDir, g_dsPaperPx, x, pnl));
+      g_dsPaperEntry = 0;
+   }
+   // 2) 直前に確定した金の足の分 m を1回だけ判定する(その分の終わりから2秒以上たってから)
+   datetime m = iTime(sym, PERIOD_M1, 1);
+   if(m <= 0 || m <= g_dsLastEval || srv < m + 62) return;
+   g_dsLastEval = m;
+   int tod = (int)((m - DayOf(m)) / 60);
+   if(tod < InpDsValidStartMin || tod > InpDsValidEndMin) return;
+   double gc = DsCloseAt(sym, m), gc0 = DsCloseAt(sym, m - InpDsLookMin * 60);
+   if(gc <= 0 || gc0 <= 0) return;
+   bool oke, okc, okj;
+   double zE = DsZ(InpDsEurUsd, m, oke);
+   if(!oke) return;
+   double zC = DsZ(InpDsUsdChf, m, okc);
+   if(!okc) return;
+   double zJ = DsZ(InpDsUsdJpy, m, okj);
+   if(!okj) return;
+   double zu = (-zE + zC + zJ) / 3.0;
+   double yg = MathLog(gc / gc0);
+   bool agree = (DsSgn(-zE) == DsSgn(zC) && DsSgn(zC) == DsSgn(zJ));
+   int d = -DsSgn(zu);
+   if(MathAbs(zu) >= 3.0)                                             // 検証用(Pythonの双子と突き合わせる): 大きめの分は全部残す
+      DsRecord(StringFormat("%s,eval,%.4f,%.4f,%.4f,%.4f,%.6f,%d", TimeToString(m, TIME_DATE | TIME_MINUTES), zE, zC, zJ, zu, yg, agree ? 1 : 0));
+   if(!agree || d == 0 || MathAbs(zu) < InpDsK) return;
+   // ここで「発生」(BTの valid & |zu|≥k)。15分以内に続く発生は同じ塊＝最初だけ撃つ
+   bool isNew = (g_dsLastEvent == 0 || m - g_dsLastEvent > InpDsDeclMin * 60);
+   g_dsLastEvent = m;
+   string why = "";
+   if(!isNew) why = "塊の続き";
+   else if(DsSgn(yg) * d <= 0) why = "金が同じ向きに動いていない";
+   else if(tod > InpDsTradeEndMin) why = "保有が23:00にかかる";
+   else if(DsAfterGap(m)) why = "金の足の空白の後60分";
+   else if((InpDsSide == 1 && d < 0) || (InpDsSide == -1 && d > 0)) why = (d > 0 ? "買いは使わない設定" : "売りは使わない設定");
+   else if(DsPosTime() > 0 || g_dsPaperEntry > 0) why = "保有中";
+   else if(Halted()) why = "全停止中";
+   PrintFormat("[ドル衝撃] 発生 %s zu=%+.2f(EUR%+.2f CHF%+.2f JPY%+.2f) ドル%s 金15分%+.3f%% → %s", TimeToString(m, TIME_DATE | TIME_MINUTES), zu, zE, zC, zJ,
+               d > 0 ? "安" : "高", yg * 100, why == "" ? (d > 0 ? "金を買う" : "金を売る") : ("見送り: " + why));
+   DsRecord(StringFormat("%s,event,%.4f,%.4f,%.4f,%.4f,%.6f,%d,%s", TimeToString(m, TIME_DATE | TIME_MINUTES), zE, zC, zJ, zu, yg, d, why == "" ? "ENTRY" : why));
+   if(why != "") return;
+   int spread = (int)SymbolInfoInteger(sym, SYMBOL_SPREAD);
+   if(spread > InpDsMaxSpread) { PrintFormat("[ドル衝撃] スプレッド%dpt > %d なので見送り", spread, InpDsMaxSpread); return; }
+   double bid = SymbolInfoDouble(sym, SYMBOL_BID), ask = SymbolInfoDouble(sym, SYMBOL_ASK);
+   if(InpDsMode == 1)
+   {
+      g_dsPaperEntry = m + 60; g_dsPaperDir = d; g_dsPaperPx = (d > 0) ? ask : bid;
+      PrintFormat("[ドル衝撃][紙] %s %.2f（%d分後に決済）", d > 0 ? "買い" : "売り", g_dsPaperPx, InpDsHoldMin);
+      DsRecord(StringFormat("%s,paper_entry,%d,%.2f", TimeToString(srv, TIME_DATE | TIME_SECONDS), d, g_dsPaperPx));
+      return;
+   }
+   if(!CanTrade()) { PrintFormat("[ドル衝撃][デモ以外] %s（発注せず）", d > 0 ? "買い" : "売り"); return; }
+   int dg = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
+   double vmin = SymbolInfoDouble(sym, SYMBOL_VOLUME_MIN), vstep = SymbolInfoDouble(sym, SYMBOL_VOLUME_STEP);
+   double lot = MathMax(vmin, NormalizeDouble(MathFloor(InpDsLot / vstep + 1e-9) * vstep, 2));
+   trade.SetExpertMagicNumber(InpDsMagic);
+   bool ok;
+   if(d > 0)
+   {
+      double sl = (InpDsStopUsd > 0) ? NormalizeDouble(ask - InpDsStopUsd, dg) : 0.0;
+      ok = trade.Buy(lot, sym, 0, sl, 0, "ds-buy");
+   }
+   else
+   {
+      double sl = (InpDsStopUsd > 0) ? NormalizeDouble(bid + InpDsStopUsd, dg) : 0.0;
+      ok = trade.Sell(lot, sym, 0, sl, 0, "ds-sell");
+   }
+   if(ok) PrintFormat("[ドル衝撃] %s lot=%.2f @%.2f SL$%.0f（%d分で決済）", d > 0 ? "買い" : "売り", lot, trade.ResultPrice(), InpDsStopUsd, InpDsHoldMin);
+   else PrintFormat("[ドル衝撃] 発注失敗 ret=%d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+   DsRecord(StringFormat("%s,order,%d,%.2f,%d", TimeToString(srv, TIME_DATE | TIME_SECONDS), d, ok ? trade.ResultPrice() : 0.0, ok ? 1 : 0));
+}
+
 void OnTimer()
 {
    Heartbeat(); WarmSeries();
@@ -769,5 +1014,6 @@ void OnTimer()
    if(InpDeOn) DeTick();
    if(InpGdOn) GdTick();
    if(InpRnOn) RnTick();
+   if(InpDsMode > 0) DsTick();
 }
 //+------------------------------------------------------------------+
