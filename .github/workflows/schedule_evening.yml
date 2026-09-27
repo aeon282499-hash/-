@@ -128,6 +128,16 @@ jobs:
           DISCORD_WEBHOOK_MASUTAN_URL: ${{ secrets.DISCORD_WEBHOOK_MASUTAN_URL }}
         run: python masutan_signal.py
 
+      - name: 割安B（2026-09-27追加・AI惣菜型の割安スイング・紙の帳簿＋通知・発注は本人）
+        # 割安(PBR/予想PER/配当利回り)×押し目(R_opt)またはボラ収縮(C1)の候補を出し、紙の帳簿を1日進めて配信（wariyasu_signal.py）。
+        # ルールは wariyasu_signal.py 冒頭の WY_RULE。10年BTと玉単位で一致を確認済み（_audit_wariyasu_parity.py）。
+        # 配信先 DISCORD_WEBHOOK_WARIYASU_URL（未設定なら俺専用サーバーの極上ch＝ジョブenvの DISCORD_WEBHOOK_GOKUJO_URL・タイトル💴【割安B】）。
+        # J-Quants の日足を約65営業日分取るので数分かかる。ここが失敗しても他の配信とコミットは止めない。
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_WARIYASU_URL: ${{ secrets.DISCORD_WEBHOOK_WARIYASU_URL }}
+        run: python wariyasu_signal.py
+
       - name: ポジション・シグナル保存（朝ランと同一リスト）
         run: |
           git config user.name  "github-actions[bot]"
@@ -143,7 +153,8 @@ jobs:
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json _shadow_skipped_gokujo.json \
             kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json arena_watchlist.json \
-            masutan_signals.json positions_masutan.json masutan_state.json; do
+            masutan_signals.json positions_masutan.json masutan_state.json \
+            wariyasu_signals.json positions_wariyasu.json wariyasu_state.json; do
             [ -f "$f" ] && git add "$f"
           done
           git diff --cached --quiet && exit 0
