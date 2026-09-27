@@ -698,6 +698,131 @@ def t_constants_are_swappable():
         W.use_rule(rule0)
 
 
+# ───────────────────────── 配当落調整金・利回りの要確認（2026-09-27）─────────────────────────
+@test
+def t_ex_div_dates():
+    """権利落ち日 = 権利確定日(期末以前の最後の営業日)の1営業日前（2019-07-18より前の期末は2営業日前）・割合は権利付き最終日までの開示"""
+    cal = W.Cal()
+    fy = {}
+    st = "3QFinancialStatements_Consolidated_JP"
+    W.fy_note_row(fy, "1111", "2026-02-10", {"CurFYEn": "2026-03-31", "DocType": st, "FDivFY": 30, "FDivAnn": 40})
+    assert fy["1111"] == {"end": "03-31", "fr": [["2026-02-10", 0.75]]}, fy
+    assert W.ex_div_share(fy, "1111", "2026-03-30", cal) == (0.75, "期末")          # 3/31(火)確定 → 3/27(金)権利付き → 3/30(月)落ち
+    assert W.ex_div_share(fy, "1111", "2026-03-27", cal) == (0.0, "")
+    assert W.ex_div_share(fy, "1111", "2026-03-31", cal) == (0.0, "")
+    assert W.ex_div_share(fy, "1111", "2026-09-29", cal) == (0.25, "中間")          # 9/30(水)確定 → 9/29(火)落ち
+    W.fy_note_row(fy, "1111", "2026-09-29", {"CurFYEn": "2027-03-31", "DocType": "DividendForecastRevision", "FDivFY": 40, "FDivAnn": 40})
+    assert W.ex_div_share(fy, "1111", "2026-09-29", cal) == (0.25, "中間")          # 権利落ち日当日の開示は使わない（権利付き最終日まで）
+    assert W.ex_div_share(fy, "1111", "2027-03-30", cal) == (1.0, "期末")           # 3/31(水)確定 → 3/30(火)落ち・新しい割合1.0
+    W.fy_note_row(fy, "2222", "2025-11-10", {"CurFYEn": "2025-12-31", "DocType": st, "FDivFY": 20, "FDivAnn": 40})
+    assert W.ex_div_share(fy, "2222", "2025-12-29", cal) == (0.5, "期末")           # 12/31は休み → 12/30確定 → 12/26(金)権利付き → 12/29落ち
+    assert W.ex_div_share(fy, "2222", "2026-06-29", cal) == (0.5, "中間")           # 6/30(火)確定 → 6/29(月)落ち
+    W.fy_note_row(fy, "5204", "2019-01-24", {"CurFYEn": "2019-03-20", "DocType": st, "FDivFY": 45, "FDivAnn": 45})
+    W.fy_note_row(fy, "5204", "2019-02-04", {"CurFYEn": "2019-03-31", "DocType": "DividendForecastRevision", "FDivFY": 65, "FDivAnn": 65})
+    assert fy["5204"]["end"] == "03-20", fy["5204"]                                  # 修正開示の食い違う期末は採らない（短信が正）
+    assert W.ex_div_share(fy, "5204", "2019-03-18", cal) == (1.0, "期末")           # 旧ルール: 3/20(水)確定 → 3/15(金)権利付き → 3/18(月)落ち
+    W.fy_note_row(fy, "5204", "2025-11-01", {"CurFYEn": "2026-03-20", "DocType": st, "FDivFY": 45, "FDivAnn": 45})
+    assert W.ex_div_share(fy, "5204", "2026-03-18", cal) == (1.0, "期末")           # 3/20(金)は春分の日 → 3/19確定 → 3/18落ち
+    W.fy_note_row(fy, "3333", "2019-02-01", {"CurFYEn": "2019-03-31", "DocType": st})
+    assert W.ex_div_share(fy, "3333", "2019-03-27", cal) == (0.5, "期末")           # 旧ルール: 3/29(金)確定 → 3/26権利付き → 3/27落ち・割合なし=0.5
+    W.fy_note_row(fy, "4444", "2025-12-01", {"CurFYEn": "2026-02-28", "DocType": st, "FDivFY": 10, "FDivAnn": 10})
+    assert W.ex_div_share(fy, "4444", "2026-02-26", cal) == (1.0, "期末")           # 2月末決算: 2/27(金)確定 → 2/26落ち
+    assert W.ex_div_share(fy, "4444", "2026-08-28", cal) == (0.0, "")               # 期末だけの配当 → 中間(8月)は割合0
+    assert W.ex_div_share({}, "9999", "2026-03-30", cal) == (0.0, "")
+    assert abs(W.div_credit_r(4.0, 0.5, 1000.0, 1000.0) - 0.04 * 0.5 * 0.85) < 1e-12
+    assert math.isnan(W.div_credit_r(39.7, 1.0, 1000.0, 1000.0))                    # 利回りが疑わしい → 数えない
+    assert math.isnan(W.div_credit_r(float("nan"), 1.0, 1000.0, 1000.0))
+
+
+class FakeMarketDiv(FakeMarket):
+    """FakeMarket に 1002 の決算期末（k+6日目＝k+5日目が権利落ち）と期末の割合1.0を足したもの"""
+
+    def fetch_fins(self, token, d):
+        rows = super().fetch_fins(token, d)
+        for r in rows:
+            if r["Code"] == "10020":
+                r.update(CurFYEn=self.days[self.k + 6], FDivFY=40.0)
+                r["FDivAnn"] = 40.0
+        return rows
+
+
+@test
+def t_div_credit_end_to_end():
+    """保有中に権利落ちを迎えた玉に配当落調整金が別枠で入り、前の晩に予告・当日の帳簿・決済・フッターに出る。損益(r)は変わらない"""
+    rule0 = W.WY_RULE
+    W.use_rule("C1")
+    days = weekdays("2026-03-02", 75, skip={"2026-03-20"})
+    k = 30
+    mk = FakeMarketDiv(days, k)
+    cal = W.Cal(days=days)
+    earn = W.EarnCal(official={}, est={})
+    tmp = tempfile.mkdtemp(prefix="wy_test_div_")
+    cwd = os.getcwd()
+    posted = []
+    try:
+        os.chdir(tmp)
+        W._save(W.STATE_FILE, {"version": 1, "fins_last": (date.fromisoformat(days[0]) - timedelta(days=1)).isoformat(),
+                               "divs": {}, "stmt": {}, "b_hist": {}, "cands_hist": {}, "sent": [], "pend": [], "settled": days[k - 1]})
+        W._save(W.BOOK_FILE, [])
+
+        def go(i):
+            with redirect_stdout(io.StringIO()):
+                return W.run(days[i], token="x", cal=cal, earn=earn, fetch_bars=mk.fetch_bars, fetch_val=mk.fetch_val,
+                             fetch_fins=mk.fetch_fins, fetch_names_fn=mk.names, post_fn=lambda e, dry: posted.append(e) or True)
+        for i in range(k, k + 4):
+            go(i)
+        st = W._load(W.STATE_FILE, {})
+        assert st["fy"]["1002"]["end"] == days[k + 6][5:], st["fy"].get("1002")
+        assert W.ex_div_share(st["fy"], "1002", days[k + 5], cal) == (1.0, "期末")
+        r = go(k + 4)                                                            # 明日(k+5)が権利落ち → 予告
+        d = posted[-1]["description"]
+        assert f"📌 {W._md(days[k + 5])}は権利落ち日（期末）" in d and "配当落調整金 約17,000円の見込み" in d, d
+        r = go(k + 5)                                                            # 権利落ち日: 利回り4%×割合1.0×前日終値500÷建値500×0.85
+        dv = [e for e in r["events"] if e["kind"] == "div"]
+        assert [(e["code"], e["yen"], e["which"]) for e in dv] == [("1002", 17000, "期末")], r["events"]
+        d = posted[-1]["description"]
+        assert "💴" in d and "権利落ち（期末）テスト1002（1002） 配当落調整金 +17,000円の見込み" in d, d
+        book = W._load(W.BOOK_FILE, [])
+        p2 = [p for p in book if p["code"] == "1002"][0]
+        assert (p2["div_yen"], p2["div_r"]) == (17000, 0.034), p2
+        for i in range(k + 6, k + 21):
+            go(i)
+        book = W._load(W.BOOK_FILE, [])
+        p2 = [p for p in book if p["code"] == "1002"][0]
+        assert (p2["status"], p2["why"], p2["div_yen"]) == ("closed", "期限", 17000), p2
+        assert p2["pnl_yen"] == round(W.WY_SIZE * p2["r"]) and p2["r"] < 0.001, p2              # 帳簿の損益(r)は株価だけ（配当は別枠）
+        d = posted[-1]["description"]
+        assert "＋配当落調整金+1.7万" in d, d
+        assert "・配当落調整金 +1.7万（別枠）" in posted[-1]["footer"]["text"], posted[-1]["footer"]["text"]
+        assert "配当落調整金を足すと約+240万" in posted[-1]["footer"]["text"]
+    finally:
+        os.chdir(cwd)
+        shutil.rmtree(tmp, ignore_errors=True)
+        W.use_rule(rule0)
+
+
+@test
+def t_dy_warn_display():
+    """予想利回り15%超は候補に「要確認」を付ける（候補から外さない）"""
+    rule0 = W.WY_RULE
+    W.use_rule("C1")
+    try:
+        cal = W.Cal(days=weekdays("2026-09-01", 40))
+        today = cal.days[10]
+        day = dict(date=today, B=np.ones(5, bool), first_cands=[])
+        rows = [dict(code="9434", name="分割ずれ", score=39.7, PBR=0.9, PER=9.0, DY=39.7, tov20_oku=50.0, close=180.0, ne_date="2026-11-10",
+                     shares={"1000000": 5500, "500000": 2700}, ok=True, skip=""),
+                dict(code="1111", name="ふつう", score=5.2, PBR=0.71, PER=7.3, DY=5.2, tov20_oku=3.4, close=1234.0, ne_date="2026-11-10",
+                     shares={"1000000": 800, "500000": 400}, ok=True, skip="")]
+        d = W.build_embed(today, cal, day, rows, [], [], {}, W.Engine())["description"]
+        line1 = [x for x in d.split("\n") if "利回り39.7%" in x][0]
+        line2 = [x for x in d.split("\n") if "利回り5.2%" in x][0]
+        assert "⚠️要確認" in line1 and "⚠️要確認" not in line2, d
+        assert "🟢 1. **分割ずれ（9434）**" in d, d
+    finally:
+        W.use_rule(rule0)
+
+
 # ───────────────────────── R_opt（押し目の指値・合成スコア）─────────────────────────
 def bt_compz(PBR1, EP1, DY, LIQ):
     """_bt_souzai_opt_prep_0927.py の COMPZ をそのまま"""

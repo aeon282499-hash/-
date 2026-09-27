@@ -27,6 +27,10 @@
   高値の更新はその日の判定の後（今日の高値は明日の水準に効く）。5営業日を超えて値が付かなければ最後の終値で手仕舞い扱い。
   PBR/PER/BPS/EPSは前営業日のJ-Quants公式値（項目ごとに最大3営業日前まで遡る）、利回り=予想配当÷前営業日の株価(PBR×BPS)。
   配当予想は開示日（土日の開示はその前の営業日）の翌営業日から使う。帳簿のコスト=片道0.1%＋買方金利2.8%/年。
+  配当落調整金（2026-09-27 究極版探索の提案①）: 株価は配当で調整しない＝権利落ちの値下がりは帳簿の損益(r)にそのまま入る（BTも同じ）。
+    信用買いは権利付き最終日の引けに持っていれば配当×約0.85を受け取るので、その見込みを玉ごとに別枠(div_yen)で記録し、通知にも出す。
+    10年の玉に当てると +34.8万（究極版BTの EXD と30回すべて一致＋期末が月末でない1回）。ルールを決めた +207万 は配当なしの数え方。
+  予想利回り15%超は「要確認」を付ける（提案②・分割の前後で配当予想の単位がずれる誤り。10年で7玉）。候補からは外さない。
   ⚠ 財務データが2016年〜なので10年しか測れない・2023年（東証のPBR改善要請）の寄与が大きい。
   ⚠ 本番だけの近似: 次の決算日はJPX公式の発表予定（jpx_earnings_schedule.json・大引けジョブが毎営業日更新）→
     無ければ過去の開示パターンからの推定（earnings_calendar.json・週次）。BTは実際の開示日を使っている。
@@ -94,6 +98,10 @@ WY_TP = None                     # 固定利確（例 0.10）。None=使わな�
 WY_PBR_TP = None                 # 例 1.0=PBRがこれを超えた日の翌寄りで手仕舞い（C1のBT＝v2simの定義）。None=使わない
 WY_SIDE_COST = 0.001             # 帳簿の損益に入れるコスト（片道）
 WY_RATE = 0.028                  # 帳簿の損益に入れる買方金利（年・暦日）
+WY_DIV_CREDIT = True             # 紙の帳簿に配当落調整金（信用買い）を別枠で記録する。売買のルール・帳簿の損益(r)は変えない（BTと同じ数え方のまま）
+WY_DIV_TAKE = 0.85               # 信用買いの配当落調整金 ≒ 配当×0.85（配当から所得税相当15.315%を引いた額）
+WY_DY_WARN = 15.0                # 予想利回りがこれ(%)を超えたら「要確認」を付ける（分割の前後で配当予想の単位がずれる誤り。例 9434 は2025-03に39.7%）。
+                                 # 候補からは外さない（海運など本物の高配当もある）。配当落調整金の見込みにも使わない
 WY_MISS_DAYS = 5                 # 値が付かない日がこれを超えたら最後の終値で手仕舞い扱い
 WY_SHOW_N = 5                    # 配信に出す候補・指値（置く分＋補欠）の数
 WY_REF_FIRST = False             # 参考（帳簿外）に「割安に入った初日」を出す
@@ -107,7 +115,8 @@ RULES = {
                              "（待ちの指値を全部持つ理想化なら+273万）"),
     # 前の既定（_bt_souzai_v2sim_0927.py の B×T1収縮・損切り7%・翌寄り）
     "C1": dict(WY_PBR_MAX=1.0, WY_PER_MAX=10.0, WY_DY_MIN=3.0, WY_RANK_KEY="dy", WY_ENTRY="T1", WY_STOP=0.07, WY_REF_FIRST=True,
-               WY_BT_NOTE="10年BT(2016-07〜2026-09-18・3×50万・値がさ見送り) +207万/PF1.71/勝率58%/DD-34万/月2.6件"),
+               WY_BT_NOTE="10年BT(2016-07〜2026-09-18・3×50万・値がさ見送り) +207万/PF1.71/勝率58%/DD-34万/月2.6件"
+                          "（配当落調整金を足すと約+240万）"),
 }
 
 
@@ -354,11 +363,13 @@ def _disc_key(r: dict):
     return (str(r.get("DiscDate", ""))[:10], 1 if miss else 0, "" if miss else str(t))
 
 
-def apply_fins_rows(divs: dict, rows: list, eff_date_fn, stmt: dict | None = None, keep: int = 3) -> int:
+def apply_fins_rows(divs: dict, rows: list, eff_date_fn, stmt: dict | None = None, keep: int = 3, fy: dict | None = None,
+                    fy_keep: int = 3) -> int:
     """開示の行を状態に反映（開示日→時刻の順。時刻が無い行はその日の最後＝BTの並べ方と同じ）。
     divs[code4] = [[有効日, 配当予想], ...]（有効日の新しい順・同じ有効日なら後の開示が先＝後勝ち・新しい keep 件だけ残す）。
     有効日 = 開示日以前の最後の営業日（BTの sidx）。その値は有効日の「翌営業日」の判定から使う（div_as_of に前営業日を渡す）。
     stmt[code4] = 決算短信の有効日の一覧（新しい6件＝約1年半。保有中の決算日の見直しと、予定の無い銘柄の決算日の推定に使う）。
+    fy[code4] = 決算期末（月-日）と期末に払う割合の履歴（配当落調整金の見込み用・fy_note_row）。
     戻り値=配当予想を反映した行数"""
     n = 0
     for r in sorted(rows, key=_disc_key):
@@ -369,6 +380,8 @@ def apply_fins_rows(divs: dict, rows: list, eff_date_fn, stmt: dict | None = Non
         if not eff:
             continue
         c4 = code[:4]
+        if fy is not None:
+            fy_note_row(fy, c4, eff, r, keep=fy_keep)
         if stmt is not None and is_statement(r.get("DocType")):
             s = stmt.setdefault(c4, [])
             if eff not in s:
@@ -392,6 +405,77 @@ def div_as_of(divs: dict, code4: str, d: str) -> float:
         if eff <= d:
             return float(v)
     return float("nan")
+
+
+# ── 配当落調整金（紙の帳簿の別枠。BTは _bt_souzai_ult_prep_0927.py の CUMN/EXD と _bt_souzai_ult_0927.py の run(div=True)）──
+# J-Quants の株価は配当で調整しない＝権利落ち日に配当ぶん下がった値がそのまま帳簿の損益(r)に入る（BTも同じ）。信用買いは
+# 権利付き最終日の引けに持っていれば配当落調整金を受け取るので、その見込みを別枠で記録する。
+# 配当額 = 予想配当利回り(前営業日の値)×その回の割合×前日終値。割合 = 期末は 同じ開示の 期末予想÷年間予想、中間は 1−それ（無ければ0.5）。
+def fy_note_row(fy: dict, c4: str, eff: str, row: dict, keep: int = 3) -> None:
+    """開示の1行から 決算期末（月-日。最新の決算短信の CurFYEn。短信がまだ無い銘柄だけ他の開示で埋める）と
+    期末に払う割合（同じ行の FDivFY÷FDivAnn）を覚える。
+    （修正開示の CurFYEn は短信と食い違うことがある: 5204 は短信が 03-20・2019-02 の配当予想の修正だけ 03-31）"""
+    e = str(row.get("CurFYEn") or "")[:10]
+    if len(e) == 10 and e[4] == "-" and e[7] == "-" and e[5:7].isdigit() and e[8:10].isdigit():
+        if is_statement(row.get("DocType")) or "end" not in fy.get(c4, {}):
+            fy.setdefault(c4, {})["end"] = e[5:]
+    a, b = _f(row.get("FDivFY")), _f(row.get("FDivAnn"))
+    if math.isfinite(a) and math.isfinite(b) and b > 0:
+        h = fy.setdefault(c4, {}).setdefault("fr", [])
+        x = [eff, round(min(max(a / b, 0.0), 1.0), 4)]
+        if h and h[0] == x:                  # 同じ日の同じ値の開示が2行ある（短信と訂正など）→ 1件に
+            return
+        h.insert(0, x)
+        h.sort(key=lambda x: x[0], reverse=True)
+        del h[keep:]
+
+
+def fy_frac_as_of(fy: dict, c4: str, d: str) -> float:
+    """有効日 ≤ d の最新の「期末に払う割合」。無ければ0.5（BTと同じ）"""
+    for eff, v in (fy.get(c4) or {}).get("fr", []):
+        if eff <= d:
+            return float(v)
+    return 0.5
+
+
+def _month_last(y: int, m: int) -> date:
+    return date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1)
+
+
+def ex_div_share(fy: dict, c4: str, d: str, cal: "Cal") -> tuple:
+    """d が c4 の権利落ち日なら (その回に払う割合, "期末"/"中間")、違えば (0.0, "")。
+    権利確定日 = 期末（中間は期末の6か月前）以前の最後の営業日。権利付き最終日 = その2営業日前（2019-07-18より前の期末は3営業日前）。
+    権利落ち日 = 権利付き最終日の翌営業日。割合は権利付き最終日までの最新の開示で決める。"""
+    end = (fy.get(c4) or {}).get("end")
+    if not end:
+        return 0.0, ""
+    try:
+        mm, dd = int(end[:2]), int(end[3:5])
+    except ValueError:
+        return 0.0, ""
+    y, m = int(d[:4]), int(d[5:7])
+    month_end = dd >= _month_last(2001, mm).day                     # 月末締め（2月は28日以降）
+    for yy, mo in ((y, m), (y + (m == 12), m % 12 + 1)):          # 期末が月の初めなら権利落ちは前の月に来る
+        for kind, pm in (("期末", mm), ("中間", (mm - 7) % 12 + 1)):
+            if mo != pm:
+                continue
+            last = _month_last(yy, mo)
+            pe = last if month_end else date(yy, mo, min(dd, last.day))
+            r = cal.idx(pe.isoformat())
+            k = 2 if pe >= date(2019, 7, 18) else 3
+            ex_i = r - k + 1
+            if 1 <= ex_i < len(cal.days) and cal.days[ex_i] == d:
+                shf = fy_frac_as_of(fy, c4, cal.days[ex_i - 1])
+                share = shf if kind == "期末" else 1.0 - shf
+                return (share, kind) if share > 0 else (0.0, "")
+    return 0.0, ""
+
+
+def div_credit_r(dy: float, share: float, prev_close: float, px: float) -> float:
+    """配当落調整金の見込み（1枠の金額に対する比率）＝ 利回り×割合×前日終値÷建値×0.85。利回りが疑わしい(>WY_DY_WARN)・値が無い時は nan"""
+    if not (math.isfinite(dy) and 0 < dy <= WY_DY_WARN and math.isfinite(prev_close) and prev_close > 0 and px > 0):
+        return float("nan")
+    return dy / 100 * share * prev_close / px * WY_DIV_TAKE
 
 
 def val_prev(val_days: list, codes: list):
@@ -778,7 +862,7 @@ def update_fins(state: dict, cal: Cal, token: str, until: str, fetch=None) -> in
         ds = d.isoformat()
         rows = fetch(token, ds)
         n = apply_fins_rows(state.setdefault("divs", {}), rows, lambda s: cal.days[cal.idx(s)] if cal.idx(s) >= 0 else None,
-                            stmt=state.setdefault("stmt", {}))
+                            stmt=state.setdefault("stmt", {}), fy=state.setdefault("fy", {}))
         state["fins_last"] = ds
         n_all += n
         if rows:
@@ -926,12 +1010,37 @@ def settle_day(book: list, state: dict, d: str, cal: Cal, day: dict, eng: Engine
     def pbr_of(ti, code):
         return day.get("pbr_today", {}).get(code, float("nan"))
 
+    out = []
+    if WY_DIV_CREDIT:        # 前営業日（権利付き最終日）の引けに持っていた玉 = held（今日の寄りで建てる玉はまだ入っていない）
+        fy = state.get("fy", {})
+        for code, h in held.items():
+            try:
+                share, kind = ex_div_share(fy, code, d, cal)
+                if share <= 0:
+                    continue
+                j = day.get("cix", {}).get(code)
+                dy = float(day["DY"][j]) if j is not None else float("nan")
+                pv, v = pbars.get(code), bars.get(code)
+                pc = float(pv[8]) if pv is not None and _fin(pv[8]) else float("nan")
+                if v is not None and _fin(v[9]) and abs(v[9] - 1.0) > 1e-9:
+                    pc *= float(v[9])                                   # 今日が分割の日なら前日終値も今日の尺度に（建値は上で換算済み）
+                cr = div_credit_r(dy, share, pc, float(h["px"]))
+                if not math.isfinite(cr):
+                    out.append({"kind": "div_skip", "code": code, "date": d, "which": kind, "DY": round(dy, 2) if math.isfinite(dy) else None})
+                    continue
+                p = openp[code]
+                p["div_r"] = round(p.get("div_r", 0.0) + cr, 6)
+                p["div_yen"] = round(WY_SIZE * p["div_r"])
+                out.append({"kind": "div", "code": code, "date": d, "which": kind, "DY": round(dy, 2), "share": round(share, 3),
+                            "yen": round(WY_SIZE * cr)})
+            except Exception as e:                                      # 配当の見込みで帳簿を止めない
+                print(f"[wariyasu] ⚠ 配当落調整金の計算に失敗 {code} {d}: {e}")
+
     ev = eng.step(held, pend, t, cands_prev, day["cands"], bar, ne_of, cal_days, is_stuck=is_stuck,
                   pbr_of=pbr_of if eng.pbr_tp is not None else None)
     for k, it in enumerate(pend):              # 今日置いた指値に表示用の値を付ける
         if len(it) == 5:
             pend[k] = it + (_info(day, it[0]),)
-    out = []
     for e in ev:
         e2 = {k: v for k, v in e.items() if k not in ("t", "e", "ne", "info")}
         e2["date"] = d
@@ -950,6 +1059,8 @@ def settle_day(book: list, state: dict, d: str, cal: Cal, day: dict, eng: Engine
                 p.update(status="closed", exit_date=d, exit_px=round(e["x"], 4), why=e["why"], r=round(e["r"], 6),
                          pnl_yen=round(WY_SIZE * e["r"]), hold_days=t - cal.idx(p["entry_date"]) + 1)
                 e2["entry_date"] = p["entry_date"]
+                if p.get("div_yen"):
+                    e2["div_yen"] = p["div_yen"]
         out.append(e2)
     for code, h in held.items():
         p = openp.get(code)
@@ -1037,8 +1148,13 @@ def _sh(shares: dict, price: float) -> str:
                        else f"{int(z / 1e4)}万=買えない(100株{price * 100 / 1e4:,.0f}万)") for z in WY_SIZES_SHOW)
 
 
+def _dyw(dy) -> str:
+    """予想利回りが疑わしい時の注意（候補からは外さない）"""
+    return "⚠️要確認（分割で配当予想の単位がずれた誤りのことがある・会社の配当予想を見てから）" if dy is not None and dy > WY_DY_WARN else ""
+
+
 def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events: list, names: dict, eng: Engine,
-                late_days: list | None = None, orders: list | None = None) -> dict:
+                late_days: list | None = None, orders: list | None = None, fy: dict | None = None) -> dict:
     nxt = cal.add(today, 1)
     opn = [p for p in book if p.get("status") == "open"]
     free = WY_SLOTS - len(opn)
@@ -1057,7 +1173,7 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
                 sig = f"{_md(r['sig'])}の押し目・" if r.get("sig") and r["sig"] != today else ""
                 L.append(f"{mark} {k}. **{_nm(names, book, r['code'], r.get('name', ''))}** 指値**{_yen(tick_floor(r['limit']))}円**（{_md(r['exp'])}まで）"
                          f" → {_sh(r['shares'], r['limit'])}\n"
-                         f"　{sig}終値{_yen(r['close'] or 0)}円・PBR{r['PBR'] or 0:.2f}・予想PER{r['PER'] or 0:.1f}・利回り{r['DY'] or 0:.1f}%・"
+                         f"　{sig}終値{_yen(r['close'] or 0)}円・PBR{r['PBR'] or 0:.2f}・予想PER{r['PER'] or 0:.1f}・利回り{r['DY'] or 0:.1f}%{_dyw(r['DY'])}・"
                          f"スコア{r['score']:+.2f}・決算{_md(r['ne_date'])}")
             if len(orders) > len(live):
                 L.append("　⚪補欠は🟢が約定して枠が埋まらなかった次の晩に、スコアの順で入れ替わる（毎晩この一覧どおりに置き直す）")
@@ -1074,7 +1190,7 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
             for k, r in enumerate(act[:WY_SHOW_N], 1):
                 mark = "🟢" if k <= free else "⚪補欠"
                 L.append(f"{mark} {k}. **{_nm(names, book, r['code'], r.get('name', ''))}** 終値{_yen(r['close'])}円 → {_sh(r['shares'], r['close'])}\n"
-                         f"　PBR{r['PBR']:.2f}・予想PER{r['PER']:.1f}・利回り{r['DY']:.1f}%・代金{r['tov20_oku']:.1f}億・決算{_md(r['ne_date'])}")
+                         f"　PBR{r['PBR']:.2f}・予想PER{r['PER']:.1f}・利回り{r['DY']:.1f}%{_dyw(r['DY'])}・代金{r['tov20_oku']:.1f}億・決算{_md(r['ne_date'])}")
             if len(act) > free:
                 L.append("　⚪補欠は🟢が寄りでストップ高に張り付いた・寄らなかった時だけ、上から順に")
             if len(act) > WY_SHOW_N:
@@ -1101,10 +1217,22 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
             L.append(f"・**{_nm(names, book, p['code'])}** {p.get('shares', 0):,}株 建値{_yen(p['px'])}円({_md(p['entry_date'])})"
                      f" → 今{_yen(p['last'])}円（{(p['last'] / p['px'] - 1) * 100:+.1f}%）{k}日目\n"
                      f"　└ 逆指値の売り **{_yen(tick_floor(lv['level']))}円**（{tr}・寄りがそれ以下なら寄りで）｜{close_note}")
+            if WY_DIV_CREDIT and fy:
+                try:
+                    share, kind = ex_div_share(fy, p["code"], nxt, cal)
+                    if share > 0:
+                        j = day.get("cix", {}).get(p["code"])
+                        dy = float(day["DY"][j]) if j is not None and "DY" in day else float("nan")
+                        cr = div_credit_r(dy, share, float(p["last"]), float(p["px"]))
+                        amt = f"・配当落調整金 約{WY_SIZE * cr:,.0f}円の見込み" if math.isfinite(cr) else "・利回りが疑わしいので調整金の見込みは出さない"
+                        L.append(f"　└ 📌 {_md(nxt)}は権利落ち日（{kind}）: 株価は配当ぶん下がって始まるのが普通{amt}（帳簿の損益とは別枠）")
+                except Exception as e:
+                    print(f"[wariyasu] ⚠ 権利落ちの表示に失敗 {p['code']}: {e}")
     ex = [e for e in events if e["kind"] == "exit"]
     en = [e for e in events if e["kind"] == "entry"]
     st = [e for e in events if e["kind"] == "stuck"]
-    if en or ex or st:
+    dv = [e for e in events if e["kind"] in ("div", "div_skip")]
+    if en or ex or st or dv:
         L.append("")
         L.append(f"**今日の帳簿（{_md(today)}）**" if not late_days
                  else f"**帳簿（{'・'.join(_md(x) for x in late_days)}の配信が欠けた分も追いつかせた）**")
@@ -1113,9 +1241,17 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
             L.append(f"🛒 {_md(e['date'])} 約定 {_nm(names, book, e['code'])} {lim}{_yen(e['px'])}円")
         for e in st:
             L.append(f"⏭ {_md(e['date'])} 見送り {_nm(names, book, e['code'])}（寄りがストップ高張り付き）")
+        for e in dv:
+            if e["kind"] == "div":
+                L.append(f"💴 {_md(e['date'])} 権利落ち（{e['which']}）{_nm(names, book, e['code'])} 配当落調整金 +{e['yen']:,}円の見込み"
+                         f"（利回り{e['DY']:.1f}%×{e['share']:.0%}・配当の85%・帳簿の損益とは別枠）")
+            else:
+                dy = f"利回り{e['DY']:.1f}%" if e.get("DY") is not None else "利回りが無い"
+                L.append(f"⚠️ {_md(e['date'])} 権利落ち（{e['which']}）{_nm(names, book, e['code'])} {dy}＝配当予想が疑わしいので調整金は数えない（要確認）")
         for e in ex:
+            dvn = f"＋配当落調整金{e['div_yen'] / 1e4:+.1f}万" if e.get("div_yen") else ""
             L.append(f"{'✅' if e['r'] > 0 else '❌'} {_md(e['date'])} {e['why']} {_nm(names, book, e['code'])} "
-                     f"{_yen(e['px'])}→{_yen(e['x'])}円 {e['r'] * 100:+.2f}%（{WY_SIZE * e['r'] / 1e4:+.1f}万・コスト込み）")
+                     f"{_yen(e['px'])}→{_yen(e['x'])}円 {e['r'] * 100:+.2f}%（{WY_SIZE * e['r'] / 1e4:+.1f}万・コスト込み）{dvn}")
     if WY_REF_FIRST and WY_ENTRY != "first":
         shown = {r["code"] for r in rows[:WY_SHOW_N]}
         fc = [(c, s) for c, s in day.get("first_cands", []) if c not in shown][:3]
@@ -1126,6 +1262,7 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
     closed = [p for p in book if p.get("status") == "closed"]
     tot = sum(p.get("pnl_yen", 0) for p in closed)
     wins = sum(1 for p in closed if p.get("pnl_yen", 0) > 0)
+    div_tot = sum(p.get("div_yen", 0) or 0 for p in book)
     rule_b = (f"PBR≤{WY_PBR_MAX:g}・予想PER≤{WY_PER_MAX:g}・利回り≥{WY_DY_MIN:g}%" if WY_B_MODE == "threshold"
               else f"割安の合成スコア上位{WY_COMPOSITE_TOP_PCT:g}%")
     rule_e = {"T1": f"ボラ収縮(ATR5/ATR20≤{WY_T1_RATIO:g})の翌朝の寄りで成行", "first": "割安に入った初日の翌朝の寄りで成行",
@@ -1136,7 +1273,8 @@ def build_embed(today: str, cal: Cal, day: dict, rows: list, book: list, events:
             f"{WY_MAXHOLD}営業日目の大引け", "決算前日の大引け"]
     footer = (f"ルール[{WY_RULE}]: {rule_b}・代金{WY_TOV_MIN / 1e8:g}億以上 → {rule_e}（{rank}・同時{WY_SLOTS}銘柄・1枠{WY_SIZE // 10000}万）。"
               f"売り={'・'.join(x for x in sell if x)}の早い方。決算まで{WY_EARN_GAP}営業日以内は買わない。{WY_BT_NOTE}。"
-              f"紙の帳簿: {len(closed)}件 {tot / 1e4:+.1f}万" + (f"（勝ち{wins}）" if closed else ""))
+              f"紙の帳簿: {len(closed)}件 {tot / 1e4:+.1f}万" + (f"（勝ち{wins}）" if closed else "")
+              + (f"・配当落調整金 {div_tot / 1e4:+.1f}万（別枠）" if div_tot else ""))
     if WY_ENTRY == "T4":
         n = len([r for r in (orders or []) if r["live"]]) if free > 0 else 0
         title = f"{TITLE_MARK}{_md(today)}引け → {_md(nxt)} 指値{n}件（保有{len(opn)}/{WY_SLOTS}）"
@@ -1181,6 +1319,13 @@ def run(today: str, dry: bool = False, force: bool = False, token: str | None = 
     if not state.get("fins_last"):
         print(f"[wariyasu] {STATE_FILE} が無い/未初期化 → ローカルで `python wariyasu_signal.py --init` を先に")
         return {"skipped": "noinit"}
+    if WY_DIV_CREDIT and "fy" not in state:
+        if os.path.exists(FINS_PKL):
+            rebuild_fy(state, cal, token, fetch=fetch_fins)
+        else:
+            print(f"[wariyasu] ⚠ 状態に決算期末(fy)が無く {FINS_PKL} も無い → 配当落調整金は新しい開示が来た銘柄から"
+                  f"（ローカルで `python wariyasu_signal.py --rebuild-fy`）")
+            state["fy"] = {}
     sent = state.setdefault("sent", [])
     if today in sent and not force:
         print(f"[wariyasu] {today} は配信済み → 何もしない（--force で再実行）")
@@ -1230,7 +1375,7 @@ def run(today: str, dry: bool = False, force: bool = False, token: str | None = 
             p["name"] = names[p["code"]]
     rows = cand_rows(day, cal, earn, state, book, names)
     orders = order_rows(state, book, cal, today, names) if WY_ENTRY == "T4" else None
-    embed = build_embed(today, cal, day, rows, book, events, names, eng, late_days=late, orders=orders)
+    embed = build_embed(today, cal, day, rows, book, events, names, eng, late_days=late, orders=orders, fy=state.get("fy"))
     out = {"date": today, "next_date": cal.add(today, 1),
            "rule": {"name": WY_RULE, "b_mode": WY_B_MODE, "pbr_max": WY_PBR_MAX, "per_max": WY_PER_MAX, "dy_min": WY_DY_MIN,
                     "entry": WY_ENTRY, "rank": WY_RANK_KEY, "t4_orders": WY_T4_ORDERS if WY_ENTRY == "T4" else None, "slots": WY_SLOTS,
@@ -1252,16 +1397,40 @@ def run(today: str, dry: bool = False, force: bool = False, token: str | None = 
     return {**out, "embed": embed, "posted": posted}
 
 
+def rebuild_fy(state: dict, cal: Cal, token: str, fetch=None, fins_pkl: str = FINS_PKL) -> int:
+    """状態の fy（決算期末・期末に払う割合）を作り直す（ローカル）。_fins_history.pkl → その先は /fins/summary で state['fins_last'] まで"""
+    fetch = fetch or fetch_fins_day
+    fy = {}
+
+    def eff(s):
+        return cal.days[cal.idx(s)] if cal.idx(s) >= 0 else None
+    F = pd.read_pickle(fins_pkl)[["Code", "DiscDate", "DiscTime", "DocType", "CurFYEn", "FDivFY", "FDivAnn"]]
+    F = F[F.Code.astype(str).str.len() == 5]
+    apply_fins_rows({}, F.to_dict("records"), eff, fy=fy)
+    last = str(F.DiscDate.astype(str).max())[:10]
+    del F
+    d = date.fromisoformat(last) + timedelta(days=1)
+    end = date.fromisoformat(state.get("fins_last") or last)
+    while d <= end:
+        apply_fins_rows({}, fetch(token, d.isoformat()), eff, fy=fy)
+        d += timedelta(days=1)
+    state["fy"] = fy
+    print(f"[wariyasu] 決算期末・期末の割合: {len(fy)}銘柄（期末あり{sum(1 for v in fy.values() if v.get('end'))}・"
+          f"割合あり{sum(1 for v in fy.values() if v.get('fr'))}）{fins_pkl} 〜{last}＋開示〜{end}")
+    return len(fy)
+
+
 def init_state(cal: Cal, token: str, first_day: str, fetch_bars=None, fetch_val=None, fetch_fins=None, fins_pkl: str = FINS_PKL,
                bars_cache: dict | None = None, val_cache: dict | None = None) -> dict:
     """状態ファイルを作る（ローカル）。配当予想は _fins_history.pkl → その先を /fins/summary で first_day の前日まで。
     割安の履歴（初日の判定用）は first_day の前 WY_FIRST_LOOKBACK+2 営業日をライブのデータで計算。
     帳簿と待ちの指値は first_day から（その前の候補は通知していないので建てない）"""
-    state = {"version": 1, "start": first_day, "divs": {}, "stmt": {}, "b_hist": {}, "cands_hist": {}, "sent": [], "pend": [],
+    state = {"version": 1, "start": first_day, "divs": {}, "stmt": {}, "fy": {}, "b_hist": {}, "cands_hist": {}, "sent": [], "pend": [],
              "settled": cal.days[cal.idx(first_day) - 1] if cal.is_trading(first_day) else cal.days[cal.idx(first_day)]}
-    F = pd.read_pickle(fins_pkl)[["Code", "DiscDate", "DiscTime", "DocType", "FDivAnn", "NxFDivAnn"]]
+    F = pd.read_pickle(fins_pkl)[["Code", "DiscDate", "DiscTime", "DocType", "FDivAnn", "NxFDivAnn", "CurFYEn", "FDivFY"]]
     F = F[F.Code.astype(str).str.len() == 5]
-    apply_fins_rows(state["divs"], F.to_dict("records"), lambda s: cal.days[cal.idx(s)] if cal.idx(s) >= 0 else None, stmt=state["stmt"])
+    apply_fins_rows(state["divs"], F.to_dict("records"), lambda s: cal.days[cal.idx(s)] if cal.idx(s) >= 0 else None, stmt=state["stmt"],
+                    fy=state["fy"])
     state["fins_last"] = str(F.DiscDate.astype(str).max())[:10]
     print(f"[wariyasu] 配当予想: {len(state['divs'])}銘柄（{fins_pkl} 〜{state['fins_last']}）")
     del F
@@ -1289,9 +1458,15 @@ def main() -> int:
     ap.add_argument("--dry", action="store_true", help="ファイルを書かず・投稿せず、判定だけ表示")
     ap.add_argument("--force", action="store_true", help="配信済みでもやり直す（帳簿はその日の前に戻してから）")
     ap.add_argument("--init", action="store_true", help="状態ファイルを作る（ローカル・_fins_history.pkl が要る）")
+    ap.add_argument("--rebuild-fy", action="store_true", help="状態の決算期末・期末の割合(fy)だけ作り直す（ローカル・_fins_history.pkl が要る）")
     a = ap.parse_args()
     now = datetime.now(JST)
     cal = Cal()
+    if a.rebuild_fy:
+        st = _load(STATE_FILE, {})
+        rebuild_fy(st, cal, _token())
+        _save(STATE_FILE, st)
+        return 0
     if a.init:
         first = a.date or next(x for x in cal.days if x > now.date().isoformat())
         st = init_state(cal, _token(), first)
