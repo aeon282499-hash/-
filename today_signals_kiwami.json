@@ -1,4 +1,31 @@
 {
-  "date": "2026-09-28",
-  "signals": []
+  "date": "2026-09-29",
+  "signals": [
+    {
+      "ticker": "4183.T",
+      "name": "三井化学",
+      "direction": "BUY",
+      "prev_close": 2091.0,
+      "limit_price": 2111,
+      "days_cover": 0.24846531071565825,
+      "rsi": 42.61,
+      "deviation": -3.46,
+      "vol_ratio": 2.29,
+      "range_ratio": 0.56,
+      "turnover": 10779129350.0
+    },
+    {
+      "ticker": "8282.T",
+      "name": "ケーズホールディングス",
+      "direction": "BUY",
+      "prev_close": 1839.5,
+      "limit_price": 1857,
+      "days_cover": 0.07311111909487808,
+      "rsi": 40.36,
+      "deviation": -3.53,
+      "vol_ratio": 2.1,
+      "range_ratio": 0.81,
+      "turnover": 3354100400.0
+    }
+  ]
 }
