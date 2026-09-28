@@ -1350,9 +1350,9 @@
     "open": 4686.0,
     "prev_close": 4462.0,
     "shares": 100,
-    "entry_px": null,
-    "exit_px": null,
-    "pnl": null,
-    "yen": null
+    "entry_px": 4584.0,
+    "exit_px": 4595.0,
+    "pnl": -0.34,
+    "yen": -1700
   }
 ]
