@@ -1529,6 +1529,26 @@
       "close": 6044.0,
       "pnl": 0.37,
       "win": true
+    },
+    {
+      "date": "2026-09-29",
+      "ticker": "4183.T",
+      "name": "三井化学",
+      "direction": "BUY",
+      "open": 2057.5,
+      "close": 2036.0,
+      "pnl": -1.04,
+      "win": false
+    },
+    {
+      "date": "2026-09-29",
+      "ticker": "8282.T",
+      "name": "ケーズホールディングス",
+      "direction": "BUY",
+      "open": 1840.0,
+      "close": 1789.0,
+      "pnl": -2.77,
+      "win": false
     }
   ]
 }
