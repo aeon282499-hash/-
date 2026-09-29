@@ -1,19 +1,40 @@
 {
-  "date": "2026-09-29",
+  "date": "2026-09-30",
   "signals": [
     {
-      "ticker": "4183.T",
-      "name": "三井化学",
+      "ticker": "9048.T",
+      "name": "名古屋鉄道",
       "direction": "BUY",
-      "prev_close": 2091.0,
-      "limit_price": 2111
+      "prev_close": 1835.0,
+      "limit_price": 1853
     },
     {
-      "ticker": "8282.T",
-      "name": "ケーズホールディングス",
+      "ticker": "9006.T",
+      "name": "京浜急行電鉄",
       "direction": "BUY",
-      "prev_close": 1839.5,
-      "limit_price": 1857
+      "prev_close": 1513.5,
+      "limit_price": 1528
+    },
+    {
+      "ticker": "8153.T",
+      "name": "モスフードサービス",
+      "direction": "BUY",
+      "prev_close": 3815.0,
+      "limit_price": 3850
+    },
+    {
+      "ticker": "6412.T",
+      "name": "平和",
+      "direction": "BUY",
+      "prev_close": 2127.0,
+      "limit_price": 2148
+    },
+    {
+      "ticker": "9616.T",
+      "name": "共立メンテナンス",
+      "direction": "BUY",
+      "prev_close": 3176.0,
+      "limit_price": 3205
     }
   ]
 }

@@ -66,10 +66,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 6022.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 1,
+    "pnl_pct": -3.0,
+    "exit_type": "STOP",
+    "exit_date": "2026-09-25",
+    "gap_pnl_pct": null
   }
 ]
