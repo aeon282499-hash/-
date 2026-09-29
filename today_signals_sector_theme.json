@@ -1,26 +1,14 @@
 {
-  "date": "2026-09-29",
-  "fetched_at": "2026-09-28 23:11:30",
-  "signals": [
-    {
-      "ticker": "3245.T",
-      "name": "ディア・ライフ",
-      "rsi": 31.76,
-      "deviation": -7.35,
-      "turnover_oku": 20.51189,
-      "prev_close": 1030.0,
-      "in_sector_top": false,
-      "in_theme": true,
-      "sector": "不動産業"
-    }
-  ],
+  "date": "2026-09-30",
+  "fetched_at": "2026-09-29 23:11:34",
+  "signals": [],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 5,
-    "earnings_skip": 0,
+    "raw_buy": 27,
+    "earnings_skip": 3,
     "sector_pass": 0,
-    "theme_pass": 1,
-    "or_pass": 1,
+    "theme_pass": 0,
+    "or_pass": 0,
     "both_pass": 0,
     "raw_sell": 0,
     "sell_earnings_skip": 0,
