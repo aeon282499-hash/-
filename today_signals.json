@@ -1,40 +1,40 @@
 {
-  "date": "2026-09-30",
+  "date": "2026-10-01",
   "signals": [
     {
-      "ticker": "9048.T",
-      "name": "名古屋鉄道",
+      "ticker": "9044.T",
+      "name": "ＮＡＮＫＡＩ",
       "direction": "BUY",
-      "prev_close": 1835.0,
-      "limit_price": 1853
+      "prev_close": 3023.0,
+      "limit_price": 3050
     },
     {
-      "ticker": "9006.T",
-      "name": "京浜急行電鉄",
+      "ticker": "3231.T",
+      "name": "野村不動産ホールディングス",
       "direction": "BUY",
-      "prev_close": 1513.5,
-      "limit_price": 1528
+      "prev_close": 880.6,
+      "limit_price": 889
     },
     {
-      "ticker": "8153.T",
-      "name": "モスフードサービス",
+      "ticker": "9401.T",
+      "name": "ＴＢＳホールディングス",
       "direction": "BUY",
-      "prev_close": 3815.0,
-      "limit_price": 3850
+      "prev_close": 5687.0,
+      "limit_price": 5740
     },
     {
-      "ticker": "6412.T",
-      "name": "平和",
+      "ticker": "2282.T",
+      "name": "日本ハム",
       "direction": "BUY",
-      "prev_close": 2127.0,
-      "limit_price": 2148
+      "prev_close": 1986.5,
+      "limit_price": 2006
     },
     {
-      "ticker": "9616.T",
-      "name": "共立メンテナンス",
+      "ticker": "7616.T",
+      "name": "コロワイド",
       "direction": "BUY",
-      "prev_close": 3176.0,
-      "limit_price": 3205
+      "prev_close": 1985.0,
+      "limit_price": 2004
     }
   ]
 }

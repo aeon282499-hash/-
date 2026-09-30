@@ -1,4 +1,50 @@
 {
-  "date": "2026-09-30",
-  "signals": []
+  "date": "2026-10-01",
+  "signals": [
+    {
+      "ticker": "9401.T",
+      "name": "ＴＢＳホールディングス",
+      "direction": "BUY",
+      "prev_close": 5687.0,
+      "limit_price": 5740,
+      "days_cover": 0.1779269007915261,
+      "vt5": 1.074,
+      "updn_vol": 0.945,
+      "rsi": 40.33,
+      "deviation": -2.71,
+      "vol_ratio": 1.2,
+      "range_ratio": 1.56,
+      "turnover": 2013686900.0
+    },
+    {
+      "ticker": "9143.T",
+      "name": "ＳＧホールディングス",
+      "direction": "BUY",
+      "prev_close": 1444.0,
+      "limit_price": 1458,
+      "days_cover": 0.3183509693984205,
+      "vt5": 1.029,
+      "updn_vol": 0.982,
+      "rsi": 35.1,
+      "deviation": -3.3,
+      "vol_ratio": 1.04,
+      "range_ratio": 1.53,
+      "turnover": 2120934550.0
+    },
+    {
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "prev_close": 1986.5,
+      "limit_price": 2006,
+      "days_cover": 0.08142727649503596,
+      "vt5": 0.966,
+      "updn_vol": 0.885,
+      "rsi": 39.71,
+      "deviation": -3.86,
+      "vol_ratio": 0.82,
+      "range_ratio": 1.76,
+      "turnover": 2674146250.0
+    }
+  ]
 }

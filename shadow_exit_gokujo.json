@@ -72,5 +72,23 @@
     "exit_type": "STOP",
     "exit_date": "2026-09-25",
     "gap_pnl_pct": null
+  },
+  {
+    "signal_date": "2026-10-01",
+    "entry_date": "2026-10-01",
+    "ticker": "9401.T",
+    "name": "ＴＢＳホールディングス",
+    "size": 1500000,
+    "prev_close": 5687.0,
+    "limit_price": 5740,
+    "atr_pct": 1.903,
+    "stop_pct": 3.0,
+    "live_stop": 3.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null
   }
 ]
