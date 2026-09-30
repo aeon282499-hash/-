@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-09-29",
+ "last_signal_date": "2026-09-30",
  "positions": [
   {
    "ticker": "6521.T",
@@ -628,6 +628,17 @@
    "exit_kind": "翌寄り",
    "pnl_pct": 0.0,
    "pnl_yen": 0
+  },
+  {
+   "ticker": "2354.T",
+   "name": "ＹＥ　ＤＩＧＩＴＡＬ",
+   "type": "第２四半期",
+   "date": "2026-09-30",
+   "signal_price": 1264.0,
+   "shares": 300,
+   "rsi": 44.0,
+   "runup5": -6.5,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-09-14"
