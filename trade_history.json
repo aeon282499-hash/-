@@ -1549,6 +1549,46 @@
       "close": 1789.0,
       "pnl": -2.77,
       "win": false
+    },
+    {
+      "date": "2026-09-30",
+      "ticker": "9048.T",
+      "name": "名古屋鉄道",
+      "direction": "BUY",
+      "open": 1840.5,
+      "close": 1855.5,
+      "pnl": 0.81,
+      "win": true
+    },
+    {
+      "date": "2026-09-30",
+      "ticker": "9006.T",
+      "name": "京浜急行電鉄",
+      "direction": "BUY",
+      "open": 1520.5,
+      "close": 1534.0,
+      "pnl": 0.89,
+      "win": true
+    },
+    {
+      "date": "2026-09-30",
+      "ticker": "8153.T",
+      "name": "モスフードサービス",
+      "direction": "BUY",
+      "open": 3805.0,
+      "close": 3800.0,
+      "pnl": -0.13,
+      "win": false
+    },
+    {
+      "date": "2026-09-30",
+      "ticker": "6412.T",
+      "name": "平和",
+      "direction": "BUY",
+      "open": 2120.0,
+      "close": 2102.0,
+      "pnl": -0.85,
+      "win": false
     }
   ]
 }
