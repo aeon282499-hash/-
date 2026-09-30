@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """masutan_signal.py — 増担保規制「再点火」シグナル（夕方ジョブ・小額実弾）2026-09-27 新設
 ⛔2026-09-28 本人「やめる」で夕方ジョブから外した（休眠・最初の配信の前に停止）。
+▶2026-10-01 本人「やっぱり俺専用でシグナルでるようにして」で夕方ジョブに戻した（配信先は極上chへのフォールバックのまま）。
+  損切り（任意）: 買値-10%のザラ場逆指値は10年(代金≥3億 n621)で平均+1.78→+1.77%・最大負け-48.7→-24.1%＝ほぼ無料の保険（帳簿は損切りなしで記録）。
 
 本人決定（2026-09-27）: 「②小さい額の実弾で始める（1件30〜50万）」。
 
@@ -435,7 +437,7 @@ def build_embed(today: date, rows: list, events: list, names: dict, n_reg: int, 
             f"終値 {r['close_raw']:,.0f}円・25日線{r['dev']:+.1f}%・±15%以内が2日連続｜5日平均代金 {r['tov5_oku']:.1f}億\n"
             f"→ **{_md(ent)}の寄りで買い（成行）** → **{_md(ex)}の大引けで売り（引成）**＝買った日を1日目として3日目\n"
             f"株数: {_shares_text(r)}（100株単位・今日の終値基準）\n"
-            f"⚠️寄りがストップ高に張り付いたら見送り")
+            f"⚠️寄りがストップ高に張り付いたら見送り｜損切り（任意）: 買値の-10%にザラ場逆指値（今日の終値基準で約{r['close_raw'] * 0.9:,.0f}円）")
     ev_lines = []
     for e in events:
         nm = names.get(e["code"], {}).get("name", e.get("name") or e["code"])
@@ -444,7 +446,8 @@ def build_embed(today: date, rows: list, events: list, names: dict, n_reg: int, 
                             f"**{e['pnl_pct']:+.2f}%**（コスト0.3%前・30万で{e['yen']['300000']:+,}円／50万で{e['yen']['500000']:+,}円）"
                             + (f" ※{e['exit_note']}" if e.get("exit_note") else ""))
         elif e["kind"] == "entry":
-            ev_lines.append(f"🟢 建て {nm}（{e['code']}） 寄り {e['entry_raw']:,.0f}円 → {_md(date.fromisoformat(e['exit_date']))}の大引けで売り")
+            ev_lines.append(f"🟢 建て {nm}（{e['code']}） 寄り {e['entry_raw']:,.0f}円 → {_md(date.fromisoformat(e['exit_date']))}の大引けで売り"
+                            f"（損切りを入れるなら逆指値 {e['entry_raw'] * 0.9:,.0f}円）")
         elif e["kind"] == "skip":
             ev_lines.append(f"⛔ 見送り {nm}（{e['code']}） {e.get('note', '')}")
     watch = [r for r in rows if r["status"] == "watch"]
