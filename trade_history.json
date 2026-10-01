@@ -1589,6 +1589,56 @@
       "close": 2102.0,
       "pnl": -0.85,
       "win": false
+    },
+    {
+      "date": "2026-10-01",
+      "ticker": "9044.T",
+      "name": "ＮＡＮＫＡＩ",
+      "direction": "BUY",
+      "open": 3001.0,
+      "close": 3016.0,
+      "pnl": 0.5,
+      "win": true
+    },
+    {
+      "date": "2026-10-01",
+      "ticker": "3231.T",
+      "name": "野村不動産ホールディングス",
+      "direction": "BUY",
+      "open": 879.7,
+      "close": 874.7,
+      "pnl": -0.57,
+      "win": false
+    },
+    {
+      "date": "2026-10-01",
+      "ticker": "9401.T",
+      "name": "ＴＢＳホールディングス",
+      "direction": "BUY",
+      "open": 5699.0,
+      "close": 5818.0,
+      "pnl": 2.09,
+      "win": true
+    },
+    {
+      "date": "2026-10-01",
+      "ticker": "2282.T",
+      "name": "日本ハム",
+      "direction": "BUY",
+      "open": 1986.5,
+      "close": 2008.0,
+      "pnl": 1.08,
+      "win": true
+    },
+    {
+      "date": "2026-10-01",
+      "ticker": "7616.T",
+      "name": "コロワイド",
+      "direction": "BUY",
+      "open": 1982.5,
+      "close": 1997.5,
+      "pnl": 0.76,
+      "win": true
     }
   ]
 }
