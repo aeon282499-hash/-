@@ -95,6 +95,7 @@ let SHOW_ENDED = false;
 const OPEN = new Set();
 const ST = {   // status_jp → [カードの色, バッジ, バッジの色, 並び]
   "約定中": ["st-zone", "🟢 約定中", "zone", 0],
+  "反発待ち": ["st-zone", "🟢 反発待ち", "zone", 1],
   "接近": ["st-near", "🟡 接近", "near", 1],
   "指値待ち": ["", "⏳ 指値待ち", "wait", 2],
   "波の途中": ["", "📈 波の途中", "wait", 3],
@@ -123,10 +124,10 @@ function card(c, f) {
     + `${tr ? `<br>約定 ${esc(tr.fill_time)}` : ""}</div>` : "";
   return `<div class="cd ${st[0]}" onclick="toggleOpen('${esc(c.code)}')">
     <div class="cd-top"><span class="badge ${st[2]}">${st[1]}</span><span class="nm">${esc(c.name)}</span><span class="code">${esc(c.code)}</span>${tags}</div>
-    <div class="px3 num"><div class="ent"><small>指値（38.2%）</small><b>${yen(c.entry)}</b></div><div class="stp"><small>逆指値</small><b>${yen(c.stop)}</b></div><div><small>株数</small><b>${yen(c.shares)}</b></div></div>
+    <div class="px3 num"><div class="ent"><small>${f.entry_mode === "rebound" ? (c.trade ? "買値（反発）" : "38.2%（反発で買い）") : "指値（38.2%）"}</small><b>${yen(c.entry)}</b></div><div class="stp"><small>逆指値</small><b>${yen(c.stop)}</b></div><div><small>株数</small><b>${yen(c.shares)}</b></div></div>
     <div class="cd-line num">利確 <b class="${main === "1" ? "tp-main" : ""}">+1% ${yen(c.tp1)}</b> ／ <b class="${main === "2" ? "tp-main" : ""}">+2% ${yen(c.tp2)}</b></div>
     <div class="cd-line num">最大損失 <b>${yen(c.max_loss)}円</b> ・ 窓 <b>${pct1(c.gap)}</b></div>
-    ${now}${stOf(c) === "波の途中" ? `<div class="cd-now">高値更新中。止まったら 38.2%＝${yen(c.entry)} に指値（まだ入らない）</div>` : ""}${c.skip_reason ? `<div class="cd-skip">⛔ ${esc(c.skip_reason)}</div>` : ""}${res}${more}</div>`;
+    ${stOf(c) === "反発待ち" ? `<div class="cd-now">38.2%にタッチ済み。足が陽線で ${yen(c.entry)} 以上に引けたら買い</div>` : ""}${now}${stOf(c) === "波の途中" ? `<div class="cd-now">高値更新中。止まったら 38.2%＝${yen(c.entry)} に指値（まだ入らない）</div>` : ""}${c.skip_reason ? `<div class="cd-skip">⛔ ${esc(c.skip_reason)}</div>` : ""}${res}${more}</div>`;
 }
 function toggleOpen(code) { if (OPEN.has(code)) OPEN.delete(code); else OPEN.add(code); render(); }
 function toggleEnded() { SHOW_ENDED = !SHOW_ENDED; render(); }
@@ -134,7 +135,7 @@ function viewCands() {
   const f = F();
   if (!f) return `<h1>📐 候補</h1>${noData()}`;
   const cs = (f.candidates || []).slice();
-  const active = cs.filter(c => ["約定中", "接近", "指値待ち", "波の途中"].includes(stOf(c)))
+  const active = cs.filter(c => ["約定中", "反発待ち", "接近", "指値待ち", "波の途中"].includes(stOf(c)))
     .sort((a, b) => (ST[stOf(a)][3] - ST[stOf(b)][3]) || byPriority(a, b));
   const done = cs.filter(c => stOf(c) === "決済済み").sort(byPriority);
   const ended = cs.filter(c => ["見送り", "終了"].includes(stOf(c))).sort((a, b) => (ST[stOf(a)][3] - ST[stOf(b)][3]) || byPriority(a, b));
@@ -154,7 +155,7 @@ const CHECKS = [
   ["寄り付き後に高値を更新している", "寄り天は入らない"],
   ["最初の1分足が「大陰線＋大出来高」ではない", ""],
   ["75MAの上・MAが下向きの並び（短期＜中期＜長期）ではない", "足は9:30までは3分足・以降は15分足"],
-  ["指値は38.2%に1回だけ", "23.6%では入らない・ナンピンしない"],
+  ["38.2%にタッチ→足が陽線で38.2%以上に引けたら買い（1回だけ）", "23.6%では入らない・ナンピンしない・反発前に61.8%割れは見送り"],
   ["逆指値を同時に入れた（起点割れ と −3% の近い方）", "株数＝2万円÷（建値−逆指値）・100株単位・建玉130万円まで"],
   ["利確（+1% / +2%）を入れた・30分で撤退・11:30で全決済", "今日の停止（−4万円・2連敗・8回）に当たっていない"],
 ];
