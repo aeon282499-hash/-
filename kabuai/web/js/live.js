@@ -243,7 +243,7 @@ const RULE_ST = { "約定中": ["chip dn", "🟢 約定中"], "接近": ["chip w
 function liveRulesBody(dayNote) {
   const f = LIVE && LIVE.fibo;
   const head = `<div class="livebar" id="live-clock">${liveClockInner()}</div>${dayNote}
-    <h2>🚀 個別 <span class="sub">10月ルールを通った銘柄だけ（株価2,000〜10,000円・窓6%未満・寄り後に高値更新・5分足75MAの上・MA下向き並びでない）</span></h2>`;
+    <h2>🚀 個別 <span class="sub">10月ルールを通った銘柄だけ（株価2,000〜10,000円・窓6%未満・寄り後に高値更新・75MAの上・MA下向き並びでない／足: ${(LIVE && LIVE.fibo && LIVE.fibo.bars) || "9:30まで3分足・以降15分足"}）</span></h2>`;
   if (!f || f.ruleset !== "oct") return head + `<div class="card"><div class="empty">10月ルールの判定データがまだありません（PCの FiboDaytrade が動くと平日9時台から出ます）。</div></div>`;
   const rows = (f.candidates || []).filter(c => RULE_ST[c.status_jp]);
   const row = c => {

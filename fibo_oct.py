@@ -7,11 +7,12 @@ fibo_oct.py — ボスの「10月デイトレルール」専用のフィボ押�
 
 ルール
   対象   買いのみ・38.2%の指値が2,000〜10,000円・寄りの窓6%未満（2%未満は「優先」）
-  見送り 寄り付き後に高値更新なし／最初の1分足が大陰線かつ大出来高／38.2%が5分足75MAの下／5分足MAが下向きの並び(5<25<75)
-  波     5分足で見る朝の波。起点=高値より前の最安値、高値=高値の5分足が終わり次の足が超えていない間は「確定」（超えたら引き直し）
+  足     波の確定とMAに使う足＝fibo_oct_settings.json の "bars"（"5"=5分足だけ／"3/15"=9:30までは3分足・以降は15分足）
+  見送り 寄り付き後に高値更新なし／最初の1分足が大陰線かつ大出来高／38.2%が75MAの下／MAが下向きの並び(5<25<75)
+  波     足で見る朝の波。起点=高値より前の最安値、高値=高値の足が終わり次の足が超えていない間は「確定」（超えたら引き直し）
          起点→高値が+4%以上・高値の足が11:00までに終わった波だけ
   入る   38.2%に指値1回だけ（ナンピンなし）
-  重なり 38.2%の±0.5%以内に5分足25MA/75MA（2本=最優先）
+  重なり 38.2%の±0.5%以内に25MA/75MA（2本=最優先）
   損切り 起点割れ と 建値−3% の近い方／株数=2万円÷(建値−逆指値)を100株単位で切り捨て・建玉130万円まで
   利確   +1% と +2% の両方を表示・紙トレードも両方記録（本線は fibo_oct_settings.json / FIBO_TP_PCT）
   時間   約定から30分で利確に届かなければ撤退・11:30で全決済
@@ -60,10 +61,33 @@ def calc_shares(entry: float, stop: float) -> int:
     return max(0, min(n, cap))
 
 
-def key5(t: datetime) -> datetime:
-    """観測時刻 t（足の終わり or 断面の時刻）が属する5分足の開始時刻"""
+def key_tf(t: datetime, m: int) -> datetime:
+    """観測時刻 t（足の終わり or 断面の時刻）が属する m分足の開始時刻"""
     u = t - timedelta(seconds=1)
-    return u.replace(second=0, microsecond=0, minute=(u.minute // 5) * 5)
+    return u.replace(second=0, microsecond=0, minute=(u.minute // m) * m)
+
+
+def bar_tf(t: datetime, bars: tuple[int, int]) -> int:
+    """観測時刻 t の足の分数。bars=(9:30までの足, 以降の足)＝FD.oct_bars()"""
+    return bars[0] if hm(t - timedelta(seconds=1)) < FD.OCT_BAR_SWITCH else bars[1]
+
+
+def bar_end(key: datetime, bars: tuple[int, int]) -> datetime:
+    """足の開始時刻 → 終わりの時刻"""
+    return key + timedelta(minutes=bars[0] if hm(key) < FD.OCT_BAR_SWITCH else bars[1])
+
+
+def aggregate(bars: list[Bar], m: int) -> list[Bar]:
+    """開始時刻ラベルの細かい足（1分/5分）→ m分足"""
+    out: list[Bar] = []
+    for b in bars:
+        k = b.t.replace(second=0, microsecond=0, minute=(b.t.minute // m) * m)
+        if out and out[-1].t == k:
+            x = out[-1]
+            out[-1] = Bar(k, x.o, max(x.h, b.h), min(x.l, b.l), b.c, x.v + b.v)
+        else:
+            out.append(Bar(k, b.o, b.h, b.l, b.c, b.v))
+    return out
 
 
 def _yen(v) -> str:
@@ -169,12 +193,19 @@ class DayRisk:
 
 # ── 判定エンジン（1銘柄・1日）───────────────────────────────
 class OctEngine:
-    def __init__(self, code: str, name: str, day: str, prev_close: float, prev_bars5: list[Bar],
+    def __init__(self, code: str, name: str, day: str, prev_close: float, prev_bars: dict | list,
                  prev_day_vol: float | None = None, day_open: float | None = None, first1m_known: bool = True,
                  risk: DayRisk | None = None, ignore_price_band: bool = False):
         self.code, self.name, self.day = code, name, day
         self.prev_close = prev_close
-        self.closes = [b.c for b in prev_bars5][-200:]
+        if isinstance(prev_bars, list):           # 旧呼び出し（5分足のリスト）
+            prev_bars = {5: prev_bars}
+        # MA は足の種類ごとに前日から連続で持つ（"3/15" なら3分足と15分足の2本立て・9:30で使う方が替わる）
+        self.bars = FD.oct_bars()
+        self.tfs = sorted(set(self.bars))
+        self.series = {m: [b.c for b in prev_bars.get(m, [])][-200:] for m in self.tfs}
+        self.mcur: dict[int, list] = {}           # {分: [足の開始, 終値]}
+        self.now: datetime | None = None
         self.prev_day_vol = prev_day_vol
         self.open = day_open
         self.first1m_known = first1m_known
@@ -200,7 +231,12 @@ class OctEngine:
         self.events.append(f"{t.strftime('%H:%M:%S')} {msg}")
 
     def _ma(self, n: int) -> float | None:
-        return sum(self.closes[-n:]) / n if len(self.closes) >= n else None
+        xs = self.series[bar_tf(self.now, self.bars)]
+        return sum(xs[-n:]) / n if len(xs) >= n else None
+
+    def _tfl(self) -> str:
+        """画面・ログ用の足の名前（例: 3分足）"""
+        return f"{bar_tf(self.now, self.bars)}分足"
 
     def _done(self, t: datetime, why: str):
         if self.state != "done":
@@ -213,11 +249,20 @@ class OctEngine:
             return ev
         o = o or c; h = max(h or c, c, o); l = min(l or c, c, o)
         self.last = c
+        self.now = t
+        for m in self.tfs:                        # MA用の足（波の足とは別に、足の種類ごと）
+            km = key_tf(t, m); mc = self.mcur.get(m)
+            if mc is not None and km > mc[0]:
+                self.series[m].append(mc[1]); del self.series[m][:-200]; mc = None
+            if mc is None:
+                self.mcur[m] = [km, c]
+            else:
+                mc[1] = c
         if self.t0 is None:
             self._first(t, o, h, l, c, dv)
-        k = key5(t)
+        k = key_tf(t, bar_tf(t, self.bars))
         if self.cur is not None and k > self.cur[0]:
-            self.closes.append(self.cur[4]); self.cur = None
+            self.cur = None
             if self.state == "wait" and not self.out:
                 self._try_arm(t)
             elif self.state == "armed":
@@ -248,7 +293,7 @@ class OctEngine:
         tod = hm(t)
         if self.state == "armed" and tod >= FD.OCT_ENTRY_DEADLINE:
             self._done(t, f"{FD.OCT_ENTRY_DEADLINE}までに38.2%に届かず")
-        elif self.state == "wait" and tod >= FD.OCT_WAVE_DEADLINE and hm(self.high_key + timedelta(minutes=5)) > FD.OCT_WAVE_DEADLINE:
+        elif self.state == "wait" and tod >= FD.OCT_WAVE_DEADLINE and hm(bar_end(self.high_key, self.bars)) > FD.OCT_WAVE_DEADLINE:
             self._done(t, f"{FD.OCT_WAVE_DEADLINE}までに波が確定せず")
         # 🟡押し目接近
         p = self.plan
@@ -267,7 +312,7 @@ class OctEngine:
         if self.open is None:
             self.open = o
         self.gap = (self.open / self.prev_close - 1) * 100 if self.prev_close else 0.0
-        self.high = h; self.high_key = key5(t); self.origin = min(self.open, l); self.low_so_far = self.origin
+        self.high = h; self.high_key = key_tf(t, bar_tf(t, self.bars)); self.origin = min(self.open, l); self.low_so_far = self.origin
         pri = "（優先）" if self.gap < FD.OCT_GAP_PRIORITY_PCT else ""
         self._log(t, f"寄り {_yen(self.open)}（前日終値{_yen(self.prev_close)}・窓{self.gap:+.1f}%{pri}）")
         if self.gap >= FD.OCT_GAP_MAX_PCT:
@@ -300,9 +345,9 @@ class OctEngine:
         if self.first_ref_high is not None and self.high <= self.first_ref_high:
             s.append("寄り付き後に高値更新なし")
         if ma75 is not None and entry < ma75 * (1 - FD.OCT_OVERLAP_TOL_PCT / 100):
-            s.append(f"5分足75MA({_yen(ma75)})の下")
+            s.append(f"{self._tfl()}75MA({_yen(ma75)})の下")
         if None not in (ma5, ma25, ma75) and ma5 < ma25 < ma75:
-            s.append("5分足MAが下向きの並び")
+            s.append(f"{self._tfl()}MAが下向きの並び")
         if shares <= 0:
             s.append("株数0（損切り幅が広すぎる）")
         return s
@@ -324,7 +369,7 @@ class OctEngine:
         if self.out or self.state != "wait" or self.high is None or not self.origin:
             return None
         rise = (self.high / self.origin - 1) * 100
-        if rise < FD.OCT_WAVE_MIN_PCT or hm(self.high_key + timedelta(minutes=5)) > FD.OCT_WAVE_DEADLINE:
+        if rise < FD.OCT_WAVE_MIN_PCT or hm(bar_end(self.high_key, self.bars)) > FD.OCT_WAVE_DEADLINE:
             return None
         level, entry, stop, kind, shares = self._levels()
         ma5, ma25, ma75 = self._ma(FD.OCT_MA_SHORT), self._ma(FD.OCT_MA_MID), self._ma(FD.OCT_MA_LONG)
@@ -339,9 +384,9 @@ class OctEngine:
                 "note": "高値更新中（止まれば38.2%に指値）", "signal": None, "status_legacy": "watch"}
 
     def _try_arm(self, t: datetime):
-        if self.high_key >= key5(t):
+        if self.high_key >= key_tf(t, bar_tf(t, self.bars)):
             return
-        if hm(self.high_key + timedelta(minutes=5)) > FD.OCT_WAVE_DEADLINE:
+        if hm(bar_end(self.high_key, self.bars)) > FD.OCT_WAVE_DEADLINE:
             self._done(t, f"高値の確定が{FD.OCT_WAVE_DEADLINE}を過ぎた"); return
         rise = (self.high / self.origin - 1) * 100
         if rise < FD.OCT_WAVE_MIN_PCT:
@@ -358,11 +403,11 @@ class OctEngine:
         p = self.plan
         self._log(t, f"高値確定 {_yen(self.high)}（起点{_yen(self.origin)}→+{rise:.1f}%）→ 38.2%={_yen(level)} 指値{_yen(entry)} 逆指値{_yen(stop)}（{kind}）"
                      f" {shares}株・最大損失{_yen(p.max_loss)}円・重なり{p.overlap_label}"
-                     f"・5分足MA 5/25/75={'/'.join(_yen(x) if x else '—' for x in (ma5, ma25, ma75))}"
+                     f"・{self._tfl()}MA 5/25/75={'/'.join(_yen(x) if x else '—' for x in (ma5, ma25, ma75))}"
                      + (f" ／見送り: {'・'.join(p.skips)}" if p.skips else ""))
 
     def _refresh(self, t: datetime):
-        """指値待ちの間、5分足が1本終わるたびにMAの条件を見直す"""
+        """指値待ちの間、足が1本終わるたびにMAの条件を見直す"""
         p = self.plan
         ma5, ma25, ma75 = self._ma(FD.OCT_MA_SHORT), self._ma(FD.OCT_MA_MID), self._ma(FD.OCT_MA_LONG)
         new = self._skips(p.entry, ma5, ma25, ma75, p.shares)
@@ -541,34 +586,69 @@ def read_rows(path: Path, offset: int = 0) -> tuple[list[dict], int]:
     return rows, offset
 
 
-def prev_minutes_context(day: str, codes: set | None = None, n_days: int = 2) -> dict:
-    """前の営業日（最大2日）の断面 → {code: {"bars": [5分足], "prev_vol": 前日出来高}}。MA75 を前日から連続で作るため。"""
+def _last_line(path: Path) -> str:
+    with open(path, "rb") as f:
+        f.seek(0, 2); n = f.tell(); f.seek(max(0, n - 2_000_000))
+        lines = [x for x in f.read().splitlines() if x.strip()]
+    return lines[-1].decode("utf-8") if lines else ""
+
+
+def is_stale_day(path: Path) -> bool:
+    """休場日の断面（タスクは動くが値が朝から引けまで同じ＝前の営業日の最後の値のまま）。9/21〜23で実際にあった"""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            a = json.loads(f.readline())["s"]
+        b = json.loads(_last_line(path))["s"]
+    except Exception:
+        return False
+    same = sum(1 for k, v in b.items() if a.get(k) == v)
+    return bool(b) and same >= 0.95 * len(b)
+
+
+def prev_minutes_context(day: str, codes: set | None = None, n_days: int | None = None) -> dict:
+    """前の営業日の断面 → {code: {"bars": {分: [足]}, "prev_vol": 前日出来高}}。MA75 を前日から連続で作るため。
+    足は oct_bars() の種類ごと（15分足の75本は約4日分なので、そのぶん前の日まで読む）。休場日の断面は飛ばす。"""
     from fibo_live import BarBuilder
+    tfs = sorted(set(FD.oct_bars()))
+    if n_days is None:
+        n_days = max(2, -(-FD.OCT_MA_LONG * max(tfs) // 300))     # 1日=300分（5分足2日・15分足4日）
     d = datetime.strptime(day, "%Y-%m-%d").date()
-    files = [p for p in (MINUTES_DIR / f"{(d - timedelta(days=k)).isoformat()}.jsonl" for k in range(1, 10)) if p.exists()][:n_days]
+    files = [p for p in (MINUTES_DIR / f"{(d - timedelta(days=k)).isoformat()}.jsonl" for k in range(1, 15))
+             if p.exists() and not is_stale_day(p)][:n_days]
     out: dict[str, dict] = {}
+
+    def slot(code):
+        return out.setdefault(code, {"bars": {m: [] for m in tfs}, "prev_vol": None})
     for i, p in enumerate(reversed(files)):          # 古い日から
         rows, _ = read_rows(p)
-        bld: dict[str, BarBuilder] = {}
+        bld: dict[tuple, BarBuilder] = {}
         vol: dict[str, float] = {}
         for row in rows:
             ts = datetime.strptime(row["ts"], "%Y-%m-%d %H:%M:%S")
+            tod = hm(ts)
+            # チャートと同じ足にする: 昼休み・引け後の断面（値が動かない）で足を作らない。
+            # 11:30台/15:30台の断面は前場/後場の引け値なので、その前の足に入れる
+            if tod < "09:00" or "11:30" < tod < "12:30" or tod > "15:30":
+                continue
+            if tod in ("11:30", "15:30"):
+                ts = ts.replace(second=0) - timedelta(seconds=1)
             for code, v in row["s"].items():
                 if codes and code not in codes:
                     continue
-                b = bld.setdefault(code, BarBuilder())
-                bar = b.push(ts, v[0], v[2], v[3], v[4])
-                if bar:
-                    out.setdefault(code, {"bars": [], "prev_vol": None})["bars"].append(bar)
+                for m in tfs:
+                    b = bld.setdefault((code, m), BarBuilder(m))
+                    bar = b.push(ts, v[0], v[2], v[3], v[4])
+                    if bar:
+                        slot(code)["bars"][m].append(bar)
                 if v[4]:
                     vol[code] = v[4]
-        for code, b in bld.items():                    # 最後の足を閉じる
+        for (code, m), b in bld.items():               # 最後の足を閉じる
             if b.cur is not None:
                 c = b.cur
-                out.setdefault(code, {"bars": [], "prev_vol": None})["bars"].append(Bar(b.cur_key, c["o"], c["h"], c["l"], c["c"], max(0.0, b.last_vol - b.vol_at_bar_start)))
+                slot(code)["bars"][m].append(Bar(b.cur_key, c["o"], c["h"], c["l"], c["c"], max(0.0, b.last_vol - b.vol_at_bar_start)))
         if i == len(files) - 1:
             for code, v in vol.items():
-                out.setdefault(code, {"bars": [], "prev_vol": None})["prev_vol"] = v
+                slot(code)["prev_vol"] = v
     return out
 
 
@@ -647,7 +727,9 @@ class OctSession:
         done = [r for r in rows if r.get("trade")]
         paper = self.risk.summary()
         paper["pnl_by_tp"] = {f"{k:g}": sum((r["trade"]["books"][f"{k:g}"]["pnl_yen"] or 0) for r in done) for k in FD.OCT_TP_PCTS}
-        return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main,
+        early, late = FD.oct_bars()
+        bars = f"{early}分足" if early == late else f"{FD.OCT_BAR_SWITCH}まで{early}分足・以降{late}分足"
+        return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main, "bars": bars,
                 "paper_trades": sorted(done, key=lambda r: r["trade"]["fill_time"]),
                 "n_watch": sum(1 for r in rows if r["status"] in ("指値待ち", "接近")),
                 "candidates": [dict(r, status=r["status_legacy"], status_jp=r["status"]) for r in rows[:60]],
@@ -695,17 +777,22 @@ def _yahoo_bars(j: dict, minutes: int) -> list[Bar]:
 
 
 def yahoo_day(code: str, day: str) -> dict:
-    """1分足（その日）・5分足（前2営業日＝MA用）・日足（寄り値・前日終値・前日出来高）"""
+    """1分足（その日）・MA用の前日までの足（5分足は5分足、15分足は5分足から、3分足は1分足から作る）・日足（寄り値・前日終値・前日出来高）"""
     d1 = _yahoo_chart(code, "1d", "3mo")
     days = [(datetime.fromtimestamp(t, timezone.utc).replace(tzinfo=None) + timedelta(hours=9)).strftime("%Y-%m-%d") for t in d1["t"]]
     if day not in days:
         raise RuntimeError(f"{code}: {day} の日足が無い")
     i = days.index(day)
     day_open, prev_close, prev_vol = d1["open"][i], d1["close"][i - 1], d1["volume"][i - 1]
-    m1 = [b for b in _yahoo_bars(_yahoo_chart(code, "1m", "7d"), 1) if b.t.strftime("%Y-%m-%d") == day]
+    m1all = _yahoo_bars(_yahoo_chart(code, "1m", "7d"), 1)
+    m1 = [b for b in m1all if b.t.strftime("%Y-%m-%d") == day]
     m5 = _yahoo_bars(_yahoo_chart(code, "5m", "60d"), 5)
-    prev_days = sorted({b.t.strftime("%Y-%m-%d") for b in m5 if b.t.strftime("%Y-%m-%d") < day})[-2:]
-    prev_bars = [b for b in m5 if b.t.strftime("%Y-%m-%d") in prev_days]
+    prev_bars = {}
+    for m in sorted(set(FD.oct_bars())):
+        src = [b for b in (m5 if m % 5 == 0 else m1all) if b.t.strftime("%Y-%m-%d") < day]
+        nd = max(2, -(-FD.OCT_MA_LONG * m // 300))
+        days = sorted({b.t.strftime("%Y-%m-%d") for b in src})[-nd:]
+        prev_bars[m] = aggregate([b for b in src if b.t.strftime("%Y-%m-%d") in days], m)
     return {"day_open": day_open, "prev_close": prev_close, "prev_vol": prev_vol, "m1": m1, "prev_bars": prev_bars}
 
 
@@ -744,7 +831,7 @@ def replay_codes(day: str, codes: list[str], src: str = "auto", names: dict | No
                 for e in eng.feed(b.t + timedelta(minutes=1), b.o, b.h, b.l, b.c, b.v or None):
                     if e["kind"] in ("approach", "zone"):
                         msgs.append(f"[{e['t'].strftime('%H:%M')}] " + message_text(message(e["kind"], e["plan"], e.get("last"), tp_main)))
-            srcnote = (f"Yahoo 1分足（{y['m1'][0].t:%H:%M}〜 {len(y['m1'])}本）＋日足の寄り値{y['day_open']:,.0f}・前日終値{y['prev_close']:,.0f}＋前2日の5分足でMA"
+            srcnote = (f"Yahoo 1分足（{y['m1'][0].t:%H:%M}〜 {len(y['m1'])}本）＋日足の寄り値{y['day_open']:,.0f}・前日終値{y['prev_close']:,.0f}＋前日までの{'/'.join(f'{m}分足' for m in sorted(y['prev_bars']))}でMA"
                        if y["m1"] else "Yahoo 1分足なし")
         results[code] = eng
         nm = eng.name if eng else code

@@ -37,9 +37,10 @@ MIN_TOV_LIVE = 1e8          # 当日代金1億未満は見ない（9:30以降）
 
 
 class BarBuilder:
-    """1銘柄の1分断面 → 5分足。確定した足（次の5分枠の断面が来た時点）だけを返す。"""
+    """1銘柄の1分断面 → 5分足（minutes で3分/15分足も）。確定した足（次の枠の断面が来た時点）だけを返す。"""
 
-    def __init__(self):
+    def __init__(self, minutes: int = 5):
+        self.minutes = minutes
         self.cur_key: datetime | None = None
         self.cur: dict | None = None
         self.vol_at_bar_start = 0.0
@@ -50,7 +51,7 @@ class BarBuilder:
     def push(self, ts: datetime, last, high, low, vol) -> Bar | None:
         if last is None or last <= 0:
             return None
-        key = ts.replace(second=0, microsecond=0, minute=(ts.minute // 5) * 5)
+        key = ts.replace(second=0, microsecond=0, minute=(ts.minute // self.minutes) * self.minutes)
         done: Bar | None = None
         if self.cur_key is not None and key > self.cur_key:
             c = self.cur

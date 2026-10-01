@@ -64,8 +64,8 @@ OCT_STOP_PCT = 3.0            # 損切り＝起点割れ と 建値−3% の近�
 OCT_RISK_YEN = 20_000         # 株数＝2万円÷(建値−逆指値)、100株単位で切り捨て
 OCT_MAX_POSITION_YEN = 1_300_000   # 建玉上限130万円
 OCT_TP_PCTS = (1.0, 2.0)      # 利確は+1%と+2%の2つを表示・紙トレードも両方記録
-OCT_OVERLAP_TOL_PCT = 0.5     # 38.2%の±0.5%以内に5分足25MA/75MA → 重なり（2本で最優先）
-OCT_MA_SHORT, OCT_MA_MID, OCT_MA_LONG = 5, 25, 75   # 5分足MA（前日から連続）。短期<中期<長期＝下向きの並び→見送り
+OCT_OVERLAP_TOL_PCT = 0.5     # 38.2%の±0.5%以内に25MA/75MA → 重なり（2本で最優先）
+OCT_MA_SHORT, OCT_MA_MID, OCT_MA_LONG = 5, 25, 75   # MA（前日から連続・足は oct_bars()）。短期<中期<長期＝下向きの並び→見送り
 OCT_FIRST1M_DROP_PCT = 1.5    # 最初の1分足: 始値→終値が−1.5%以上の陰線＝大陰線
 OCT_FIRST1M_VOL_X = 10.0      #   かつ出来高が前日の1分平均の10倍以上＝大出来高 → 見送り
 OCT_WAVE_DEADLINE = "11:00"   # 波（高値）の確定は11:00まで
@@ -77,6 +77,23 @@ OCT_DAY_STOP_YEN = -40_000    # 1日の停止: 紙トレードで−4万円
 OCT_DAY_STOP_CONSEC = 2       #   2連敗
 OCT_DAY_STOP_TRADES = 8       #   8回
 OCT_SETTINGS_JSON = ROOT / "fibo_oct_settings.json"   # {"tp_pct": 1.0 or 2.0} どちらの利確を「本線」にするか
+OCT_BAR_SWITCH = "09:30"      # 足の切替時刻（"3/15" のとき: 9:30までは3分足・以降は15分足）
+OCT_BARS_CHOICES = ("5", "3/15")   # 波の確定とMA(5/25/75)に使う足。"5"=5分足だけ（10/1の初版）
+
+
+def oct_bars() -> tuple[int, int]:
+    """(9:30までの足, 9:30以降の足) の分数。環境変数 FIBO_BARS → 設定ファイル "bars" → "5"。"""
+    v = os.environ.get("FIBO_BARS")
+    if not v:
+        try:
+            v = json.loads(OCT_SETTINGS_JSON.read_text(encoding="utf-8")).get("bars")
+        except Exception:
+            v = None
+    v = str(v or "5").strip()
+    if v not in OCT_BARS_CHOICES:
+        v = "5"
+    a, _, b = v.partition("/")
+    return int(a), int(b or a)
 
 
 def oct_tp_pct() -> float:
