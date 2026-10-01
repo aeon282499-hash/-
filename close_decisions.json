@@ -1934,5 +1934,102 @@
       "rsi": 45.8,
       "price": 1539.0
     }
+  },
+  "2026-10-01": {
+    "main:BUY:9401.T": {
+      "decision": "RSI",
+      "rsi": 50.99,
+      "price": 5859.0
+    },
+    "main:BUY:9048.T": {
+      "decision": "HOLD",
+      "rsi": 45.21,
+      "price": 1858.0
+    },
+    "main:BUY:9006.T": {
+      "decision": "HOLD",
+      "rsi": 46.06,
+      "price": 1539.5
+    },
+    "main:BUY:8153.T": {
+      "decision": "HOLD",
+      "rsi": 45.02,
+      "price": 3850.0
+    },
+    "main:BUY:6412.T": {
+      "decision": "HOLD",
+      "rsi": 34.66,
+      "price": 2082.0
+    },
+    "main:BUY:9044.T": {
+      "decision": "HOLD",
+      "rsi": 38.53,
+      "price": 3006.0
+    },
+    "main:BUY:3231.T": {
+      "decision": "HOLD",
+      "rsi": 35.7,
+      "price": 875.7000122070312
+    },
+    "main:BUY:2282.T": {
+      "decision": "HOLD",
+      "rsi": 46.46,
+      "price": 2026.0
+    },
+    "main:BUY:7616.T": {
+      "decision": "HOLD",
+      "rsi": 46.36,
+      "price": 2007.5
+    },
+    "kiwami:BUY:9048.T": {
+      "decision": "HOLD",
+      "rsi": 45.21,
+      "price": 1858.0
+    },
+    "kiwami:BUY:9041.T": {
+      "decision": "HOLD",
+      "rsi": 34.05,
+      "price": 3362.0
+    },
+    "kiwami:BUY:9006.T": {
+      "decision": "HOLD",
+      "rsi": 44.8,
+      "price": 1535.5
+    },
+    "kiwami_mid:BUY:9048.T": {
+      "decision": "HOLD",
+      "rsi": 45.21,
+      "price": 1858.0
+    },
+    "kiwami_mid:BUY:9041.T": {
+      "decision": "HOLD",
+      "rsi": 34.05,
+      "price": 3362.0
+    },
+    "kiwami_mid:BUY:9006.T": {
+      "decision": "HOLD",
+      "rsi": 44.8,
+      "price": 1535.5
+    },
+    "kiwami_small:BUY:9048.T": {
+      "decision": "HOLD",
+      "rsi": 45.21,
+      "price": 1858.0
+    },
+    "kiwami_small:BUY:9006.T": {
+      "decision": "HOLD",
+      "rsi": 44.8,
+      "price": 1535.5
+    },
+    "kiwami_small:BUY:3231.T": {
+      "decision": "HOLD",
+      "rsi": 35.5,
+      "price": 875.0
+    },
+    "kiwami_gokujo:BUY:9401.T": {
+      "decision": "RSI",
+      "rsi": 51.24,
+      "price": 5864.0
+    }
   }
 }
