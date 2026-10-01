@@ -438,12 +438,24 @@ FADE_EDGE_PCT_INTRA = 0.66     # 下に寄って前終まで戻った玉の gros
 # 2026-09-25 同日 本人「そろえて」→ ②も+1%（26年: ②+270→+350万・②勝率58.5→60.6%・②PF1.26→1.47・
 #   4時代とも+・17/26年で指値勝ち・全体+3,066→+3,147万/DD-92→-95。2026年だけは②-12万）。
 FADE_LIMIT_RANKS = (1, 2)
-FADE_LIMIT_UP_PCT = 1.0
-# 売り禁(ハイカラ)の料の帯・①指値版。+1%指値で建つ玉の gross 期待値（26年①・上位3玉除去）:
-#   場中約定 +1.005%(n1,069) / 寄り約定 +1.436%(n1,166)
-#   → 料÷株価 ≤1.00%→当日中のまま / 〜1.44%→執行条件を寄付限定に / 超→見送り
-FADE_EDGE_PCT_LIM1_INTRA = 1.00
-FADE_EDGE_PCT_LIM1_OPEN = 1.44
+# ── 2026-10-01 本人「+0%指値・3回まで に設定して」→ 前日終値+0%（=前日終値ちょうど）の当日中指値へ ──
+# 10年①(_bt_fade_cap_limit_1001.py・大型除外・2017-01〜2026-09-01): +1% PF1.94/+1,475万 → +0% PF1.89/+1,536万
+#   ＋「同じ銘柄は20日で3回まで」(下の FADE_REPEAT_CAP) と組み合わせて PF2.04/+1,476万/10万超の負け53→41回/最大損失-33万→-25.7万。
+#   20年(_bt_fade_cap3_20y_1001.py): 負けた年なし。今年2026(〜9/1) +136.5万 PF1.64。旧値 1.0（2026-09-25〜09-30）。
+FADE_LIMIT_UP_PCT = 0.0
+# 売り禁(ハイカラ)の料の帯・①指値版。指値で建つ玉の gross 期待値（26年①・上位3玉除去）:
+#   +1%（〜9/30）: 場中約定 +1.005%(n1,069) / 寄り約定 +1.436%(n1,166) → 1.00 / 1.44
+#   +0%（10/1〜）: 場中約定 +0.926%(n894) / 寄り約定 +1.239%(n1,542)。同じ計算で+1%は1.058/1.453と出る＝
+#     旧値との差の比率で控えめに補正して 0.88 / 1.23
+#   → 料÷株価 ≤0.88%→当日中のまま / 〜1.23%→執行条件を寄付限定に / 超→見送り
+FADE_EDGE_PCT_LIM1_INTRA = 0.88
+FADE_EDGE_PCT_LIM1_OPEN = 1.23
+# ── 同じ銘柄の回数制限（2026-10-01 本人「+0%指値・3回まで に設定して」）──────────────────────────
+# 直近 FADE_REPEAT_DAYS 営業日に紙台帳で FADE_REPEAT_CAP 回「約定した売り」（①②どちらでも）がある銘柄は撃たない（NO-GO）。
+# 繰り上げはしない＝BTと同じ「その日は見送り」。直近1年はユニチカを16回売って−80万（5勝11敗）だった。
+# 10年①: 寄成 PF1.74→1.84 / +0%指値 PF1.89→2.04・10万超の負け 53→41回（合計は −60万）。None で無効。
+FADE_REPEAT_CAP = 3
+FADE_REPEAT_DAYS = 20
 
 
 def _tick_ceil(raw: float) -> float:
@@ -451,6 +463,41 @@ def _tick_ceil(raw: float) -> float:
     tick = (1 if raw <= 3000 else 5 if raw <= 5000 else 10 if raw <= 30000
             else 50 if raw <= 50000 else 100)
     return float(-(-raw // tick) * tick)
+
+
+def _count_trading_days(start: str, end: str) -> int:
+    """start(含む)〜end(含まない)の営業日数（土日・祝日・年末年始を除く）"""
+    d = datetime.strptime(start[:10], "%Y-%m-%d").date(); e = datetime.strptime(end[:10], "%Y-%m-%d").date()
+    n = 0
+    while d < e:
+        if is_trading_day(d):
+            n += 1
+        d += timedelta(days=1)
+    return n
+
+
+def fade_recent_fills(book: dict | None, ticker: str, session: str, days: int = FADE_REPEAT_DAYS) -> int:
+    """紙台帳で、session（これから撃つ日）より前の直近 days 営業日に約定した売り（SKIP以外）の回数"""
+    n = 0
+    for p in (book or {}).get("positions", []):
+        if p.get("ticker") != ticker or p.get("direction") != "SELL" or p.get("status") != "closed":
+            continue
+        if p.get("exit_type") == "SKIP":
+            continue
+        e = p.get("entry_session") or p.get("signal_date")
+        if not e or e >= session:
+            continue
+        if _count_trading_days(e, session) <= days:
+            n += 1
+    return n
+
+
+def _load_book_abs() -> dict:
+    """台帳をこのファイルの場所から読む（kabuai/build_data.py など別フォルダから呼ばれても同じ台帳を見る）"""
+    try:
+        return json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), BOOK_FILE), encoding="utf-8"))
+    except Exception:
+        return {}
 
 
 def fade_uses_day_limit(rank) -> bool:
@@ -549,7 +596,8 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
                     excluded_out: list | None = None,
                     tov_min: float | None = None,
                     capital: float | None = None,
-                    mcap_map: dict | None = None) -> list[dict]:
+                    mcap_map: dict | None = None,
+                    repeat_cap: bool = True, book: dict | None = None) -> list[dict]:
     """毎日『フェード上位N銘柄』を乖離+ATRの順位平均で返す（各GO/NO-GO判定付き・空なら[]）。
     候補＝貸借○ × 前日+5%以上 × 張り付き除外(信号日レンジ>5%) × 出来高6倍未満 × 代金3億以上。
     GO判定: 前日+7%(DAILY_PICK_GAIN_MIN) × ATR5%以上 × 25MA乖離12%以上。未達はNO-GO（理由付きで後ろ）。
@@ -733,6 +781,15 @@ def daily_top_fades(data: dict, today, iss_map: dict, n: int = PAPER_MAX_PICKS,
         reason = p.pop("_nogo", None)
         p.pop("_dev_raw", None); p.pop("_atr_raw", None); p.pop("_gain_raw", None)   # 内部用（JSONに出さない）
         go = reason is None and sh["mark"] == "○"
+        # 同じ銘柄は直近20営業日で3回まで（2026-10-01）。繰り上げなし＝その順位は見送り
+        if go and repeat_cap and FADE_REPEAT_CAP:
+            if book is None:
+                book = _load_book_abs()
+            k = fade_recent_fills(book, p["ticker"], today_str)
+            p["recent_fills"] = k
+            if k >= FADE_REPEAT_CAP:
+                go = False
+                reason = f"直近{FADE_REPEAT_DAYS}営業日に{k}回売った（同じ銘柄は{FADE_REPEAT_CAP}回まで）"
         p["verdict"] = "GO" if go else "NOGO"
         if not go:
             p["nogo_reason"] = reason or "貸借✕＝売れない玉"
@@ -1304,7 +1361,7 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成(9/25〜①②は前終+1%当日中指値)・紙の理論値"
+        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値"
                            f"（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜・"
                            f"月利%分母:〜7月50万/8月100万/9月〜150万）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
@@ -1441,7 +1498,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"寄成→引成(9/25〜①②は前終+1%当日中指値)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
+        "footer": {"text": f"寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
                            f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
@@ -1670,7 +1727,7 @@ def run_friends(data: dict, today, iss_map: dict,
     # ── 今日の選定（代金7.5億フロア・値がさは50万連動・GOの#1のみ） ──
     picks = daily_top_fades(data, today, iss_map, ratio_map=ratio_map,
                             alert_map=alert_map, tov_min=FRIENDS_TOV_MIN,
-                            capital=FRIENDS_SIZE)
+                            capital=FRIENDS_SIZE, repeat_cap=False)   # 友達配信は本人の台帳と別物＝回数制限なし
     go = [p for p in picks if p.get("verdict") == "GO"][:FRIENDS_PICKS]
 
     date_str = today.strftime("%Y年%m月%d日")
