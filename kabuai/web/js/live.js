@@ -239,7 +239,7 @@ function fiboInner() {
 }
 
 // ── 個別株（10月ルールを通ったものだけ）── fibo_oct.py が payload.fibo に書く候補（約定中/接近/指値待ち/波の途中/決済済み）
-const RULE_ST = { "約定中": ["chip dn", "🟢 約定中"], "接近": ["chip wa", "🟡 接近"], "指値待ち": ["chip", "⏳ 指値待ち"], "波の途中": ["chip acc", "📈 波の途中"], "決済済み": ["chip", "✓ 決済"] };
+const RULE_ST = { "約定中": ["chip dn", "🟢 約定中"], "反発待ち": ["chip dn", "🟢 反発待ち"], "接近": ["chip wa", "🟡 接近"], "指値待ち": ["chip", "⏳ 指値待ち"], "波の途中": ["chip acc", "📈 波の途中"], "決済済み": ["chip", "✓ 決済"] };
 function liveRulesBody(dayNote) {
   const f = LIVE && LIVE.fibo;
   const head = `<div class="livebar" id="live-clock">${liveClockInner()}</div>${dayNote}
@@ -253,7 +253,7 @@ function liveRulesBody(dayNote) {
         ${c.overlap >= 2 ? '<span class="chip acc">最優先</span>' : c.overlap === 1 ? '<span class="chip acc">重なり</span>' : ""}${c.priority ? '<span class="chip up">窓2%未満</span>' : ""}</b>
       <small>${c.code} ・ いま${c.last != null ? yen(c.last) : "—"}${m.chg != null ? `（${fmtPct1(m.chg)}）` : ""} ・ 窓${fmtPct1(c.gap)} ・ 起点${yen(c.origin)}→高値${yen(c.high)}</small>
       <div class="chips"><span class="chip">指値 ${yen(c.entry)}</span><span class="chip dn">逆指値 ${yen(c.stop)}</span><span class="chip">${Number(c.shares || 0).toLocaleString()}株</span><span class="chip up">+1% ${yen(c.tp1)} ／ +2% ${yen(c.tp2)}</span></div>
-      ${c.status_jp === "波の途中" ? `<div class="note">高値更新中。止まったら38.2%＝${yen(c.entry)}に指値（まだ入らない）</div>` : ""}${res ? `<div class="note">${esc(res)}</div>` : ""}</div></a>`;
+      ${c.status_jp === "反発待ち" ? `<div class="note">38.2%にタッチ済み。足が陽線で${yen(c.entry)}以上に引けたら買い</div>` : ""}${c.status_jp === "波の途中" ? `<div class="note">高値更新中。止まったら38.2%＝${yen(c.entry)}に指値（まだ入らない）</div>` : ""}${res ? `<div class="note">${esc(res)}</div>` : ""}</div></a>`;
   };
   const pp = f.paper || {};
   return head + (pp.stopped ? `<div class="banner dn">⛔ <b>今日は停止</b>：${esc(pp.stop_reason || "")}。新しい注文は出さない。</div>` : "")

@@ -96,6 +96,22 @@ def oct_bars() -> tuple[int, int]:
     return int(a), int(b or a)
 
 
+OCT_ENTRY_CHOICES = ("limit", "rebound")   # 入り方（2026-10-01 本人「反発系で」）
+
+
+def oct_entry_mode() -> str:
+    """入り方。rebound=38.2%タッチ後、足（3分/15分）が陽線で38.2%以上に引けたら終値で買う（反発前に61.8%割れは見送り）／
+    limit=38.2%に指値。環境変数 FIBO_ENTRY_MODE → 設定ファイル "entry" → "limit"。"""
+    v = os.environ.get("FIBO_ENTRY_MODE")
+    if not v:
+        try:
+            v = json.loads(OCT_SETTINGS_JSON.read_text(encoding="utf-8")).get("entry")
+        except Exception:
+            v = None
+    v = str(v or "limit").strip().lower()
+    return v if v in OCT_ENTRY_CHOICES else "limit"
+
+
 def oct_tp_pct() -> float:
     """本線の利確%（停止ルールの損益・画面の表示に使う）。環境変数 FIBO_TP_PCT → 設定ファイル → 1.0。"""
     v = os.environ.get("FIBO_TP_PCT")

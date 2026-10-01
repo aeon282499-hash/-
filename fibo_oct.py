@@ -116,6 +116,8 @@ class Plan:
     ma: dict = field(default_factory=dict)
     skips: list = field(default_factory=list)
     touched: bool = False   # 見送り/停止中のまま38.2%に触れた
+    f618: float = 0.0       # 反発で買う時: 反発前にここを割ったらこの波は見送り
+    zone_touched: bool = False   # 反発で買う時: 38.2%にタッチ済み（反発待ち）
 
     @property
     def overlap(self) -> int:
@@ -202,6 +204,8 @@ class OctEngine:
             prev_bars = {5: prev_bars}
         # MA は足の種類ごとに前日から連続で持つ（"3/15" なら3分足と15分足の2本立て・9:30で使う方が替わる）
         self.bars = FD.oct_bars()
+        self.entry_mode = FD.oct_entry_mode()     # limit=38.2%指値 / rebound=タッチ後の陽線で買い
+        self.dead_high = None                     # 反発前に61.8%を割った波の高値（同じ高値では入り直さない）
         self.tfs = sorted(set(self.bars))
         self.series = {m: [b.c for b in prev_bars.get(m, [])][-200:] for m in self.tfs}
         self.mcur: dict[int, list] = {}           # {分: [足の開始, 終値]}
@@ -262,11 +266,15 @@ class OctEngine:
             self._first(t, o, h, l, c, dv)
         k = key_tf(t, bar_tf(t, self.bars))
         if self.cur is not None and k > self.cur[0]:
-            self.cur = None
+            done_bar = self.cur; self.cur = None
             if self.state == "wait" and not self.out:
-                self._try_arm(t)
+                if self.high != self.dead_high:
+                    self._try_arm(t)
             elif self.state == "armed":
                 self._refresh(t)
+                p = self.plan
+                if self.entry_mode == "rebound" and p.zone_touched and done_bar[4] > done_bar[1] and done_bar[4] >= p.entry:
+                    ev += self._rebound_fill(t, done_bar)     # 38.2%タッチ後、足が陽線で38.2%以上に引けた
         if self.cur is None:
             self.cur = [k, o, h, l, c, dv or 0.0]
         else:
@@ -274,12 +282,22 @@ class OctEngine:
         if self.out or self.state == "done":
             return ev
         if self.state == "filled":
-            return self._track(t, o, h, l, c)
+            return ev + self._track(t, o, h, l, c)
         # 押しの指値（約定を先に見るのは、この切れ端の始まりが高値より下だった時だけ）
-        if self.state == "armed" and o <= self.high and l <= self.plan.entry:
+        if self.state == "armed" and self.entry_mode == "limit" and o <= self.high and l <= self.plan.entry:
             ev += self._touch(t, l)
             if self.state == "filled":
                 return ev
+        # 反発で買う: 38.2%タッチを覚える／反発前に61.8%を割ったらこの波は見送り
+        if self.state == "armed" and self.entry_mode == "rebound" and o <= self.high:
+            p = self.plan
+            if l <= p.entry and not p.zone_touched:
+                p.zone_touched = True
+                self._log(t, f"38.2%({_yen(p.entry)})にタッチ → 反発待ち（{self._tfl()}が陽線で38.2%以上に引けたら買い）"
+                             + (" ／見送り: " + "・".join(p.skips) if p.skips else ""))
+            if p.zone_touched and l < p.f618:
+                self._log(t, f"反発前に61.8%({_yen(p.f618)})割れ → この波は見送り")
+                self.dead_high = self.high; self.plan = None; self.state = "wait"
         if h > self.high:
             if self.state == "armed":
                 self._log(t, f"高値更新 {_yen(h)} → 指値取消・引き直し"); self.plan = None
@@ -292,12 +310,12 @@ class OctEngine:
         self.low_so_far = min(self.low_so_far, l)
         tod = hm(t)
         if self.state == "armed" and tod >= FD.OCT_ENTRY_DEADLINE:
-            self._done(t, f"{FD.OCT_ENTRY_DEADLINE}までに38.2%に届かず")
+            self._done(t, f"{FD.OCT_ENTRY_DEADLINE}までに入れず")
         elif self.state == "wait" and tod >= FD.OCT_WAVE_DEADLINE and hm(bar_end(self.high_key, self.bars)) > FD.OCT_WAVE_DEADLINE:
             self._done(t, f"{FD.OCT_WAVE_DEADLINE}までに波が確定せず")
         # 🟡押し目接近
         p = self.plan
-        if self.state == "armed" and not p.skips and p.entry < c <= p.entry * (1 + FD.OCT_APPROACH_PCT / 100):
+        if self.state == "armed" and not p.skips and not p.zone_touched and p.entry < c <= p.entry * (1 + FD.OCT_APPROACH_PCT / 100):
             key = ("approach", p.armed_at, p.entry)
             ok, _ = self.risk.can_enter()
             if ok and key not in self._sent:
@@ -398,7 +416,8 @@ class OctEngine:
                          tps={str(p): round_tick(entry * (1 + p / 100)) for p in FD.OCT_TP_PCTS},
                          gap_pct=round(self.gap, 2), priority=self.gap < FD.OCT_GAP_PRIORITY_PCT,
                          overlap_items=self._overlap(level, ma25, ma75), armed_at=hm(t),
-                         ma={"ma5": ma5, "ma25": ma25, "ma75": ma75}, skips=self._skips(entry, ma5, ma25, ma75, shares))
+                         ma={"ma5": ma5, "ma25": ma25, "ma75": ma75}, skips=self._skips(entry, ma5, ma25, ma75, shares),
+                         f618=self.high - 0.618 * (self.high - self.origin))
         self.state = "armed"
         p = self.plan
         self._log(t, f"高値確定 {_yen(self.high)}（起点{_yen(self.origin)}→+{rise:.1f}%）→ 38.2%={_yen(level)} 指値{_yen(entry)} 逆指値{_yen(stop)}（{kind}）"
@@ -415,6 +434,32 @@ class OctEngine:
         if new != p.skips:
             self._log(t, "見送り条件: " + ("・".join(new) if new else "なし（解除）"))
             p.skips = new
+
+    def _rebound_fill(self, t: datetime, bar: list) -> list[dict]:
+        """反発で買い: 終わった足（3分/15分）の終値で約定。逆指値・株数・利確は買値で計算し直す"""
+        p = self.plan
+        entry = round_tick(bar[4])
+        s_org = p.origin - tick_size(p.origin); s_pct = entry * (1 - FD.OCT_STOP_PCT / 100)
+        stop = round_tick(max(s_org, s_pct)); kind = "起点割れ" if s_org >= s_pct else f"−{FD.OCT_STOP_PCT:.0f}%"
+        shares = calc_shares(entry, stop)
+        skips = self._skips(entry, *(p.ma.get(x) for x in ("ma5", "ma25", "ma75")), shares)
+        ok, why = self.risk.can_enter()
+        if skips or not ok:
+            if not p.touched:
+                p.touched = True
+                self._log(t, "反発を確認・見送り（" + ("・".join(skips) if skips else why) + "）")
+            return []
+        level = p.entry
+        p.entry, p.stop, p.stop_kind, p.shares = entry, stop, kind, shares
+        p.max_loss = round(shares * (entry - stop)); p.tps = {str(x): round_tick(entry * (1 + x / 100)) for x in FD.OCT_TP_PCTS}
+        fill_t = bar_end(bar[0], self.bars)
+        self.trade = Trade(plan=p, fill_t=fill_t, books={x: Book(x, p.tps[str(x)]) for x in FD.OCT_TP_PCTS}, stop=stop)
+        self.state = "filled"
+        self.risk.on_fill()
+        tf = int((fill_t - bar[0]).total_seconds() // 60)
+        self._log(t, f"🟢反発で買い {_yen(entry)} × {shares}株（{tf}分足が陽線・38.2%={_yen(level)}・逆指値{_yen(stop)}（{kind}）"
+                     f"・利確+1% {_yen(p.tps['1.0'])}／+2% {_yen(p.tps['2.0'])}）")
+        return [{"kind": "zone", "t": fill_t, "plan": p, "last": entry}]
 
     def _touch(self, t: datetime, low: float) -> list[dict]:
         p = self.plan
@@ -477,6 +522,8 @@ class OctEngine:
             p = self.plan
             if p.skips:
                 return "見送り"
+            if p.zone_touched:
+                return "反発待ち"
             if self.last is not None and self.last <= p.entry * (1 + FD.OCT_APPROACH_PCT / 100):
                 return "接近"
             return "指値待ち"
@@ -499,13 +546,14 @@ class OctEngine:
                      "78.6": round(p.high - .786 * (p.high - p.origin), 1)},
              "pull_low": None, "retrace": None, "note": (self.events[-1][9:69] if self.events else ""), "signal": None}
         d["status_legacy"] = {"約定中": "entered", "決済済み": "entered", "見送り": "skip", "対象外": "skip", "終了": "skip"}.get(d["status"], "watch")
+        d["level"] = round(p.level, 1)
         if self.trade:
             d["trade"] = {"fill_time": self.trade.fill_t.strftime("%H:%M"),
                           "books": {f"{k:g}": asdict(b) for k, b in self.trade.books.items()}}
         return d
 
 
-STATUS_ORDER = {"約定中": 0, "接近": 1, "指値待ち": 2, "波の途中": 3, "決済済み": 4, "見送り": 5, "終了": 6, "対象外": 7}
+STATUS_ORDER = {"約定中": 0, "反発待ち": 1, "接近": 2, "指値待ち": 3, "波の途中": 4, "決済済み": 5, "見送り": 6, "終了": 7, "対象外": 8}
 
 
 def sort_key(row: dict):
@@ -515,9 +563,16 @@ def sort_key(row: dict):
 
 # ── 通知（Discord: 2種類だけ）──────────────────────────────
 def message(kind: str, p: Plan, last: float | None, tp_main: float) -> dict:
-    head = "🟡 押し目接近" if kind == "approach" else "🟢 指値ゾーン（38.2%到達）"
+    rebound = FD.oct_entry_mode() == "rebound"
+    head = "🟡 押し目接近" if kind == "approach" else ("🟢 反発で買い" if rebound else "🟢 指値ゾーン（38.2%到達）")
+    if rebound and kind == "approach":
+        first = f"**38.2% {_yen(p.entry)}円**（タッチ後、足が陽線で38.2%以上に引けたら買い）　逆指値の目安 {_yen(p.stop)}円"
+    elif rebound:
+        first = f"**買い {_yen(p.entry)}円**（38.2%={_yen(p.level)}から反発）　逆指値 {_yen(p.stop)}円（{p.stop_kind}）"
+    else:
+        first = f"**38.2%の指値 {_yen(p.entry)}円**　逆指値 {_yen(p.stop)}円（{p.stop_kind}）"
     lines = [
-        f"**38.2%の指値 {_yen(p.entry)}円**　逆指値 {_yen(p.stop)}円（{p.stop_kind}）",
+        first,
         f"株数 {p.shares:,}株　最大損失 {_yen(p.max_loss)}円",
         f"利確 +1% {_yen(p.tps['1.0'])}円 ／ +2% {_yen(p.tps['2.0'])}円（本線 +{tp_main:g}%）",
         f"窓 {p.gap_pct:+.1f}%{'（優先）' if p.priority else ''}　重なり {p.overlap_label}",
@@ -729,7 +784,7 @@ class OctSession:
         paper["pnl_by_tp"] = {f"{k:g}": sum((r["trade"]["books"][f"{k:g}"]["pnl_yen"] or 0) for r in done) for k in FD.OCT_TP_PCTS}
         early, late = FD.oct_bars()
         bars = f"{early}分足" if early == late else f"{FD.OCT_BAR_SWITCH}まで{early}分足・以降{late}分足"
-        return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main, "bars": bars,
+        return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main, "bars": bars, "entry_mode": FD.oct_entry_mode(),
                 "paper_trades": sorted(done, key=lambda r: r["trade"]["fill_time"]),
                 "n_watch": sum(1 for r in rows if r["status"] in ("指値待ち", "接近")),
                 "candidates": [dict(r, status=r["status_legacy"], status_jp=r["status"]) for r in rows[:60]],
