@@ -369,6 +369,8 @@ class OctEngine:
         p = self.plan
         b.exit_price = px; b.exit_time = t.strftime("%H:%M"); b.exit_type = kind; b.pnl_yen = round((px - p.entry) * p.shares)
         self._log(t, f"決済[+{b.tp_pct:g}%]: {kind} {_yen(px)}（{b.pnl_yen:+,}円）")
+        if b.tp_pct == self.risk.tp_main:     # 1日の停止は本線の決済で数える
+            self.risk.on_close(b.pnl_yen)
 
     def _exit_all(self, t, px, kind) -> list[dict]:
         for b in self.trade.open_books():
@@ -379,8 +381,6 @@ class OctEngine:
         if self.trade.open_books():
             return []
         self.state = "done"; self.done_reason = "決済済み"
-        main = self.trade.books.get(self.risk.tp_main) or list(self.trade.books.values())[0]
-        self.risk.on_close(main.pnl_yen)
         return [{"kind": "closed", "t": t, "plan": self.plan, "trade": self.trade}]
 
     def _track(self, t, o, h, l, c) -> list[dict]:
@@ -619,10 +619,14 @@ class OctSession:
     def live_json(self, now: datetime) -> dict:
         rows = [r for r in (e.to_row() for e in self.engines.values()) if r and r["status"] != "対象外"]
         rows.sort(key=sort_key)
+        done = [r for r in rows if r.get("trade")]
+        paper = self.risk.summary()
+        paper["pnl_by_tp"] = {f"{k:g}": sum((r["trade"]["books"][f"{k:g}"]["pnl_yen"] or 0) for r in done) for k in FD.OCT_TP_PCTS}
         return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main,
+                "paper_trades": sorted(done, key=lambda r: r["trade"]["fill_time"]),
                 "n_watch": sum(1 for r in rows if r["status"] in ("指値待ち", "接近")),
                 "candidates": [dict(r, status=r["status_legacy"], status_jp=r["status"]) for r in rows[:40]],
-                "paper": self.risk.summary(),
+                "paper": paper,
                 "trades": [{"code": r["code"], "name": r["name"], "entry": r["entry"], "stop": r["stop"], "half": False, "last": r["last"],
                             "closed": r["status"] == "決済済み",
                             "exit_type": (r.get("trade", {}).get("books", {}).get(f"{self.tp_main:g}", {}) or {}).get("exit_type"),
