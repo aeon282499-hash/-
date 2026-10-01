@@ -6,6 +6,9 @@
 //   セクターを開くと構成銘柄（当日代金1億以上・代金順で最大80）が出て、銘柄側も「本日／5分／代金／VWAP乖離」で並び替え・昇降切替。
 //   「今の資金 ×1.3」は主役から外し、×2以上の時だけ 🔥資金集中 の印として出す。
 let LIVE = null, LIVE_AT = 0, LIVE_ERR = "", LIVE_WS = null, LIVE_WS_OK = false, LIVE_BACKOFF = 5000;
+// 2026-10-01 本人「場中ライブは個別株のみ・その個別株は僕の取引ルールのみ」→ true の間は
+//   市場全体・土俵・セクター・テーマを出さず、10月ルール（fibo_oct.py）を通った個別株だけを出す。false で元の画面に戻る。
+const L_RULES_ONLY = true;
 let L_SEG = "sectors";                                    // 既定はセクター（本人指示 2026-09-17）
 const L_SORT = { sectors: "chg_w", themes: "chg_w" };      // グループの並び（既定＝騰落率）
 let L_TAB = "gain";                                       // 個別の既定＝上昇率
@@ -171,6 +174,7 @@ function liveBody() {
   const age = liveAgeSec(), stale = age != null && age > 180 && LIVE.state !== "closed";
   const dayNote = !isToday ? `<div class="banner info">🗓 これは <b>${esc(LIVE.date || "")}</b> の最終断面です。次の配信は平日 8:58〜（PCの巡回タスクが動いている間）。</div>`
     : stale ? `<div class="banner warn">⚠️ 配信が ${Math.floor(age / 60)}分 止まっています。PCの巡回タスク（TachibanaLiveFlow）が動いているか確認。表示は最後に届いた断面。</div>` : "";
+  if (L_RULES_ONLY) return liveRulesBody(dayNote);
   const seg = k => `<a class="${L_SEG === k ? "on" : ""}" onclick="event.preventDefault();liveSetSeg('${k}')">`;
   const sortBtn = (k, l) => `<a class="${effSort() === k ? "on" : ""}" onclick="event.preventDefault();liveSetSort('${k}')">${l}</a>`;
   let body = "";
@@ -232,4 +236,27 @@ function fiboInner() {
     <div class="warnbar">⚠️ <b>紙・通知のみ（発注はしない）。</b>59日の再生では基準線を超えていません（n22・PF0.67）。表示は「その日最初の波の高値確定→押し」の観測。</div>
     ${cands.length ? `<div class="card tight">${cands.map(row).join("")}</div>` : `<div class="card"><div class="empty">高値確定した波はまだありません。</div></div>`}
     ${trades ? `<div class="chips" style="margin-top:6px">${trades}</div>` : ""}`;
+}
+
+// ── 個別株（10月ルールを通ったものだけ）── fibo_oct.py が payload.fibo に書く候補（約定中/接近/指値待ち/波の途中/決済済み）
+const RULE_ST = { "約定中": ["chip dn", "🟢 約定中"], "接近": ["chip wa", "🟡 接近"], "指値待ち": ["chip", "⏳ 指値待ち"], "波の途中": ["chip acc", "📈 波の途中"], "決済済み": ["chip", "✓ 決済"] };
+function liveRulesBody(dayNote) {
+  const f = LIVE && LIVE.fibo;
+  const head = `<div class="livebar" id="live-clock">${liveClockInner()}</div>${dayNote}
+    <h2>🚀 個別 <span class="sub">10月ルールを通った銘柄だけ（株価2,000〜10,000円・窓6%未満・寄り後に高値更新・5分足75MAの上・MA下向き並びでない）</span></h2>`;
+  if (!f || f.ruleset !== "oct") return head + `<div class="card"><div class="empty">10月ルールの判定データがまだありません（PCの FiboDaytrade が動くと平日9時台から出ます）。</div></div>`;
+  const rows = (f.candidates || []).filter(c => RULE_ST[c.status_jp]);
+  const row = c => {
+    const m = (LIVE.stocks || {})[c.code] || {}, st = RULE_ST[c.status_jp], tr = c.trade;
+    const res = tr ? Object.entries(tr.books || {}).map(([k, b]) => `+${k}%: ${b.exit_type ? esc(b.exit_type) + " " + (b.pnl_yen > 0 ? "+" : "") + Number(b.pnl_yen || 0).toLocaleString() + "円" : "保有中"}`).join(" ／ ") : "";
+    return `<a class="pickrow" href="#/detail/${c.code}"><div class="pk-nm"><b><span class="${st[0]}" style="font-weight:800">${st[1]}</span> ${esc(c.name)}
+        ${c.overlap >= 2 ? '<span class="chip acc">最優先</span>' : c.overlap === 1 ? '<span class="chip acc">重なり</span>' : ""}${c.priority ? '<span class="chip up">窓2%未満</span>' : ""}</b>
+      <small>${c.code} ・ いま${c.last != null ? yen(c.last) : "—"}${m.chg != null ? `（${fmtPct1(m.chg)}）` : ""} ・ 窓${fmtPct1(c.gap)} ・ 起点${yen(c.origin)}→高値${yen(c.high)}</small>
+      <div class="chips"><span class="chip">指値 ${yen(c.entry)}</span><span class="chip dn">逆指値 ${yen(c.stop)}</span><span class="chip">${Number(c.shares || 0).toLocaleString()}株</span><span class="chip up">+1% ${yen(c.tp1)} ／ +2% ${yen(c.tp2)}</span></div>
+      ${c.status_jp === "波の途中" ? `<div class="note">高値更新中。止まったら38.2%＝${yen(c.entry)}に指値（まだ入らない）</div>` : ""}${res ? `<div class="note">${esc(res)}</div>` : ""}</div></a>`;
+  };
+  const pp = f.paper || {};
+  return head + (pp.stopped ? `<div class="banner dn">⛔ <b>今日は停止</b>：${esc(pp.stop_reason || "")}。新しい注文は出さない。</div>` : "")
+    + (rows.length ? `<div class="card tight">${rows.map(row).join("")}</div>` : `<div class="card"><div class="empty">いまルールを通っている銘柄はありません（朝の波が出ると表示。波の確定は11:00まで）。</div></div>`)
+    + `<p class="disc">発注はしません（候補の提示だけ）。38.2%に指値1回・逆指値は起点割れと−3%の近い方・30分で撤退・11:30で全決済。</p>`;
 }

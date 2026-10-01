@@ -97,9 +97,10 @@ const ST = {   // status_jp → [カードの色, バッジ, バッジの色, �
   "約定中": ["st-zone", "🟢 約定中", "zone", 0],
   "接近": ["st-near", "🟡 接近", "near", 1],
   "指値待ち": ["", "⏳ 指値待ち", "wait", 2],
-  "決済済み": ["st-end", "✓ 決済", "done", 3],
-  "見送り": ["st-skip", "⛔ 見送り", "skip", 4],
-  "終了": ["st-end", "− 終了", "wait", 5],
+  "波の途中": ["", "📈 波の途中", "wait", 3],
+  "決済済み": ["st-end", "✓ 決済", "done", 4],
+  "見送り": ["st-skip", "⛔ 見送り", "skip", 5],
+  "終了": ["st-end", "− 終了", "wait", 6],
 };
 const stOf = c => c.status_jp || c.status;
 const prioKey = c => [-(c.overlap || 0), c.priority ? 0 : 1];
@@ -125,7 +126,7 @@ function card(c, f) {
     <div class="px3 num"><div class="ent"><small>指値（38.2%）</small><b>${yen(c.entry)}</b></div><div class="stp"><small>逆指値</small><b>${yen(c.stop)}</b></div><div><small>株数</small><b>${yen(c.shares)}</b></div></div>
     <div class="cd-line num">利確 <b class="${main === "1" ? "tp-main" : ""}">+1% ${yen(c.tp1)}</b> ／ <b class="${main === "2" ? "tp-main" : ""}">+2% ${yen(c.tp2)}</b></div>
     <div class="cd-line num">最大損失 <b>${yen(c.max_loss)}円</b> ・ 窓 <b>${pct1(c.gap)}</b></div>
-    ${now}${c.skip_reason ? `<div class="cd-skip">⛔ ${esc(c.skip_reason)}</div>` : ""}${res}${more}</div>`;
+    ${now}${stOf(c) === "波の途中" ? `<div class="cd-now">高値更新中。止まったら 38.2%＝${yen(c.entry)} に指値（まだ入らない）</div>` : ""}${c.skip_reason ? `<div class="cd-skip">⛔ ${esc(c.skip_reason)}</div>` : ""}${res}${more}</div>`;
 }
 function toggleOpen(code) { if (OPEN.has(code)) OPEN.delete(code); else OPEN.add(code); render(); }
 function toggleEnded() { SHOW_ENDED = !SHOW_ENDED; render(); }
@@ -133,7 +134,7 @@ function viewCands() {
   const f = F();
   if (!f) return `<h1>📐 候補</h1>${noData()}`;
   const cs = (f.candidates || []).slice();
-  const active = cs.filter(c => ["約定中", "接近", "指値待ち"].includes(stOf(c)))
+  const active = cs.filter(c => ["約定中", "接近", "指値待ち", "波の途中"].includes(stOf(c)))
     .sort((a, b) => (ST[stOf(a)][3] - ST[stOf(b)][3]) || byPriority(a, b));
   const done = cs.filter(c => stOf(c) === "決済済み").sort(byPriority);
   const ended = cs.filter(c => ["見送り", "終了"].includes(stOf(c))).sort((a, b) => (ST[stOf(a)][3] - ST[stOf(b)][3]) || byPriority(a, b));

@@ -311,6 +311,33 @@ class OctEngine:
         tol = level * FD.OCT_OVERLAP_TOL_PCT / 100
         return [nm for nm, v in (("25MA", ma25), ("75MA", ma75)) if v is not None and abs(v - level) <= tol]
 
+    def _levels(self):
+        """今の波（起点・高値）での 38.2%・指値・逆指値・株数"""
+        level = self.high - FD.OCT_FIB_ENTRY * (self.high - self.origin)
+        entry = round_tick(level)
+        s_org = self.origin - tick_size(self.origin); s_pct = entry * (1 - FD.OCT_STOP_PCT / 100)
+        stop = round_tick(max(s_org, s_pct)); kind = "起点割れ" if s_org >= s_pct else f"−{FD.OCT_STOP_PCT:.0f}%"
+        return level, entry, stop, kind, calc_shares(entry, stop)
+
+    def watch_row(self) -> dict | None:
+        """波の途中（高値更新中で、まだ確定していない）銘柄。ここまでの条件を全部満たすものだけ返す（場中ライブの個別用）"""
+        if self.out or self.state != "wait" or self.high is None or not self.origin:
+            return None
+        rise = (self.high / self.origin - 1) * 100
+        if rise < FD.OCT_WAVE_MIN_PCT or hm(self.high_key + timedelta(minutes=5)) > FD.OCT_WAVE_DEADLINE:
+            return None
+        level, entry, stop, kind, shares = self._levels()
+        ma5, ma25, ma75 = self._ma(FD.OCT_MA_SHORT), self._ma(FD.OCT_MA_MID), self._ma(FD.OCT_MA_LONG)
+        if self._skips(entry, ma5, ma25, ma75, shares):
+            return None
+        ov = self._overlap(level, ma25, ma75)
+        return {"code": self.code, "name": self.name, "status": "波の途中", "last": self.last, "entry": entry, "stop": stop, "stop_kind": kind,
+                "shares": shares, "max_loss": round(shares * (entry - stop)), "tp1": round_tick(entry * 1.01), "tp2": round_tick(entry * 1.02),
+                "gap": round(self.gap, 2), "priority": self.gap < FD.OCT_GAP_PRIORITY_PCT, "overlap": len(ov), "overlap_items": ov, "skip_reason": "",
+                "origin": round(self.origin, 1), "high": round(self.high, 1), "armed_at": "", "label": "波の途中", "rank": "-", "rise": round(rise, 1),
+                "mins": None, "vol_ratio": None, "fib": {"38.2": round(level, 1)}, "pull_low": None, "retrace": None,
+                "note": "高値更新中（止まれば38.2%に指値）", "signal": None, "status_legacy": "watch"}
+
     def _try_arm(self, t: datetime):
         if self.high_key >= key5(t):
             return
@@ -319,11 +346,7 @@ class OctEngine:
         rise = (self.high / self.origin - 1) * 100
         if rise < FD.OCT_WAVE_MIN_PCT:
             return
-        level = self.high - FD.OCT_FIB_ENTRY * (self.high - self.origin)
-        entry = round_tick(level)
-        s_org = self.origin - tick_size(self.origin); s_pct = entry * (1 - FD.OCT_STOP_PCT / 100)
-        stop = round_tick(max(s_org, s_pct)); kind = "起点割れ" if s_org >= s_pct else f"−{FD.OCT_STOP_PCT:.0f}%"
-        shares = calc_shares(entry, stop)
+        level, entry, stop, kind, shares = self._levels()
         ma5, ma25, ma75 = self._ma(FD.OCT_MA_SHORT), self._ma(FD.OCT_MA_MID), self._ma(FD.OCT_MA_LONG)
         self.plan = Plan(code=self.code, name=self.name, day=self.day, origin=self.origin, high=self.high, level=level, entry=entry,
                          stop=stop, stop_kind=kind, shares=shares, max_loss=round(shares * (entry - stop)),
@@ -437,10 +460,12 @@ class OctEngine:
         return d
 
 
+STATUS_ORDER = {"約定中": 0, "接近": 1, "指値待ち": 2, "波の途中": 3, "決済済み": 4, "見送り": 5, "終了": 6, "対象外": 7}
+
+
 def sort_key(row: dict):
-    """優先度順: 重なり2本→1本→なし、同じなら窓2%未満を上。見送り・対象外は下。"""
-    bad = row["status"] in ("見送り", "対象外", "終了")
-    return (bad, -row["overlap"], 0 if row["priority"] else 1, row["code"])
+    """状態（約定中→接近→指値待ち→波の途中→決済→見送り）→ 重なり2本→1本→なし → 窓2%未満を上"""
+    return (STATUS_ORDER.get(row["status"], 9), -row["overlap"], 0 if row["priority"] else 1, row["code"])
 
 
 # ── 通知（Discord: 2種類だけ）──────────────────────────────
@@ -617,7 +642,7 @@ class OctSession:
                 log_csv(eng.plan, None, self.log_path)
 
     def live_json(self, now: datetime) -> dict:
-        rows = [r for r in (e.to_row() for e in self.engines.values()) if r and r["status"] != "対象外"]
+        rows = [r for r in (e.to_row() or e.watch_row() for e in self.engines.values()) if r and r["status"] != "対象外"]
         rows.sort(key=sort_key)
         done = [r for r in rows if r.get("trade")]
         paper = self.risk.summary()
@@ -625,7 +650,7 @@ class OctSession:
         return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "ruleset": "oct", "tp_main": self.tp_main,
                 "paper_trades": sorted(done, key=lambda r: r["trade"]["fill_time"]),
                 "n_watch": sum(1 for r in rows if r["status"] in ("指値待ち", "接近")),
-                "candidates": [dict(r, status=r["status_legacy"], status_jp=r["status"]) for r in rows[:40]],
+                "candidates": [dict(r, status=r["status_legacy"], status_jp=r["status"]) for r in rows[:60]],
                 "paper": paper,
                 "trades": [{"code": r["code"], "name": r["name"], "entry": r["entry"], "stop": r["stop"], "half": False, "last": r["last"],
                             "closed": r["status"] == "決済済み",
