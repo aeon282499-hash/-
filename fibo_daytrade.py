@@ -4,6 +4,12 @@ fibo_daytrade.py — デイトレ用「フィボ押し目反発」通知・記�
 
   発注はしない。通知（Discord）と記録（CSV/JSON）のみ。スイング用ロジックには一切触れない。
 
+  ★2026-10-01〜 既定は「10月デイトレルール」（判定は fibo_oct.py・定数はこのファイルの「10月ルールの定数」欄）。
+    python fibo_daytrade.py --replay 2026-09-30 --codes 621A,4440            # 1銘柄ずつ時系列（立花の断面→無ければYahoo 1分足）
+    python fibo_daytrade.py --replay 2026-09-30                              # 立花の断面で全銘柄（live と同じ処理）
+    python fibo_daytrade.py --live                                           # 場中（🟡押し目接近/🟢指値ゾーンを通知）
+    旧ルール（下の説明）に戻すときは 環境変数 FIBO_RULESET=legacy。
+
 モード
   python fibo_daytrade.py --replay 2026-09-16 --codes 6208,338A          # 保存5分足(yfinance)で再生・判定の時系列を表示
   python fibo_daytrade.py --replay 2026-09-16 [--min-tov 3]              # 全銘柄再生（前日代金≥3億）→ fibo_signals/ に保存
@@ -36,13 +42,60 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CACHE_5M = ROOT / "_intraday_cache_5m.pkl"
+# データの置き場所（別フォルダのworktreeで試すときは FIBO_DATA_ROOT=本体フォルダ を指定）
+DATA_ROOT = Path(os.environ.get("FIBO_DATA_ROOT") or ROOT)
+CACHE_5M = DATA_ROOT / "_intraday_cache_5m.pkl"
 SIG_DIR = ROOT / "fibo_signals"          # 日別の全判定（見送り含む）JSON
 LOG_CSV = ROOT / "fibo_daytrade_log.csv"  # 指示書9の記録
 STATE_JSON = ROOT / "fibo_state.json"     # HALF_LOT_MODE のトレード数など
 
-# ── 定数（指示書）──────────────────────────────────────────
-GAP_UP_PCT = 1.0            # 寄り≥前日終値+1% を「ギャップアップ」扱い（起点=前日終値）
+# ── ルールの切替（2026-10-01）────────────────────────────────
+#   oct    = ボスの「10月デイトレルール」（既定・判定は fibo_oct.py）
+#   legacy = 9/17指示書の旧ルール（下の WaveEngine。消さずに残してある）→ FIBO_RULESET=legacy で戻る
+RULESET = os.environ.get("FIBO_RULESET", "oct").strip().lower()
+
+# ── 10月ルールの定数（fibo_oct.py が使う）──────────────────────
+OCT_PRICE_MIN, OCT_PRICE_MAX = 2000, 10000   # 株価（38.2%の指値）2,000〜10,000円
+OCT_GAP_MAX_PCT = 6.0         # 寄りの窓（寄り値÷前日終値−1）6%以上は対象外
+OCT_GAP_PRIORITY_PCT = 2.0    # 窓2%未満は「優先」
+OCT_WAVE_MIN_PCT = 4.0        # 起点→高値が+4%未満の波は「朝の大きな波」とみなさない（旧RISE_MINと同じ）
+OCT_FIB_ENTRY = 0.382         # 38.2%に指値1回だけ（23.6%では入らない・ナンピンなし）
+OCT_STOP_PCT = 3.0            # 損切り＝起点割れ と 建値−3% の近い方
+OCT_RISK_YEN = 20_000         # 株数＝2万円÷(建値−逆指値)、100株単位で切り捨て
+OCT_MAX_POSITION_YEN = 1_300_000   # 建玉上限130万円
+OCT_TP_PCTS = (1.0, 2.0)      # 利確は+1%と+2%の2つを表示・紙トレードも両方記録
+OCT_OVERLAP_TOL_PCT = 0.5     # 38.2%の±0.5%以内に5分足25MA/75MA → 重なり（2本で最優先）
+OCT_MA_SHORT, OCT_MA_MID, OCT_MA_LONG = 5, 25, 75   # 5分足MA（前日から連続）。短期<中期<長期＝下向きの並び→見送り
+OCT_FIRST1M_DROP_PCT = 1.5    # 最初の1分足: 始値→終値が−1.5%以上の陰線＝大陰線
+OCT_FIRST1M_VOL_X = 10.0      #   かつ出来高が前日の1分平均の10倍以上＝大出来高 → 見送り
+OCT_WAVE_DEADLINE = "11:00"   # 波（高値）の確定は11:00まで
+OCT_ENTRY_DEADLINE = "11:30"  # 38.2%の指値が有効な時刻（11:30で全決済なのでそれ以降は入らない）
+OCT_TIME_STOP_MIN = 30        # 約定から30分で利確に届かなければ撤退
+OCT_FLAT_AT = "11:30"         # 11:30で全決済
+OCT_APPROACH_PCT = 1.0        # 🟡押し目接近: 38.2%まであと1%以内
+OCT_DAY_STOP_YEN = -40_000    # 1日の停止: 紙トレードで−4万円
+OCT_DAY_STOP_CONSEC = 2       #   2連敗
+OCT_DAY_STOP_TRADES = 8       #   8回
+OCT_SETTINGS_JSON = ROOT / "fibo_oct_settings.json"   # {"tp_pct": 1.0 or 2.0} どちらの利確を「本線」にするか
+
+
+def oct_tp_pct() -> float:
+    """本線の利確%（停止ルールの損益・画面の表示に使う）。環境変数 FIBO_TP_PCT → 設定ファイル → 1.0。"""
+    v = os.environ.get("FIBO_TP_PCT")
+    if not v:
+        try:
+            v = json.loads(OCT_SETTINGS_JSON.read_text(encoding="utf-8")).get("tp_pct")
+        except Exception:
+            v = None
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        v = OCT_TP_PCTS[0]
+    return v if v in OCT_TP_PCTS else OCT_TP_PCTS[0]
+
+
+# ── 定数（9/17指示書＝旧ルール）──────────────────────────────
+GAP_UP_PCT = 1.0           # 寄り≥前日終値+1% を「ギャップアップ」扱い（起点=前日終値）
 GAP_EXCLUDE_PCT = 10.0      # ギャップ+10%超は除外
 VOL_RATIO_MIN = 3.0         # 出来高倍率（前日同時間帯比）3倍以上を候補条件
 RANK_A = (15, 5.0, 10.0)    # 15分以内に+5〜10%
@@ -53,7 +106,7 @@ RANK_SKIP = (60, 4.0)       # 60分経過で+4%未満＝見送り
 FIRST_WAVE_DEADLINE = "11:30"   # これ以降に初めて出た波は対象外
 NO_NEW_AFTER = "14:30"
 FLAT_ALL_AT = "15:00"
-FIB_ZONE = (0.382, 0.618)   # 押しの停止ゾーン
+FIB_ZONE = (OCT_FIB_ENTRY, OCT_FIB_ENTRY) if RULESET == "oct" else (0.382, 0.618)   # 押しの停止ゾーン（10月ルールは38.2%基準）
 FIB_STOP = 0.786            # 損切り線
 FIB_TP2 = 1.272
 STOP_MAX_PCT = 3.0          # 損切りが-3%より遠いならエントリー不可
@@ -613,10 +666,31 @@ def summarize(sigs: list[Signal], title: str = ""):
 
 def load_name_map() -> dict:
     try:
-        c = pickle.load(open(ROOT / "jquants_cache.pkl", "rb"))
+        c = pickle.load(open(DATA_ROOT / "jquants_cache.pkl", "rb"))
         return dict(c.get("name_map", {}) or {})
     except Exception:
         return {}
+
+
+def fibo_oct_replay_day(day: str, nm: dict, tp: float | None):
+    """10月ルール: その日の立花断面を全銘柄・時刻順に流す（live と同じ処理・1日の停止も効く）。通知は送らない。"""
+    import fibo_oct
+    path = fibo_oct.MINUTES_DIR / f"{day}.jsonl"
+    rows, _ = fibo_oct.read_rows(path)
+    if not rows:
+        print(f"{path} が無い"); return
+    ses = fibo_oct.OctSession(day, {k[:-2]: v for k, v in nm.items()}, notify=False, tp_main=tp, log_path=None)
+    for r in rows:
+        ses.feed_row(r)
+    js = ses.live_json(datetime.strptime(rows[-1]["ts"], "%Y-%m-%d %H:%M:%S"))
+    SIG_DIR.mkdir(exist_ok=True)
+    (SIG_DIR / f"{day}_oct.json").write_text(json.dumps(js, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    pp = js["paper"]
+    print(f"{day} 10月ルール: 候補{len(js['candidates'])}件・紙トレード{pp['trades']}回 {pp['wins']}勝{pp['losses']}敗 {pp['pnl_yen']:+,}円（本線+{pp['tp_pct']:g}%）{('・' + pp['stop_reason']) if pp['stopped'] else ''}")
+    for c in js["candidates"]:
+        tr = c.get("trade")
+        res = " ／ ".join(f"+{k}% {b['exit_type']} {b['pnl_yen']:+,}円" for k, b in tr["books"].items()) if tr else ""
+        print(f"  {c['status_jp']:<5} {c['name']}({c['code']}) 窓{c['gap']:+.1f}% 重なり{c['overlap']} 指値{c['entry']:,.0f} 逆指値{c['stop']:,.0f} {c['shares']}株 {c['skip_reason']} {res}")
 
 
 def main():
@@ -628,8 +702,24 @@ def main():
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--once", action="store_true", help="--live: 今あるminutesを1回だけ処理して終了（動作確認用）")
+    ap.add_argument("--src", default="auto", choices=("auto", "minutes", "yahoo"), help="10月ルールの再生データ: 立花の毎分断面 / Yahoo 1分足")
+    ap.add_argument("--tp", type=float, default=None, help="10月ルール: 本線の利確%%（1 か 2）。省略時は fibo_oct_settings.json")
+    ap.add_argument("--ignore-price-band", action="store_true", help="10月ルールの再生: 株価2,000〜10,000円の条件を外して判定だけ見る")
     a = ap.parse_args()
     nm = load_name_map()
+    if a.live:   # --live --replay DAY は「その日の断面でライブ処理」（--replay より先に見る）
+        import fibo_live
+        fibo_live.run_live(day=a.replay, once=a.once)
+        return
+    if RULESET == "oct" and not a.report and not a.replay_range:
+        import fibo_oct
+        if a.replay and a.codes:
+            fibo_oct.replay_codes(a.replay, [c.strip() for c in a.codes.split(",") if c.strip()], a.src,
+                                  {k[:-2]: v for k, v in nm.items()}, a.ignore_price_band, a.tp)
+            return
+        if a.replay:
+            fibo_oct_replay_day(a.replay, nm, a.tp)
+            return
     if a.replay and a.codes:
         for c in a.codes.split(","):
             replay_one(c.strip(), a.replay, True, nm)
