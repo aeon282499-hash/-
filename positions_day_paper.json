@@ -1637,7 +1637,7 @@
       "signal_date": "2026-10-02",
       "basis_date": "2026-10-01",
       "prev_close": 7590.0,
-      "limit_price": 7670.0,
+      "limit_price": 7590.0,
       "status": "pending",
       "daily_gain": 11.95,
       "short": {
@@ -1653,7 +1653,8 @@
       "atr_pct": 7.79,
       "vol_ratio": 1.8,
       "range_pct": 12.3,
-      "mcap_oku": 536
+      "mcap_oku": 536,
+      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）"
     },
     {
       "ticker": "5985.T",
@@ -1662,7 +1663,7 @@
       "signal_date": "2026-10-02",
       "basis_date": "2026-10-01",
       "prev_close": 2480.0,
-      "limit_price": 2505.0,
+      "limit_price": 2480.0,
       "status": "pending",
       "daily_gain": 7.97,
       "short": {
@@ -1678,7 +1679,8 @@
       "atr_pct": 5.84,
       "vol_ratio": 0.9,
       "range_pct": 7.8,
-      "mcap_oku": 696
+      "mcap_oku": 696,
+      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）"
     }
   ],
   "expired": [],
