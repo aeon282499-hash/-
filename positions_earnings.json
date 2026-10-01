@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-09-30",
+ "last_signal_date": "2026-10-01",
  "positions": [
   {
    "ticker": "6521.T",
@@ -638,8 +638,25 @@
    "shares": 300,
    "rsi": 44.0,
    "runup5": -6.5,
-   "status": "pending",
-   "prev_close": 1263.0
+   "status": "closed",
+   "prev_close": 1263.0,
+   "entry": 1263.0,
+   "exit_date": "2026-10-01",
+   "exit": 1233.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -2.38,
+   "pnl_yen": -9000
+  },
+  {
+   "ticker": "3549.T",
+   "name": "クスリのアオキホールディングス",
+   "type": "第１四半期",
+   "date": "2026-10-01",
+   "signal_price": 3744.0,
+   "shares": 100,
+   "rsi": 35.5,
+   "runup5": -5.8,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-01"
