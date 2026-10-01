@@ -9,38 +9,25 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>モメンタムチンパン</title>
-<!-- v5（2026-09-14 フルリニューアル・本人指示「デイトレ用に特化・極みタブ廃止・資金が入っているテーマ/セクターをリアルタイムで」）
-     🔥ライブ = 立花API（取引所リアルタイム）を毎分巡回 → Cloudflare chimp-live → WebSocket/ポーリングで即時表示。
-     旧v4は legacy_v4.html に残置（#/quiz #/daytrade #/kiwami 等の旧導線はそちら）。 -->
-<link rel="stylesheet" href="app.css?v=5.1.0">
+<title>チンパン デイトレ</title>
+<!-- v6（2026-10-01 一から作り直し・本人「デイトレ専用で、俺の売買ルール用に」）
+     10月デイトレルール専用: 📐候補（fibo_oct.py の判定）／✅注文前チェック／📊今日の紙トレード の3画面だけ。
+     データは立花の巡回 → Cloudflare chimp-live（payload.fibo）。発注はしない。
+     旧v5（場中ライブ・朝の作戦・売り・探検…）は legacy_v5.html にそのまま残してある。 -->
+<link rel="stylesheet" href="day.css?v=6.0.0">
 </head>
 <body>
 <header>
-  <a class="brand" href="#/">🐵 <span>モメンタム<b>チンパン</b></span></a>
-  <div class="hright">
-    <a href="#/about" class="datepill" id="datepill" title="EODデータの日付">—</a>
-    <a href="#/search" class="hbtn" title="銘柄検索">🔍</a>
-    <a class="hbtn" id="themebtn" title="テーマ切替" onclick="event.preventDefault();toggleTheme()">◐</a>
-  </div>
+  <a class="brand" href="#/">🐵 チンパン<b>デイトレ</b></a>
+  <div id="clock" class="clock"></div>
+  <a class="hbtn" title="明るさ" onclick="event.preventDefault();toggleTheme()">◐</a>
 </header>
-<main id="view"><div class="sk-wrap"><div class="sk"></div><div class="sk"></div><div class="sk short"></div></div></main>
+<main id="view"><div class="empty">読み込み中…</div></main>
 <nav>
-  <a href="#/plan" id="nav-plan"><span class="i">📋</span>朝の作戦</a>
-  <a href="#/" id="nav-live"><span class="i">🔥</span>場中ライブ</a>
-  <a href="#/arena" id="nav-arena"><span class="i">🎯</span>前夜の準備</a>
-  <a href="#/sell" id="nav-data"><span class="i">📊</span>データ</a>
+  <a href="#/" id="nav-cands"><span class="i">📐</span>候補</a>
+  <a href="#/check" id="nav-check"><span class="i">✅</span>チェック</a>
+  <a href="#/paper" id="nav-paper"><span class="i">📊</span>紙トレ</a>
 </nav>
-<script src="js/core.js?v=5.2.1"></script>
-<script src="js/signals.js?v=5.1.0"></script>
-<script src="js/live.js?v=5.3.0"></script>
-<script src="js/detail.js?v=5.2.3"></script>
-<script src="js/momentum.js?v=5.2.3"></script>
-<script src="js/sell.js?v=5.2.3"></script>
-<script src="js/plan.js?v=5.2.6"></script>
-<script src="js/arena.js?v=5.2.1"></script>
-<script src="js/explore.js?v=5.2.1"></script>
-<script src="js/about.js?v=5.2.1"></script>
-<script src="js/boot.js?v=5.2.1"></script>
+<script src="js/day.js?v=6.0.0"></script>
 </body>
 </html>

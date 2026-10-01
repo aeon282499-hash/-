@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fibo_daytrade import (Bar, DayContext, WaveEngine, Signal, Skip, hm, minutes_between, load_cache, load_name_map,
-                           trading_days, bars_of, ROOT, LOG_CSV, STATE_JSON, TIME_STOP_MIN, FLAT_ALL_AT,
+                           trading_days, bars_of, ROOT, DATA_ROOT, RULESET, LOG_CSV, STATE_JSON, TIME_STOP_MIN, FLAT_ALL_AT,
                            MAX_CONSEC_LOSS, COOLDOWN_MIN, HALF_LOT_TRADES)
 
 try:   # Discord webhook は .env（ローカルのPCタスクで動くので GitHub Secrets ではなく .env に置く）
@@ -28,7 +28,7 @@ try:   # Discord webhook は .env（ローカルのPCタスクで動くので Gi
 except Exception:
     pass
 
-MINUTES_DIR = ROOT / "live_flow" / "minutes"
+MINUTES_DIR = DATA_ROOT / "live_flow" / "minutes"
 FIBO_LIVE_JSON = ROOT / "live_flow" / "fibo_live.json"
 WEBHOOK_ENV = "DISCORD_WEBHOOK_FIBO_URL"
 LIVE_POLL_SEC = 20
@@ -277,7 +277,39 @@ def write_fibo_live(engines: dict[str, WaveEngine], open_trades: dict[str, dict]
         pass
 
 
+def run_live_oct(day: str | None = None, once: bool = False):
+    """10月ルールのライブ（fibo_oct.OctSession）。毎分断面を読み、🟡押し目接近/🟢指値ゾーンを Discord へ、
+    live_flow/fibo_live.json（アプリ📐欄）と fibo_oct_log.csv（紙トレード）を書く。発注はしない。"""
+    import fibo_oct
+    day = day or datetime.now().strftime("%Y-%m-%d")
+    path = MINUTES_DIR / f"{day}.jsonl"
+    names = {k[:-2]: v for k, v in load_name_map().items()}
+    ses = fibo_oct.OctSession(day, names, notify=True, min_tov=MIN_TOV_LIVE)
+    print(f"[oct] {day} 監視開始 {path}（本線の利確+{ses.tp_main:g}%・前日文脈{len(ses.prev)}銘柄）", flush=True)
+    offset = 0
+    now = datetime.now()
+    while True:
+        now = datetime.now()
+        rows, offset = read_minutes(path, offset)
+        for row in rows:
+            ses.feed_row(row)
+        try:
+            FIBO_LIVE_JSON.parent.mkdir(parents=True, exist_ok=True)
+            FIBO_LIVE_JSON.write_text(json.dumps(ses.live_json(now), ensure_ascii=False, default=str), encoding="utf-8")
+        except Exception as e:
+            print(f"[oct] fibo_live.json 書込失敗: {e}", flush=True)
+        if once or hm(now) >= LIVE_END:
+            break
+        time.sleep(LIVE_POLL_SEC)
+    ses.finish()
+    pp = ses.risk.summary()
+    print(f"[oct] 終了 銘柄{len(ses.engines)} 紙トレード{pp['trades']}回 {pp['wins']}勝{pp['losses']}敗 {pp['pnl_yen']:+,}円 {pp['stop_reason']}", flush=True)
+
+
 def run_live(day: str | None = None, once: bool = False):
+    if RULESET == "oct":
+        return run_live_oct(day, once)
+    # ── 以下は旧ルール（FIBO_RULESET=legacy）──
     day = day or datetime.now().strftime("%Y-%m-%d")
     path = MINUTES_DIR / f"{day}.jsonl"
     print(f"[live] {day} 監視開始 {path}", flush=True)

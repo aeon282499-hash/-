@@ -413,9 +413,12 @@ def attach_fibo(payload: dict, log) -> None:
     try:
         if not FIBO_LIVE.exists():
             return
-        if time.time() - FIBO_LIVE.stat().st_mtime > 180:
+        fibo = json.loads(FIBO_LIVE.read_text(encoding="utf-8"))
+        # 10月ルール（ruleset=oct）は当日分なら古くても載せる（引け後も紙トレードの結果をアプリで見るため）。旧ルールは3分以内だけ
+        same_day = fibo.get("ruleset") == "oct" and str(fibo.get("ts", ""))[:10] == payload.get("date")
+        if time.time() - FIBO_LIVE.stat().st_mtime > 180 and not same_day:
             return
-        payload["fibo"] = json.loads(FIBO_LIVE.read_text(encoding="utf-8"))
+        payload["fibo"] = fibo
     except Exception as e:  # noqa: BLE001
         log.warning(f"fibo同梱失敗: {e}")
 

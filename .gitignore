@@ -39,3 +39,7 @@ _jsf_daily.pkl
 _bt_buy_20y_wide.pkl
 tachibana_intraday/
 board_ticks/
+
+# 10月ルールのフィボ（fibo_oct.py）: 紙トレードの記録と再生用のYahoo足は手元だけ
+fibo_oct_log.csv
+fibo_replay_cache/

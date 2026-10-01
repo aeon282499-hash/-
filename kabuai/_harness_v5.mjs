@@ -5,12 +5,14 @@
 import fs from "node:fs";
 import vm from "node:vm";
 
-const html = fs.readFileSync("web/index.html", "utf8");
-const DATA = JSON.parse(fs.readFileSync("data/latest.json", "utf8"));
-const SIDX = JSON.parse(fs.readFileSync("data/search_index.json", "utf8"));
-const EXPJ = JSON.parse(fs.readFileSync("data/explorer.json", "utf8"));
+// v6（2026-10-01）で index.html はデイトレ専用に作り直し → 旧v5は legacy_v5.html。データ置き場は KABUAI_DATA / LIVE_JSON で差し替え可
+const html = fs.readFileSync("web/legacy_v5.html", "utf8");
+const DD = process.env.KABUAI_DATA || "data";
+const DATA = JSON.parse(fs.readFileSync(DD + "/latest.json", "utf8"));
+const SIDX = JSON.parse(fs.readFileSync(DD + "/search_index.json", "utf8"));
+const EXPJ = JSON.parse(fs.readFileSync(DD + "/explorer.json", "utf8"));
 let LIVEJ = null;
-try { LIVEJ = JSON.parse(fs.readFileSync("../live_flow/latest.json", "utf8")); } catch (e) { /* ライブ無しでも通す */ }
+try { LIVEJ = JSON.parse(fs.readFileSync(process.env.LIVE_JSON || "../live_flow/latest.json", "utf8")); } catch (e) { /* ライブ無しでも通す */ }
 
 // index.html の <script src> 順に読み込む（?v= を除去）
 const srcs = [...html.matchAll(/<script src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
@@ -32,7 +34,7 @@ const locationShim = { hash: "#/" };
 const windowShim = { addEventListener() {}, scrollTo() {}, location: locationShim, innerWidth: 390, devicePixelRatio: 1 };
 const lsStore = {};
 const localStorageShim = { getItem: k => (k in lsStore ? lsStore[k] : null), setItem: (k, v) => { lsStore[k] = String(v); }, removeItem: k => { delete lsStore[k]; } };
-const stockJson = code => { try { return JSON.parse(fs.readFileSync(`data/stocks/${code}.json`, "utf8")); } catch (e) { return null; } };
+const stockJson = code => { try { return JSON.parse(fs.readFileSync(`${DD}/stocks/${code}.json`, "utf8")); } catch (e) { return null; } };
 const sandbox = { document: documentShim, window: windowShim, location: locationShim, localStorage: localStorageShim,
   console, navigator: {}, history: { back() {} },
   fetch: async (u) => {
@@ -65,7 +67,20 @@ check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill
 console.log("── 1) 🔥ライブ ──");
 let hv = go("#/");
 check("ライブ初期描画(受信前でも壊れない)", clean(hv) && hv.includes("live-root"));
-if (LIVEJ) {
+if (LIVEJ && ev("L_RULES_ONLY")) {   // 2026-10-01〜 個別株（10月ルール）だけ
+  const demo = JSON.parse(fs.readFileSync("web/demo_fibo.json", "utf8"));
+  sandbox.liveApply({ ...LIVEJ, ts: LIVEJ.ts + "x" });
+  hv = $get("#live-root").innerHTML;
+  check("ライブ(ルールのみ): fiboなし", clean(hv) && hv.includes("判定データがまだありません") && !hv.includes("33業種") && !hv.includes("市場全体"));
+  sandbox.liveApply({ ...LIVEJ, ts: LIVEJ.ts + "y", fibo: demo.fibo });
+  hv = $get("#live-root").innerHTML;
+  const n = (hv.match(/class="pickrow/g) || []).length;
+  check("ライブ(ルールのみ): 個別だけ・見送りは出さない", clean(hv) && n > 0 && !hv.includes("gcard") && !hv.includes("土俵のいま") && !hv.includes("⛔ 見送り"), `${n}行`);
+  const st = JSON.parse(JSON.stringify(demo.fibo)); st.paper.stopped = true; st.paper.stop_reason = "2連敗で停止";
+  sandbox.liveApply({ ...LIVEJ, ts: LIVEJ.ts + "z", fibo: st }); hv = $get("#live-root").innerHTML;
+  check("ライブ(ルールのみ): 停止中の表示", clean(hv) && hv.includes("今日は停止"));
+  check("ライブ: 時計", clean(sandbox.liveClockInner()));
+} else if (LIVEJ) {
   sandbox.liveApply(LIVEJ);
   hv = $get("#live-root").innerHTML;
   check("ライブ受信後: 既定はセクター(v5.1)", clean(hv) && hv.includes("33業種") && (hv.match(/class="gcard/g) || []).length === 33);

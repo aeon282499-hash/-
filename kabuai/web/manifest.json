@@ -1,14 +1,22 @@
 {
-  "name": "モメンタムチンパン — 日本株モメンタム分析",
+  "name": "チンパン デイトレ — 10月ルール専用",
   "short_name": "チンパン",
-  "description": "検証済みの買い候補・出口の目安・テーマ爆益・セクターローテを毎日更新（終値ベース）",
+  "description": "朝の波の38.2%押し目の候補・注文前チェック・紙トレードの成績（発注はしない）",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0e1116",
-  "theme_color": "#0e1116",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
