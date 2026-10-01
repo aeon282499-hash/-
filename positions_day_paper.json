@@ -1605,7 +1605,7 @@
       "basis_date": "2026-09-30",
       "prev_close": 2497.0,
       "limit_price": 2522.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 9.61,
       "short": {
         "mark": "○",
@@ -1620,11 +1620,69 @@
       "atr_pct": 16.02,
       "vol_ratio": 0.2,
       "range_pct": 8.3,
-      "mcap_oku": 91
+      "mcap_oku": 91,
+      "skip_reason": "指値¥2,522に届かず（高値¥2,490）",
+      "entry_session": "2026-10-01",
+      "entry_open": 2447.0,
+      "entry_close": 2420.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "3692.T",
+      "name": "ＦＦＲＩセキュリティ",
+      "direction": "SELL",
+      "signal_date": "2026-10-02",
+      "basis_date": "2026-10-01",
+      "prev_close": 7590.0,
+      "limit_price": 7670.0,
+      "status": "pending",
+      "daily_gain": 11.95,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "shares": 100,
+      "entry_mode": "limit_day",
+      "dev25": 16.9,
+      "atr_pct": 7.79,
+      "vol_ratio": 1.8,
+      "range_pct": 12.3,
+      "mcap_oku": 536
+    },
+    {
+      "ticker": "5985.T",
+      "name": "サンコール",
+      "direction": "SELL",
+      "signal_date": "2026-10-02",
+      "basis_date": "2026-10-01",
+      "prev_close": 2480.0,
+      "limit_price": 2505.0,
+      "status": "pending",
+      "daily_gain": 7.97,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 2,
+      "shares": 200,
+      "entry_mode": "limit_day",
+      "dev25": 12.3,
+      "atr_pct": 5.84,
+      "vol_ratio": 0.9,
+      "range_pct": 7.8,
+      "mcap_oku": 696
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-01",
+  "last_report_date": "2026-10-02",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W39"
 }

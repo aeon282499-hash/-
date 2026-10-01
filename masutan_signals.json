@@ -1,0 +1,51 @@
+{
+ "date": "2026-10-01",
+ "latest_pubdate": "2026-10-01",
+ "rows": [
+  {
+   "code": "4440",
+   "start": "2026-09-16",
+   "last": "2026-10-01",
+   "cls": "003",
+   "cls_max": "003",
+   "count": 0,
+   "dev": 18.84,
+   "first_hit": null,
+   "tov5_oku": 10.94,
+   "close_raw": 2420.0,
+   "close_adj": 2420.0,
+   "status": "waiting"
+  },
+  {
+   "code": "6203",
+   "start": "2026-09-16",
+   "last": "2026-10-01",
+   "cls": "003",
+   "cls_max": "003",
+   "count": 0,
+   "dev": 22.78,
+   "first_hit": null,
+   "tov5_oku": 37.01,
+   "close_raw": 2530.0,
+   "close_adj": 2530.0,
+   "status": "waiting"
+  },
+  {
+   "code": "6862",
+   "start": "2026-08-17",
+   "last": "2026-10-01",
+   "cls": "003",
+   "cls_max": "003",
+   "count": 0,
+   "dev": 25.58,
+   "first_hit": "2026-09-15",
+   "tov5_oku": 13.53,
+   "close_raw": 5490.0,
+   "close_adj": 5490.0,
+   "status": "fired_before",
+   "note": "2026-09-15 にシグナル済み（エピソード内で1回だけ）"
+  }
+ ],
+ "signals": [],
+ "events": []
+}
