@@ -1638,7 +1638,7 @@
       "basis_date": "2026-10-01",
       "prev_close": 7590.0,
       "limit_price": 7590.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 11.95,
       "short": {
         "mark": "○",
@@ -1654,7 +1654,15 @@
       "vol_ratio": 1.8,
       "range_pct": 12.3,
       "mcap_oku": 536,
-      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）"
+      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）",
+      "entry_session": "2026-10-02",
+      "entry_open": 7670.0,
+      "entry_close": 7600.0,
+      "entry_fill": 7670.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 0.913,
+      "pnl_yen": 7000,
+      "win": true
     },
     {
       "ticker": "5985.T",
@@ -1664,7 +1672,7 @@
       "basis_date": "2026-10-01",
       "prev_close": 2480.0,
       "limit_price": 2480.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 7.97,
       "short": {
         "mark": "○",
@@ -1680,11 +1688,19 @@
       "vol_ratio": 0.9,
       "range_pct": 7.8,
       "mcap_oku": 696,
-      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）"
+      "limit_note": "2026-10-01 本人「+0%指値・3回まで」で前終+1%→+0%に付け替え（配信は+1%で出ていた）",
+      "entry_session": "2026-10-02",
+      "entry_open": 2482.0,
+      "entry_close": 2484.0,
+      "entry_fill": 2482.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.081,
+      "pnl_yen": -400,
+      "win": false
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-02",
+  "last_report_date": "2026-10-05",
   "last_monthly_report": "2026-09",
-  "last_weekly_report": "2026-W39"
+  "last_weekly_report": "2026-W40"
 }

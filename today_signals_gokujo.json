@@ -1,4 +1,20 @@
 {
-  "date": "2026-10-02",
-  "signals": []
+  "date": "2026-10-05",
+  "signals": [
+    {
+      "ticker": "2801.T",
+      "name": "キッコーマン",
+      "direction": "BUY",
+      "prev_close": 1647.5,
+      "limit_price": 1663,
+      "days_cover": 0.19490347980824335,
+      "vt5": 1.068,
+      "updn_vol": 0.868,
+      "rsi": 39.52,
+      "deviation": -4.21,
+      "vol_ratio": 1.0,
+      "range_ratio": 1.59,
+      "turnover": 6096027600.0
+    }
+  ]
 }
