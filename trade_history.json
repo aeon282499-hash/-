@@ -1639,6 +1639,56 @@
       "close": 1997.5,
       "pnl": 0.76,
       "win": true
+    },
+    {
+      "date": "2026-10-02",
+      "ticker": "9744.T",
+      "name": "メイテックグループホールディングス",
+      "direction": "BUY",
+      "open": 3275.0,
+      "close": 3272.0,
+      "pnl": -0.09,
+      "win": false
+    },
+    {
+      "date": "2026-10-02",
+      "ticker": "2871.T",
+      "name": "ニチレイ",
+      "direction": "BUY",
+      "open": 2080.0,
+      "close": 2087.0,
+      "pnl": 0.34,
+      "win": true
+    },
+    {
+      "date": "2026-10-02",
+      "ticker": "4519.T",
+      "name": "中外製薬",
+      "direction": "BUY",
+      "open": 6027.0,
+      "close": 6032.0,
+      "pnl": 0.08,
+      "win": true
+    },
+    {
+      "date": "2026-10-02",
+      "ticker": "8174.T",
+      "name": "日本瓦斯",
+      "direction": "BUY",
+      "open": 935.0,
+      "close": 939.5,
+      "pnl": 0.48,
+      "win": true
+    },
+    {
+      "date": "2026-10-02",
+      "ticker": "4666.T",
+      "name": "パーク２４",
+      "direction": "BUY",
+      "open": 1810.5,
+      "close": 1771.0,
+      "pnl": -2.18,
+      "win": false
     }
   ]
 }
