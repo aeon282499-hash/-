@@ -2031,5 +2031,102 @@
       "rsi": 51.24,
       "price": 5864.0
     }
+  },
+  "2026-10-02": {
+    "main:BUY:9048.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:9006.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8153.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:9044.T": {
+      "decision": "HOLD",
+      "rsi": 35.81,
+      "price": 2974.0
+    },
+    "main:BUY:3231.T": {
+      "decision": "HOLD",
+      "rsi": 30.99,
+      "price": 857.5
+    },
+    "main:BUY:2282.T": {
+      "decision": "HOLD",
+      "rsi": 41.37,
+      "price": 1990.5
+    },
+    "main:BUY:7616.T": {
+      "decision": "HOLD",
+      "rsi": 44.79,
+      "price": 1997.5
+    },
+    "main:BUY:9744.T": {
+      "decision": "HOLD",
+      "rsi": 40.15,
+      "price": 3283.0
+    },
+    "main:BUY:2871.T": {
+      "decision": "HOLD",
+      "rsi": 35.53,
+      "price": 2072.5
+    },
+    "main:BUY:4519.T": {
+      "decision": "HOLD",
+      "rsi": 31.73,
+      "price": 6053.0
+    },
+    "main:BUY:8174.T": {
+      "decision": "HOLD",
+      "rsi": 34.53,
+      "price": 940.2999877929688
+    },
+    "main:BUY:4666.T": {
+      "decision": "HOLD",
+      "rsi": 25.09,
+      "price": 1774.5
+    },
+    "kiwami:BUY:9048.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:9006.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:9048.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:9006.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:9048.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:9006.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:3231.T": {
+      "decision": "HOLD",
+      "rsi": 30.85,
+      "price": 856.9000244140625
+    }
   }
 }
