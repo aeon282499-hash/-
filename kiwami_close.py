@@ -126,6 +126,12 @@ def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
         try:
             r = requests.post(url, json={"embeds": embeds}, timeout=10, verify=verify)
             if r.status_code in (200, 204):
+                if env == TIER_LEDGERS["gokujo"][2]:     # 2026-10-03 極上の15時判定も追加先へ転送
+                    try:
+                        from shadow_exit import gokujo_extra_post
+                        gokujo_extra_post(embeds, tag="kiwami_close")
+                    except Exception as e:
+                        print(f"[kiwami_close] 極上追加先 転送失敗: {e}")
                 return True
             print(f"[kiwami_close] HTTP {r.status_code} {r.text[:150]}（試行{i + 1}）")
         except Exception as e:

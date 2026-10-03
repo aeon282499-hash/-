@@ -886,12 +886,45 @@ def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
         try:
             r = requests.post(url, json={"embeds": embeds}, timeout=10, verify=verify)
             if r.status_code in (200, 204):
+                if env == GOKUJO_WEBHOOK_ENV:
+                    gokujo_extra_post(embeds)
                 return True
             print(f"[shadow] Discord HTTP {r.status_code} {r.text[:150]}（試行{attempt + 1}）")
         except Exception as e:
             print(f"[shadow] Discord送信失敗: {e}（試行{attempt + 1}）")
     _POST_FAILED = True   # 3回とも失敗＝main.py が送信済みガードを立てないようにする（2026-09-03監査）
     return False
+
+
+# 2026-10-03 本人「売買シグナルスイング銘柄極上 ここにも配信して」「友達も極上がいいって・全く同じ内容で」:
+# 極上chへの送信が成功した時だけ、Secret DISCORD_WEBHOOK_GOKUJO_EXTRA_URLS（カンマ区切り複数可）へ同じembedを転送。
+# 失敗しても _POST_FAILED は立てない（本体の再送ランで極上chが二重投稿になるのを防ぐ）。
+GOKUJO_EXTRA_ENV = "DISCORD_WEBHOOK_GOKUJO_EXTRA_URLS"
+
+
+def gokujo_extra_post(embeds: list[dict], tag: str = "shadow") -> int:
+    """極上の配信を追加先へそのまま転送する。戻り値=送れた件数（未設定なら0）。例外は投げない。"""
+    urls = [u.strip() for u in os.getenv(GOKUJO_EXTRA_ENV, "").split(",") if u.strip()]
+    if not urls:
+        return 0
+    import requests
+    verify = os.getenv("DISCORD_VERIFY_SSL", "true").lower() != "false"
+    sent = 0
+    for url in urls:
+        for attempt, wait in enumerate((0, 2)):
+            if wait:
+                import time
+                time.sleep(wait)
+            try:
+                r = requests.post(url, json={"embeds": embeds}, timeout=10, verify=verify)
+                if r.status_code in (200, 204):
+                    sent += 1
+                    break
+                print(f"[{tag}] 極上追加先 HTTP {r.status_code} {r.text[:150]}（試行{attempt + 1}）")
+            except Exception as e:
+                print(f"[{tag}] 極上追加先 送信失敗: {e}（試行{attempt + 1}）")
+    print(f"[{tag}] 極上追加先へ {sent}/{len(urls)} 件送信")
+    return sent
 
 
 def _mirror_post(embeds: list[dict], envs=GOKUJO_MIRROR_ENV) -> int:
