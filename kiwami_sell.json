@@ -107,9 +107,10 @@
     "entry_open": 1904.5,
     "status": "closed",
     "hold_days": 2,
-    "pnl_pct": 5.0,
+    "pnl_pct": 6.038,
     "exit_type": "TP",
-    "exit_date": "2026-07-31"
+    "exit_date": "2026-07-31",
+    "gap_fill": 1789.5
   },
   {
     "signal_date": "2026-08-04",

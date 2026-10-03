@@ -451,6 +451,16 @@ def advance_sell(rows: list[dict], today: date, all_data: dict) -> int:
             pos["hold_days"] += 1
             d_str = dt_idx.strftime("%Y-%m-%d")
             hi, lo, cl = float(row["High"]), float(row["Low"]), float(row["Close"])
+            op = float(row["Open"]) if "Open" in row and row["Open"] == row["Open"] else 0.0
+            # 2日目以降に寄りで損切/利確ラインを飛び越えたら寄り値で約定（OCOは寄りで執行される）。
+            # 2026-10-04: 従来は固定%で記帳しており、窓を開けて利確を超えた16玉(実際平均+7.35%)を+5%で
+            # 数えていた＝台帳が実際より低く出ていた（26年 台帳式+89万 vs 実約定+120万）。BT(replay)と同じ扱い。
+            if d_str > entry_date_str and op > 0 and (op >= stop_price or op <= tp_price):
+                pos.update(pnl_pct=round((eo - op) / eo * 100, 3),
+                           exit_type="STOP" if op >= stop_price else "TP",
+                           exit_date=d_str, status="closed")
+                closed += 1
+                break
             if hi >= stop_price:                                  # STOP優先（本番と同順）
                 pos.update(pnl_pct=-pos["stop_pct"], exit_type="STOP",
                            exit_date=d_str, status="closed")
