@@ -111,6 +111,14 @@ def _post(embeds: list[dict], env: str = WEBHOOK_ENV) -> bool:
         from shadow_exit import KIWAMI_DELIVERY_OFF as _off
     except Exception:
         _off = True
+    if _off and env == SELL_WEBHOOK_ENV:      # 2026-10-04 売りスイング(大)の15時判定だけ再開（shadow_exit参照）
+        try:
+            from shadow_exit import swing_sell_urls, post_swing_sell
+            if swing_sell_urls():
+                return post_swing_sell(embeds, tag="kiwami_close")
+        except Exception as e:
+            print(f"[kiwami_close] 売りスイング送信失敗: {e}")
+            return False
     if _off and str(env).startswith("DISCORD_WEBHOOK_SHADOW"):
         print(f"[kiwami_close] {env} は極み廃止(2026-09-27)で送らない（判定の記録は継続）")
         return False

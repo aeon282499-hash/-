@@ -866,11 +866,50 @@ KIWAMI_SENT_FILE = "kiwami_sent.json"    # {"date","sent"}: sent=False なら保
 _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C, 0x95A5A6
 
 
+# 2026-10-04 本人「売りスイングも配信 大資金だけ」→ 極み廃止(KIWAMI_DELIVERY_OFF)中でも、大資金の売り
+# （DISCORD_WEBHOOK_SHADOW_SELL_URL 宛て＝前夜の売りシグナル・15時の売り判定・売り週次）だけは
+# Secret DISCORD_WEBHOOK_SWING_SELL_URLS（カンマ区切り）へ送る。旧SHADOW_SELL_URLのwebhookは削除済み(10015)。
+# 中/小の売り・極み買いは止めたまま。Secret未設定なら従来どおり送らない。
+SWING_SELL_ENV = "DISCORD_WEBHOOK_SWING_SELL_URLS"
+
+
+def swing_sell_urls() -> list[str]:
+    return [u.strip() for u in os.getenv(SWING_SELL_ENV, "").split(",") if u.strip()]
+
+
+def post_swing_sell(embeds: list[dict], tag: str = "shadow") -> bool:
+    """売りスイング(大)の送信。1か所でも届けばTrue（全滅だけFalse）。例外は投げない。"""
+    import requests
+    verify = os.getenv("DISCORD_VERIFY_SSL", "true").lower() != "false"
+    sent = 0
+    urls = swing_sell_urls()
+    for url in urls:
+        for attempt, wait in enumerate((0, 2, 4)):
+            if wait:
+                import time
+                time.sleep(wait)
+            try:
+                r = requests.post(url, json={"embeds": embeds}, timeout=10, verify=verify)
+                if r.status_code in (200, 204):
+                    sent += 1
+                    break
+                print(f"[{tag}] 売りスイング HTTP {r.status_code} {r.text[:150]}（試行{attempt + 1}）")
+            except Exception as e:
+                print(f"[{tag}] 売りスイング 送信失敗: {e}（試行{attempt + 1}）")
+    print(f"[{tag}] 売りスイング(大)を {sent}/{len(urls)} 件送信")
+    return sent > 0
+
+
 def _shadow_post(embeds: list[dict], env: str = SHADOW_WEBHOOK_ENV) -> bool:
     """極みチャンネルへ送信。未設定/失敗でも例外を投げない（戻り値で成否だけ返す）。"""
     import requests
     global _POST_FAILED
 
+    if KIWAMI_DELIVERY_OFF and env == SHADOW_SELL_WEBHOOK_ENV and swing_sell_urls():
+        sent = post_swing_sell(embeds)                    # 売りスイング(大)だけ再開（2026-10-04）
+        if not sent:
+            _POST_FAILED = True                           # 未達＝sell:main だけ再送される
+        return sent
     if KIWAMI_DELIVERY_OFF and _is_kiwami_env(env):     # 極みは廃止（2026-09-27）＝送らない・失敗扱いにもしない（再送を誘発しない）
         print(f"[shadow] {env} は極み廃止(2026-09-27)で送らない（台帳の記録は継続）")
         return False

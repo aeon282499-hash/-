@@ -59,6 +59,7 @@ jobs:
       DISCORD_WEBHOOK_SHADOW_SELL_MID_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_MID_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_SMALL_URL }}
       DISCORD_WEBHOOK_SHADOW_SELL_URL: ${{ secrets.DISCORD_WEBHOOK_SHADOW_SELL_URL }}
+      DISCORD_WEBHOOK_SWING_SELL_URLS: ${{ secrets.DISCORD_WEBHOOK_SWING_SELL_URLS }}
       # デイトレ売りフェード（main_day.py→daytrade_paper）。この2本が無いと
       # フォールバックでスイング買いチャンネルへ誤爆する作りなので必須。
       DISCORD_WEBHOOK_DAY_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_URL }}
