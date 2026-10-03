@@ -132,6 +132,7 @@ jobs:
       # 友達用フェード（板の厚い玉のみ・2026-08-12・未設定なら無言スキップ）
       DISCORD_WEBHOOK_DAY_FRIENDS_URL: ${{ secrets.DISCORD_WEBHOOK_DAY_FRIENDS_URL }}
       DISCORD_WEBHOOK_DAY_EXTRA_URLS: ${{ secrets.DISCORD_WEBHOOK_DAY_EXTRA_URLS }}
+      DISCORD_WEBHOOK_DAY_RANK1_URLS: ${{ secrets.DISCORD_WEBHOOK_DAY_RANK1_URLS }}
       # 2026-09-04監査: この job は main_earnings_preview.py(8:20予備リスト) を回すのに決算の
       # webhook が無く「送信スキップ」で黙って未配信だった（2026-09-21: 決算追撃は廃止）
       DISCORD_WEBHOOK_EARNINGS_URL: ${{ secrets.DISCORD_WEBHOOK_EARNINGS_URL }}

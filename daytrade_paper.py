@@ -1046,23 +1046,31 @@ def _fmt_pf(pf):
 
 
 # ------------------------------------------------------------------ Discord
-def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None,
-                fetch_failed=False):
-    """毎朝のデイトレ売り配信。**スイングのシグナル配信と同一の書体**（2026-08-09改装・
-    本人「本番仕様に・通常のシグナルと一緒の形式に・文字がいっぱいでわかりずらい」）。
-    手順コードブロック・※注釈の束・通算成績ブロックは廃止し、ヘッダ2行＋銘柄行＋
-    答え合わせだけにする。通算はfooterに1行（詳細は週次/月次レポートで見る）。"""
+def _build_report_payload(just_closed, buy_fires, picks, stats, today, fetch_failed=False,
+                          rank1_only=False) -> dict:
+    """send_report の本文組み立て。rank1_only=True は「①だけ・100万」版（2026-10-04 本人
+    「売りフェードも同じルールで一銘柄100万でいいから・1番だけの効率重視」＝DISCORD_WEBHOOK_DAY_RANK1_URLS 用）。
+    銘柄・指値・株数・プレミアム料行は本人版の①と完全同一。②・予備・🟢買い・通算(①②合算)は出さない。"""
     date_str = today.strftime("%Y年%m月%d日")
     sep = "─" * 24
     lines = []
     if picks is None:
         picks = []
     go_picks = [p for p in picks if p.get("verdict") == "GO"]
+    if rank1_only:
+        go_picks = [p for i, p in enumerate(go_picks) if p.get("rank", i + 1) == 1][:1]
+        just_closed = [p for p in (just_closed or []) if (p.get("rank") or 1) == 1]
+        buy_fires = []
     n_shoot = min(len(go_picks), PAPER_MAX_PICKS) if go_picks else 0
 
     # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
-        if fade_uses_day_limit(1) and fade_uses_day_limit(2):
+        if rank1_only and fade_uses_day_limit(1):
+            head = (f"🎯 {CAPITAL_BY_RANK[1] // 10000}万円で**前日終値+{FADE_LIMIT_UP_PCT:g}%の指値・執行条件は当日中**で信用売り"
+                    f"（寄りがそれ以上なら寄り値で約定／届かなければ見送り）")
+        elif rank1_only:
+            head = f"🎯 **9:00 寄り成行（信用売り）**で発注・{CAPITAL_BY_RANK[1] // 10000}万円"
+        elif fade_uses_day_limit(1) and fade_uses_day_limit(2):
             head = (f"🎯 ①{CAPITAL_BY_RANK[1] // 10000}万円・②{CAPITAL_BY_RANK[2] // 10000}万円とも"
                     f"**前日終値+{FADE_LIMIT_UP_PCT:g}%の指値・執行条件は当日中**で信用売り"
                     f"（寄りがそれ以上なら寄り値で約定／届かなければ見送り）")
@@ -1192,14 +1200,27 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
     a = stats["all"]
     title_suffix = f"売り{n_shoot}銘柄" if n_shoot else "シグナルなし"
     color = 0x43A047 if a["yen"] > 0 else (0xE53935 if a["yen"] < 0 else 0x757575)
-    payload = {"embeds": [{
+    if rank1_only:
+        foot = (f"①前終+{FADE_LIMIT_UP_PCT:g}%指値" if fade_uses_day_limit(1) else "寄り成行") + "→引け成行・当日決済"
+        color = 0x757575
+    else:
+        foot = (f"{_FADE_EXEC_LABEL()}→引け成行・当日決済｜通算{a['n']}件 {a['yen']:+,}円 "
+                f"PF{_fmt_pf(a['pf'])}・見送り{stats['skipped']}")
+    return {"embeds": [{
         "title": f"🩳【デイトレ売り】{date_str} — {title_suffix}",
         "description": "\n".join(lines).rstrip(),
         "color": color,
-        "footer": {"text": f"{_FADE_EXEC_LABEL()}→引け成行・当日決済｜通算{a['n']}件 {a['yen']:+,}円 "
-                           f"PF{_fmt_pf(a['pf'])}・見送り{stats['skipped']}"},
+        "footer": {"text": foot},
     }]}
 
+
+def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=None,
+                fetch_failed=False):
+    """毎朝のデイトレ売り配信。**スイングのシグナル配信と同一の書体**（2026-08-09改装・
+    本人「本番仕様に・通常のシグナルと一緒の形式に・文字がいっぱいでわかりずらい」）。
+    手順コードブロック・※注釈の束・通算成績ブロックは廃止し、ヘッダ2行＋銘柄行＋
+    答え合わせだけにする。通算はfooterに1行（詳細は週次/月次レポートで見る）。"""
+    payload = _build_report_payload(just_closed, buy_fires, picks, stats, today, fetch_failed)
     if dry:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return True
@@ -1239,6 +1260,23 @@ def send_report(just_closed, buy_fires, picks, stats, today, dry=False, banned=N
             print(f"[paper] 追加ミラー HTTP {xr.status_code}" + ("（webhook失効の疑い・Secret要更新）" if xr.status_code == 404 else ""))
         except Exception as e:
             print(f"[paper] 追加ミラー失敗（本人向けは無傷）: {e}")
+    # ①だけ・100万版（2026-10-04 本人「売りフェードも同じルールで一銘柄100万・1番だけの効率重視」）:
+    # Secret DISCORD_WEBHOOK_DAY_RANK1_URLS（カンマ区切り）へ。本人向けの成否には影響させない。
+    r1urls = [u.strip() for u in os.getenv("DISCORD_WEBHOOK_DAY_RANK1_URLS", "").split(",") if u.strip()]
+    if r1urls:
+        try:
+            r1 = _build_report_payload(just_closed, buy_fires, picks, stats, today, fetch_failed, rank1_only=True)
+        except Exception as e:
+            print(f"[paper] ①版の組み立て失敗（本人向けは無傷）: {e}")
+            r1urls = []
+        for r1url in r1urls:
+            if r1url in (url, furl):
+                continue
+            try:
+                rr = requests.post(r1url, json=r1, timeout=15)
+                print(f"[paper] ①版ミラー HTTP {rr.status_code}" + ("（webhook失効の疑い・Secret要更新）" if rr.status_code == 404 else ""))
+            except Exception as e:
+                print(f"[paper] ①版ミラー失敗（本人向けは無傷）: {e}")
     return sent_ok
 
 
