@@ -1,10 +1,10 @@
 // day.js — チンパン デイトレ v6（2026-10-01 一から作り直し・10月デイトレルール専用）
-// 画面は3つだけ: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）
+// 画面: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）／✂️上ヒゲ刈り取り候補（#/oshime5・2026-10-04追加・前夜の10本）
 // データ: 立花の巡回（tachibana_live_flow.py）→ Cloudflare chimp-live の payload.fibo（fibo_oct.py が書く）。
 //   WebSocket で即時受信・切れている間は30秒ごとに取りに行く。発注はしない。
 //   ?demo を付けると demo_fibo.json（9/30 の再生）で動く（場外でも見た目を確認できる）。
 const CFG = {
-  VERSION: "6.0.0",
+  VERSION: "6.1.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",
   POLL_MS: 30000,
   DEMO: typeof location !== "undefined" && /[?&]demo/.test(location.search || ""),
@@ -33,6 +33,7 @@ function toggleTheme() {
 // ── 受信 ──
 let LIVE = null, LIVE_ERR = "", WS_OK = false, BACKOFF = 5000;
 function liveInit() {
+  o5Load(); setInterval(o5Load, 10 * 60 * 1000);   // ✂️前夜の候補（夜に更新）
   if (CFG.DEMO) { fetchJson("demo_fibo.json"); return; }
   liveConnect();
   fetchJson(CFG.LIVE_BASE + "/live.json");
@@ -211,12 +212,47 @@ function viewPaper() {
     <div class="note">紙トレード＝アプリの候補を機械的に38.2%で買った場合の記録（実際の注文ではありません）。ボスの実トレードとの比較は月末に。</div>`;
 }
 
+// ── ✂️ 上ヒゲ刈り取り候補（前夜の監視リスト・oshime5_candidates.py → ../data/oshime5.json）──
+let O5 = null, O5_ERR = "";
+async function o5Load() {
+  for (const u of ["../data/oshime5.json", "data/oshime5.json"]) {
+    try {
+      const r = await fetch(u, { cache: "no-store" });
+      if (r.ok) { O5 = await r.json(); O5_ERR = ""; render(); return; }
+    } catch (e) { /* 次の場所 */ }
+  }
+  O5_ERR = "まだ候補がありません（平日の夜19時ごろに届きます）"; render();
+}
+function o5Shares(px) {   // 2万円 ÷（株価×3%）を100株単位で切り捨て
+  return px > 0 ? Math.floor(20000 / (px * 0.03) / 100) * 100 : 0;
+}
+function o5Card(r, i) {
+  const m = LIVE && LIVE.stocks ? LIVE.stocks[r.code] : null;
+  const sh = o5Shares(r.close);
+  const now = m && m.last ? `<div class="cd-now">いま ${yen(m.last)}円 <span class="${cls(m.chg)}">${pct1(m.chg)}</span>${m.d5 != null ? ` ・ 5分 <span class="${cls(m.d5)}">${pct1(m.d5)}</span>` : ""}</div>` : "";
+  return `<div class="cd">
+    <div class="cd-top"><span class="badge wait">${i + 1}</span><span class="nm">${esc(r.name)}</span><span class="code">${esc(r.code)}</span></div>
+    <div class="px3 num"><div><small>前日終値</small><b>${yen(r.close)}</b></div><div><small>5日騰落</small><b class="${cls(r.r5)}">${pct1(r.r5)}</b></div><div><small>値幅ATR</small><b>${r.atr_pct != null ? Number(r.atr_pct).toFixed(1) + "%" : "—"}</b></div></div>
+    <div class="cd-line num">20日平均代金 <b>${r.tov20_oku != null ? Math.round(r.tov20_oku) : "—"}億</b> ・ 呼値 <b>${r.tick != null ? r.tick : "—"}円</b> ・ 株数の目安 <b>${sh > 0 ? yen(sh) + "株" : "100株でも損失2万円超"}</b></div>
+    ${now}</div>`;
+}
+function viewOshime5() {
+  if (!O5 || !(O5.rows || []).length) return `<h1>✂️ 上ヒゲ刈り取り候補</h1><div class="empty">${esc(O5 ? "該当なし（条件に合う銘柄がありませんでした）" : (O5_ERR || "読み込み中…"))}</div>`;
+  const old = String(O5.target_date || "") < todayStr() && !CFG.DEMO;
+  return `<h1>✂️ 上ヒゲ刈り取り候補<small>${esc(String(O5.target_date || "").slice(5))} 分 ・ ${esc(String(O5.date || "").slice(5))} 引けで選んだ10本</small></h1>
+    ${old ? `<div class="banner warn">これは ${esc(O5.target_date || "")} 分の候補です（次の分は夜19時ごろ）。</div>` : ""}
+    <div class="note" style="margin-bottom:10px"><b>入る</b>: ${esc(O5.entry || "")}<br><b>出る</b>: ${esc(O5.exit || "")}</div>
+    <div class="banner warn" style="font-size:15px">⛔ ${(O5.skip_rules || []).map(esc).join("<br>⛔ ")}</div>
+    ${(O5.rows || []).map(o5Card).join("")}
+    <div class="note">選び方: ${esc(O5.rule || "")}（該当${O5.matched != null ? O5.matched : "—"}銘柄）。<br>検証: ${esc(O5.backtest || "")}<br><b>発注はしません（候補の提示だけ）</b>。${esc(O5.note || "")}</div>`;
+}
+
 // ── ルーター ──
-const ROUTES = [["#/check", "check", viewCheck], ["#/paper", "paper", viewPaper], ["#/", "cands", viewCands]];
+const ROUTES = [["#/check", "check", viewCheck], ["#/paper", "paper", viewPaper], ["#/oshime5", "oshime5", viewOshime5], ["#/", "cands", viewCands]];
 function render() {
   const h = (typeof location !== "undefined" && location.hash) || "#/";
   const r = ROUTES.find(x => h.startsWith(x[0])) || ROUTES[ROUTES.length - 1];
-  ["cands", "check", "paper"].forEach(k => { const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r[1] === k); });
+  ["cands", "check", "paper", "oshime5"].forEach(k => { const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r[1] === k); });
   try { $("#view").innerHTML = r[2](); }
   catch (e) { $("#view").innerHTML = `<div class="banner stop"><b>表示エラー</b><br>${esc(e.message)}</div>`; }
   clock();

@@ -122,6 +122,15 @@ jobs:
           DISCORD_WEBHOOK_ARENA_URL: ${{ secrets.DISCORD_WEBHOOK_ARENA_URL }}
         run: python arena_watchlist.py
 
+      - name: ✂️上ヒゲ刈り取り候補（2026-10-04追加・前夜の監視リスト10本・発注なし）
+        # TOPIX500×5日−5%以下×当日+3%以上の陽線を除く×20日平均代金の上位10（oshime5_candidates.py・検証は trade_bt RESULTS_1004）。
+        # oshime5_candidates.json をコミット → チンパン🎯前夜の準備タブ。Discordは DISCORD_WEBHOOK_OSHIME5_URL（未設定ならJSONだけ）。
+        # ここが失敗しても他の配信とコミットは止めない。
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_OSHIME5_URL: ${{ secrets.DISCORD_WEBHOOK_OSHIME5_URL }}
+        run: python oshime5_candidates.py
+
       - name: 増担保「再点火」シグナル（2026-09-27追加→9/28停止→10/1 本人「やっぱり俺専用でシグナルでるようにして」で再開）
         # 増担保規制中に終値が25日線±15%以内に2日続いた日→翌朝の寄りで買い→3日目の大引けで売り（masutan_signal.py）。
         # 規制情報(margin-alert)は夕方公表。未反映なら前日の公表分で判定（10年で結果は同一＝_audit_masutan_parity.py）。
@@ -149,7 +158,7 @@ jobs:
             today_signals_small.json today_sell_signals_small.json \
             day_signals.json last_day_run.json positions_day_paper.json friends_fade.json \
             shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json _shadow_skipped_gokujo.json \
-            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json arena_watchlist.json \
+            kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json arena_watchlist.json oshime5_candidates.json \
             masutan_signals.json positions_masutan.json masutan_state.json; do
             [ -f "$f" ] && git add "$f"
           done

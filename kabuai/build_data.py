@@ -788,6 +788,22 @@ def build() -> dict:
     except Exception as e:
         print(f"[build] 土俵読込スキップ: {e}")
 
+    # ✂️ 上ヒゲ刈り取り候補（2026-10-04本人依頼）: 親リポの oshime5_candidates.py が前夜配信で生成・コミットする
+    # oshime5_candidates.json をそのまま注入（TOPIX500×5日−5%以下×代金上位10・陰線高値+1ティック買いの監視リスト）。
+    oshime5 = None
+    o5_path = HERE.parent / "oshime5_candidates.json"
+    try:
+        if o5_path.exists():
+            with open(o5_path, encoding="utf-8") as f:
+                oshime5 = json.load(f)
+            oshime5["fresh"] = str(oshime5.get("target_date", "")) >= datetime.now(JST).strftime("%Y-%m-%d")
+            with open(DATA_DIR / "oshime5.json", "w", encoding="utf-8") as f:      # v6画面（day.js）はこの小さいファイルだけ読む
+                json.dump(oshime5, f, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+            print(f"[build] 上ヒゲ刈り取り: {oshime5.get('target_date')} 分 {len(oshime5.get('rows', []))}本 (fresh={oshime5['fresh']})")
+    except Exception as e:
+        oshime5 = None          # 壊れたJSON（NaN等）で latest.json ごと落とさない
+        print(f"[build] 上ヒゲ刈り取り読込スキップ: {e}")
+
     # ── v4(2026-07-18): 🔻売り・モメンタム終了検出 ──
     # 「直近1ヶ月走った銘柄の上昇が終わった」をEODで検出する情報タブ（空売り推奨ではない・
     # デイトレ化しない=本人確定指示）。実データ検証: 高速7504/ベクトル6058は7/16夕方時点で
@@ -1170,6 +1186,7 @@ def build() -> dict:
         "sector_today": sector_today,
         "kiwami": kiwami,
         "arena": arena,
+        "oshime5": oshime5,
         "sector_heat": sector_heat,
         "signals": signals,
         "signal_track": track,
