@@ -17,7 +17,7 @@ function run(label, payload, hashes, o5) {
     location: loc, localStorage: { getItem: () => null, setItem() {} }, console, Date, Math, JSON, String, Number, Set, Array, Object, isNaN,
   };
   vm.createContext(ctx);
-  vm.runInContext(code + "\n;globalThis.__api={apply,render,toggleCheck,toggleEnded,toggleOpen,setLive:(j)=>{LIVE=j},setErr:(e)=>{LIVE_ERR=e},setO5:(j,e)=>{O5=j;O5_ERR=e||''}};", ctx);
+  vm.runInContext(code + "\n;globalThis.__api={apply,render,toggleCheck,toggleEnded,toggleOpen,setLive:(j)=>{LIVE=j},setErr:(e)=>{LIVE_ERR=e},setO5:(j,e)=>{O5=j;O5_ERR=e||''},calcSet,calcPick};", ctx);
   const api = ctx.__api;
   if (payload === "ERR") api.setErr("配信につながりません"); else if (payload) api.apply(payload);
   if (o5 !== undefined) api.setO5(o5, o5 ? "" : "まだ候補がありません");
@@ -34,7 +34,7 @@ function run(label, payload, hashes, o5) {
   }
   return bad;
 }
-const H = ["#/", "#/check", "#/paper", "#/oshime5"];
+const H = ["#/", "#/check", "#/paper", "#/oshime5", "#/calc"];
 let bad = 0;
 // ✂️上ヒゲ刈り取り候補（oshime5.json）: 手元の 10/2 引けの出力があれば使う・無ければ最小の見本
 const o5p = process.env.O5_JSON;
@@ -48,6 +48,30 @@ bad += run("上ヒゲ 該当なし", demo, ["#/oshime5"], Object.assign({}, o5, 
 bad += run("上ヒゲ 高い株価（0株）", demo, ["#/oshime5"], Object.assign({}, o5, { rows: [Object.assign({}, o5.rows[0], { close: 9800, atr_pct: null })] }));
 for (const [p, j] of extra) bad += run(p.split(/[\/]/).pop(), j, H);
 bad += run("データなし（hub 未接続）", "ERR", H, null);
+// 🧮電卓: 値段を入れた場合（TOPIX500/一般・株数の手入力・0株になる高い株価・候補タップ）
+function runCalc(label, steps, payload, o5x) {
+  const store = {}; const mk = id => ({ _h: "", set innerHTML(v) { this._h = v; }, get innerHTML() { return this._h; }, classList: { toggle() {} } });
+  const get = s => store[s] || (store[s] = mk(s)); const loc = { hash: "#/calc", search: "" };
+  const ctx = { document: { querySelector: get, getElementById: id => get("#" + id), documentElement: mk("html") }, location: loc,
+    localStorage: { getItem: () => null, setItem() {} }, console, Date, Math, JSON, String, Number, Set, Array, Object, isNaN };
+  vm.createContext(ctx);
+  vm.runInContext(code + "\n;globalThis.__c={render,apply,calcSet,calcPick,setO5:(j)=>{O5=j},CALC};", ctx);
+  const c = ctx.__c; if (payload) c.apply(payload); if (o5x) c.setO5(o5x); c.render();
+  for (const [k, v] of steps) { if (k === "pick") c.calcPick(v); else c.calcSet(k, v); }
+  c.render();
+  const html = get("#view").innerHTML;
+  const probs = ["undefined", "NaN", "表示エラー", "[object Object]"].filter(w => html.includes(w));
+  const m = html.match(/利確（指値[^<]*<\/small><b>([^<]+)<\/b>.*?損切り（逆指値[^<]*<\/small><b>([^<]+)<\/b>.*?株数<\/small><b>([^<]+)<\/b>/s);
+  console.log(`${probs.length ? "FAIL" : "ok  "} 電卓 ${label.padEnd(22)} ${m ? `利確${m[1]} 損切り${m[2]} 株数${m[3]}` : "（値段なし）"} ${probs.join(",")}`);
+  return probs.length ? 1 : 0;
+}
+bad += runCalc("空", [], null, null);
+bad += runCalc("3057円 TOPIX500", [["px", "3057"]], null, null);
+bad += runCalc("2245円 TOPIX500", [["px", "2245"]], null, null);
+bad += runCalc("3057円 一般", [["px", "3057"], ["t500", false]], null, null);
+bad += runCalc("5643円 300株", [["px", "5643"], ["sh", "300"]], null, null);
+bad += runCalc("9800円（自動0株）", [["px", "9800"]], null, null);
+bad += runCalc("候補タップ（ライブ）", [["pick", o5.rows[0].code]], o5live, o5);
 bad += run("旧ルールのfibo", { ts: "2026-09-30 10:00:00", hhmm: "10:00", state: "am", fibo: { candidates: [], trades: [] } }, H);
 bad += run("fiboなし", { ts: "2026-09-30 10:00:00", hhmm: "10:00", state: "am" }, H);
 const stopped = JSON.parse(JSON.stringify(demo)); stopped.fibo.paper.stopped = true; stopped.fibo.paper.stop_reason = "2連敗で停止";

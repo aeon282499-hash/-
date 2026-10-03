@@ -1,10 +1,10 @@
 // day.js — チンパン デイトレ v6（2026-10-01 一から作り直し・10月デイトレルール専用）
-// 画面: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）／✂️上ヒゲ刈り取り候補（#/oshime5・2026-10-04追加・前夜の10本）
+// 画面: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）／✂️上ヒゲ刈り取り候補（#/oshime5・2026-10-04追加・前夜の10本）／🧮電卓（#/calc・買値→利確+1.5%/損切り−3%/株数）
 // データ: 立花の巡回（tachibana_live_flow.py）→ Cloudflare chimp-live の payload.fibo（fibo_oct.py が書く）。
 //   WebSocket で即時受信・切れている間は30秒ごとに取りに行く。発注はしない。
 //   ?demo を付けると demo_fibo.json（9/30 の再生）で動く（場外でも見た目を確認できる）。
 const CFG = {
-  VERSION: "6.1.0",
+  VERSION: "6.2.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",
   POLL_MS: 30000,
   DEMO: typeof location !== "undefined" && /[?&]demo/.test(location.search || ""),
@@ -247,12 +247,61 @@ function viewOshime5() {
     <div class="note">選び方: ${esc(O5.rule || "")}（該当${O5.matched != null ? O5.matched : "—"}銘柄）。<br>検証: ${esc(O5.backtest || "")}<br><b>発注はしません（候補の提示だけ）</b>。${esc(O5.note || "")}</div>`;
 }
 
+// ── 🧮 電卓（買値 → 利確+1.5%・損切り−3%・株数）──
+const CALC = { px: "", sh: "", t500: true, tp: 1.5, sl: 3 };
+function tickOf(px, t500) {      // 呼値（TOPIX500 は細かい刻み）
+  const T = t500 ? [[1000, 0.1], [3000, 0.5], [10000, 1], [30000, 5], [100000, 10]] : [[3000, 1], [5000, 5], [30000, 10], [50000, 50], [300000, 100]];
+  for (const [lim, t] of T) if (px <= lim) return t;
+  return t500 ? 50 : 1000;
+}
+const ceilTick = (v, t) => Math.round(Math.ceil(v / t - 1e-9) * t * 10) / 10;
+function calcOut() {
+  const px = Number(CALC.px), t500 = CALC.t500;
+  if (!(px > 0)) return `<div class="empty" style="font-size:15px">買値を入れると、利確・損切りの値段と株数が出ます。</div>`;
+  const t = tickOf(px, t500);
+  const tpRaw = px * (1 + CALC.tp / 100), slRaw = px * (1 - CALC.sl / 100);
+  const tp = ceilTick(tpRaw, tickOf(tpRaw, t500)), sl = ceilTick(slRaw, tickOf(slRaw, t500));
+  const auto = Math.floor(20000 / (px * CALC.sl / 100) / 100) * 100;
+  const sh = Number(CALC.sh) > 0 ? Math.floor(Number(CALC.sh)) : auto;
+  const f1 = v => Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `<div class="px3 num"><div class="ent"><small>利確（指値・+${CALC.tp}%）</small><b>${f1(tp)}</b></div><div class="stp"><small>損切り（逆指値・−${CALC.sl}%）</small><b>${f1(sl)}</b></div><div><small>株数</small><b>${sh > 0 ? sh.toLocaleString() : "—"}</b></div></div>
+    <div class="cd-line num">利確したら <b class="pos">${sh > 0 ? sYen((tp - px) * sh) : "—"}</b> ／ 損切りしたら <b class="neg">${sh > 0 ? sYen((sl - px) * sh) : "—"}</b></div>
+    <div class="cd-line num">建玉 <b>${sh > 0 ? Math.round(px * sh).toLocaleString() + "円" : "—"}</b> ・ 呼値 <b>${t}円</b>（${t500 ? "TOPIX500" : "一般の銘柄"}）</div>
+    ${Number(CALC.sh) > 0 ? "" : `<div class="note" style="margin-top:6px">株数＝損失2万円 ÷（買値×${CALC.sl}%）を100株単位で切り捨て${auto <= 0 ? "。この株価だと100株でも損失が2万円を超えます（株数を入れてください）" : ""}。</div>`}
+    <div class="note" style="margin-top:6px">値段は呼値に合わせて切り上げ（計算上の値: 利確 ${tpRaw.toFixed(1)} ／ 損切り ${slRaw.toFixed(1)}）。</div>`;
+}
+function calcSet(k, v) {
+  CALC[k] = v;
+  const el = document.getElementById("calc-out");
+  if (el) el.innerHTML = calcOut(); else render();
+}
+function calcPick(code) {
+  const r = ((O5 && O5.rows) || []).find(x => x.code === code); if (!r) return;
+  const m = LIVE && LIVE.stocks ? LIVE.stocks[code] : null;
+  CALC.px = String(m && m.last ? m.last : r.close); CALC.sh = ""; CALC.t500 = true; render();
+}
+function viewCalc() {
+  const picks = ((O5 && O5.rows) || []).map(r => `<a class="tag pri" style="cursor:pointer;margin:0 6px 6px 0;display:inline-block" onclick="calcPick('${esc(r.code)}')">${esc(r.name)}</a>`).join("");
+  const inp = "width:100%;font-size:22px;padding:10px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--tx);box-sizing:border-box";
+  return `<h1>🧮 電卓<small>利確+${CALC.tp}%・損切り−${CALC.sl}%</small></h1>
+    <div class="cd">
+      <label style="display:block;font-weight:800;margin-bottom:4px">買値（約定した値段）</label>
+      <input type="number" inputmode="decimal" step="0.1" value="${esc(CALC.px)}" oninput="calcSet('px', this.value)" style="${inp}" placeholder="例 3057">
+      <label style="display:block;font-weight:800;margin:10px 0 4px">株数（空なら損失2万円で自動）</label>
+      <input type="number" inputmode="numeric" step="100" value="${esc(CALC.sh)}" oninput="calcSet('sh', this.value)" style="${inp}" placeholder="自動">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:15px"><input type="checkbox" ${CALC.t500 ? "checked" : ""} onchange="calcSet('t500', this.checked)"> TOPIX500の銘柄（呼値が細かい）</label>
+    </div>
+    <div class="cd" id="calc-out">${calcOut()}</div>
+    ${picks ? `<div class="sec">✂️上ヒゲの候補から入れる</div><div>${picks}</div>` : ""}
+    <div class="note">計算だけです。発注はしません。</div>`;
+}
+
 // ── ルーター ──
-const ROUTES = [["#/check", "check", viewCheck], ["#/paper", "paper", viewPaper], ["#/oshime5", "oshime5", viewOshime5], ["#/", "cands", viewCands]];
+const ROUTES = [["#/check", "check", viewCheck], ["#/paper", "paper", viewPaper], ["#/oshime5", "oshime5", viewOshime5], ["#/calc", "calc", viewCalc], ["#/", "cands", viewCands]];
 function render() {
   const h = (typeof location !== "undefined" && location.hash) || "#/";
   const r = ROUTES.find(x => h.startsWith(x[0])) || ROUTES[ROUTES.length - 1];
-  ["cands", "check", "paper", "oshime5"].forEach(k => { const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r[1] === k); });
+  ["cands", "check", "paper", "oshime5", "calc"].forEach(k => { const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r[1] === k); });
   try { $("#view").innerHTML = r[2](); }
   catch (e) { $("#view").innerHTML = `<div class="banner stop"><b>表示エラー</b><br>${esc(e.message)}</div>`; }
   clock();
