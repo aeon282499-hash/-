@@ -4,7 +4,7 @@
 //   WebSocket で即時受信・切れている間は30秒ごとに取りに行く。発注はしない。
 //   ?demo を付けると demo_fibo.json（9/30 の再生）で動く（場外でも見た目を確認できる）。
 const CFG = {
-  VERSION: "6.2.0",
+  VERSION: "6.3.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",
   POLL_MS: 30000,
   DEMO: typeof location !== "undefined" && /[?&]demo/.test(location.search || ""),
@@ -226,15 +226,50 @@ async function o5Load() {
 function o5Shares(px) {   // 2万円 ÷（株価×3%）を100株単位で切り捨て
   return px > 0 ? Math.floor(20000 / (px * 0.03) / 100) * 100 : 0;
 }
+function O5L() {   // 場中のライン（oshime5_live.py → payload.oshime5）。今日の分だけ
+  const o = LIVE && LIVE.oshime5;
+  return o && (CFG.DEMO || String(o.date || "") === todayStr()) ? o : null;
+}
+const O5ST = { "約定中": ["st-zone", "🟢 約定中（紙）", "zone"], "ライン点灯": ["st-near", "🎯 ライン点灯", "near"], "決済済み": ["st-end", "✓ 決済", "done"],
+  "見送り": ["st-skip", "⛔ 見送り", "skip"], "本日終了": ["st-skip", "⛔ 本日終了", "skip"] };
+function o5Live(lr) {
+  if (!lr) return "";
+  const st = O5ST[lr.status];
+  const tr = lr.trade;
+  if (lr.status === "ライン点灯" && lr.line) return `<div class="cd-now"><b>${esc(lr.line_bar || "")}の足のあいだ</b> 逆指値の買い <b>${yen(lr.line)}</b>円 → 利確 ${yen(lr.tp)} ／ 損切り ${yen(lr.sl)} ／ ${yen(lr.shares)}株</div>`;
+  if (tr) {
+    const b1 = (tr.books || {})["1.5"] || {}, b2 = (tr.books || {})["3"] || {};
+    return `<div class="cd-res"><div>約定 ${esc(tr.fill_time || "")} ${yen(tr.entry)}円×${yen(tr.shares)}株 ・ 損切り ${yen(tr.sl)}</div>
+      <div>+1.5%：${b1.exit_type ? `${esc(b1.exit_type)} ${esc(b1.exit_time || "")} <b class="${cls(b1.pnl_yen)}">${sYen(b1.pnl_yen)}</b>` : `保有中（利確 ${yen(b1.tp)}）`}</div>
+      <div class="muted">参考 +3%：${b2.exit_type ? `${esc(b2.exit_type)} ${sYen(b2.pnl_yen)}` : "保有中"}</div></div>`;
+  }
+  if (lr.skip_reason) return `<div class="cd-skip">⛔ ${esc(lr.skip_reason)}</div>`;
+  return st ? "" : `<div class="cd-now muted">${esc(lr.status || "")}${lr.ma ? ` ・ 25MA ${yen(lr.ma)}` : ""}</div>`;
+}
 function o5Card(r, i) {
   const m = LIVE && LIVE.stocks ? LIVE.stocks[r.code] : null;
+  const lr = O5L() ? (O5L().rows || []).find(x => x.code === r.code) : null;
+  const st = lr ? O5ST[lr.status] : null;
   const sh = o5Shares(r.close);
   const now = m && m.last ? `<div class="cd-now">いま ${yen(m.last)}円 <span class="${cls(m.chg)}">${pct1(m.chg)}</span>${m.d5 != null ? ` ・ 5分 <span class="${cls(m.d5)}">${pct1(m.d5)}</span>` : ""}</div>` : "";
-  return `<div class="cd">
-    <div class="cd-top"><span class="badge wait">${i + 1}</span><span class="nm">${esc(r.name)}</span><span class="code">${esc(r.code)}</span></div>
+  return `<div class="cd ${st ? st[0] : ""}">
+    <div class="cd-top"><span class="badge ${st ? st[2] : "wait"}">${st ? st[1] : i + 1}</span><span class="nm">${esc(r.name)}</span><span class="code">${esc(r.code)}</span></div>
+    ${o5Live(lr)}
     <div class="px3 num"><div><small>前日終値</small><b>${yen(r.close)}</b></div><div><small>5日騰落</small><b class="${cls(r.r5)}">${pct1(r.r5)}</b></div><div><small>値幅ATR</small><b>${r.atr_pct != null ? Number(r.atr_pct).toFixed(1) + "%" : "—"}</b></div></div>
     <div class="cd-line num">20日平均代金 <b>${r.tov20_oku != null ? Math.round(r.tov20_oku) : "—"}億</b> ・ 呼値 <b>${r.tick != null ? r.tick : "—"}円</b> ・ 株数の目安 <b>${sh > 0 ? yen(sh) + "株" : "100株でも損失2万円超"}</b></div>
     ${now}</div>`;
+}
+function o5PaperBar() {
+  const o = O5L(); if (!o) return "";
+  const p = o.paper || {};
+  return `<div class="banner ${p.stopped ? "stop" : "ok"}" style="font-size:15px"><b>${p.stopped ? "⛔ " + esc(p.stop_reason) : "▶ 場中ライン稼働中"}</b>
+    <br>紙トレード ${p.trades || 0}回（${p.wins || 0}勝${p.losses || 0}敗） <b class="${cls(p.pnl_yen)}">${sYen(p.pnl_yen)}</b> ・ ${esc(String(o.ts || "").slice(11, 16))}更新 ・ ${esc((o.rules || {}).stop || "")}</div>`;
+}
+function o5Order(rows) {   // 場中は 約定中→ライン点灯→その他 の順
+  const o = O5L(); if (!o) return rows.map((r, i) => [r, i]);
+  const pri = { "約定中": 0, "ライン点灯": 1 };
+  const stOf5 = r => { const x = (o.rows || []).find(y => y.code === r.code); return x ? (pri[x.status] != null ? pri[x.status] : 2) : 2; };
+  return rows.map((r, i) => [r, i]).sort((a, b) => stOf5(a[0]) - stOf5(b[0]) || a[1] - b[1]);
 }
 function viewOshime5() {
   if (!O5 || !(O5.rows || []).length) return `<h1>✂️ 上ヒゲ刈り取り候補</h1><div class="empty">${esc(O5 ? "該当なし（条件に合う銘柄がありませんでした）" : (O5_ERR || "読み込み中…"))}</div>`;
@@ -243,7 +278,8 @@ function viewOshime5() {
     ${old ? `<div class="banner warn">これは ${esc(O5.target_date || "")} 分の候補です（次の分は夜19時ごろ）。</div>` : ""}
     <div class="note" style="margin-bottom:10px"><b>入る</b>: ${esc(O5.entry || "")}<br><b>出る</b>: ${esc(O5.exit || "")}</div>
     <div class="banner warn" style="font-size:15px">⛔ ${(O5.skip_rules || []).map(esc).join("<br>⛔ ")}</div>
-    ${(O5.rows || []).map(o5Card).join("")}
+    ${o5PaperBar()}
+    ${o5Order(O5.rows || []).map(([r, i]) => o5Card(r, i)).join("")}
     <div class="note">選び方: ${esc(O5.rule || "")}（該当${O5.matched != null ? O5.matched : "—"}銘柄）。<br>検証: ${esc(O5.backtest || "")}<br><b>発注はしません（候補の提示だけ）</b>。${esc(O5.note || "")}</div>`;
 }
 

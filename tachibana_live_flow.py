@@ -318,6 +318,16 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
                 arena_codes = [str(r.get("code", "")).replace(".T", "") for r in aj.get("rows", [])]
     except Exception:  # noqa: BLE001
         arena_codes = []
+    # ✂️上ヒゲ刈り取り候補（前夜配信・8:55のgit pullで届く）の10本も常に載せる＝アプリで現在値を出す（2026-10-05）
+    oshime5_codes: list[str] = []
+    try:
+        o5 = ROOT / "oshime5_candidates.json"
+        if o5.exists():
+            oj = json.load(open(o5, encoding="utf-8"))
+            if str(oj.get("target_date", "")) == now.strftime("%Y-%m-%d"):
+                oshime5_codes = [str(r.get("code", "")) for r in oj.get("rows", [])]
+    except Exception:  # noqa: BLE001
+        oshime5_codes = []
     st.maybe_series(epoch, now.strftime("%H:%M"), {"themes": theme_groups, "sectors": sector_groups})
     # 並び（場中=直近5分・場外=当日）で上位だけ構成銘柄/系列を載せる＝株探1,500本でも毎分120KB級に収める
     intraday = state in ("am", "pm", "lunch")
@@ -353,6 +363,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
     for arr in (hot5, hot, gain, lose, tovtop):
         keep |= {m["code"] for m in arr}
     keep |= set(arena_codes)
+    keep |= set(oshime5_codes)
     chg_all = [m["chg"] for m in stocks.values() if m["chg"] is not None]
     tov_all = sum(m["tov"] for m in stocks.values())
     avg_all = sum(m["avg_tov"] for m in stocks.values() if m["tov"] > 0)
@@ -385,6 +396,7 @@ def aggregate(raw: dict[str, dict], uni: dict[str, dict], themes: dict[str, dict
 
 MINUTES_DIR = OUT_DIR / "minutes"       # 毎分の全銘柄断面（1行=1巡・fibo_daytrade.py が5分足にする）
 FIBO_LIVE = OUT_DIR / "fibo_live.json"   # fibo_daytrade.py --live が書く候補（payload["fibo"] に同梱）
+OSHIME5_LIVE = OUT_DIR / "oshime5_live.json"   # oshime5_live.py --live が書く✂️上ヒゲのライン（payload["oshime5"] に同梱）
 _MIN_KEYS = ("pDPP", "pDOP", "pDHP", "pDLP", "pDV", "pDJ", "pVWAP", "pPRP")
 
 
@@ -406,6 +418,18 @@ def append_minutes(raw: dict[str, dict], ts: str, log) -> None:
             f.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
     except Exception as e:  # noqa: BLE001
         log.warning(f"minutes追記失敗: {e}")
+
+
+def attach_oshime5(payload: dict, log) -> None:
+    """oshime5_live.py --live の出力（当日分だけ）を payload['oshime5'] に同梱。引け後も当日の紙トレード結果を見せる"""
+    try:
+        if not OSHIME5_LIVE.exists():
+            return
+        o5 = json.loads(OSHIME5_LIVE.read_text(encoding="utf-8"))
+        if str(o5.get("date", "")) == payload.get("date"):
+            payload["oshime5"] = o5
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"oshime5同梱失敗: {e}")
 
 
 def attach_fibo(payload: dict, log) -> None:
@@ -508,6 +532,7 @@ def main() -> int:
             n_sweep += 1
             append_minutes(raw, payload["ts"], log)        # 毎分の断面を日別ファイルへ（フィボ押し目の5分足素材）
             attach_fibo(payload, log)                        # fibo_daytrade.py が書く候補を同梱（無ければ何もしない）
+            attach_oshime5(payload, log)                     # oshime5_live.py が書く✂️上ヒゲのラインを同梱（無ければ何もしない）
             dump = Path(a.dump) if a.dump else OUT_DIR / "latest.json"
             dump.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
             top = payload["themes"][:3]

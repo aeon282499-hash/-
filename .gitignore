@@ -42,4 +42,5 @@ board_ticks/
 
 # 10月ルールのフィボ（fibo_oct.py）: 紙トレードの記録と再生用のYahoo足は手元だけ
 fibo_oct_log.csv
+oshime5_log.csv
 fibo_replay_cache/
