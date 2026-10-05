@@ -1,70 +1,18 @@
 {
-  "date": "2026-10-05",
+  "date": "2026-10-06",
   "signals": [
     {
-      "ticker": "9735.T",
-      "name": "セコム",
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
       "direction": "BUY",
-      "prev_close": 6223.0,
-      "limit_price": 6280,
-      "days_cover": 0.0385105477544988,
-      "rsi": 40.13,
-      "deviation": -2.3,
-      "vol_ratio": 1.49,
-      "range_ratio": 1.7,
-      "turnover": 12524226400.0
-    },
-    {
-      "ticker": "4516.T",
-      "name": "日本新薬",
-      "direction": "BUY",
-      "prev_close": 3378.0,
-      "limit_price": 3410,
-      "days_cover": 0.40759061120580253,
-      "rsi": 39.21,
-      "deviation": -2.59,
-      "vol_ratio": 2.17,
-      "range_ratio": 1.25,
-      "turnover": 3247314200.0
-    },
-    {
-      "ticker": "2801.T",
-      "name": "キッコーマン",
-      "direction": "BUY",
-      "prev_close": 1647.5,
-      "limit_price": 1663,
-      "days_cover": 0.19490347980824335,
-      "rsi": 39.52,
-      "deviation": -4.21,
-      "vol_ratio": 1.0,
-      "range_ratio": 1.59,
-      "turnover": 6096027600.0
-    },
-    {
-      "ticker": "4543.T",
-      "name": "テルモ",
-      "direction": "BUY",
-      "prev_close": 2243.5,
-      "limit_price": 2265,
-      "days_cover": 0.1212584181087881,
-      "rsi": 40.48,
-      "deviation": -4.71,
-      "vol_ratio": 1.37,
-      "range_ratio": 1.52,
-      "turnover": 15442065350.0
-    },
-    {
-      "ticker": "8628.T",
-      "name": "松井証券",
-      "direction": "BUY",
-      "prev_close": 1106.0,
-      "limit_price": 1117,
-      "days_cover": 0.5583692605554252,
-      "rsi": 41.88,
-      "deviation": -5.59,
-      "vol_ratio": 3.9,
-      "range_ratio": 2.13,
-      "turnover": 4626921000.0
+      "prev_close": 4456.0,
+      "limit_price": 4500,
+      "days_cover": 0.30055629498320247,
+      "rsi": 41.61,
+      "deviation": -3.1,
+      "vol_ratio": 2.06,
+      "range_ratio": 2.01,
+      "turnover": 8617413200.0
     }
   ]
 }

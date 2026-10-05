@@ -1,40 +1,12 @@
 {
-  "date": "2026-10-05",
+  "date": "2026-10-06",
   "signals": [
     {
-      "ticker": "9735.T",
-      "name": "セコム",
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
       "direction": "BUY",
-      "prev_close": 6223.0,
-      "limit_price": 6280
-    },
-    {
-      "ticker": "4516.T",
-      "name": "日本新薬",
-      "direction": "BUY",
-      "prev_close": 3378.0,
-      "limit_price": 3410
-    },
-    {
-      "ticker": "2801.T",
-      "name": "キッコーマン",
-      "direction": "BUY",
-      "prev_close": 1647.5,
-      "limit_price": 1663
-    },
-    {
-      "ticker": "4543.T",
-      "name": "テルモ",
-      "direction": "BUY",
-      "prev_close": 2243.5,
-      "limit_price": 2265
-    },
-    {
-      "ticker": "8628.T",
-      "name": "松井証券",
-      "direction": "BUY",
-      "prev_close": 1106.0,
-      "limit_price": 1117
+      "prev_close": 4456.0,
+      "limit_price": 4500
     }
   ]
 }
