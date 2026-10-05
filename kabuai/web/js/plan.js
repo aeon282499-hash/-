@@ -48,9 +48,9 @@ function planSizes(cash) {
   // 単位: 万円。フェードは2026-09-26 本人決定のラダー（40万未満①50／40万台①60／50〜54万①70／55万〜①100・55万未満は②を撃たない）。
   // 極上は55万未満=縮小の150万・55万以上で300万（2026-09-24〜）。🔻極み売りは2026-09-27 本人「極みは廃止・極上だけ」で廃止。
   if (cash == null) return null;
-  if (cash < 40) return { fade1: "①50万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "40万未満＝縮小（フェード①50だけ）", cls: "dn" };
-  if (cash < 50) return { fade1: "①60万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "40万台＝縮小（フェード①60だけ）", cls: "dn" };
-  if (cash < 55) return { fade1: "①70万", fade2: "なし", crash: "📄紙", gokujo: "150万×1", level: "50〜54万＝縮小（フェード①70だけ）", cls: "dn" };
+  if (cash < 40) return { fade1: "①50万", fade2: "なし", crash: "📄紙", gokujo: "150万・1日1本（最大3本）", level: "40万未満＝縮小（フェード①50だけ）", cls: "dn" };
+  if (cash < 50) return { fade1: "①60万", fade2: "なし", crash: "📄紙", gokujo: "150万・1日1本（最大3本）", level: "40万台＝縮小（フェード①60だけ）", cls: "dn" };
+  if (cash < 55) return { fade1: "①70万", fade2: "なし", crash: "📄紙", gokujo: "150万・1日1本（最大3本）", level: "50〜54万＝縮小（フェード①70だけ）", cls: "dn" };
   if (cash < 100) return { fade1: "①100万", fade2: "②50万", crash: "📄紙", gokujo: "300万×1", level: "通常", cls: "" };
   return { fade1: "①130万（小型≤300億だけ・大型🏢は撃たない）", fade2: "②50万", crash: "📄紙", gokujo: "300万×1", level: "100万到達＝①130(小型)へ", cls: "pos" };
 }

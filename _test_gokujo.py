@@ -62,21 +62,21 @@ json.dump({"date": TODAY.isoformat(), "signals": [
 ]}, open(SE.KIWAMI_SIG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
 added = SE.record_signals("gokujo", TODAY, {})
 rows = SE.load_ledger("gokujo")
-check("極上は1件だけ記帳（1枠）", added == 1 and len(rows) == 1)
+check("極上は1件だけ記帳（1日1本）", added == 1 and len(rows) == 1)
 check("記帳した玉はscore順先頭（2222）・size=150万(縮小中)・stop=3.0", rows[0]["ticker"] == "2222.T" and rows[0]["size"] == SE.GOKUJO_SIZE == 1_500_000 and rows[0]["stop_pct"] == 3.0)
 check("極みファイル(9999)へはフォールバックしない", all(r["ticker"] != "9999.T" for r in rows))
-check("見送り記録に枯れB（枠満杯）", json.load(open("_shadow_skipped_gokujo.json", encoding="utf-8"))["names"] == ["枯れB"])
-# 翌日: 保有中なら新規は入らない
+check("見送り記録に枯れB（1日1本まで）", json.load(open("_shadow_skipped_gokujo.json", encoding="utf-8"))["names"] == ["枯れB"])
+# 翌日: 保有中でもその日の1位は建てる（2026-10-05 本人「1日1銘柄まで」・同時保有は最大3）
 json.dump({"date": "2026-09-08", "signals": [{"ticker": "3333.T", "name": "枯れB", "direction": "BUY", "prev_close": 3000.0, "limit_price": 3030}]},
           open(SE.GOKUJO_SIG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
-check("保有中(pending)は枠満杯で新規0", SE.record_signals("gokujo", date(2026, 9, 8), {}) == 0)
+check("保有中(pending)でも翌日の1本は建てる", SE.record_signals("gokujo", date(2026, 9, 8), {}) == 1)
 # 極み(main)は従来どおり3枠・100万
 json.dump({"date": TODAY.isoformat(), "signals": [
     {"ticker": f"{i}000.T", "name": f"K{i}", "direction": "BUY", "prev_close": 1000.0, "limit_price": 1010} for i in range(1, 6)
 ]}, open(SE.KIWAMI_SIG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
 check("極み(main)は3枠×100万のまま", SE.record_signals("main", TODAY, {}) == 3 and all(r["size"] == 1_000_000 for r in SE.load_ledger("main")))
 check("値がさカット 極上=1万円・極み大=1万円・中=5千円", (SE.kiwami_px_cap("gokujo"), SE.kiwami_px_cap("main"), SE.kiwami_px_cap("mid")) == (10_000, 10_000, 5_000))
-check("枠数 極上1・極み3", (SE.max_slots("gokujo"), SE.max_slots("main")) == (1, 3))
+check("枠数 極上3(1日1本)・極み3", (SE.max_slots("gokujo"), SE.max_slots("main"), SE.GOKUJO_MAX_NEW_PER_DAY) == (3, 3, 1))
 
 # ── ④ 配信文面 ──
 captured = []
@@ -89,7 +89,7 @@ env, emb = captured[-1]
 d = emb[0]["description"]
 check("極上の配信先はGOKUJO webhook", env == "DISCORD_WEBHOOK_GOKUJO_URL")
 check("タイトルは👑スイング極上", emb[0]["title"].startswith("👑【スイング極上】"))
-check("1件150万円(縮小中)・#1を買う（1銘柄・最大保有1）", "1件150万円" in d and "最大保有1" in d)
+check("1件150万円(縮小中)・#1を買う（1日1銘柄・保有中でも買う・同時保有は最大3）", "1件150万円" in d and "同時保有は最大3" in d)
 check("株数は150万基準（前日終値2000円→700株・100株丸め・極みと同じ前日終値基準）", "700株" in d and "1,500株" not in d)
 SE.send_discord(TODAY, "main")
 env_m, emb_m = captured[-1]
@@ -104,7 +104,7 @@ check("極上0件の日は「シグナルなし」を出す", "シグナルな�
 captured.clear()
 SE.weekly_report(TODAY, None, [{"status": "closed", "pnl_pct": 2.0, "direction": "SELL", "exit_date": TODAY.isoformat(), "ticker": "7777.T", "name": "売り玉", "entry_open": 100}], key="gokujo")
 check("極上の週次は1通（買い）だけ", len(captured) == 1 and captured[0][0] == "DISCORD_WEBHOOK_GOKUJO_URL" and "極上" in captured[0][1][0]["title"])
-check("週次footerは1枠", "1枠" in captured[0][1][0]["footer"]["text"])
+check("週次footerは3枠", "3枠" in captured[0][1][0]["footer"]["text"])
 captured.clear()
 SE.weekly_report(TODAY, None, None, key="main")
 check("極み(main)の週次は買い＋売りの2通のまま", len(captured) == 2)
@@ -121,7 +121,7 @@ e2 = KC.build_embeds([{"ticker": "2222.T", "name": "枯れA", "reason_type": "RS
 check("既定(極み)のタイトルは従来どおり⚡極み", e2[0]["title"].startswith("⚡【極み"))
 
 # ── ⑧ 勝ち乗せ停止（2026-09-21 本玉300万にしたので、乗せると1銘柄600万＝買い枠300万の倍になるため）──
-check("極上 1枠×150万(縮小中・9/30に余力55万以上なら300万へ)・乗せなし(ADDON_FRAC=0.0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 1 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 0.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
+check("極上 1日1本・最大3枠×150万(縮小中・9/30に余力55万以上なら300万へ)・乗せなし(ADDON_FRAC=0.0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 3 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 0.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
 check("kiwami_close も同じ乗せ設定を参照", KC._GOKUJO_ADDON_FRAC == 0.0)
 e3 = KC.build_embeds([], [{"ticker": "2222.T", "name": "枯れA", "rsi_now": 40.0, "current_price": 2100.0, "entry_open": 2010.0, "today_hold": 1}], TODAY, op, brand="極上")
 check("乗せ停止中は初日+4.5%でも『同額を追加』を出さない", not any("同額を追加" in (x.get("description") or "") for x in e3))
