@@ -1689,6 +1689,46 @@
       "close": 1771.0,
       "pnl": -2.18,
       "win": false
+    },
+    {
+      "date": "2026-10-05",
+      "ticker": "9735.T",
+      "name": "セコム",
+      "direction": "BUY",
+      "open": 6258.0,
+      "close": 6250.0,
+      "pnl": -0.13,
+      "win": false
+    },
+    {
+      "date": "2026-10-05",
+      "ticker": "4516.T",
+      "name": "日本新薬",
+      "direction": "BUY",
+      "open": 3365.0,
+      "close": 3355.0,
+      "pnl": -0.3,
+      "win": false
+    },
+    {
+      "date": "2026-10-05",
+      "ticker": "2801.T",
+      "name": "キッコーマン",
+      "direction": "BUY",
+      "open": 1661.0,
+      "close": 1710.5,
+      "pnl": 2.98,
+      "win": true
+    },
+    {
+      "date": "2026-10-05",
+      "ticker": "8628.T",
+      "name": "松井証券",
+      "direction": "BUY",
+      "open": 1109.0,
+      "close": 1115.0,
+      "pnl": 0.54,
+      "win": true
     }
   ]
 }
