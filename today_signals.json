@@ -1,12 +1,4 @@
 {
-  "date": "2026-10-06",
-  "signals": [
-    {
-      "ticker": "9042.T",
-      "name": "阪急阪神ホールディングス",
-      "direction": "BUY",
-      "prev_close": 4456.0,
-      "limit_price": 4500
-    }
-  ]
+  "date": "2026-10-07",
+  "signals": []
 }

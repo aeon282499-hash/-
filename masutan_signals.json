@@ -1,52 +1,94 @@
 {
- "date": "2026-10-05",
- "latest_pubdate": "2026-10-05",
+ "date": "2026-10-06",
+ "latest_pubdate": "2026-10-06",
  "rows": [
   {
    "code": "4440",
    "start": "2026-09-16",
-   "last": "2026-10-05",
-   "cls": "003",
-   "cls_max": "003",
-   "count": 0,
-   "dev": 16.92,
-   "first_hit": null,
-   "tov5_oku": 7.37,
-   "close_raw": 2500.0,
-   "close_adj": 2500.0,
-   "status": "waiting"
-  },
-  {
-   "code": "6203",
-   "start": "2026-09-16",
-   "last": "2026-10-05",
+   "last": "2026-10-06",
    "cls": "003",
    "cls_max": "003",
    "count": 1,
-   "dev": 14.73,
+   "dev": 12.32,
    "first_hit": null,
-   "tov5_oku": 31.69,
-   "close_raw": 2455.0,
-   "close_adj": 2455.0,
+   "hits": [],
+   "hit_no": 0,
+   "tov5_oku": 7.04,
+   "close_raw": 2458.0,
+   "close_adj": 2458.0,
    "status": "watch",
    "note": "明日も±15%以内ならシグナル"
   },
   {
-   "code": "6862",
-   "start": "2026-08-17",
-   "last": "2026-10-05",
+   "code": "6203",
+   "start": "2026-09-16",
+   "last": "2026-10-06",
    "cls": "003",
    "cls_max": "003",
-   "count": 1,
-   "dev": 13.7,
+   "count": 0,
+   "dev": 15.02,
+   "first_hit": null,
+   "hits": [],
+   "hit_no": 0,
+   "tov5_oku": 32.38,
+   "close_raw": 2506.0,
+   "close_adj": 2506.0,
+   "status": "waiting"
+  },
+  {
+   "code": "6862",
+   "start": "2026-08-17",
+   "last": "2026-10-06",
+   "cls": "003",
+   "cls_max": "003",
+   "count": 2,
+   "dev": 14.84,
    "first_hit": "2026-09-15",
-   "tov5_oku": 10.16,
-   "close_raw": 5120.0,
-   "close_adj": 5120.0,
-   "status": "fired_before",
-   "note": "2026-09-15 にシグナル済み（エピソード内で1回だけ）"
+   "hits": [
+    "2026-09-15",
+    "2026-10-06"
+   ],
+   "hit_no": 2,
+   "tov5_oku": 9.19,
+   "close_raw": 5260.0,
+   "close_adj": 5260.0,
+   "status": "signal",
+   "note": "エピソード内2回目（前回 2026-09-15・一度±15%を外れてから再び2日連続）",
+   "entry_date": "2026-10-07",
+   "exit_date": "2026-10-09",
+   "shares": {
+    "300000": 0,
+    "500000": 0
+   }
   }
  ],
- "signals": [],
+ "signals": [
+  {
+   "code": "6862",
+   "start": "2026-08-17",
+   "last": "2026-10-06",
+   "cls": "003",
+   "cls_max": "003",
+   "count": 2,
+   "dev": 14.84,
+   "first_hit": "2026-09-15",
+   "hits": [
+    "2026-09-15",
+    "2026-10-06"
+   ],
+   "hit_no": 2,
+   "tov5_oku": 9.19,
+   "close_raw": 5260.0,
+   "close_adj": 5260.0,
+   "status": "signal",
+   "note": "エピソード内2回目（前回 2026-09-15・一度±15%を外れてから再び2日連続）",
+   "entry_date": "2026-10-07",
+   "exit_date": "2026-10-09",
+   "shares": {
+    "300000": 0,
+    "500000": 0
+   }
+  }
+ ],
  "events": []
 }
