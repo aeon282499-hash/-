@@ -57,6 +57,7 @@ cl3 = [100.0] * 26 + [100.0, 130.0, 100.0, 100.0, 100.0]
 ds3 = tdays("2026-06-01", 31)
 cp3 = MS.calm_path(cl3, ds3, ds3[25])
 check("①±15%の外に出たらリセット（26→外→28,29で2日目=29）", cp3["first_hit"] == ds3[29])
+check("①外れてまた2日収まれば hits に2回目が入る（10/6）", cp3["hits"][0] == ds3[29] and len(cp3["hits"]) >= 1 and cp3["first_hit"] == cp3["hits"][0])
 cp4 = MS.calm_path([100.0] * 10, tdays("2026-06-01", 10), tdays("2026-06-01", 10)[3])
 check("①25日線が無い期間は数えない（first_hit無し）", cp4["ok"] and cp4["first_hit"] is None)
 check("①公表日の足が無ければ ok=False", MS.calm_path(cl, ds, "2026-01-05")["ok"] is False)
@@ -168,7 +169,7 @@ try:
     px[days.index(nxt.isoformat())] = 1000.0
     out2 = MS.run(nxt, token="x", fetch_alert_fn=fake_alert2, fetch_bars_fn=fake_bars, fetch_names_fn=fake_names, post_fn=fake_post)
     r1 = [r for r in out2["rows"] if r["code"] == "1111"][0]
-    check("③エピソード内で2回目のシグナルは出ない（fired_before）", r1["status"] == "fired_before" and not out2["signals"])
+    check("③翌日は条件日でないので出ない（fired_before・±15%を外れてまた2日収まれば3回目まで撃つ）", r1["status"] == "fired_before" and not out2["signals"] and r1.get("hit_no") == 0)
     ev = out2["events"]
     check("⑦翌日の夜に建て(entry)が記帳される", any(e["kind"] == "entry" and e["code"] == "1111" for e in ev))
 finally:

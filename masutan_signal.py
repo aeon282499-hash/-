@@ -9,7 +9,7 @@
 ルール（2026-09-19 確定・_bt_masutan_exante_0918.py / 2026-09-26 立花で再現 _bt_masutan_synth26_0926.py）:
   1. 東証の増担保規制（/markets/margin-alert の PubReason.Restricted=1・区分003/004/005）がかかっている銘柄。
   2. 規制の公表日（エピソードの最初の公表日）の翌営業日から数えて、終値が25日移動平均の±15%以内に
-     2日続いた日（エピソード内で最初の1回だけ）を「シグナル日」とする。
+     2日続いた日を「シグナル日」とする（同じエピソードで MASUTAN_MAX_HITS 回目まで・10/6）。
   3. シグナル日の翌営業日の寄りで買い、シグナル日から3営業日後の大引けで売る（買った日を1日目として3日目の引け）。
   4. 5日平均売買代金3億円以上だけ。翌日の寄りがストップ高に張り付いたら買えない＝見送り。
   成績（10年・コスト0.3%後）: 代金≥3億 557件 +1.88%/回・勝率61%・PF1.61・2016〜2026の11年すべて0以上。
@@ -48,6 +48,7 @@ MASUTAN_CALM_DAYS = 2          # 2日連続で「シグナル日」（3日連続
 MASUTAN_EXIT_OFFSET = 3        # シグナル日から3営業日後の大引けで売る（保有1日+0.15/2日+0.90/3日+1.63%・9/19）
 MASUTAN_TOV_MIN_OKU = 3.0      # 5日平均売買代金（億円）。全件+1.40%/PF1.47 → 代金≥3億 +1.88%/PF1.61（9/26 立花再現）
 MASUTAN_EPISODE_GAP = 3        # 同じ銘柄の規制公表日の穴がこの公表日数以内なら同じエピソード（9/18 BT）
+MASUTAN_MAX_HITS = 3           # 同じエピソードで撃つ回数の上限（2026-10-06 本人「かえよか」。_bt_masutan_exante_nth_1006: 1回目+1.33%/58%/PF1.44・2回目+2.19%/61%/1.77・3回目+2.67%/61%/2.23・4回目以降0.00%/42%/1.00。旧: 1回だけ）
 MASUTAN_SIZES = (300_000, 500_000)   # 本人「1件30〜50万」＝配信では両方の株数を出す
 MASUTAN_COST_PCT = 0.3         # BTのコスト（往復）。帳簿は gross と net(-0.3%) を両方持つ
 MASUTAN_BARS_LOOKBACK_DAYS = 90      # 25日線に要る過去分＋余裕（暦日）
@@ -144,11 +145,11 @@ def trading_gap(a: str, b: str) -> int:
 # ── 判定の中身（監査・テストからも使う純粋関数）─────────────────────────────
 def calm_path(closes: list[float], dates: list[str], start: str) -> dict:
     """公表日 start の翌営業日から、終値が25日線±MASUTAN_BAND_PCT%以内の連続日数を数える。
-    戻り値: {"first_hit": 最初に連続MASUTAN_CALM_DAYS日になった日(or None), "count": 最終日の連続日数,
+    戻り値: {"first_hit": 最初に連続MASUTAN_CALM_DAYS日になった日(or None), "hits": 連続MASUTAN_CALM_DAYS日になった日の一覧(外れて数え直すたびに増える), "count": 最終日の連続日数,
              "dev": 最終日の25日線乖離%, "ok": startが価格データにあったか}
     9/18 BT と同じ: dev=NaN(25日に満たない)は「外」扱いで連続が切れる。"""
     n = len(closes)
-    out = {"first_hit": None, "count": 0, "dev": float("nan"), "ok": False}
+    out = {"first_hit": None, "hits": [], "count": 0, "dev": float("nan"), "ok": False}
     if start not in dates:
         return out
     i0 = dates.index(start)
@@ -165,8 +166,10 @@ def calm_path(closes: list[float], dates: list[str], start: str) -> dict:
     cnt = 0
     for i in range(i0 + 1, n):
         cnt = cnt + 1 if (not math.isnan(dev[i]) and abs(dev[i]) < MASUTAN_BAND_PCT) else 0
-        if cnt == MASUTAN_CALM_DAYS and out["first_hit"] is None:
-            out["first_hit"] = dates[i]
+        if cnt == MASUTAN_CALM_DAYS:
+            out["hits"].append(dates[i])
+            if out["first_hit"] is None:
+                out["first_hit"] = dates[i]
     out["count"] = cnt if n > i0 + 1 else 0
     out["dev"] = dev[-1] if n else float("nan")
     return out
@@ -388,17 +391,24 @@ def evaluate(state: dict, token: str, today: date, latest_pub: str, fetch_bars_f
         last5 = bars[-5:]
         tov5 = sum(b["C"] * b["Vo"] for b in last5) / len(last5) / 1e8
         row = {"code": code, **ep, "count": cp["count"], "dev": round(cp["dev"], 2) if not math.isnan(cp["dev"]) else None,
-               "first_hit": cp["first_hit"], "tov5_oku": round(tov5, 2), "close_raw": bars[-1]["C"], "close_adj": bars[-1]["AdjC"]}
+               "first_hit": cp["first_hit"], "hits": cp["hits"], "hit_no": (cp["hits"].index(today.isoformat()) + 1) if today.isoformat() in cp["hits"] else 0,
+               "tov5_oku": round(tov5, 2), "close_raw": bars[-1]["C"], "close_adj": bars[-1]["AdjC"]}
         if not cp["ok"]:
             row["status"] = "nostart"
             row["note"] = "公表日の足が無い（売買停止など）"
-        elif cp["first_hit"] == today.isoformat():
+        elif row["hit_no"] and row["hit_no"] <= MASUTAN_MAX_HITS:
+            # 今日が「±15%以内が2日連続」になった日。同じエピソードで MASUTAN_MAX_HITS 回目まで撃つ（10/6）
             row["status"] = "signal" if tov5 >= MASUTAN_TOV_MIN_OKU else "filtered"
             if row["status"] == "filtered":
                 row["note"] = f"5日平均代金{tov5:.1f}億 < {MASUTAN_TOV_MIN_OKU:.0f}億"
+            elif row["hit_no"] > 1:
+                row["note"] = f"エピソード内{row['hit_no']}回目（前回 {cp['hits'][row['hit_no'] - 2]}・一度±15%を外れてから再び2日連続）"
+        elif row["hit_no"] > MASUTAN_MAX_HITS:
+            row["status"] = "fired_before"
+            row["note"] = f"エピソード内{row['hit_no']}回目＝上限{MASUTAN_MAX_HITS}回を超えたので撃たない（4回目以降は10年で+0.0%/勝率42%）"
         elif cp["first_hit"]:
             row["status"] = "fired_before"
-            row["note"] = f"{cp['first_hit']} にシグナル済み（エピソード内で1回だけ）"
+            row["note"] = f"{cp['hits'][-1]} にシグナル済み（エピソード内{len(cp['hits'])}回目・±15%を外れてまた2日収まれば{MASUTAN_MAX_HITS}回目まで撃つ）"
         elif cp["count"] == MASUTAN_CALM_DAYS - 1:
             row["status"] = "watch"
             row["note"] = "明日も±15%以内ならシグナル"
@@ -434,7 +444,7 @@ def build_embed(today: date, rows: list, events: list, names: dict, n_reg: int, 
         cls = REG_CLASS_LABEL.get(r.get("cls", ""), f"区分{r.get('cls', '?')}")
         lines.append(
             f"**{nm.get('name', r['code'])}（{r['code']}）** {nm.get('mkt', '')}・{nm.get('mrgn', '')}｜{cls}（{date.fromisoformat(r['start']).month}/{date.fromisoformat(r['start']).day}公表〜）\n"
-            f"終値 {r['close_raw']:,.0f}円・25日線{r['dev']:+.1f}%・±15%以内が2日連続｜5日平均代金 {r['tov5_oku']:.1f}億\n"
+            f"終値 {r['close_raw']:,.0f}円・25日線{r['dev']:+.1f}%・±15%以内が2日連続{('（この規制期間で' + str(r['hit_no']) + '回目・前回は解除されず再加速した型＝10年で+2.4%/勝率63%）') if r.get('hit_no', 1) > 1 else ''}｜5日平均代金 {r['tov5_oku']:.1f}億\n"
             f"→ **{_md(ent)}の寄りで買い（成行）** → **{_md(ex)}の大引けで売り（引成）**＝買った日を1日目として3日目\n"
             f"株数: {_shares_text(r)}（100株単位・今日の終値基準）\n"
             f"⚠️寄りがストップ高に張り付いたら見送り｜損切り（任意）: 買値の-10%にザラ場逆指値（今日の終値基準で約{r['close_raw'] * 0.9:,.0f}円）")
