@@ -1729,6 +1729,16 @@
       "close": 1115.0,
       "pnl": 0.54,
       "win": true
+    },
+    {
+      "date": "2026-10-06",
+      "ticker": "9042.T",
+      "name": "阪急阪神ホールディングス",
+      "direction": "BUY",
+      "open": 4454.0,
+      "close": 4482.0,
+      "pnl": 0.63,
+      "win": true
     }
   ]
 }
