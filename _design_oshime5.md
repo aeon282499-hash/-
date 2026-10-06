@@ -17,7 +17,18 @@
 - Discord: `DISCORD_WEBHOOK_OSHIME5_URL`（Secrets 未登録なら送らない）。同じ日の2回目以降はスキップ。
 - 見送りルール（通知・画面に表示）: 9:30までに前日比+3%以上／朝の最初の15分足+1%以上／押し目の陰線の幅0.8%以上／12:30以降。
 
-## フェーズ2（設計のみ・コードはまだ書かない）: 場中の判定と紙トレード
+## フェーズ2（実装済み・未配備・2026-10-05）: `oshime5_live.py`
+- 入力: live_flow/minutes の毎分断面 → BarBuilder(5)で5分足。25MAは前の営業日の断面から続ける（無い日は Yahoo 5分足で補う）。
+- 見送り: 9:30までの高値+3%以上／最初の15分足+1%以上（立花の正式な寄り値で判定）／2,000〜10,000円の外。
+- ライン: 足が確定するたびに条件を見て、次の足（9:30〜11:25開始）のあいだだけ「陰線高値+1ティック」。崩れたら消す。1銘柄1日1回。
+- 出口（紙）: −3%／+1.5%（参考+3%）／14:45。停止: 2連敗・1日3回・−4万円。
+- 出力: live_flow/oshime5_live.json → tachibana_live_flow.py が payload["oshime5"] に同梱（候補10本は payload.stocks にも必ず載せる）→ v6.3.0 ✂️タブにライン・約定・決済・停止を表示。
+  oshime5_log.csv（fibo_oct_log と同じ列）。Discord は DISCORD_WEBHOOK_OSHIME5_URL（.env・未設定なら無言）。
+- 再生確認（10/2・木曜引けの10本）: コスモ 9:43 約定4,220→14:45 −6,000円／INPEX 9:50 約定3,704→14:45 −300円／ネクソン・中部電力は朝の大陽線で見送り → 2連敗で終了。
+  Yahoo 5分足のBT（コスモ9:40・4,219／INPEX9:40・3,692）とは毎分断面の取りこぼしで数分・数円ずれる。
+- 配備に必要なこと（本人の確認後）: main へ push・PCの Windows タスク `Oshime5Live` 登録（_register_oshime5_task.ps1）・LiveFlow の再起動（tachibana_live_flow.py の変更を読むため）。
+
+## 旧フェーズ2の設計メモ（参考）
 
 ### 入力と足
 - 入力: `live_flow/minutes/YYYY-MM-DD.jsonl`（`tachibana_live_flow.py` の毎分断面・約2,000銘柄）。`fibo_live.py` / `fibo_oct.py` と同じ。

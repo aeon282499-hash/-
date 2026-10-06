@@ -45,6 +45,15 @@ const o5live = JSON.parse(JSON.stringify(demo)); o5live.stocks = { [o5.rows[0].c
 bad += run("demo 9/30 9:40", demo, H, o5);
 bad += run("上ヒゲ＋ライブの現在値", o5live, ["#/oshime5"], o5);
 bad += run("上ヒゲ 該当なし", demo, ["#/oshime5"], Object.assign({}, o5, { rows: [] }));
+// 場中ライン（oshime5_live.py の出力・O5L_JSON=パス で実データ・無ければ見本）
+const o5lp = process.env.O5L_JSON;
+const o5l = o5lp && fs.existsSync(o5lp) ? JSON.parse(fs.readFileSync(o5lp, "utf8"))
+  : { ts: "2026-10-02 10:00:00", date: "2026-10-02", paper: { trades: 1, wins: 0, losses: 0, pnl_yen: 0, stopped: false, stop_reason: "" }, rules: { stop: "2連敗" },
+      rows: [{ code: o5.rows[0].code, status: "ライン点灯", line: 100, line_bar: "09:50", tp: 101.5, sl: 97, shares: 600 }] };
+const withLine = JSON.parse(JSON.stringify(demo)); withLine.oshime5 = o5l; withLine.oshime5.date = new Date().toISOString().slice(0, 10);
+bad += run("上ヒゲ＋場中ライン", withLine, ["#/oshime5"], o5);
+const o5stop = JSON.parse(JSON.stringify(withLine)); o5stop.oshime5.paper = { trades: 2, wins: 0, losses: 2, pnl_yen: -12000, stopped: true, stop_reason: "2連敗で本日終了" };
+bad += run("上ヒゲ 2連敗で終了", o5stop, ["#/oshime5"], o5);
 bad += run("上ヒゲ 高い株価（0株）", demo, ["#/oshime5"], Object.assign({}, o5, { rows: [Object.assign({}, o5.rows[0], { close: 9800, atr_pct: null })] }));
 for (const [p, j] of extra) bad += run(p.split(/[\/]/).pop(), j, H);
 bad += run("データなし（hub 未接続）", "ERR", H, null);
