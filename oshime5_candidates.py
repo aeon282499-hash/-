@@ -85,6 +85,11 @@ def build(sig_date: date) -> dict:
         raise RuntimeError(f"TOPIX500の銘柄が取れない（{len(t500)}銘柄）")
     data = batch_download_jquants(token, start=(sig_date - timedelta(days=45)).strftime("%Y-%m-%d"),
                                   end=sig_date.strftime("%Y-%m-%d"))
+    try:                                                   # 10/8 本人「時価総額の列足して」: J-Quants /equities/valuation の直近断面（億円）。取れなければ空
+        from daytrade_paper import fetch_mcap_map
+        mcap = fetch_mcap_map(token, sig_date)
+    except Exception as e:
+        print(f"[oshime5] 時価総額の取得失敗: {e}"); mcap = {}
     rows, latest_seen, n_price, n_bigup = [], None, 0, 0
     for tk, df in data.items():
         if df is None or len(df) < 21:
@@ -117,7 +122,7 @@ def build(sig_date: date) -> dict:
         atr = float(tr.iloc[-14:].mean()) / close * 100      # 表示用（選び方には使わない＝ATRで選ぶと悪化した）
         rows.append({"code": code, "name": name, "close": close, "r5": round(r5, 2), "oc1": round(oc1, 2),
                      "tov20": round(tov20), "tov20_oku": round(tov20 / 1e8, 1), "tick": tick500(close) if code in t500 else tick_general(close),
-                     "topix500": code in t500, "atr_pct": round(atr, 2) if atr == atr else None})
+                     "topix500": code in t500, "mcap_oku": mcap.get(code), "atr_pct": round(atr, 2) if atr == atr else None})
     if latest_seen != sig_date:
         raise RuntimeError(f"{sig_date} の当日足がありません（J-Quants最新={latest_seen}）")
     rows.sort(key=lambda r: r["r5"])                    # 5日騰落の大きい（深い）順
@@ -135,7 +140,8 @@ def fmt_discord(w: dict) -> str:
     lines = [f"✂️ **明日の押し目候補 {len(w['rows'])}銘柄**（{w['target_date']} 分・{w['date']} 引けデータ）",
              f"条件: {w['rule']}", f"5日騰落の大きい順に上位{min(DISCORD_TOP, len(w['rows']))}（全部はアプリの✂️上ヒゲタブ）:"]
     for i, r in enumerate(w["rows"][:DISCORD_TOP], 1):
-        lines.append(f"{i:2d}. **{r['name']}**({r['code']}) ¥{r['close']:,.1f} 5日{r['r5']:+.1f}% 値幅ATR{r['atr_pct']:.1f}% 20日平均代金{r['tov20_oku']:.0f}億 呼値{r['tick']:g}円")
+        mc = f"時価総額{r['mcap_oku']:,}億 " if r.get("mcap_oku") else ""
+        lines.append(f"{i:2d}. **{r['name']}**({r['code']}) ¥{r['close']:,.1f} 5日{r['r5']:+.1f}% {mc}20日代金{r['tov20_oku']:.0f}億 値幅ATR{r['atr_pct']:.1f}% 呼値{r['tick']:g}円")
     if not w["rows"]:
         lines.append("該当なし")
     lines.append(f"📏 入る: {w['entry']}")

@@ -256,7 +256,7 @@ function o5Card(r, i) {
     <div class="cd-top"><span class="badge ${st ? st[2] : "wait"}">${st ? st[1] : i + 1}</span><span class="nm">${esc(r.name)}</span><span class="code">${esc(r.code)}</span></div>
     ${o5Live(lr)}
     <div class="px3 num"><div><small>前日終値</small><b>${yen(r.close)}</b></div><div><small>5日騰落</small><b class="${cls(r.r5)}">${pct1(r.r5)}</b></div><div><small>値幅ATR</small><b>${r.atr_pct != null ? Number(r.atr_pct).toFixed(1) + "%" : "—"}</b></div></div>
-    <div class="cd-line num">20日平均代金 <b>${r.tov20_oku != null ? Math.round(r.tov20_oku) : "—"}億</b> ・ 呼値 <b>${r.tick != null ? r.tick : "—"}円</b> ・ 株数の目安 <b>${sh > 0 ? yen(sh) + "株" : "100株でも損失2万円超"}</b></div>
+    <div class="cd-line num">時価総額 <b>${r.mcap_oku != null ? yen(r.mcap_oku) : "—"}億</b> ・ 20日平均代金 <b>${r.tov20_oku != null ? Math.round(r.tov20_oku) : "—"}億</b> ・ 呼値 <b>${r.tick != null ? r.tick : "—"}円</b> ・ 株数の目安 <b>${sh > 0 ? yen(sh) + "株" : "100株でも損失2万円超"}</b></div>
     ${now}</div>`;
 }
 function o5PaperBar() {
@@ -265,20 +265,31 @@ function o5PaperBar() {
   return `<div class="banner ${p.stopped ? "stop" : "ok"}" style="font-size:15px"><b>${p.stopped ? "⛔ " + esc(p.stop_reason) : "▶ 場中ライン稼働中"}</b>
     <br>紙トレード ${p.trades || 0}回（${p.wins || 0}勝${p.losses || 0}敗） <b class="${cls(p.pnl_yen)}">${sYen(p.pnl_yen)}</b> ・ ${esc(String(o.ts || "").slice(11, 16))}更新 ・ ${esc((o.rules || {}).stop || "")}</div>`;
 }
-function o5Order(rows) {   // 場中は 約定中→ライン点灯→その他 の順
+let O5SORT = "r5";          // 並べ替え: r5=5日騰落の深い順 / mcap=時価総額の大きい順 / tov=20日代金の多い順（10/8 本人「時価総額の列足して」）
+function o5Sorted(rows) {
+  const v = r => O5SORT === "mcap" ? -(r.mcap_oku || 0) : O5SORT === "tov" ? -(r.tov20_oku || 0) : (r.r5 != null ? r.r5 : 0);
+  return rows.slice().sort((a, b) => v(a) - v(b));
+}
+function o5Order(rows) {   // 場中は 約定中→ライン点灯→その他 の順。その中は O5SORT の順
+  rows = o5Sorted(rows);
   const o = O5L(); if (!o) return rows.map((r, i) => [r, i]);
   const pri = { "約定中": 0, "ライン点灯": 1 };
   const stOf5 = r => { const x = (o.rows || []).find(y => y.code === r.code); return x ? (pri[x.status] != null ? pri[x.status] : 2) : 2; };
   return rows.map((r, i) => [r, i]).sort((a, b) => stOf5(a[0]) - stOf5(b[0]) || a[1] - b[1]);
 }
+function o5SortBar() {
+  const b = (k, lab) => `<button class="tab ${O5SORT === k ? "on" : ""}" onclick="O5SORT='${k}';render()">${lab}</button>`;
+  return `<div class="tabs" style="margin:6px 0">${b("r5", "5日騰落の深い順")}${b("mcap", "時価総額の大きい順")}${b("tov", "代金の多い順")}</div>`;
+}
 function viewOshime5() {
   if (!O5 || !(O5.rows || []).length) return `<h1>✂️ 上ヒゲ刈り取り候補</h1><div class="empty">${esc(O5 ? "該当なし（条件に合う銘柄がありませんでした）" : (O5_ERR || "読み込み中…"))}</div>`;
   const old = String(O5.target_date || "") < todayStr() && !CFG.DEMO;
-  return `<h1>✂️ 上ヒゲ刈り取り候補<small>${esc(String(O5.target_date || "").slice(5))} 分 ・ ${esc(String(O5.date || "").slice(5))} 引けで選んだ10本</small></h1>
+  return `<h1>✂️ 上ヒゲ刈り取り候補<small>${esc(String(O5.target_date || "").slice(5))} 分 ・ ${esc(String(O5.date || "").slice(5))} 引けで選んだ${(O5.rows || []).length}本</small></h1>
     ${old ? `<div class="banner warn">これは ${esc(O5.target_date || "")} 分の候補です（次の分は夜19時ごろ）。</div>` : ""}
     <div class="note" style="margin-bottom:10px"><b>入る</b>: ${esc(O5.entry || "")}<br><b>出る</b>: ${esc(O5.exit || "")}</div>
     <div class="banner warn" style="font-size:15px">⛔ ${(O5.skip_rules || []).map(esc).join("<br>⛔ ")}</div>
     ${o5PaperBar()}
+    ${o5SortBar()}
     ${o5Order(O5.rows || []).map(([r, i]) => o5Card(r, i)).join("")}
     <div class="note">選び方: ${esc(O5.rule || "")}（該当${O5.matched != null ? O5.matched : "—"}銘柄）。<br>検証: ${esc(O5.backtest || "")}<br><b>発注はしません（候補の提示だけ）</b>。${esc(O5.note || "")}</div>`;
 }
