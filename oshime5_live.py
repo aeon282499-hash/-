@@ -12,7 +12,7 @@ oshime5_live.py — ✂️上ヒゲ刈り取りの場中ライン（フェーズ
            次の足が始まるのが 9:30〜11:25 のときだけ（12:30以降は出さない）。条件が崩れたらラインは消す。1銘柄1日1回
   出口     損切り −3%・利確 +1.5%（参考に +3% も記録）・14:45 に手じまい
   停止     紙の実現損 −4万円・2連敗・1日8回 のどれかで、その日は新しいラインを出さない（含み損は入れない・10/6 本人指示書）
-  記録     oshime5_log.csv（滑り0.1%の列を末尾に追加）＋ oshime5_random_log.csv（同じ候補を9:30〜11:29のランダムな1分に買った紙・ルールとの差を見る）
+  記録     oshime5_log.csv（滑り0.1%の列を末尾に追加）＋ oshime5_random_log.csv（同じ候補を9:30〜11:29/12:30〜12:59のランダムな1分に買った紙・ルールとの差を見る）
   候補     oshime5_candidates.json（target_date＝今日）が無ければ oshime5_watch.txt（4桁コードを1行ずつ）
   株数     2万円 ÷（建値×3%）を100株単位で切り捨て
 
@@ -53,7 +53,10 @@ WEBHOOK_ENV = "DISCORD_WEBHOOK_OSHIME5_URL"
 BAR_MIN = 5
 MA_N = 25
 WIDTH_MAX = 0.8          # 陰線の幅（%）
-FIRST_START, LAST_START = "09:30", "11:25"   # ラインを出す足（次の足）の開始時刻
+FIRST_START, LAST_START = "09:30", "11:25"   # ラインを出す足（次の足）の開始時刻（前場）
+PM_START, PM_LAST = "12:30", "12:55"          # 後場も12:30〜12:59は入る（10/7 本人「午後も入れるはず」→60日: 12:30〜12:59 +0.10%/PF1.43/損切り0.2%・13:00〜14:00は+0.04%で入らない）
+def in_entry_window(t: str) -> bool:
+    return FIRST_START <= t <= LAST_START or PM_START <= t <= PM_LAST
 FLAT_AT = "14:45"
 GAP_MAX = 3.0            # 9:30までの高値が前日比これ以上なら見送り
 FIRST15_MAX = 1.0        # 最初の15分足（始値比）
@@ -62,7 +65,7 @@ SL_PCT, TP_PCT, TP2_PCT = 3.0, 1.5, 3.0
 RISK_YEN = 20_000
 STOP_CONSEC, STOP_TRADES, STOP_YEN = 2, 8, -40_000   # 10/6 本人指示書: −4万円／2連敗／8回（実現損だけで判定・含み損は入れない）
 SLIP_PCT = 0.1           # 紙の約定に乗せる滑り（別列で記録・生の値も残す）
-RANDOM_LOG_CSV = ROOT / "oshime5_random_log.csv"   # 同じ候補を 9:30〜11:29 のランダムな1分に買った紙（ルールとの差を見る）
+RANDOM_LOG_CSV = ROOT / "oshime5_random_log.csv"   # 同じ候補を 9:30〜11:29 / 12:30〜12:59 のランダムな1分に買った紙（ルールとの差を見る）
 WATCH_TXT = ROOT / "oshime5_watch.txt"             # 候補JSONが無い日の手書きリスト（コードを1行ずつ）
 LIVE_POLL_SEC = 20
 LIVE_END = "15:05"
@@ -201,11 +204,13 @@ class Engine:
             self.skip = self._day_skip()
             if self.skip:
                 self.status = "見送り"; ev.append({"kind": "skip", "t": ts, "code": self.code, "why": self.skip}); return ev
-        if not (FIRST_START <= nxt <= LAST_START):
-            if nxt > LAST_START and self.status in ("待機",):
-                self.status = "終了（11:30以降は入らない）"
+        if not in_entry_window(nxt):
+            if nxt > PM_LAST and self.status in ("待機",):
+                self.status = "終了（13:00以降は入らない）"
                 if expired:
-                    ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "11:30で取消"})
+                    ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "13:00で取消"})
+            elif LAST_START < nxt < PM_START and expired:
+                ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "11:30で取消（12:30から見直す）"})
             return ev
         r = risk.reason()
         if r:
@@ -288,7 +293,8 @@ class RandomEngine:
     def __init__(self, day: str, code: str, name: str, rank: int):
         import random
         self.code, self.name, self.rank = code, name, rank
-        m = 30 + random.Random(f"{day}-{code}").randrange(0, 120)      # 9:30〜11:29 の分
+        k = random.Random(f"{day}-{code}").randrange(0, 150)           # 9:30〜11:29(120分) + 12:30〜12:59(30分) の中の1分
+        m = (30 + k) if k < 120 else (12 * 60 + 30 + (k - 120)) - 9 * 60
         self.buy_at = f"{9 + m // 60:02d}:{m % 60:02d}"
         self.trade = None; self.last = None; self.skip = ""; self.day_open = None; self.prev_close = None
 
@@ -303,7 +309,7 @@ class RandomEngine:
         if self.trade is None:
             if main.skip:
                 self.skip = main.skip; return
-            if self.buy_at <= t <= "11:29" and main.prev_close:
+            if self.buy_at <= t and (t <= "11:29" or "12:30" <= t <= "12:59") and main.prev_close:
                 entry = rnd(last); sh = shares_for(entry)
                 self.trade = {"fill_time": t, "entry": entry, "entry_slip": rnd(entry * (1 + SLIP_PCT / 100)), "shares": sh,
                               "sl": rtick(entry * (1 - SL_PCT / 100)), "lo": last, "hi": last, "src_low": "", "src_high": "", "armed_at": self.buy_at,
@@ -492,7 +498,7 @@ class Session:
                 "rows": rows, "paper": {"trades": self.risk.n, "wins": self.risk.wins, "losses": self.risk.losses,
                                         "pnl_yen": round(self.risk.pnl), "stopped": rs is not None, "stop_reason": rs or ""},
                 "random": self.random_summary(),
-                "rules": {"width_max": WIDTH_MAX, "tp": TP_PCT, "sl": SL_PCT, "last_start": LAST_START,
+                "rules": {"width_max": WIDTH_MAX, "tp": TP_PCT, "sl": SL_PCT, "last_start": LAST_START, "pm": f"{PM_START}〜{PM_LAST}",
                           "stop": f"{STOP_CONSEC}連敗・1日{STOP_TRADES}回・{STOP_YEN:,}円で終了"},
                 "note": "ラインは次の5分足のあいだだけ有効（足が変わったら置き直し/取り消し）。発注はしません。"}
 
