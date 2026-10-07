@@ -1,4 +1,31 @@
 {
-  "date": "2026-10-07",
-  "signals": []
+  "date": "2026-10-08",
+  "signals": [
+    {
+      "ticker": "4676.T",
+      "name": "フジ・メディア・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 3868.0,
+      "limit_price": 3905,
+      "days_cover": 0.3817704631137053,
+      "rsi": 38.19,
+      "deviation": -4.54,
+      "vol_ratio": 1.72,
+      "range_ratio": 1.64,
+      "turnover": 3988606200.0
+    },
+    {
+      "ticker": "2782.T",
+      "name": "セリア",
+      "direction": "BUY",
+      "prev_close": 4275.0,
+      "limit_price": 4315,
+      "days_cover": 0.1575858256873853,
+      "rsi": 36.36,
+      "deviation": -7.2,
+      "vol_ratio": 2.38,
+      "range_ratio": 1.87,
+      "turnover": 3590643000.0
+    }
+  ]
 }

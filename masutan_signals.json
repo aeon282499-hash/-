@@ -1,94 +1,115 @@
 {
- "date": "2026-10-06",
- "latest_pubdate": "2026-10-06",
+ "date": "2026-10-07",
+ "latest_pubdate": "2026-10-07",
  "rows": [
   {
    "code": "4440",
    "start": "2026-09-16",
-   "last": "2026-10-06",
+   "last": "2026-10-07",
    "cls": "003",
    "cls_max": "003",
-   "count": 1,
-   "dev": 12.32,
-   "first_hit": null,
-   "hits": [],
-   "hit_no": 0,
-   "tov5_oku": 7.04,
-   "close_raw": 2458.0,
-   "close_adj": 2458.0,
-   "status": "watch",
-   "note": "明日も±15%以内ならシグナル"
+   "count": 2,
+   "dev": 9.24,
+   "first_hit": "2026-10-07",
+   "hits": [
+    "2026-10-07"
+   ],
+   "hit_no": 1,
+   "tov5_oku": 4.35,
+   "close_raw": 2432.0,
+   "close_adj": 2432.0,
+   "status": "signal",
+   "entry_date": "2026-10-08",
+   "exit_date": "2026-10-13",
+   "shares": {
+    "300000": 100,
+    "500000": 200
+   }
   },
   {
    "code": "6203",
    "start": "2026-09-16",
-   "last": "2026-10-06",
+   "last": "2026-10-07",
    "cls": "003",
    "cls_max": "003",
-   "count": 0,
-   "dev": 15.02,
+   "count": 1,
+   "dev": 5.1,
    "first_hit": null,
    "hits": [],
    "hit_no": 0,
-   "tov5_oku": 32.38,
-   "close_raw": 2506.0,
-   "close_adj": 2506.0,
-   "status": "waiting"
+   "tov5_oku": 32.76,
+   "close_raw": 2322.0,
+   "close_adj": 2322.0,
+   "status": "watch",
+   "note": "明日も±15%以内ならシグナル"
   },
   {
    "code": "6862",
    "start": "2026-08-17",
-   "last": "2026-10-06",
+   "last": "2026-10-07",
    "cls": "003",
    "cls_max": "003",
-   "count": 2,
-   "dev": 14.84,
+   "count": 3,
+   "dev": 12.5,
    "first_hit": "2026-09-15",
    "hits": [
     "2026-09-15",
     "2026-10-06"
    ],
-   "hit_no": 2,
-   "tov5_oku": 9.19,
-   "close_raw": 5260.0,
-   "close_adj": 5260.0,
-   "status": "signal",
-   "note": "エピソード内2回目（前回 2026-09-15・一度±15%を外れてから再び2日連続）",
-   "entry_date": "2026-10-07",
-   "exit_date": "2026-10-09",
-   "shares": {
-    "300000": 0,
-    "500000": 0
-   }
+   "hit_no": 0,
+   "tov5_oku": 9.03,
+   "close_raw": 5240.0,
+   "close_adj": 5240.0,
+   "status": "fired_before",
+   "note": "2026-10-06 にシグナル済み（エピソード内2回目・±15%を外れてまた2日収まれば3回目まで撃つ）"
   }
  ],
  "signals": [
   {
-   "code": "6862",
-   "start": "2026-08-17",
-   "last": "2026-10-06",
+   "code": "4440",
+   "start": "2026-09-16",
+   "last": "2026-10-07",
    "cls": "003",
    "cls_max": "003",
    "count": 2,
-   "dev": 14.84,
-   "first_hit": "2026-09-15",
+   "dev": 9.24,
+   "first_hit": "2026-10-07",
    "hits": [
-    "2026-09-15",
-    "2026-10-06"
+    "2026-10-07"
    ],
-   "hit_no": 2,
-   "tov5_oku": 9.19,
-   "close_raw": 5260.0,
-   "close_adj": 5260.0,
+   "hit_no": 1,
+   "tov5_oku": 4.35,
+   "close_raw": 2432.0,
+   "close_adj": 2432.0,
    "status": "signal",
-   "note": "エピソード内2回目（前回 2026-09-15・一度±15%を外れてから再び2日連続）",
-   "entry_date": "2026-10-07",
-   "exit_date": "2026-10-09",
+   "entry_date": "2026-10-08",
+   "exit_date": "2026-10-13",
    "shares": {
-    "300000": 0,
-    "500000": 0
+    "300000": 100,
+    "500000": 200
    }
   }
  ],
- "events": []
+ "events": [
+  {
+   "kind": "entry",
+   "code": "6862",
+   "signal_date": "2026-10-06",
+   "entry_date": "2026-10-07",
+   "exit_date": "2026-10-09",
+   "start": "2026-08-17",
+   "cls": "003",
+   "dev_sig": 14.84,
+   "tov5_oku": 9.19,
+   "close_sig_raw": 5260.0,
+   "shares": {
+    "300000": 0,
+    "500000": 0
+   },
+   "status": "open",
+   "name": "ミナトホールディングス",
+   "entry_adj": 5240.0,
+   "entry_raw": 5240.0
+  }
+ ]
 }

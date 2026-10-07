@@ -1,4 +1,19 @@
 {
-  "date": "2026-10-07",
-  "signals": []
+  "date": "2026-10-08",
+  "signals": [
+    {
+      "ticker": "4676.T",
+      "name": "フジ・メディア・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 3868.0,
+      "limit_price": 3905
+    },
+    {
+      "ticker": "2782.T",
+      "name": "セリア",
+      "direction": "BUY",
+      "prev_close": 4275.0,
+      "limit_price": 4315
+    }
+  ]
 }
