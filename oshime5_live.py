@@ -6,7 +6,7 @@ oshime5_live.py — ✂️上ヒゲ刈り取りの場中ライン（フェーズ
   live_flow/minutes/YYYY-MM-DD.jsonl から5分足にして判定する（fibo_live.py と同じ入力・同じ BarBuilder）。
 
 ルール（trade_bt RULE_15m.md・RESULTS_1004〜1005a）
-  見送り   9:00〜9:30の高値が前日終値+3%以上／最初の15分足（9:00〜9:15）が始値比+1%以上／株価2,000〜10,000円の外
+  見送り   9:00〜9:30の高値が前日終値+3%以上／最初の15分足（9:00〜9:15）が始値比+1%以上／株価1,000〜10,000円の外
   ライン   5分足が1本確定するたびに: 25MA上向き（確定済みの足の MA[j] > MA[j-1]）・その足が陰線・安値＞25MA・
            幅（高値÷安値−1）0.8%以下 → 次の5分足のあいだだけ「陰線の高値＋1ティック」に買いの逆指値（TOPIX500の呼値）
            次の足が始まるのが 9:30〜11:25 のときだけ（12:30以降は出さない）。条件が崩れたらラインは消す。1銘柄1日1回
@@ -55,16 +55,18 @@ MA_N = 25
 WIDTH_MAX = 0.8          # 陰線の幅（%）
 DEPTH_MIN, LOOKBACK = 0.8, 12   # 押しの深さ 1−(陰線の高値÷直近12本の高値) が0.8%以上（10/8・全上場60日: 深さなし+0.08% → あり+0.42%/PF2.37、滑り0.1%で+0.26%）
 FIRST_START, LAST_START = "09:30", "11:25"   # ラインを出す足（次の足）の開始時刻（前場）
-PM_START, PM_LAST = "12:30", "12:55"          # 後場も12:30〜12:59は入る（10/7 本人「午後も入れるはず」→60日: 12:30〜12:59 +0.10%/PF1.43/損切り0.2%・13:00〜14:00は+0.04%で入らない）
+MAX_TRADES_DAY = 3                           # 10/8 指示書: 1日最大3銘柄（先に約定した順）
+POS_YEN = 1_500_000                          # 10/8 指示書: 株数 = 150万円 ÷ 逆指値（100株単位で切り捨て）
+PM_START, PM_LAST = "12:30", "13:55"          # 10/8 指示書: 判定時間 9:30〜14:00          # 後場も12:30〜12:59は入る（10/7 本人「午後も入れるはず」→60日: 12:30〜12:59 +0.10%/PF1.43/損切り0.2%・13:00〜14:00は+0.04%で入らない）
 def in_entry_window(t: str) -> bool:
     return FIRST_START <= t <= LAST_START or PM_START <= t <= PM_LAST
 FLAT_AT = "14:45"
 GAP_MAX = 3.0            # 9:30までの高値が前日比これ以上なら見送り
 FIRST15_MAX = 1.0        # 最初の15分足（始値比）
-PX_LO, PX_HI = 2_000, 10_000
+PX_LO, PX_HI = 1_000, 10_000    # 10/8: 候補の株価帯（1,000〜10,000円）に合わせた
 SL_PCT, TP_PCT, TP2_PCT = 3.0, 1.5, 3.0
 RISK_YEN = 20_000
-STOP_CONSEC, STOP_TRADES, STOP_YEN = 2, 8, -40_000   # 10/6 本人指示書: −4万円／2連敗／8回（実現損だけで判定・含み損は入れない）
+STOP_STOPS, STOP_YEN = 2, -90_000            # 10/8 指示書: 損切り2回、またはその日の紙の損益が −9万円で、新しい準備を出さない   # 10/6 本人指示書: −4万円／2連敗／8回（実現損だけで判定・含み損は入れない）
 SLIP_PCT = 0.1           # 紙の約定に乗せる滑り（別列で記録・生の値も残す）
 RANDOM_LOG_CSV = ROOT / "oshime5_random_log.csv"   # 同じ候補を 9:30〜11:29 / 12:30〜12:59 のランダムな1分に買った紙（ルールとの差を見る）
 WATCH_TXT = ROOT / "oshime5_watch.txt"             # 候補JSONが無い日の手書きリスト（コードを1行ずつ）
@@ -72,7 +74,7 @@ LIVE_POLL_SEC = 20
 LIVE_END = "15:05"
 LOG_FIELDS = ["date", "code", "name", "armed_at", "origin", "high", "entry", "stop", "stop_kind", "shares", "max_loss", "gap_pct", "priority",
               "overlap", "fill_time", "exit1_type", "exit1_time", "exit1_price", "pnl1_yen", "exit2_type", "exit2_time", "exit2_price", "pnl2_yen", "skip_reason",
-              "entry_slip", "pnl1_slip_yen", "pnl2_slip_yen"]   # fibo_oct_log.csv と同じ列＋滑り0.1%を乗せた列（末尾）
+              "entry_slip", "pnl1_slip_yen", "pnl2_slip_yen", "depth_pct", "min_to_fill"]   # fibo_oct_log.csv と同じ列＋滑り0.1%・押しの深さ・約定までの分（末尾）
 
 
 def tick500(px: float) -> float:
@@ -93,29 +95,31 @@ def rtick(v: float) -> float:
 
 
 def shares_for(entry: float) -> int:
-    """2万円 ÷（建値×3%）を100株単位で切り捨て。0株なら100株（6,667円超の銘柄・損失は最大約3万円）"""
-    return max(100, int(RISK_YEN / (entry * SL_PCT / 100)) // 100 * 100) if entry > 0 else 0
+    """150万円 ÷ 逆指値 を100株単位で切り捨て（10/8 指示書）。1,000〜10,000円なら100〜1,500株"""
+    return int(POS_YEN / entry) // 100 * 100 if entry > 0 else 0
 
 
 class Risk:
     def __init__(self):
-        self.n = 0; self.consec = 0; self.pnl = 0.0; self.wins = 0; self.losses = 0
+        self.n = 0; self.stops = 0; self.pnl = 0.0; self.wins = 0; self.losses = 0
 
     def reason(self) -> str | None:
-        if self.consec >= STOP_CONSEC:
-            return f"{self.consec}連敗で本日終了"
-        if self.n >= STOP_TRADES:
-            return f"{self.n}回で本日終了"
+        if self.stops >= STOP_STOPS:
+            return f"損切り{self.stops}回で本日終了"
         if self.pnl <= STOP_YEN:
-            return f"紙の損益{self.pnl:+,.0f}円で本日終了"
+            return f"紙の損益{self.pnl:+,.0f}円（−9万円）で本日終了"
+        if self.n >= MAX_TRADES_DAY:
+            return f"本日{self.n}銘柄約定（上限{MAX_TRADES_DAY}）"
         return None
 
-    def close(self, pnl: float):
+    def close(self, pnl: float, kind: str = ""):
         self.pnl += pnl
+        if kind == "損切り":
+            self.stops += 1
         if pnl < 0:
-            self.consec += 1; self.losses += 1
-        else:
-            self.consec = 0; self.wins += pnl > 0
+            self.losses += 1
+        elif pnl > 0:
+            self.wins += 1
 
 
 class Engine:
@@ -131,7 +135,7 @@ class Engine:
         self.prev_close = None; self.day_open = None
         self.pre_high = None; self.first15_close = None
         self.status = "待機"; self.skip = ""
-        self.line = None; self.line_bar = None; self.armed_at = None; self.src = None   # src=(陰線の安値, 高値)
+        self.line = None; self.line_bar = None; self.armed_at = None; self.src = None; self.depth = None   # src=(陰線の安値, 高値)
         self.trade = None
         self.last = None; self.n_lines = 0; self.notified = set()
 
@@ -182,7 +186,7 @@ class Engine:
         if not pc or not o:
             return ""
         if not (PX_LO <= pc <= PX_HI):
-            return f"株価{pc:,.0f}円（2,000〜10,000円の外）"
+            return f"株価{pc:,.0f}円（{PX_LO:,}〜{PX_HI:,}円の外）"
         if self.pre_high and (self.pre_high / pc - 1) * 100 >= GAP_MAX:
             return f"9:30までに前日比+{(self.pre_high / pc - 1) * 100:.1f}%（+3%以上は見送り）"
         if self.first15_close and (self.first15_close / o - 1) * 100 >= FIRST15_MAX:
@@ -209,9 +213,9 @@ class Engine:
                 self.status = "見送り"; ev.append({"kind": "skip", "t": ts, "code": self.code, "why": self.skip}); return ev
         if not in_entry_window(nxt):
             if nxt > PM_LAST and self.status in ("待機",):
-                self.status = "終了（13:00以降は入らない）"
+                self.status = "終了（14:00以降は入らない）"
                 if expired:
-                    ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "13:00で取消"})
+                    ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "14:00で取消（これ以降は入らない）"})
             elif LAST_START < nxt < PM_START and expired:
                 ev.append({"kind": "cancel", "t": ts, "code": self.code, "why": "11:30で取消（12:30から見直す）"})
             return ev
@@ -228,7 +232,7 @@ class Engine:
                (f"陰線の幅{width:.2f}%が0.8%超" if width > WIDTH_MAX else (f"押しが浅い（直近12本高値から{depth:.2f}%）" if depth < DEPTH_MIN else "")))))
         if m1 > m0 and b.c < b.o and b.l > m1 and width <= WIDTH_MAX and depth >= DEPTH_MIN:
             tk_ = self.tick or tick500(b.h)
-            self.line = rnd(b.h + tk_); self.line_bar = nxt; self.armed_at = bt; self.src = (b.l, b.h)
+            self.line = rnd(b.h + tk_); self.line_bar = nxt; self.armed_at = bt; self.src = (b.l, b.h); self.depth = round(depth, 2)
             self.status = "ライン点灯"; self.n_lines += 1
             ev.append({"kind": "rearm" if expired else "armed", "t": ts, "code": self.code, "line": self.line, "bar": nxt, "width": round(width, 2), "ma": rnd(m1), "depth": round(depth, 2)})
         else:
@@ -245,7 +249,10 @@ class Engine:
             if cur["h"] >= self.line:                         # 逆指値が刺さった（寄りが上なら始値）
                 entry = rnd(max(cur["o"], self.line))
                 sh = shares_for(entry)
+                a_h, a_m = int(self.armed_at[:2]), int(self.armed_at[3:]); f_h, f_m = int(t[:2]), int(t[3:])
+                min_to_fill = (f_h * 60 + f_m) - (a_h * 60 + a_m + BAR_MIN)          # ラインを出した足の終わりから約定まで（分）
                 self.trade = {"fill_time": t, "entry": entry, "entry_slip": rnd(entry * (1 + SLIP_PCT / 100)), "shares": sh, "sl": rtick(entry * (1 - SL_PCT / 100)),
+                              "depth": self.depth, "min_to_fill": max(0, min_to_fill),
                               "lo": last, "hi": last, "src_low": self.src[0], "src_high": self.src[1], "armed_at": self.armed_at,
                               "books": {f"{p:g}": {"tp": rtick(entry * (1 + p / 100)), "exit_type": None, "exit_time": None, "exit_price": None, "pnl_yen": None}
                                         for p in (TP_PCT, TP2_PCT)}}
@@ -269,7 +276,7 @@ class Engine:
                     self._exit(b, "利確", t, b["tp"])
             main = tr["books"][f"{TP_PCT:g}"]
             if main["exit_type"] and self.status == "約定中":
-                self.status = "決済済み"; risk.close(main["pnl_yen"])
+                self.status = "決済済み"; risk.close(main["pnl_yen"], main["exit_type"])
                 ev.append({"kind": "closed", "t": ts, "code": self.code, "exit": main["exit_type"], "price": main["exit_price"], "pnl": main["pnl_yen"]})
         return ev
 
@@ -284,7 +291,8 @@ class Engine:
              "origin": tr.get("src_low", ""), "high": tr.get("src_high", ""), "entry": tr.get("entry", ""), "stop": tr.get("sl", ""),
              "stop_kind": "−3%", "shares": tr.get("shares", ""), "max_loss": round(tr["entry"] * SL_PCT / 100 * tr["shares"]) if tr else "",
              "gap_pct": round((self.day_open / self.prev_close - 1) * 100, 2) if self.day_open and self.prev_close else "",
-             "priority": self.rank, "overlap": "", "fill_time": tr.get("fill_time", ""), "skip_reason": self.skip, "entry_slip": tr.get("entry_slip", "")}
+             "priority": self.rank, "overlap": "", "fill_time": tr.get("fill_time", ""), "skip_reason": self.skip, "entry_slip": tr.get("entry_slip", ""),
+             "depth_pct": tr.get("depth", ""), "min_to_fill": tr.get("min_to_fill", "")}
         for i, k in enumerate((f"{TP_PCT:g}", f"{TP2_PCT:g}"), 1):
             b = bk.get(k, {})
             r.update({f"exit{i}_type": b.get("exit_type") or "", f"exit{i}_time": b.get("exit_time") or "",
@@ -452,21 +460,22 @@ class Session:
         head = f"**{e.name}**({e.code})"
         if ev["kind"] in ("armed", "rearm"):
             tp, sl, sh = rtick(ev["line"] * (1 + TP_PCT / 100)), rtick(ev["line"] * (1 - SL_PCT / 100)), shares_for(ev["line"])
-            icon = "🎯 準備" if ev["kind"] == "armed" else "🔁 置き直し"
-            msg = (f"{icon} {t} {head} 逆指値の買い **{ev['line']:,g}円**（{ev['bar']}の足だけ有効）\n"
-                   f"損切り {sl:,g}（−3%）／ 利確 {tp:,g}（+1.5%）／ {sh}株\n"
-                   f"陰線の幅 {ev['width']}%・押し {ev.get('depth', 0):.1f}%・25MA {ev['ma']:,g} 上向き")
+            icon = "🟢 準備" if ev["kind"] == "armed" else "🔁 置き直し"
+            msg = (f"{icon} {t} {head} 逆指値 **{ev['line']:,g}円**（{ev['bar']}の足だけ）押し{ev.get('depth', 0):.1f}%\n"
+                   f"{sh:,}株（150万円÷逆指値）／ 損切り {sl:,g}（−3%）／ 利確 {tp:,g}（+1.5%）\n"
+                   f"陰線の幅 {ev['width']}%・25MA {ev['ma']:,g} 上向き")
             key = (ev["kind"], ev["line"])
         elif ev["kind"] == "cancel":
-            msg = f"✖ {t} {head} ライン取消（{ev['why']}）"; key = ("cancel", t)
+            msg = f"⚪ {t} {head} 取消（{ev['why']}）"; key = ("cancel", t)
         elif ev["kind"] == "fill":
             tr = e.trade
-            msg = (f"✅ {t} {head} 約定想定 **{ev['entry']:,g}円** × {ev['shares']}株（紙）\n"
-                   f"損切り {tr['sl']:,g}（−3%）／ 利確 {tr['books'][f'{TP_PCT:g}']['tp']:,g}（+1.5%）／ 14:45 手じまい")
+            msg = (f"✅ {t} {head} 約定想定 **{ev['entry']:,g}円** × {ev['shares']:,}株（約{ev['entry'] * ev['shares'] / 1e4:,.0f}万円・紙）\n"
+                   f"利確 {tr['books'][f'{TP_PCT:g}']['tp']:,g}（+1.5%）／ 損切り {tr['sl']:,g}（−3%）／ 14:45 手じまい")
             key = ("fill",)
         else:
-            msg = (f"🏁 {t} {head} {ev['exit']} {ev['price']:,g}円 → **{ev['pnl']:+,}円**（紙）\n"
-                   f"本日 {self.risk.n}回 {self.risk.wins}勝{self.risk.losses}敗 {self.risk.pnl:+,.0f}円")
+            pct = (ev['price'] / e.trade['entry'] - 1) * 100
+            msg = (f"🏁 {t} {head} {ev['exit']} {ev['price']:,g}円 → **{ev['pnl']:+,}円（{pct:+.2f}%）**（紙）\n"
+                   f"本日 {self.risk.n}銘柄 {self.risk.wins}勝{self.risk.losses}敗 {self.risk.pnl:+,.0f}円")
             key = ("closed",)
         self._say(msg, e, key, ev["t"])
 
@@ -478,7 +487,7 @@ class Session:
                     if b["exit_type"] is None:
                         e._exit(b, "14:45手じまい", FLAT_AT, e.last)
                 if e.status == "約定中":
-                    e.status = "決済済み"; self.risk.close(tr["books"][f"{TP_PCT:g}"]["pnl_yen"])
+                    e.status = "決済済み"; self.risk.close(tr["books"][f"{TP_PCT:g}"]["pnl_yen"], "14:45手じまい")
         for r in self.rnd.values():
             r.finish()
         if log:
@@ -502,12 +511,17 @@ class Session:
         order = {"約定中": 0, "ライン点灯": 1, "待機": 2, "決済済み": 3}
         rows = sorted((e.row() for e in self.eng.values()), key=lambda r: (order.get(r["status"], 5), r["rank"]))
         rs = self.risk.reason()
+        summary = {"n_cands": len(self.eng), "n_skip": sum(1 for e in self.eng.values() if e.status == "見送り"),
+                   "n_armed": sum(1 for e in self.eng.values() if e.status == "ライン点灯"),
+                   "n_open": sum(1 for e in self.eng.values() if e.status == "約定中"),
+                   "n_closed": sum(1 for e in self.eng.values() if e.status == "決済済み")}
         return {"ts": now.strftime("%Y-%m-%d %H:%M:%S"), "date": self.day, "target_date": self.cands.get("target_date"),
-                "rows": rows, "paper": {"trades": self.risk.n, "wins": self.risk.wins, "losses": self.risk.losses,
+                "summary": summary,
+                "rows": rows, "paper": {"trades": self.risk.n, "wins": self.risk.wins, "losses": self.risk.losses, "stops": self.risk.stops,
                                         "pnl_yen": round(self.risk.pnl), "stopped": rs is not None, "stop_reason": rs or ""},
                 "random": self.random_summary(),
                 "rules": {"width_max": WIDTH_MAX, "tp": TP_PCT, "sl": SL_PCT, "last_start": LAST_START, "pm": f"{PM_START}〜{PM_LAST}",
-                          "stop": f"{STOP_CONSEC}連敗・1日{STOP_TRADES}回・{STOP_YEN:,}円で終了"},
+                          "stop": f"損切り{STOP_STOPS}回・紙の損益{STOP_YEN:,}円で新しい準備を止める・1日{MAX_TRADES_DAY}銘柄まで", "pos_yen": POS_YEN},
                 "note": "ラインは次の5分足のあいだだけ有効（足が変わったら置き直し/取り消し）。発注はしません。"}
 
 

@@ -40,9 +40,10 @@ JST = timezone(timedelta(hours=9))
 OUT_FILE = "oshime5_candidates.json"
 R5_MAX = -5.0            # 5日騰落（%）の上限
 PX_LO, PX_HI = 1_000, 10_000    # 10/8: 全上場60日の検証（bt_all.py）に合わせて下限を1,000円に
-TOV_MIN = 1e9            # 20日平均売買代金の下限（円）。10/8: 5千万→10億（9:30までの代金3億以上＝全上場検証で後半も崩れにくかった層に寄せる）
+TOV_MIN = 5e7            # 20日平均売買代金の下限（円）＝立花の毎分巡回の対象（tachibana_live_flow UNIVERSE_MIN_OKU=0.5億・約2,000銘柄・1巡49秒）。これ未満は毎分データが無いので場中で見られない
 OC1_MAX = 3.0            # 当日の日足（終値÷始値−1）がこれ以上の大陽線は外す（翌日の成績が3期間とも悪い）
-TOP_N = 10
+TOP_N = None             # 10/8 指示書: 該当を「全部」候補にする（Noneで無制限）。Discordは5日騰落の大きい順に上位 DISCORD_TOP
+DISCORD_TOP = 20
 TOPIX500 = ("TOPIX Core30", "TOPIX Large70", "TOPIX Mid400")
 ENTRY = "5分足25MA上向き（確定済みの足で判定）・1本前が陰線・その安値が25MAより上 → 陰線の高値+1ティックに逆指値の買い"
 EXIT = "利確+1.5%・損切り−3%・14:45に手じまい。1銘柄1日1回"
@@ -119,21 +120,21 @@ def build(sig_date: date) -> dict:
                      "topix500": code in t500, "atr_pct": round(atr, 2) if atr == atr else None})
     if latest_seen != sig_date:
         raise RuntimeError(f"{sig_date} の当日足がありません（J-Quants最新={latest_seen}）")
-    rows.sort(key=lambda r: -r["tov20"])
+    rows.sort(key=lambda r: r["r5"])                    # 5日騰落の大きい（深い）順
     return {"date": sig_date.strftime("%Y-%m-%d"), "target_date": next_trading_day(sig_date).strftime("%Y-%m-%d"),
             "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M"),
             "rule": (f"全上場(ETF/REIT除く)・5日騰落{R5_MAX:.0f}%以下・終値{PX_LO:,}〜{PX_HI:,}円・20日代金{TOV_MIN/1e8:.0f}億以上・当日+{OC1_MAX:.0f}%以上の陽線を除く・"
-                     f"20日平均代金の上位{TOP_N}"),
-            "universe_price": n_price, "matched": len(rows), "skipped_bigup": n_bigup, "rows": rows[:TOP_N],
+                     f"該当は全部（{len(rows)}銘柄・5日騰落の大きい順）"),
+            "universe_price": n_price, "matched": len(rows), "skipped_bigup": n_bigup, "rows": rows[:TOP_N] if TOP_N else rows,
             "entry": ENTRY, "exit": EXIT, "skip_rules": SKIP_RULES,
             "backtest": "3期間（4〜6月/6〜8月/8〜10月）PF2.10/1.96/1.86・1回+0.26〜0.31%・1日約2.5回（計200回・呼値コスト込み）",
             "note": "発注はしない（通知・表示だけ）。回数が少なく、8〜10月は同じ10本をランダムな時刻に買ってもほぼ同じ成績。まず小さい量で記録を。"}
 
 
 def fmt_discord(w: dict) -> str:
-    lines = [f"✂️ **上ヒゲ刈り取り候補** {w['target_date']} 分（{w['date']} 引けデータ・該当{w['matched']}銘柄から代金上位{len(w['rows'])}）",
-             f"条件: {w['rule']}"]
-    for i, r in enumerate(w["rows"], 1):
+    lines = [f"✂️ **明日の押し目候補 {len(w['rows'])}銘柄**（{w['target_date']} 分・{w['date']} 引けデータ）",
+             f"条件: {w['rule']}", f"5日騰落の大きい順に上位{min(DISCORD_TOP, len(w['rows']))}（全部はアプリの✂️上ヒゲタブ）:"]
+    for i, r in enumerate(w["rows"][:DISCORD_TOP], 1):
         lines.append(f"{i:2d}. **{r['name']}**({r['code']}) ¥{r['close']:,.1f} 5日{r['r5']:+.1f}% 値幅ATR{r['atr_pct']:.1f}% 20日平均代金{r['tov20_oku']:.0f}億 呼値{r['tick']:g}円")
     if not w["rows"]:
         lines.append("該当なし")
