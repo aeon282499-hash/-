@@ -304,6 +304,7 @@ class RandomEngine:
         m = (30 + k) if k < 120 else (12 * 60 + 30 + (k - 120)) - 9 * 60
         self.buy_at = f"{9 + m // 60:02d}:{m % 60:02d}"
         self.trade = None; self.last = None; self.skip = ""; self.day_open = None; self.prev_close = None
+        self.armed_at = self.buy_at                                   # log_row（Engineと共用）が参照する
 
     def push(self, ts: datetime, v: list, main: "Engine"):
         last, opn, high, low, vol, tov, vwap, prev = (list(v) + [None] * 8)[:8]
