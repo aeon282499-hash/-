@@ -53,6 +53,7 @@ WEBHOOK_ENV = "DISCORD_WEBHOOK_OSHIME5_URL"
 BAR_MIN = 5
 MA_N = 25
 WIDTH_MAX = 0.8          # 陰線の幅（%）
+DEPTH_MIN, LOOKBACK = 0.8, 12   # 押しの深さ 1−(陰線の高値÷直近12本の高値) が0.8%以上（10/8・全上場60日: 深さなし+0.08% → あり+0.42%/PF2.37、滑り0.1%で+0.26%）
 FIRST_START, LAST_START = "09:30", "11:25"   # ラインを出す足（次の足）の開始時刻（前場）
 PM_START, PM_LAST = "12:30", "12:55"          # 後場も12:30〜12:59は入る（10/7 本人「午後も入れるはず」→60日: 12:30〜12:59 +0.10%/PF1.43/損切り0.2%・13:00〜14:00は+0.04%で入らない）
 def in_entry_window(t: str) -> bool:
@@ -120,8 +121,10 @@ class Risk:
 class Engine:
     """1銘柄・1日。push(ts, 断面) を時刻順に呼ぶ。events を返す"""
 
-    def __init__(self, code: str, name: str, rank: int, prev_bars: list):
+    def __init__(self, code: str, name: str, rank: int, prev_bars: list, tick: float | None = None):
         self.code, self.name, self.rank = code, name, rank
+        self.tick = tick                                   # 候補JSONの呼値（TOPIX500は細かい刻み・それ以外は一般の刻み）。無ければ tick500
+        self.highs = [b.h for b in prev_bars][-(LOOKBACK + 5):]
         self.closes = [b.c for b in prev_bars][-(MA_N + 5):]
         self.ma = self._ma_series()
         self.bld = BarBuilder(BAR_MIN)
@@ -188,7 +191,7 @@ class Engine:
 
     def _on_bar(self, b, ts: datetime, risk: Risk) -> list[dict]:
         ev = []
-        self._push_close(b.c)
+        self._push_close(b.c); self.highs.append(b.h)
         bt = hm(b.t)
         if bt == "09:10":
             self.first15_close = b.c
@@ -219,11 +222,15 @@ class Engine:
         if m1 is None or m0 is None:
             self.status = "待機（25MAの足が足りない）"; return ev
         width = (b.h / b.l - 1) * 100 if b.l > 0 else 99
-        why = "25MAが下向き" if not m1 > m0 else ("陰線でない" if not b.c < b.o else ("安値が25MAの下" if not b.l > m1 else (f"陰線の幅{width:.2f}%が0.8%超" if width > WIDTH_MAX else "")))
-        if m1 > m0 and b.c < b.o and b.l > m1 and width <= WIDTH_MAX:
-            self.line = rnd(b.h + tick500(b.h)); self.line_bar = nxt; self.armed_at = bt; self.src = (b.l, b.h)
+        hi12 = max(self.highs[-LOOKBACK:]) if len(self.highs) >= LOOKBACK else None     # 直近12本（この足を含む）の高値
+        depth = (1 - b.h / hi12) * 100 if hi12 else 0.0
+        why = ("25MAが下向き" if not m1 > m0 else ("陰線でない" if not b.c < b.o else ("安値が25MAの下" if not b.l > m1 else
+               (f"陰線の幅{width:.2f}%が0.8%超" if width > WIDTH_MAX else (f"押しが浅い（直近12本高値から{depth:.2f}%）" if depth < DEPTH_MIN else "")))))
+        if m1 > m0 and b.c < b.o and b.l > m1 and width <= WIDTH_MAX and depth >= DEPTH_MIN:
+            tk_ = self.tick or tick500(b.h)
+            self.line = rnd(b.h + tk_); self.line_bar = nxt; self.armed_at = bt; self.src = (b.l, b.h)
             self.status = "ライン点灯"; self.n_lines += 1
-            ev.append({"kind": "rearm" if expired else "armed", "t": ts, "code": self.code, "line": self.line, "bar": nxt, "width": round(width, 2), "ma": rnd(m1)})
+            ev.append({"kind": "rearm" if expired else "armed", "t": ts, "code": self.code, "line": self.line, "bar": nxt, "width": round(width, 2), "ma": rnd(m1), "depth": round(depth, 2)})
         else:
             self.status = "待機"
             if expired:
@@ -405,7 +412,7 @@ class Session:
         self.day = day; self.notify = notify; self.risk = Risk(); self.cands = cands
         rows = cands.get("rows", [])
         pb = prev_bars(day, {r["code"] for r in rows})
-        self.eng = {r["code"]: Engine(r["code"], r["name"], i + 1, pb.get(r["code"], [])) for i, r in enumerate(rows)}
+        self.eng = {r["code"]: Engine(r["code"], r["name"], i + 1, pb.get(r["code"], []), tick=r.get("tick")) for i, r in enumerate(rows)}
         self.rnd = {r["code"]: RandomEngine(day, r["code"], r["name"], i + 1) for i, r in enumerate(rows)}   # 比較用の紙
         self.msgs: list[str] = []
         self.stopped_sent = False
@@ -447,7 +454,7 @@ class Session:
             icon = "🎯 準備" if ev["kind"] == "armed" else "🔁 置き直し"
             msg = (f"{icon} {t} {head} 逆指値の買い **{ev['line']:,g}円**（{ev['bar']}の足だけ有効）\n"
                    f"損切り {sl:,g}（−3%）／ 利確 {tp:,g}（+1.5%）／ {sh}株\n"
-                   f"陰線の幅 {ev['width']}%・25MA {ev['ma']:,g} 上向き")
+                   f"陰線の幅 {ev['width']}%・押し {ev.get('depth', 0):.1f}%・25MA {ev['ma']:,g} 上向き")
             key = (ev["kind"], ev["line"])
         elif ev["kind"] == "cancel":
             msg = f"✖ {t} {head} ライン取消（{ev['why']}）"; key = ("cancel", t)

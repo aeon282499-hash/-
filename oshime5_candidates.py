@@ -3,8 +3,8 @@
 
 ■ 何を出すか
   翌日の場中に「5分足の陰線高値抜け」（Downloads\\trade_bt\\RULE_15m.md）を見る銘柄を10本に絞る:
-    TOPIX500（呼値が細かく板が厚い）／前日までの5日騰落 −5%以下（当日終値 ÷ 5営業日前の終値 − 1）／
-    終値 2,000〜10,000円／当日の日足が+3%以上の大陽線ではない／20日平均売買代金の多い順に上位10
+    全上場（ETF/REIT除く・10/8にTOPIX500の縛りを外した）／前日までの5日騰落 −5%以下（当日終値 ÷ 5営業日前の終値 − 1）／
+    終値 1,000〜10,000円／20日平均売買代金10億円以上／当日の日足が+3%以上の大陽線ではない／20日平均売買代金の多い順に上位10
   発注はしない（通知・アプリ表示だけ）。場中の判定はフェーズ2（_design_oshime5.md）。
 
 ■ 検証（2026-10-04・trade_bt RESULTS_1004.md / RESULTS_1004b.md・呼値コスト込み・前場・利確+1.5%/損切り−3%/14:45）
@@ -39,16 +39,24 @@ load_dotenv()
 JST = timezone(timedelta(hours=9))
 OUT_FILE = "oshime5_candidates.json"
 R5_MAX = -5.0            # 5日騰落（%）の上限
-PX_LO, PX_HI = 2_000, 10_000
-TOV_MIN = 5e7            # 20日平均売買代金の下限（円）
+PX_LO, PX_HI = 1_000, 10_000    # 10/8: 全上場60日の検証（bt_all.py）に合わせて下限を1,000円に
+TOV_MIN = 1e9            # 20日平均売買代金の下限（円）。10/8: 5千万→10億（9:30までの代金3億以上＝全上場検証で後半も崩れにくかった層に寄せる）
 OC1_MAX = 3.0            # 当日の日足（終値÷始値−1）がこれ以上の大陽線は外す（翌日の成績が3期間とも悪い）
 TOP_N = 10
 TOPIX500 = ("TOPIX Core30", "TOPIX Large70", "TOPIX Mid400")
 ENTRY = "5分足25MA上向き（確定済みの足で判定）・1本前が陰線・その安値が25MAより上 → 陰線の高値+1ティックに逆指値の買い"
 EXIT = "利確+1.5%・損切り−3%・14:45に手じまい。1銘柄1日1回"
 SKIP_RULES = ["9:30までに前日比+3%以上上げた日は見送り", "朝の最初の15分足が+1%以上の大陽線なら見送り",
-              "押し目の陰線の幅（高値÷安値−1）0.8%以上はパス", "入るのは9:30〜11:29・12:30以降は入らない",
+              "押し目の陰線の幅（高値÷安値−1）0.8%以上はパス", "押しの深さ（直近12本の高値から陰線の高値まで）0.8%未満はパス", "入るのは9:30〜11:29と12:30〜12:59・13:00以降は入らない",
               "1日の停止＝−4万円／2連敗／8回（紙の実現損で判定）"]
+
+
+def tick_general(px: float) -> float:
+    """一般の銘柄の呼値（TOPIX500以外）"""
+    for lim, t in ((3000, 1), (5000, 5), (30000, 10), (50000, 50)):
+        if px <= lim:
+            return t
+    return 100
 
 
 def tick500(px: float) -> float:
@@ -89,8 +97,7 @@ def build(sig_date: date) -> dict:
         if d0 != sig_date:
             continue   # 当日の足が無い（未公開/出来ず）
         code = tk.replace(".T", "")
-        if code not in t500:
-            continue
+        # 10/8: TOPIX500の縛りを外して全上場（ETF/REIT除く）から選ぶ。呼値はTOPIX500なら細かい刻み、それ以外は一般の刻み
         c = df["Close"].astype(float); o = df["Open"].astype(float); v = df["Volume"].astype(float)
         h = df["High"].astype(float); l = df["Low"].astype(float)
         close, c5, op = float(c.iloc[-1]), float(c.iloc[-6]), float(o.iloc[-1])
@@ -108,13 +115,14 @@ def build(sig_date: date) -> dict:
         tr = pd.concat([h - l, (h - c.shift(1)).abs(), (l - c.shift(1)).abs()], axis=1).max(axis=1)
         atr = float(tr.iloc[-14:].mean()) / close * 100      # 表示用（選び方には使わない＝ATRで選ぶと悪化した）
         rows.append({"code": code, "name": name, "close": close, "r5": round(r5, 2), "oc1": round(oc1, 2),
-                     "tov20": round(tov20), "tov20_oku": round(tov20 / 1e8, 1), "tick": tick500(close), "atr_pct": round(atr, 2) if atr == atr else None})
+                     "tov20": round(tov20), "tov20_oku": round(tov20 / 1e8, 1), "tick": tick500(close) if code in t500 else tick_general(close),
+                     "topix500": code in t500, "atr_pct": round(atr, 2) if atr == atr else None})
     if latest_seen != sig_date:
         raise RuntimeError(f"{sig_date} の当日足がありません（J-Quants最新={latest_seen}）")
     rows.sort(key=lambda r: -r["tov20"])
     return {"date": sig_date.strftime("%Y-%m-%d"), "target_date": next_trading_day(sig_date).strftime("%Y-%m-%d"),
             "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M"),
-            "rule": (f"TOPIX500・5日騰落{R5_MAX:.0f}%以下・終値{PX_LO:,}〜{PX_HI:,}円・当日+{OC1_MAX:.0f}%以上の陽線を除く・"
+            "rule": (f"全上場(ETF/REIT除く)・5日騰落{R5_MAX:.0f}%以下・終値{PX_LO:,}〜{PX_HI:,}円・20日代金{TOV_MIN/1e8:.0f}億以上・当日+{OC1_MAX:.0f}%以上の陽線を除く・"
                      f"20日平均代金の上位{TOP_N}"),
             "universe_price": n_price, "matched": len(rows), "skipped_bigup": n_bigup, "rows": rows[:TOP_N],
             "entry": ENTRY, "exit": EXIT, "skip_rules": SKIP_RULES,
