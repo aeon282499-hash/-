@@ -199,7 +199,10 @@ def get_quote(code: str, day: str) -> dict | None:
     q = quote_from_minutes(code, day)
     if q and q.get("last") and q.get("prev_close"):
         return q
-    return quote_from_api(code)
+    q = quote_from_api(code)
+    if q and q.get("last") and q.get("prev_close"):
+        return q
+    return None  # 寄り前など現在値がまだ無い
 
 
 def market_open_today(day: str) -> bool:
