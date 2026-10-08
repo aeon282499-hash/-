@@ -45,7 +45,7 @@ GAP_MAX = 1.03           # 始値 < 前日終値×1.03
 ATR_N, ATR_BASE, SZ_MIN, SZ_MAX = 10, 0.03, 0.3, 1.5
 UNIT = 100
 BASE_YEN = int(os.environ.get("KIOXIA_BASE_YEN", "5370000"))   # ボラ連動の基準金額（=300株相当・紙）
-FIXED_SHARES = 300
+FIXED_SHARES = int(os.environ.get("KIOXIA_FIXED_SHARES", "100"))   # 本人の実弾は固定株数（10/9〜 100株）
 WEBHOOK_ENVS = ("DISCORD_WEBHOOK_KIOXIA_URL", "DISCORD_WEBHOOK_GOKUJO_URL")
 STATE = ROOT / "kioxia_overnight_state.json"
 LOG = ROOT / "kioxia_overnight_log.csv"
@@ -250,15 +250,15 @@ def stats_text(rows: list[dict]) -> str:
     pv = [float(r["pnl_vol"]) for r in done]
     pf = [float(r["pnl_fixed"]) for r in done]
     ph = [float(r["pnl_hedge"]) for r in done if r.get("pnl_hedge") not in ("", None)]
-    win = sum(1 for x in pv if x > 0)
+    win = sum(1 for x in pf if x > 0)
     cum, peak, dd = 0.0, 0.0, 0.0
-    for x in pv:
+    for x in pf:
         cum += x
         peak = max(peak, cum)
         dd = min(dd, cum - peak)
-    last20 = sum(pv[-20:])
-    s = (f"紙の実績 {len(pv)}夜 勝率{win / len(pv):.0%}  ボラ連動 {sum(pv) / 1e4:+.1f}万(DD {dd / 1e4:.1f}万・直近20夜 {last20 / 1e4:+.1f}万)"
-         f" ／ 固定300株 {sum(pf) / 1e4:+.1f}万")
+    last20 = sum(pf[-20:])
+    s = (f"紙の実績 {len(pf)}夜 勝率{win / len(pf):.0%}  固定株数 {sum(pf) / 1e4:+.1f}万(DD {dd / 1e4:.1f}万・直近20夜 {last20 / 1e4:+.1f}万)"
+         f" ／ ボラ連動 {sum(pv) / 1e4:+.1f}万")
     if ph:
         s += f" ／ +日経ヘッジ {sum(ph) / 1e4:+.1f}万"
     if len(pv) >= 20 and last20 < 0:
@@ -302,8 +302,8 @@ def judge(now: datetime, dry: bool) -> int:
             f"{'陽線' if yosen else '陰線'}" + (f"・レンジ位置{pos:.0%}" if pos is not None else ""))
     if buy:
         msg = (f"{head}\n✅ **今夜買い（引け成行）→ 明朝 寄り成行で全株売り**\n{body}\n"
-               f"株数(ボラ連動) **{sh_vol:,}株** ≈{sh_vol * q['last'] / 1e4:,.0f}万円（直近{ATR_N}日の値幅率 {atr * 100 if atr else 0:.1f}% → {sz:.2f}倍）"
-               f" ／ 固定なら{FIXED_SHARES}株\n{reason}")
+               f"株数 **{FIXED_SHARES}株（固定）** ≈{FIXED_SHARES * q['last'] / 1e4:,.0f}万円"
+               f" ／ 参考: ボラ連動なら{sh_vol:,}株（直近{ATR_N}日の値幅率 {atr * 100 if atr else 0:.1f}% → {sz:.2f}倍）\n{reason}")
         if hedge_px:
             msg += f"\n参考ヘッジ: 1321 を {hedge_sh:,}口 空売り（{hedge_px:,.0f}円・等金額）"
         msg += "\n⚠️ 1夜で−12%の窓はあり得る。株数は固定・翌朝は必ず全部売る"
@@ -376,14 +376,15 @@ def settle(now: datetime, dry: bool) -> int:
         st["status"] = "settled"; st["exit_open"] = q["open"]; st["exit_date"] = day
         STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
     r = out[-1]
-    pv = float(r["pnl_vol"]); ov = float(r["ov_pct"])
-    emoji = "🟢" if pv > 0 else ("🔴" if pv < 0 else "⚪")
-    msg = (f"🏁 キオクシア打法 {r['date'][5:]}夜 → {now:%m/%d}寄り {emoji} **{pv / 1e4:+.1f}万円**（{ov:+.2f}%）\n"
-           f"買 {float(r['entry']):,.0f} → 寄 {float(r['exit_open']):,.0f}・{int(r['shares_vol']):,}株(ボラ連動) ／ 固定300株なら {float(r['pnl_fixed']) / 1e4:+.1f}万")
+    pv = float(r["pnl_vol"]); pf_ = float(r["pnl_fixed"]); ov = float(r["ov_pct"])
+    emoji = "🟢" if pf_ > 0 else ("🔴" if pf_ < 0 else "⚪")
+    msg = (f"🏁 キオクシア打法 {r['date'][5:]}夜 → {now:%m/%d}寄り {emoji} **{pf_ / 1e4:+.1f}万円**（{ov:+.2f}%・{int(r['shares_fixed'])}株固定）\n"
+           f"買 {float(r['entry']):,.0f} → 寄 {float(r['exit_open']):,.0f} ／ ボラ連動({int(r['shares_vol']):,}株)なら {pv / 1e4:+.1f}万")
     if r.get("pnl_hedge") not in ("", None):
         msg += f" ／ +日経ヘッジなら {float(r['pnl_hedge']) / 1e4:+.1f}万"
-    if r.get("pnl_official_vol") not in ("", None):
-        msg += f"\n（確定終値 {float(r['official_close']):,.0f} で買った扱いなら {float(r['pnl_official_vol']) / 1e4:+.1f}万＝15:20判定との差）"
+    if r.get("official_close") not in ("", None):
+        oc_ = float(r["official_close"])
+        msg += f"\n（確定終値 {oc_:,.0f} で買った扱いなら {(float(r['exit_open']) - oc_) * int(r['shares_fixed']) / 1e4:+.1f}万＝15:20判定との差）"
     msg += "\n" + stats_text(rows)
     send(msg, dry)
     log(f"決済 {r['date']} → {day}: {pv:+,.0f}円")
