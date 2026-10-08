@@ -2324,5 +2324,22 @@
       "rsi": null,
       "price": null
     }
+  },
+  "2026-10-08": {
+    "main:BUY:9042.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:9042.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:9042.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
