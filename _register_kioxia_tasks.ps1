@@ -16,3 +16,9 @@ $actS = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $argS -WorkingDirec
 $trgS = New-ScheduledTaskTrigger -Weekly -DaysOfWeek $days -At 9:12
 Register-ScheduledTask -TaskName "KioxiaOvernightSettle" -Action $actS -Trigger $trgS -Settings $settings -Description "🌙 キオクシア打法 翌朝9:12 寄りで紙決済" -Force | Out-Null
 Write-Host "登録しました: KioxiaOvernightSettle（平日 9:12）"
+
+$argR = "/c `"`"$py`" -X utf8 `"$root\kioxia_overnight.py`" --recheck >> `"$root\live_flow\kioxia_overnight.log`" 2>&1`""
+$actR = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $argR -WorkingDirectory $root
+$trgR = New-ScheduledTaskTrigger -Weekly -DaysOfWeek $days -At 15:27
+Register-ScheduledTask -TaskName "KioxiaOvernightRecheck" -Action $actR -Trigger $trgR -Settings $settings -Description "🌙 キオクシア打法 15:27再確認（前日終値を割っていたら取消通知）" -Force | Out-Null
+Write-Host "登録しました: KioxiaOvernightRecheck（平日 15:27）"

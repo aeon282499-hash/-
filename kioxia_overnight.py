@@ -10,6 +10,7 @@
 
 使い方:
   python kioxia_overnight.py --judge            # 平日15:20（Windowsタスク KioxiaOvernightJudge）
+  python kioxia_overnight.py --recheck          # 平日15:27（Windowsタスク KioxiaOvernightRecheck）BUYの日だけ前日終値以上かを再確認・割っていれば「取消」通知
   python kioxia_overnight.py --settle           # 平日 9:12（Windowsタスク KioxiaOvernightSettle）前夜の紙を翌寄りで決済
   python kioxia_overnight.py --judge --dry      # 通知もファイル更新もしない
   python kioxia_overnight.py --replay 2026-04-08 2026-10-08   # J-Quants日足で本人のレポートと同じ条件を再計算（確定終値判定）
@@ -326,6 +327,41 @@ def judge(now: datetime, dry: bool) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- 再確認（15:27・引け板の直前）
+def recheck(now: datetime, dry: bool) -> int:
+    """15:20 で BUY にした日だけ、引け板の直前にもう一度 前日終値以上かを見る。割っていたら『取消』を通知し、紙の記録も SKIP に戻す。"""
+    day = f"{now:%Y-%m-%d}"
+    st = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
+    if st.get("date") != day or st.get("signal") != "BUY":
+        log("再確認: 今日はBUYではない")
+        return 0
+    q = get_quote(CODE, day)
+    if not q:
+        send(f"🌙 キオクシア打法 {now:%m/%d} {now:%H:%M} 再確認: ❌ 値が取れない（15:20の判定のまま）", dry)
+        return 1
+    chg = q["last"] / q["prev_close"] - 1
+    if q["last"] >= q["prev_close"]:
+        log(f"再確認OK {q['last']:.0f} ({chg:+.2%})")
+        if not dry:
+            st["recheck"] = {"ts": q["ts"], "last": q["last"], "ok": True}
+            STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
+        return 0
+    msg = (f"🌙 キオクシア打法 {now:%m/%d} {q['ts'][11:16]} 再確認\n"
+           f"❌ **取消: 前日終値 {q['prev_close']:,.0f} を割った（現在 {q['last']:,.0f} {chg:+.2%}）→ 引け成行の注文を取り消す**\n今夜は見送り扱いで記録します")
+    send(msg, dry)
+    if not dry:
+        rows = read_log()
+        for r in rows:
+            if r.get("date") == day:
+                r["signal"] = "SKIP"; r["reason"] = f"15:27再確認で前日比マイナス {chg:+.2%}（15:20はBUY）"
+                r["shares_vol"] = r["shares_fixed"] = r["entry"] = r["hedge_px"] = r["hedge_shares"] = ""
+        write_log(rows)
+        st.update({"signal": "SKIP", "status": "none", "recheck": {"ts": q["ts"], "last": q["last"], "ok": False}})
+        STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
+    log(f"再確認で取消 {q['last']:.0f} ({chg:+.2%})")
+    return 0
+
+
 # ---------------------------------------------------------------- 決済（翌朝の寄り）
 def settle(now: datetime, dry: bool) -> int:
     rows = read_log()
@@ -430,7 +466,7 @@ def test() -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--judge", action="store_true"); ap.add_argument("--settle", action="store_true")
+    ap.add_argument("--judge", action="store_true"); ap.add_argument("--settle", action="store_true"); ap.add_argument("--recheck", action="store_true")
     ap.add_argument("--replay", nargs=2, metavar=("START", "END")); ap.add_argument("--test", action="store_true")
     ap.add_argument("--dry", action="store_true"); ap.add_argument("--date", help="判定/決済の日付を指定（再生用 YYYY-MM-DD）")
     a = ap.parse_args()
@@ -441,6 +477,8 @@ def main() -> int:
         return replay(*a.replay)
     if a.judge:
         return judge(now, a.dry)
+    if a.recheck:
+        return recheck(now, a.dry)
     if a.settle:
         return settle(now, a.dry)
     ap.print_help()
