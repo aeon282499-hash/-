@@ -1,31 +1,70 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "signals": [
     {
-      "ticker": "4676.T",
-      "name": "フジ・メディア・ホールディングス",
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
       "direction": "BUY",
-      "prev_close": 3868.0,
-      "limit_price": 3905,
-      "days_cover": 0.3817704631137053,
-      "rsi": 38.19,
-      "deviation": -4.54,
-      "vol_ratio": 1.72,
-      "range_ratio": 1.64,
-      "turnover": 3988606200.0
+      "prev_close": 1559.0,
+      "limit_price": 1574,
+      "days_cover": 0.5565765446752577,
+      "rsi": 37.46,
+      "deviation": -3.18,
+      "vol_ratio": 2.12,
+      "range_ratio": 1.96,
+      "turnover": 19009158000.0
     },
     {
-      "ticker": "2782.T",
-      "name": "セリア",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
       "direction": "BUY",
-      "prev_close": 4275.0,
-      "limit_price": 4315,
-      "days_cover": 0.1575858256873853,
-      "rsi": 36.36,
-      "deviation": -7.2,
-      "vol_ratio": 2.38,
+      "prev_close": 2750.5,
+      "limit_price": 2778,
+      "days_cover": 0.14376484327677538,
+      "rsi": 35.73,
+      "deviation": -3.43,
+      "vol_ratio": 1.77,
+      "range_ratio": 1.79,
+      "turnover": 14869928950.0
+    },
+    {
+      "ticker": "6841.T",
+      "name": "横河電機",
+      "direction": "BUY",
+      "prev_close": 4565.0,
+      "limit_price": 4610,
+      "days_cover": 0.15784516726767076,
+      "rsi": 35.39,
+      "deviation": -2.67,
+      "vol_ratio": 1.25,
+      "range_ratio": 1.51,
+      "turnover": 6063366400.0
+    },
+    {
+      "ticker": "4922.T",
+      "name": "コーセーホールディングス",
+      "direction": "BUY",
+      "prev_close": 5437.0,
+      "limit_price": 5490,
+      "days_cover": 0.699952676064607,
+      "rsi": 39.27,
+      "deviation": -2.99,
+      "vol_ratio": 1.39,
+      "range_ratio": 1.55,
+      "turnover": 2175916500.0
+    },
+    {
+      "ticker": "2702.T",
+      "name": "日本マクドナルドホールディングス",
+      "direction": "BUY",
+      "prev_close": 7620.0,
+      "limit_price": 7690,
+      "days_cover": 0.735010444570893,
+      "rsi": 43.07,
+      "deviation": -3.0,
+      "vol_ratio": 2.05,
       "range_ratio": 1.87,
-      "turnover": 3590643000.0
+      "turnover": 8984996000.0
     }
   ]
 }

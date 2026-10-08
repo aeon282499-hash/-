@@ -1697,10 +1697,46 @@
       "pnl_pct": -0.081,
       "pnl_yen": -400,
       "win": false
+    },
+    {
+      "ticker": "5932.T",
+      "name": "三協立山",
+      "direction": "BUY",
+      "signal_date": "2026-10-09",
+      "basis_date": "2026-10-08",
+      "prev_close": 729.0,
+      "limit_price": 802.8,
+      "status": "pending",
+      "high_20": 669.0
+    },
+    {
+      "ticker": "3692.T",
+      "name": "ＦＦＲＩセキュリティ",
+      "direction": "SELL",
+      "signal_date": "2026-10-09",
+      "basis_date": "2026-10-08",
+      "prev_close": 9960.0,
+      "limit_price": 9960.0,
+      "status": "pending",
+      "daily_gain": 17.73,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 100,
+      "entry_mode": "limit_day",
+      "dev25": 39.6,
+      "atr_pct": 7.21,
+      "vol_ratio": 4.9,
+      "range_pct": 9.3,
+      "mcap_oku": 669
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-08",
+  "last_report_date": "2026-10-09",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W40"
 }

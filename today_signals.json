@@ -1,19 +1,40 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "signals": [
     {
-      "ticker": "4676.T",
-      "name": "フジ・メディア・ホールディングス",
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
       "direction": "BUY",
-      "prev_close": 3868.0,
-      "limit_price": 3905
+      "prev_close": 1559.0,
+      "limit_price": 1574
     },
     {
-      "ticker": "2782.T",
-      "name": "セリア",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
       "direction": "BUY",
-      "prev_close": 4275.0,
-      "limit_price": 4315
+      "prev_close": 2750.5,
+      "limit_price": 2778
+    },
+    {
+      "ticker": "6841.T",
+      "name": "横河電機",
+      "direction": "BUY",
+      "prev_close": 4565.0,
+      "limit_price": 4610
+    },
+    {
+      "ticker": "4922.T",
+      "name": "コーセーホールディングス",
+      "direction": "BUY",
+      "prev_close": 5437.0,
+      "limit_price": 5490
+    },
+    {
+      "ticker": "2702.T",
+      "name": "日本マクドナルドホールディングス",
+      "direction": "BUY",
+      "prev_close": 7620.0,
+      "limit_price": 7690
     }
   ]
 }

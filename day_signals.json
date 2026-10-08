@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "signal_date": "2026-10-09",
+    "entry_date": "2026-10-13",
+    "ticker": "5932.T",
+    "name": "三協立山",
+    "direction": "BUY",
+    "prev_close": 729.0,
+    "high_20": 669.0,
+    "vol_ratio": 11.12,
+    "close_position": 1.0,
+    "atr_pct": 2.44,
+    "max_entry_price": 802.8
+  }
+]
