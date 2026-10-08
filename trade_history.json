@@ -1739,6 +1739,16 @@
       "close": 4482.0,
       "pnl": 0.63,
       "win": true
+    },
+    {
+      "date": "2026-10-08",
+      "ticker": "2782.T",
+      "name": "セリア",
+      "direction": "BUY",
+      "open": 4250.0,
+      "close": 4180.0,
+      "pnl": -1.65,
+      "win": false
     }
   ]
 }
