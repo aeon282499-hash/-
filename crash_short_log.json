@@ -236,5 +236,35 @@
   "exec_open": 3145.0,
   "exec_close": 3180.0,
   "gap_pct": 0.0
+ },
+ {
+  "ticker": "4288.T",
+  "code": "4288",
+  "name": "アズジェント",
+  "d0": "2026-10-07",
+  "close": 553.0,
+  "r1": -11.24,
+  "volx": 3.12,
+  "runup": 33.4,
+  "tov_oku": 8.2,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "4417.T",
+  "code": "4417",
+  "name": "グローバルセキュリティエキスパート",
+  "d0": "2026-10-07",
+  "close": 5860.0,
+  "r1": -8.72,
+  "volx": 4.81,
+  "runup": 47.9,
+  "tov_oku": 7.9,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
