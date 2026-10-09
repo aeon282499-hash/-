@@ -131,10 +131,11 @@ jobs:
           DISCORD_WEBHOOK_OSHIME5_URL: ${{ secrets.DISCORD_WEBHOOK_OSHIME5_URL }}
         run: python oshime5_candidates.py
 
-      - name: 増担保「再点火」シグナル（2026-09-27追加→9/28停止→10/1 本人「やっぱり俺専用でシグナルでるようにして」で再開）
+      - name: 増担保「再点火」シグナル（2026-09-27追加→9/28停止→10/1再開→2026-10-10 本人「これやめる いらない」で停止・コードは残置）
         # 増担保規制中に終値が25日線±15%以内に2日続いた日→翌朝の寄りで買い→3日目の大引けで売り（masutan_signal.py）。
-        # 規制情報(margin-alert)は夕方公表。未反映なら前日の公表分で判定（10年で結果は同一＝_audit_masutan_parity.py）。
-        # 配信先: DISCORD_WEBHOOK_MASUTAN_URL が無ければ俺専用サーバーの極上ch(DISCORD_WEBHOOK_GOKUJO_URL)。ここが失敗しても他の配信とコミットは止めない。
+        # 10/6〜10/9の実績: ミナトHD -1.53%・ヴィッツ(10/13大引け)と豊和工業(10/14大引け)は帳簿上openのまま停止＝手仕舞いは本人が自分で。
+        # 再開するときは if: false を外す（配信先は DISCORD_WEBHOOK_MASUTAN_URL 無ければ極上ch）。
+        if: false
         continue-on-error: true
         env:
           DISCORD_WEBHOOK_MASUTAN_URL: ${{ secrets.DISCORD_WEBHOOK_MASUTAN_URL }}
