@@ -1749,6 +1749,46 @@
       "close": 4180.0,
       "pnl": -1.65,
       "win": false
+    },
+    {
+      "date": "2026-10-09",
+      "ticker": "2502.T",
+      "name": "アサヒグループホールディングス",
+      "direction": "BUY",
+      "open": 1572.0,
+      "close": 1580.0,
+      "pnl": 0.51,
+      "win": true
+    },
+    {
+      "date": "2026-10-09",
+      "ticker": "2503.T",
+      "name": "キリンホールディングス",
+      "direction": "BUY",
+      "open": 2769.0,
+      "close": 2800.0,
+      "pnl": 1.12,
+      "win": true
+    },
+    {
+      "date": "2026-10-09",
+      "ticker": "6841.T",
+      "name": "横河電機",
+      "direction": "BUY",
+      "open": 4580.0,
+      "close": 4621.0,
+      "pnl": 0.9,
+      "win": true
+    },
+    {
+      "date": "2026-10-09",
+      "ticker": "4922.T",
+      "name": "コーセーホールディングス",
+      "direction": "BUY",
+      "open": 5485.0,
+      "close": 5514.0,
+      "pnl": 0.53,
+      "win": true
     }
   ]
 }
