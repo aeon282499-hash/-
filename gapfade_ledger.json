@@ -1666,5 +1666,53 @@
     "exit_px": 2864.5,
     "pnl": -2.77,
     "yen": -13850
+  },
+  {
+    "date": "2026-10-09",
+    "ticker": "6323.T",
+    "gap": 4.96,
+    "open": 4631.0,
+    "prev_close": 4412.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-10-09",
+    "ticker": "2160.T",
+    "gap": 3.99,
+    "open": 3255.0,
+    "prev_close": 3130.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-10-09",
+    "ticker": "7014.T",
+    "gap": 3.5,
+    "open": 4580.0,
+    "prev_close": 4425.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-10-09",
+    "ticker": "3762.T",
+    "gap": 3.35,
+    "open": 3055.0,
+    "prev_close": 2956.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
   }
 ]
