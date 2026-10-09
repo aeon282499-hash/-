@@ -1,4 +1,80 @@
 {
-  "date": "2026-10-09",
-  "signals": []
+  "date": "2026-10-13",
+  "signals": [
+    {
+      "ticker": "8252.T",
+      "name": "丸井グループ",
+      "direction": "BUY",
+      "prev_close": 2751.0,
+      "limit_price": 2778,
+      "days_cover": 0.4447109515846151,
+      "vt5": 0.815,
+      "updn_vol": 0.757,
+      "rsi": 36.58,
+      "deviation": -3.11,
+      "vol_ratio": 0.89,
+      "range_ratio": 1.6,
+      "turnover": 2439925850.0
+    },
+    {
+      "ticker": "9531.T",
+      "name": "東京瓦斯",
+      "direction": "BUY",
+      "prev_close": 5954.0,
+      "limit_price": 6010,
+      "days_cover": 0.1652438865631791,
+      "vt5": 1.05,
+      "updn_vol": 0.862,
+      "rsi": 40.44,
+      "deviation": -3.88,
+      "vol_ratio": 1.49,
+      "range_ratio": 1.63,
+      "turnover": 9016621500.0
+    },
+    {
+      "ticker": "1969.T",
+      "name": "高砂熱学工業",
+      "direction": "BUY",
+      "prev_close": 4370.0,
+      "limit_price": 4410,
+      "days_cover": 0.4778182557586155,
+      "vt5": 1.081,
+      "updn_vol": 0.876,
+      "rsi": 39.27,
+      "deviation": -3.73,
+      "vol_ratio": 1.75,
+      "range_ratio": 1.57,
+      "turnover": 4080217600.0
+    },
+    {
+      "ticker": "8015.T",
+      "name": "豊田通商",
+      "direction": "BUY",
+      "prev_close": 7121.0,
+      "limit_price": 7190,
+      "days_cover": 0.23076789557534313,
+      "vt5": 0.849,
+      "updn_vol": 0.901,
+      "rsi": 42.57,
+      "deviation": -3.94,
+      "vol_ratio": 1.01,
+      "range_ratio": 1.5,
+      "turnover": 16130858400.0
+    },
+    {
+      "ticker": "4568.T",
+      "name": "第一三共",
+      "direction": "BUY",
+      "prev_close": 2623.0,
+      "limit_price": 2649,
+      "days_cover": 0.7532192129164644,
+      "vt5": 0.923,
+      "updn_vol": 0.936,
+      "rsi": 36.54,
+      "deviation": -5.97,
+      "vol_ratio": 1.31,
+      "range_ratio": 1.55,
+      "turnover": 20756738400.0
+    }
+  ]
 }

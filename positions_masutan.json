@@ -13,10 +13,18 @@
    "300000": 0,
    "500000": 0
   },
-  "status": "open",
+  "status": "closed",
   "name": "ミナトホールディングス",
   "entry_adj": 5240.0,
-  "entry_raw": 5240.0
+  "entry_raw": 5240.0,
+  "exit_adj": 5160.0,
+  "exit_raw": 5160.0,
+  "pnl_pct": -1.527,
+  "pnl_net_pct": -1.827,
+  "yen": {
+   "300000": 0,
+   "500000": 0
+  }
  },
  {
   "code": "4440",
@@ -51,7 +59,9 @@
    "300000": 100,
    "500000": 200
   },
-  "status": "pending",
-  "name": "豊和工業"
+  "status": "open",
+  "name": "豊和工業",
+  "entry_adj": 2260.0,
+  "entry_raw": 2260.0
  }
 ]

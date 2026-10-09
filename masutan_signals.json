@@ -1,117 +1,115 @@
 {
- "date": "2026-10-08",
- "latest_pubdate": "2026-10-08",
+ "date": "2026-10-09",
+ "latest_pubdate": "2026-10-09",
  "rows": [
   {
    "code": "4440",
    "start": "2026-09-16",
-   "last": "2026-10-08",
+   "last": "2026-10-09",
    "cls": "003",
    "cls_max": "003",
-   "count": 3,
-   "dev": 6.2,
+   "count": 4,
+   "dev": -3.04,
    "first_hit": "2026-10-07",
    "hits": [
     "2026-10-07"
    ],
    "hit_no": 0,
-   "tov5_oku": 4.31,
-   "close_raw": 2390.0,
-   "close_adj": 2390.0,
+   "tov5_oku": 7.1,
+   "close_raw": 2208.0,
+   "close_adj": 2208.0,
    "status": "fired_before",
    "note": "2026-10-07 にシグナル済み（エピソード内1回目・±15%を外れてまた2日収まれば3回目まで撃つ）"
   },
   {
    "code": "6203",
    "start": "2026-09-16",
-   "last": "2026-10-08",
+   "last": "2026-10-09",
    "cls": "003",
    "cls_max": "003",
-   "count": 2,
-   "dev": 1.86,
+   "count": 3,
+   "dev": 2.54,
    "first_hit": "2026-10-08",
    "hits": [
     "2026-10-08"
    ],
-   "hit_no": 1,
-   "tov5_oku": 28.68,
-   "close_raw": 2280.0,
-   "close_adj": 2280.0,
-   "status": "signal",
-   "entry_date": "2026-10-09",
-   "exit_date": "2026-10-14",
-   "shares": {
-    "300000": 100,
-    "500000": 200
-   }
+   "hit_no": 0,
+   "tov5_oku": 26.95,
+   "close_raw": 2327.0,
+   "close_adj": 2327.0,
+   "status": "fired_before",
+   "note": "2026-10-08 にシグナル済み（エピソード内1回目・±15%を外れてまた2日収まれば3回目まで撃つ）"
   },
   {
    "code": "6862",
    "start": "2026-08-17",
-   "last": "2026-10-08",
+   "last": "2026-10-09",
    "cls": "003",
    "cls_max": "003",
-   "count": 4,
-   "dev": 5.9,
+   "count": 5,
+   "dev": 7.9,
    "first_hit": "2026-09-15",
    "hits": [
     "2026-09-15",
     "2026-10-06"
    ],
    "hit_no": 0,
-   "tov5_oku": 8.34,
-   "close_raw": 4995.0,
-   "close_adj": 4995.0,
+   "tov5_oku": 9.31,
+   "close_raw": 5160.0,
+   "close_adj": 5160.0,
    "status": "fired_before",
    "note": "2026-10-06 にシグナル済み（エピソード内2回目・±15%を外れてまた2日収まれば3回目まで撃つ）"
   }
  ],
- "signals": [
-  {
-   "code": "6203",
-   "start": "2026-09-16",
-   "last": "2026-10-08",
-   "cls": "003",
-   "cls_max": "003",
-   "count": 2,
-   "dev": 1.86,
-   "first_hit": "2026-10-08",
-   "hits": [
-    "2026-10-08"
-   ],
-   "hit_no": 1,
-   "tov5_oku": 28.68,
-   "close_raw": 2280.0,
-   "close_adj": 2280.0,
-   "status": "signal",
-   "entry_date": "2026-10-09",
-   "exit_date": "2026-10-14",
-   "shares": {
-    "300000": 100,
-    "500000": 200
-   }
-  }
- ],
+ "signals": [],
  "events": [
   {
+   "kind": "exit",
+   "code": "6862",
+   "signal_date": "2026-10-06",
+   "entry_date": "2026-10-07",
+   "exit_date": "2026-10-09",
+   "start": "2026-08-17",
+   "cls": "003",
+   "dev_sig": 14.84,
+   "tov5_oku": 9.19,
+   "close_sig_raw": 5260.0,
+   "shares": {
+    "300000": 0,
+    "500000": 0
+   },
+   "status": "closed",
+   "name": "ミナトホールディングス",
+   "entry_adj": 5240.0,
+   "entry_raw": 5240.0,
+   "exit_adj": 5160.0,
+   "exit_raw": 5160.0,
+   "pnl_pct": -1.527,
+   "pnl_net_pct": -1.827,
+   "yen": {
+    "300000": 0,
+    "500000": 0
+   }
+  },
+  {
    "kind": "entry",
-   "code": "4440",
-   "signal_date": "2026-10-07",
-   "entry_date": "2026-10-08",
-   "exit_date": "2026-10-13",
+   "code": "6203",
+   "signal_date": "2026-10-08",
+   "entry_date": "2026-10-09",
+   "exit_date": "2026-10-14",
    "start": "2026-09-16",
    "cls": "003",
-   "dev_sig": 9.24,
-   "tov5_oku": 4.35,
-   "close_sig_raw": 2432.0,
+   "dev_sig": 1.86,
+   "tov5_oku": 28.68,
+   "close_sig_raw": 2280.0,
    "shares": {
     "300000": 100,
     "500000": 200
    },
    "status": "open",
-   "name": "ヴィッツ",
-   "entry_adj": 2403.0,
-   "entry_raw": 2403.0
+   "name": "豊和工業",
+   "entry_adj": 2260.0,
+   "entry_raw": 2260.0
   }
  ]
 }
