@@ -122,10 +122,10 @@ jobs:
           DISCORD_WEBHOOK_ARENA_URL: ${{ secrets.DISCORD_WEBHOOK_ARENA_URL }}
         run: python arena_watchlist.py
 
-      - name: ✂️上ヒゲ刈り取り候補（2026-10-04追加・前夜の監視リスト10本・発注なし）
-        # TOPIX500×5日−5%以下×当日+3%以上の陽線を除く×20日平均代金の上位10（oshime5_candidates.py・検証は trade_bt RESULTS_1004）。
-        # oshime5_candidates.json をコミット → チンパン🎯前夜の準備タブ。Discordは DISCORD_WEBHOOK_OSHIME5_URL（未設定ならJSONだけ）。
-        # ここが失敗しても他の配信とコミットは止めない。
+      - name: ✂️上ヒゲ刈り取り候補（2026-10-04追加→2026-10-09 本人「もういらない」で停止・コードは残置）
+        # 60日検証は後半(8/15〜)がゼロ・紙4日7回で判定不能のまま本人判断で終了（trade_bt RESULTS_ALL.md / RESULTS_ALL_tov.md）。
+        # 再開するときは if: false を外す。Windowsタスク Oshime5Live も同日に削除済み。
+        if: false
         continue-on-error: true
         env:
           DISCORD_WEBHOOK_OSHIME5_URL: ${{ secrets.DISCORD_WEBHOOK_OSHIME5_URL }}

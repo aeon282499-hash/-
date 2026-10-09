@@ -282,6 +282,7 @@ function o5SortBar() {
   return `<div class="tabs" style="margin:6px 0">${b("r5", "5日騰落の深い順")}${b("mcap", "時価総額の大きい順")}${b("tov", "代金の多い順")}</div>`;
 }
 function viewOshime5() {
+  if (O5 && O5.stopped) return `<h1>✂️ 上ヒゲ刈り取り候補</h1><div class="banner warn">⏹ ${esc(String(O5.stopped))} に停止しました（紙4日7回・60日検証は8/15以降ゼロ）。候補の配信も場中のラインも出ません。</div>`;
   if (!O5 || !(O5.rows || []).length) return `<h1>✂️ 上ヒゲ刈り取り候補</h1><div class="empty">${esc(O5 ? "該当なし（条件に合う銘柄がありませんでした）" : (O5_ERR || "読み込み中…"))}</div>`;
   const old = String(O5.target_date || "") < todayStr() && !CFG.DEMO;
   return `<h1>✂️ 上ヒゲ刈り取り候補<small>${esc(String(O5.target_date || "").slice(5))} 分 ・ ${esc(String(O5.date || "").slice(5))} 引けで選んだ${(O5.rows || []).length}本</small></h1>

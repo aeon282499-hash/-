@@ -790,10 +790,18 @@ def build() -> dict:
 
     # ✂️ 上ヒゲ刈り取り候補（2026-10-04本人依頼）: 親リポの oshime5_candidates.py が前夜配信で生成・コミットする
     # oshime5_candidates.json をそのまま注入（TOPIX500×5日−5%以下×代金上位10・陰線高値+1ティック買いの監視リスト）。
+    # 2026-10-09 本人「もういらない」で停止（前夜ステップ if: false・Windowsタスク Oshime5Live 削除・コードは残置）。
+    # OSHIME5_STOPPED を None に戻せば再開。止まっている間は画面に「停止」だけ出し、古い候補を出さない。
+    OSHIME5_STOPPED = "2026-10-09"
     oshime5 = None
     o5_path = HERE.parent / "oshime5_candidates.json"
     try:
-        if o5_path.exists():
+        if OSHIME5_STOPPED:
+            oshime5 = {"stopped": OSHIME5_STOPPED, "rows": [], "fresh": False}
+            with open(DATA_DIR / "oshime5.json", "w", encoding="utf-8") as f:
+                json.dump(oshime5, f, ensure_ascii=False, separators=(",", ":"))
+            print(f"[build] 上ヒゲ刈り取り: {OSHIME5_STOPPED} で停止（候補は出さない）")
+        elif o5_path.exists():
             with open(o5_path, encoding="utf-8") as f:
                 oshime5 = json.load(f)
             oshime5["fresh"] = str(oshime5.get("target_date", "")) >= datetime.now(JST).strftime("%Y-%m-%d")
