@@ -32,7 +32,7 @@ function uwickSection() {
   const rows = (short ? u.sell : u.buy) || [];
   const seg = `<div class="seg"><a class="${short ? "" : "on"}" onclick="uwSetSide('buy')">📈 買い（高値抜け） ${(u.buy || []).length}</a><a class="${short ? "on" : ""}" onclick="uwSetSide('sell')">🩳 売り（安値割れ） ${(u.sell || []).length}</a></div>`;
   const stale = u.fresh ? "" : `<div class="banner warn">⚠️ これは過去分（${esc(u.target_date || "")}）の候補です。次の夕方ビルドで更新。</div>`;
-  const honest = `<div class="banner info"><b>勝てるとは言いません。</b>日足20年では ${esc((u.stats || {}).buy || "")}。${esc((u.stats || {}).sell || "")}。${esc((u.stats || {}).caveat || "")} ここは<b>候補と逆指値の水準を並べる道具</b>です。</div>`;
+  const honest = `<div class="banner info"><b>勝てるとは言いません。</b>日足20年では ${esc((u.stats || {}).buy || "")}。${esc((u.stats || {}).sell || "")}。${(u.stats || {}).intraday ? `<br>${esc(u.stats.intraday)}。` : ""}${esc((u.stats || {}).caveat || "")} ここは<b>候補と逆指値の水準を並べる道具</b>です。</div>`;
   const unknown = short && !u.iss_known ? `<div class="banner warn">⚠️ 貸借区分が取れなかった回は売り側が空になります（J-Quants margin-interest）。</div>` : "";
   const body = rows.length ? `<div class="card tight">${rows.map((r, i) => uwRow(r, i, UW_SIDE)).join("")}</div>`
     : `<div class="card"><div class="empty">${short ? `該当${u.matched || 0}銘柄のうち、貸借○で売り禁でないものがありません。` : `今日は上髭${(u.rules || [])[0] ? "" : ""}の条件に合う銘柄がありません（代金3億以上・300〜10,000円）。`}</div></div>`;
