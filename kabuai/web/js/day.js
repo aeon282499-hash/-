@@ -1,10 +1,10 @@
 // day.js — チンパン デイトレ v6（2026-10-01 一から作り直し・10月デイトレルール専用）
-// 画面: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）／✂️上ヒゲ刈り取り候補（#/oshime5・2026-10-04追加・前夜の10本）／🧮電卓（#/calc・買値→利確+1.5%/損切り−3%/株数）
+// 画面: 📐候補（#/）／✅注文前チェック（#/check）／📊今日の紙トレード（#/paper）／✂️上ヒゲ刈り取り候補（#/oshime5・2026-10-04追加・前夜の10本）／🧮電卓（#/calc・買値→利確+1.5%/損切り−3%/株数・2026-10-13 空売り版=売値→買戻し−1.5%/損切り+3%）
 // データ: 立花の巡回（tachibana_live_flow.py）→ Cloudflare chimp-live の payload.fibo（fibo_oct.py が書く）。
 //   WebSocket で即時受信・切れている間は30秒ごとに取りに行く。発注はしない。
 //   ?demo を付けると demo_fibo.json（9/30 の再生）で動く（場外でも見た目を確認できる）。
 const CFG = {
-  VERSION: "6.3.0",
+  VERSION: "6.4.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",
   POLL_MS: 30000,
   DEMO: typeof location !== "undefined" && /[?&]demo/.test(location.search || ""),
@@ -296,32 +296,36 @@ function viewOshime5() {
 }
 
 // ── 🧮 電卓（買値 → 利確+1.5%・損切り−3%・株数）──
-const CALC = { px: "", sh: "", t500: true, tp: 1.5, sl: 3 };
+const CALC = { px: "", sh: "", t500: true, tp: 1.5, sl: 3, side: "buy" };   // side: buy=買い / sell=空売り（10/13）
 function tickOf(px, t500) {      // 呼値（TOPIX500 は細かい刻み）
   const T = t500 ? [[1000, 0.1], [3000, 0.5], [10000, 1], [30000, 5], [100000, 10]] : [[3000, 1], [5000, 5], [30000, 10], [50000, 50], [300000, 100]];
   for (const [lim, t] of T) if (px <= lim) return t;
   return t500 ? 50 : 1000;
 }
 const ceilTick = (v, t) => Math.round(Math.ceil(v / t - 1e-9) * t * 10) / 10;
+const floorTick = (v, t) => Math.round(Math.floor(v / t + 1e-9) * t * 10) / 10;
 function calcOut() {
-  const px = Number(CALC.px), t500 = CALC.t500;
-  if (!(px > 0)) return `<div class="empty" style="font-size:15px">買値を入れると、利確・損切りの値段と株数が出ます。</div>`;
+  const px = Number(CALC.px), t500 = CALC.t500, short = CALC.side === "sell";
+  if (!(px > 0)) return `<div class="empty" style="font-size:15px">${short ? "売値" : "買値"}を入れると、利確・損切りの値段と株数が出ます。</div>`;
   const t = tickOf(px, t500);
-  const tpRaw = px * (1 + CALC.tp / 100), slRaw = px * (1 - CALC.sl / 100);
-  const tp = ceilTick(tpRaw, tickOf(tpRaw, t500)), sl = ceilTick(slRaw, tickOf(slRaw, t500));
+  // 買い: 利確は上(+tp%)・損切りは下(−sl%)、呼値へ切り上げ。空売り: 利確は下(−tp%)・損切りは上(+sl%)、呼値へ切り下げ（どちらも「約束の%より不利にならない」側へ丸める）
+  const tpRaw = short ? px * (1 - CALC.tp / 100) : px * (1 + CALC.tp / 100), slRaw = short ? px * (1 + CALC.sl / 100) : px * (1 - CALC.sl / 100);
+  const rnd = short ? floorTick : ceilTick;
+  const tp = rnd(tpRaw, tickOf(tpRaw, t500)), sl = rnd(slRaw, tickOf(slRaw, t500));
   const auto = Math.floor(20000 / (px * CALC.sl / 100) / 100) * 100;
   const sh = Number(CALC.sh) > 0 ? Math.floor(Number(CALC.sh)) : auto;
   const f1 = v => Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `<div class="px3 num"><div class="ent"><small>利確（指値・+${CALC.tp}%）</small><b>${f1(tp)}</b></div><div class="stp"><small>損切り（逆指値・−${CALC.sl}%）</small><b>${f1(sl)}</b></div><div><small>株数</small><b>${sh > 0 ? sh.toLocaleString() : "—"}</b></div></div>
-    <div class="cd-line num">利確したら <b class="pos">${sh > 0 ? sYen((tp - px) * sh) : "—"}</b> ／ 損切りしたら <b class="neg">${sh > 0 ? sYen((sl - px) * sh) : "—"}</b></div>
-    <div class="cd-line num">建玉 <b>${sh > 0 ? Math.round(px * sh).toLocaleString() + "円" : "—"}</b> ・ 呼値 <b>${t}円</b>（${t500 ? "TOPIX500" : "一般の銘柄"}）</div>
-    ${Number(CALC.sh) > 0 ? "" : `<div class="note" style="margin-top:6px">株数＝損失2万円 ÷（買値×${CALC.sl}%）を100株単位で切り捨て${auto <= 0 ? "。この株価だと100株でも損失が2万円を超えます（株数を入れてください）" : ""}。</div>`}
-    <div class="note" style="margin-top:6px">値段は呼値に合わせて切り上げ（計算上の値: 利確 ${tpRaw.toFixed(1)} ／ 損切り ${slRaw.toFixed(1)}）。</div>`;
+  const pnlTp = short ? (px - tp) * sh : (tp - px) * sh, pnlSl = short ? (px - sl) * sh : (sl - px) * sh;
+  return `<div class="px3 num"><div class="ent"><small>利確（${short ? "買戻し" : ""}指値・${short ? "−" : "+"}${CALC.tp}%）</small><b>${f1(tp)}</b></div><div class="stp"><small>損切り（${short ? "買戻し" : ""}逆指値・${short ? "+" : "−"}${CALC.sl}%）</small><b>${f1(sl)}</b></div><div><small>株数</small><b>${sh > 0 ? sh.toLocaleString() : "—"}</b></div></div>
+    <div class="cd-line num">利確したら <b class="pos">${sh > 0 ? sYen(pnlTp) : "—"}</b> ／ 損切りしたら <b class="neg">${sh > 0 ? sYen(pnlSl) : "—"}</b></div>
+    <div class="cd-line num">${short ? "売り建玉" : "建玉"} <b>${sh > 0 ? Math.round(px * sh).toLocaleString() + "円" : "—"}</b> ・ 呼値 <b>${t}円</b>（${t500 ? "TOPIX500" : "一般の銘柄"}）</div>
+    ${Number(CALC.sh) > 0 ? "" : `<div class="note" style="margin-top:6px">株数＝損失2万円 ÷（${short ? "売値" : "買値"}×${CALC.sl}%）を100株単位で切り捨て${auto <= 0 ? "。この株価だと100株でも損失が2万円を超えます（株数を入れてください）" : ""}。</div>`}
+    <div class="note" style="margin-top:6px">値段は呼値に合わせて${short ? "切り下げ" : "切り上げ"}（計算上の値: 利確 ${tpRaw.toFixed(1)} ／ 損切り ${slRaw.toFixed(1)}）。${short ? "空売りは信用売り（貸借銘柄だけ・新規売停止や逆日歩は別に確認）。手数料・貸株料は含みません。" : ""}</div>`;
 }
 function calcSet(k, v) {
   CALC[k] = v;
   const el = document.getElementById("calc-out");
-  if (el) el.innerHTML = calcOut(); else render();
+  if (k === "side" || !el) render(); else el.innerHTML = calcOut();   // 売買の切替は見出し・ラベルも変わるので全体を描き直す
 }
 function calcPick(code) {
   const r = ((O5 && O5.rows) || []).find(x => x.code === code); if (!r) return;
@@ -331,9 +335,12 @@ function calcPick(code) {
 function viewCalc() {
   const picks = ((O5 && O5.rows) || []).map(r => `<a class="tag pri" style="cursor:pointer;margin:0 6px 6px 0;display:inline-block" onclick="calcPick('${esc(r.code)}')">${esc(r.name)}</a>`).join("");
   const inp = "width:100%;font-size:22px;padding:10px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--tx);box-sizing:border-box";
-  return `<h1>🧮 電卓<small>利確+${CALC.tp}%・損切り−${CALC.sl}%</small></h1>
+  const short = CALC.side === "sell";
+  const sideBtn = (k, label) => `<a class="tag ${CALC.side === k ? "pri" : ""}" style="cursor:pointer;display:inline-block;padding:8px 16px;font-size:16px;margin-right:8px" onclick="calcSet('side','${k}')">${label}</a>`;
+  return `<h1>🧮 電卓<small>${short ? `空売り：利確−${CALC.tp}%・損切り+${CALC.sl}%` : `買い：利確+${CALC.tp}%・損切り−${CALC.sl}%`}</small></h1>
     <div class="cd">
-      <label style="display:block;font-weight:800;margin-bottom:4px">買値（約定した値段）</label>
+      <div style="margin-bottom:10px">${sideBtn("buy", "📈 買い")}${sideBtn("sell", "🩳 空売り")}</div>
+      <label style="display:block;font-weight:800;margin-bottom:4px">${short ? "売値（空売りが約定した値段）" : "買値（約定した値段）"}</label>
       <input type="number" inputmode="decimal" step="0.1" value="${esc(CALC.px)}" oninput="calcSet('px', this.value)" style="${inp}" placeholder="例 3057">
       <label style="display:block;font-weight:800;margin:10px 0 4px">株数（空なら損失2万円で自動）</label>
       <input type="number" inputmode="numeric" step="100" value="${esc(CALC.sh)}" oninput="calcSet('sh', this.value)" style="${inp}" placeholder="自動">

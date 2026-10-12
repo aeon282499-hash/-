@@ -70,7 +70,7 @@ function runCalc(label, steps, payload, o5x) {
   c.render();
   const html = get("#view").innerHTML;
   const probs = ["undefined", "NaN", "表示エラー", "[object Object]"].filter(w => html.includes(w));
-  const m = html.match(/利確（指値[^<]*<\/small><b>([^<]+)<\/b>.*?損切り（逆指値[^<]*<\/small><b>([^<]+)<\/b>.*?株数<\/small><b>([^<]+)<\/b>/s);
+  const m = html.match(/利確（(?:買戻し)?指値[^<]*<\/small><b>([^<]+)<\/b>.*?損切り（(?:買戻し)?逆指値[^<]*<\/small><b>([^<]+)<\/b>.*?株数<\/small><b>([^<]+)<\/b>/s);
   console.log(`${probs.length ? "FAIL" : "ok  "} 電卓 ${label.padEnd(22)} ${m ? `利確${m[1]} 損切り${m[2]} 株数${m[3]}` : "（値段なし）"} ${probs.join(",")}`);
   return probs.length ? 1 : 0;
 }
@@ -81,6 +81,10 @@ bad += runCalc("3057円 一般", [["px", "3057"], ["t500", false]], null, null);
 bad += runCalc("5643円 300株", [["px", "5643"], ["sh", "300"]], null, null);
 bad += runCalc("9800円（自動0株）", [["px", "9800"]], null, null);
 bad += runCalc("候補タップ（ライブ）", [["pick", o5.rows[0].code]], o5live, o5);
+bad += runCalc("空売り 3057円 TOPIX500", [["side", "sell"], ["px", "3057"]], null, null);
+bad += runCalc("空売り 2245円 一般 300株", [["side", "sell"], ["px", "2245"], ["t500", false], ["sh", "300"]], null, null);
+bad += runCalc("空売り 9800円（自動0株）", [["side", "sell"], ["px", "9800"]], null, null);
+bad += runCalc("空売り→買いに戻す", [["side", "sell"], ["px", "3057"], ["side", "buy"]], null, null);
 bad += run("旧ルールのfibo", { ts: "2026-09-30 10:00:00", hhmm: "10:00", state: "am", fibo: { candidates: [], trades: [] } }, H);
 bad += run("fiboなし", { ts: "2026-09-30 10:00:00", hhmm: "10:00", state: "am" }, H);
 const stopped = JSON.parse(JSON.stringify(demo)); stopped.fibo.paper.stopped = true; stopped.fibo.paper.stop_reason = "2連敗で停止";
