@@ -1,6 +1,6 @@
-// core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5）
+// core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "5.1.0",
+  VERSION: "7.0.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
@@ -18,6 +18,8 @@ function pctTag(r1) {
   return `<span style="color:${c};font-weight:700">${s}${Number(r1).toFixed(1)}%</span>`;
 }
 let DATA = null;
+// 端末の今日(YYYY-MM-DD)。v5までは live.js にあった→v7で live.js を外したので core へ（signals.js の持ち株フォームが使う）
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
 async function fetchFirst(cands) {
   for (const u of cands) {
@@ -56,7 +58,7 @@ const ROUTES = [];   // {test:(hash)=>bool, view:(hash)=>html, nav:"live"}
 function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
-  ["plan", "live", "arena", "data"].forEach(k => {
+  ["arena", "plan", "data", "calc"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }

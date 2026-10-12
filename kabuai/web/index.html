@@ -9,27 +9,38 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>チンパン デイトレ</title>
-<!-- v6（2026-10-01 一から作り直し・本人「デイトレ専用で、俺の売買ルール用に」）
-     10月デイトレルール専用: 📐候補（fibo_oct.py の判定）／✅注文前チェック／📊今日の紙トレード の3画面だけ。
-     データは立花の巡回 → Cloudflare chimp-live（payload.fibo）。発注はしない。
-     旧v5（場中ライブ・朝の作戦・売り・探検…）は legacy_v5.html にそのまま残してある。 -->
-<link rel="stylesheet" href="day.css?v=6.0.0">
+<title>モメンタムチンパン</title>
+<!-- v7（2026-10-13 一から設計し直し・本人決定）: 前夜メイン・全データ(J-Quants EOD＋親リポのシグナル)・場中は見ない。
+     残した4本: 🌙前夜の準備(ホーム・上髭逆指値の明日の銘柄 買い/売り＋土俵＋材料＋決算) / 📋朝の作戦(✅チェックを吸収) / 📊データ(売り・EOD・探検・検索・詳細) / 🧮電卓(買い/空売り)。
+     外した: 🔥場中ライブ(立花・取得停止中・live.js は残置) / 📐フィボ・📊紙トレ / ✂️上ヒゲ刈り取り。旧画面は legacy_v5.html / legacy_v6.html。 -->
+<link rel="stylesheet" href="app.css?v=7.0.0">
 </head>
 <body>
 <header>
-  <a class="brand" href="#/">🐵 チンパン<b>デイトレ</b></a>
-  <div id="clock" class="clock"></div>
-  <a class="hbtn" title="明るさ" onclick="event.preventDefault();toggleTheme()">◐</a>
+  <a class="brand" href="#/">🐵 <span>モメンタム<b>チンパン</b></span></a>
+  <div class="hright">
+    <a href="#/about" class="datepill" id="datepill" title="EODデータの日付">—</a>
+    <a href="#/search" class="hbtn" title="銘柄検索">🔍</a>
+    <a class="hbtn" id="themebtn" title="テーマ切替" onclick="event.preventDefault();toggleTheme()">◐</a>
+  </div>
 </header>
-<main id="view"><div class="empty">読み込み中…</div></main>
+<main id="view"><div class="sk-wrap"><div class="sk"></div><div class="sk"></div><div class="sk short"></div></div></main>
 <nav>
-  <a href="#/" id="nav-cands"><span class="i">📐</span>候補</a>
-  <a href="#/check" id="nav-check"><span class="i">✅</span>チェック</a>
-  <a href="#/paper" id="nav-paper"><span class="i">📊</span>紙トレ</a>
-  <a href="#/oshime5" id="nav-oshime5"><span class="i">✂️</span>上ヒゲ</a>
+  <a href="#/" id="nav-arena"><span class="i">🌙</span>前夜</a>
+  <a href="#/plan" id="nav-plan"><span class="i">📋</span>作戦</a>
+  <a href="#/sell" id="nav-data"><span class="i">📊</span>データ</a>
   <a href="#/calc" id="nav-calc"><span class="i">🧮</span>電卓</a>
 </nav>
-<script src="js/day.js?v=6.4.0"></script>
+<script src="js/core.js?v=7.0.0"></script>
+<script src="js/signals.js?v=7.0.0"></script>
+<script src="js/detail.js?v=7.0.0"></script>
+<script src="js/momentum.js?v=7.0.0"></script>
+<script src="js/sell.js?v=7.0.0"></script>
+<script src="js/plan.js?v=7.0.0"></script>
+<script src="js/calc.js?v=7.0.0"></script>
+<script src="js/arena.js?v=7.0.0"></script>
+<script src="js/explore.js?v=7.0.0"></script>
+<script src="js/about.js?v=7.0.0"></script>
+<script src="js/boot.js?v=7.0.0"></script>
 </body>
 </html>

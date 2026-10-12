@@ -112,12 +112,17 @@ def _is_common_stock(code) -> bool:
     return len(c) < 5 or c[4] == "0"
 
 
+SCALE_OF: dict = {}   # code4 → TOPIX規模区分(ScaleCategory)。🎯上髭の呼値(TOPIX500は細かい刻み)用・master読込時に埋める（2026-10-13）
+
+
 def _segment_map_from_master(master: dict) -> dict:
     """master(/equities/master) から code(4桁) → 市場区分(プライム/スタンダード/グロース)。"""
     seg: dict = {}
     for item in master.get("data", []):
         mkt = item.get("MktNm", "")
         code = str(item.get("Code", ""))[:4]
+        if _is_common_stock(item.get("Code", "")):
+            SCALE_OF[code] = str(item.get("ScaleCat") or item.get("ScaleCategory") or "")
         if "プライム" in mkt:
             seg[code] = "プライム"
         elif "スタンダード" in mkt:
@@ -1164,6 +1169,17 @@ def build() -> dict:
     except Exception as _e:
         print(f"[build] 📋作戦はスキップ（非致命）: {_e}")
 
+    # ── 🎯上髭逆指値の明日の銘柄（2026-10-13 チンパン v7 の核・本人決定「買いと売りの両方」）。uwick_builder.py。非致命。
+    uwick = None
+    try:
+        import uwick_builder
+        uwick = uwick_builder.build_uwick(data, name_map, data_date, _iss, _alert, SEC_OF, SCALE_OF)
+        print(f"[build] 🎯上髭: 当日足{uwick['n_day']} 該当{uwick['matched']} 買い{len(uwick['buy'])} 売り{len(uwick['sell'])}"
+              f"（貸借{'有' if uwick['iss_known'] else '無'}・売り禁{'有' if uwick['alert_known'] else '無'}・規模{'有' if uwick['scale_known'] else '無'}）→ {uwick['target_date']} 分")
+    except Exception as _e:
+        print(f"[build] 🎯上髭はスキップ（非致命）: {_e}")
+        uwick = {"error": str(_e)}
+
     top = rows[:TOP_N]
     winnable = build_winnable(rows, data_date)
     print(f"[build] 🏆勝ちやすい順張り: 母集団{winnable.get('n_universe')} 価格帯内{winnable.get('n_band','-')} → {len(winnable.get('members', []))}件")
@@ -1201,6 +1217,7 @@ def build() -> dict:
         "ranking": top,
         "winnable": winnable,    # 🏆勝ちやすい順張り（2026-09-09）
         "plan": plan,            # 📋作戦（2026-09-17）
+        "uwick": uwick,          # 🎯上髭逆指値の明日の銘柄（2026-10-13・v7の核）
     }
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
           f"(skip {n_skip} 履歴不足ほか) / {time.time()-t0:.1f}s")

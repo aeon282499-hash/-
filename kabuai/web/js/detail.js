@@ -62,7 +62,7 @@ function renderDetail(s) {
         <div class="b"><div class="l">5日</div><div class="v ${cls(i.r5)}">${fmtPct(i.r5)}</div></div>
         <div class="b"><div class="l">10日</div><div class="v ${cls(i.r10)}">${fmtPct(i.r10)}</div></div>
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div></div>
-      <div class="note" style="margin-top:6px">EOD: <b>${DATA.data_date || "最新"} の終値</b>時点（場中は変わりません）。上の🔥いま だけがリアルタイム。</div>
+      <div class="note" style="margin-top:6px">EOD: <b>${DATA.data_date || "最新"} の終値</b>時点（場中は変わりません）。</div>
     </div>
     ${liveNow(s.code)}
     ${exitGuide(s.signals, fut)}
@@ -151,7 +151,7 @@ function onSearchInput(v) { SEARCH_Q = v; const el = document.getElementById("se
 function viewSearch() {
   if (!SEARCH) loadSearch().then(() => { const el = document.getElementById("searchres"); if (el) el.innerHTML = searchResults(SEARCH_Q); });
   setTimeout(() => { const i = document.getElementById("searchinput"); if (i && !SEARCH_Q) i.focus(); }, 0);
-  return `<h2>🔍 銘柄検索 <span class="sub">EODシグナル・🔥いまの値</span></h2>
+  return `<h2>🔍 銘柄検索 <span class="sub">EODシグナル・終値ベース</span></h2>
     <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
     <div class="note" style="margin:8px 2px 12px">✅＝過去検証で勝てた「買いの型」が出ている銘柄。<b style="color:#ffd93d">☆</b>でウォッチ保存。</div>
     <div id="searchres">${searchResults(SEARCH_Q)}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;

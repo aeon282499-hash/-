@@ -112,6 +112,29 @@ function planRecent(recent) {
     <div class="note">連敗は年4〜5回の想定内。短期不調でもルールを変えない（BT健在ならサンプル誤差）。数字は帳簿＝紙/実弾の別は各行の注記。</div></details>`;
 }
 
+// ── ✅注文前チェック（2026-10-13 v7: v6の別タブを📋作戦に吸収・本人決定）。チェックはこの画面を開いている間だけ覚える ──
+const PLAN_CHECKS = [
+  ["逆指値の水準は前夜の表のまま（買い＝髭の高値＋1呼値／売り＝安値−1呼値）", "寄りが水準を跳び越えたら寄り値で約定する＝嫌ならその銘柄は出さない"],
+  ["損切りを同時に入れた（−3%・🧮電卓の値）", "株数＝2万円 ÷（建値×3%）を100株単位で切り捨て"],
+  ["利確（+1.5%）か大引け成行のどちらで出るか決めた", "日計りは持ち越し禁止"],
+  ["売りは 貸借○・売り禁でない（SBIで最終確認）", "逆日歩・新規売停止は当日朝に変わることがある"],
+  ["決算発表日ではない（🎯前夜の📅明日の決算を確認）", "決算またぎの日計りは値が飛ぶ"],
+  ["今日の停止に当たっていない（−4万円／2連敗）", "当たっていたら新規は出さない"],
+  ["フェード/極上の注文と同じ銘柄・同じ資金を使っていない", "衝突時は フェード ＞ 極上 ＞ 上髭"],
+];
+const PLAN_CHECKED = new Set();
+function planToggleCheck(i) { if (PLAN_CHECKED.has(i)) PLAN_CHECKED.delete(i); else PLAN_CHECKED.add(i); render(); }
+function planClearChecks() { PLAN_CHECKED.clear(); render(); }
+function planCheckHtml() {
+  const n = PLAN_CHECKED.size, all = n === PLAN_CHECKS.length;
+  const head = all ? `<div class="banner ok"><b>✅ ${PLAN_CHECKS.length}つ全部OK</b> — 注文してよい（損切りも一緒に）。</div>`
+    : `<div class="banner">あと <b>${PLAN_CHECKS.length - n}</b> つ。全部そろうまで注文しない。</div>`;
+  return `<details class="card" style="margin-top:14px" ${n ? "open" : ""}><summary style="cursor:pointer;font-weight:700">✅ 注文前チェック <span class="muted" style="font-weight:400">${n} / ${PLAN_CHECKS.length}</span></summary>
+    <div style="margin-top:8px">${head}${PLAN_CHECKS.map(([t, s], i) => `<div class="ck ${PLAN_CHECKED.has(i) ? "on" : ""}" onclick="planToggleCheck(${i})"><span class="box">${PLAN_CHECKED.has(i) ? "✓" : ""}</span><div>${esc(t)}${s ? `<small>${esc(s)}</small>` : ""}</div></div>`).join("")}
+    <button class="hbtn" style="margin-top:8px" onclick="planClearChecks()">↺ 全部外す（次の銘柄へ）</button>
+    <div class="note" style="margin-top:6px">チェックはこの画面を開いている間だけ覚えています（リロードで消えます）。</div></div></details>`;
+}
+
 function viewPlan() {
   const p = DATA.plan;
   if (!p) return `<h2>📋 朝の作戦</h2><div class="card"><div class="empty">作戦データがまだありません（次のビルドで反映）。</div></div><p class="disc">${esc(DATA.disclaimer)}</p>`;
@@ -135,7 +158,7 @@ function viewPlan() {
   // ④ 答え合わせ ⑤ ラダー
   const recentHtml = planRecent(p.recent);
   const ladderHtml = `<details class="card" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">💰 資金ラダー（ルール）</summary><div class="note" style="margin-top:6px">${(p.ladder || []).map(l => `<div>・${esc(l)}</div>`).join("")}</div></details>`;
-  return head + ordersHtml + holdHtml + paperHtml + recentHtml + ladderHtml + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
+  return head + ordersHtml + holdHtml + paperHtml + planCheckHtml() + recentHtml + ladderHtml + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
 // 🎯前夜の準備（arena.js）から呼ぶ: 📰材料 と 📅明日の決算
 function planNewsSection() { const p = DATA.plan; if (!p) return ""; return planSections(p).newsHtml; }
