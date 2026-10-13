@@ -1789,6 +1789,56 @@
       "close": 5514.0,
       "pnl": 0.53,
       "win": true
+    },
+    {
+      "date": "2026-10-13",
+      "ticker": "3391.T",
+      "name": "ツルハホールディングス",
+      "direction": "BUY",
+      "open": 2121.5,
+      "close": 2115.5,
+      "pnl": -0.28,
+      "win": false
+    },
+    {
+      "date": "2026-10-13",
+      "ticker": "8252.T",
+      "name": "丸井グループ",
+      "direction": "BUY",
+      "open": 2764.0,
+      "close": 2774.0,
+      "pnl": 0.36,
+      "win": true
+    },
+    {
+      "date": "2026-10-13",
+      "ticker": "9531.T",
+      "name": "東京瓦斯",
+      "direction": "BUY",
+      "open": 5915.0,
+      "close": 6032.0,
+      "pnl": 1.98,
+      "win": true
+    },
+    {
+      "date": "2026-10-13",
+      "ticker": "1969.T",
+      "name": "高砂熱学工業",
+      "direction": "BUY",
+      "open": 4380.0,
+      "close": 4354.0,
+      "pnl": -0.59,
+      "win": false
+    },
+    {
+      "date": "2026-10-13",
+      "ticker": "8015.T",
+      "name": "豊田通商",
+      "direction": "BUY",
+      "open": 7127.0,
+      "close": 7281.0,
+      "pnl": 2.16,
+      "win": true
     }
   ]
 }
