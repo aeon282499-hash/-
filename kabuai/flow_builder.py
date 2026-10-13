@@ -47,7 +47,10 @@ FLOW_MIN_RATIO = 1.3   # 資金セクター: メンバー代金倍率の中央�
 FLOW_STRONG = 2.0
 FLOW_MIN_HOT = 2       # かつ 熱い本 ≥2
 TOP_GROUPS = 8
-MEMBERS_MAX = 12
+MEMBERS_MAX = 12       # (v7.1 互換・未使用)
+CHAIN_MAX = 14         # 鎖(主役と floor 以上)の表示上限
+OUT_MAX = 8            # 鎖の外(同グループで floor 未満)の表示上限・代金順
+HIDDEN_MAX = 6         # 群全体(平均残差)に floor 以上で連動する群外銘柄の上限
 LINKED_MAX = 6
 MOVER_R1, MOVER_TOV = 7.0, 5e8
 MOVERS_MAX = 12
@@ -59,6 +62,7 @@ RULES = [
     f"資金セクター＝33業種と株探テーマ。メンバーの代金倍率(当日÷20日中央値)の中央値が{FLOW_MIN_RATIO}倍以上かつ熱い本(当日+{HOT_R1:.0f}%・代金{HOT_TOV:.0f}倍)が{FLOW_MIN_HOT}本以上。倍率×(1+熱い本の割合)の順・{FLOW_STRONG:.0f}倍以上は🔥。該当が3つ未満の日は弱い順でも埋めて⚠️",
     f"連動＝直近{WINDOW}日の日次リターンを市場(等加重)で残差化した相関。しきい値はシャッフルで出る偶然の最大＋0.02",
     f"主役＝当日+{MOVER_R1:.0f}%以上・代金{MOVER_TOV/1e8:.0f}億以上。連動株はしきい値以上の相関の順",
+    "グループの各銘柄＝主役との相関・鎖の本数(同グループ内でしきい値以上の相手の数)・同日連動率(主役が+5%の日にプラスだった割合)。鎖の外＝同じテーマでも主役としきい値未満(偶然の範囲)。🧲＝群外で群全体の平均残差に連動する銘柄",
     "PTS＝株探の個別ページ(ジャパンネクスト)の夜間最終値。取れなかった回は空欄",
 ]
 STATS = {
@@ -351,9 +355,35 @@ def build_flow(data: dict, name_map: dict, data_date: str, iss: dict | None, ale
     for g in picked:
         lead = max(g["hot"], key=lambda c: float(TOV.iloc[-1][c])) if g["hot"] else max(g["mem"], key=lambda c: float(TOV.iloc[-1][c]))
         g["lead"] = lead
-        g["mem_sorted"] = sorted(g["mem"], key=lambda c: -float(TOV.iloc[-1][c]))[:MEMBERS_MAX]
-        g["linked_out"] = linked(lead, set(g["mem"]))
-        show_codes += g["mem_sorted"] + [d["code"] for d in g["linked_out"]]
+        mem = list(g["mem"]); memset = set(mem); li = pos[lead]
+        ix = [pos[c] for c in mem]
+        sub = CM[np.ix_(ix, ix)]
+        # 鎖の本数＝同グループ内で floor 以上の相手の数（対角=自分は除く）
+        g["nlinks"] = {c: int((sub[k] >= floor).sum()) - 1 for k, c in enumerate(mem)}
+        big = Rv[lead] >= 0.05; nbig = int(big.sum()); g["n_big"] = nbig
+        g["same"] = {c: (float((Rv[c][big] > 0).mean() * 100) if nbig >= 2 else None) for c in mem}
+        chain = sorted([c for c in mem if c != lead and CM[li, pos[c]] >= floor], key=lambda c: -float(CM[li, pos[c]]))
+        out = sorted([c for c in mem if c != lead and CM[li, pos[c]] < floor], key=lambda c: -float(TOV.iloc[-1][c]))
+        g["n_chain"] = len(chain); g["n_out"] = len(out)
+        g["chain"] = chain[:CHAIN_MAX]; g["out"] = out[:OUT_MAX]
+        g["mem_sorted"] = [lead] + g["chain"]
+        g["linked_out"] = linked(lead, memset)
+        # 🧲 群全体(メンバーの平均残差Z)に連動する群外銘柄
+        g["hidden"] = []
+        try:
+            GZ = np.nanmean(Z[:, ix], axis=1)
+            if np.isfinite(GZ).all() and GZ.std() > 0:
+                GZ = (GZ - GZ.mean()) / GZ.std()
+                cc = np.nan_to_num((Z.T @ GZ) / (len(Z) - 1), nan=0.0)
+                for j in np.argsort(-cc):
+                    if cc[j] < floor or len(g["hidden"]) >= HIDDEN_MAX:
+                        break
+                    if uni[j] in memset:
+                        continue
+                    g["hidden"].append((uni[j], float(cc[j])))
+        except Exception:  # noqa: BLE001
+            pass
+        show_codes += g["mem_sorted"] + g["out"] + [d["code"] for d in g["linked_out"]] + [c for c, _ in g["hidden"]]
     mov_rows = []
     for c in movers:
         lk = linked(c, set())
@@ -386,9 +416,12 @@ def build_flow(data: dict, name_map: dict, data_date: str, iss: dict | None, ale
             "strong": bool(g["ratio_med"] >= FLOW_STRONG), "score": _f(g["score"], 2),
             "ratio_med": _f(g["ratio_med"], 1), "ratio_sum": _f(g["ratio_sum"], 1), "breadth": _f(g["breadth"], 0),
             "avg_r1": _f(g["avg_r1"], 1), "avg_r5": _f(g["avg_r5"], 1), "coh": _f(g["coh"]),
-            "lead": minfo(g["lead"], None, ptsmap),
-            "members": [minfo(c, g["lead"], ptsmap) for c in g["mem_sorted"]],
+            "lead": dict(minfo(g["lead"], None, ptsmap), n_links=g["nlinks"].get(g["lead"]), n_big=g["n_big"]),
+            "n_chain": g["n_chain"], "n_out": g["n_out"], "n_big": g["n_big"],
+            "members": [dict(minfo(c, g["lead"], ptsmap), n_links=g["nlinks"].get(c), same_day=_f(g["same"].get(c), 0), n_big=g["n_big"]) for c in g["mem_sorted"]],
+            "members_out": [dict(minfo(c, g["lead"], ptsmap), n_links=g["nlinks"].get(c), same_day=_f(g["same"].get(c), 0), n_big=g["n_big"]) for c in g["out"]],
             "linked_out": [dict(d, **({"pts": ptsmap[d["code"]]["px"], "pts_dev": ptsmap[d["code"]]["dev"]} if d["code"] in ptsmap else {})) for d in g["linked_out"]],
+            "hidden": [dict(minfo(c, None, ptsmap), corr_grp=_f(v)) for c, v in g["hidden"]],
         })
     movers_out = []
     for c, lk in mov_rows:

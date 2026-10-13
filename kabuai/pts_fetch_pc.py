@@ -31,7 +31,7 @@ JST = timezone(timedelta(hours=9))
 LATEST_URL = "https://aeon282499-hash.github.io/-/data/latest.json"
 REPO = "aeon282499-hash/-"
 DEST = "kabuai/pts_latest.json"
-MAX_CODES = 160
+MAX_CODES = 220
 LOG = HERE / "_pts_fetch_pc.log"
 
 
@@ -49,7 +49,7 @@ def target_codes(latest: dict) -> list[str]:
     codes: list[str] = []
     f = latest.get("flow") or {}
     for g in f.get("groups") or []:
-        codes += [m["code"] for m in g.get("members") or []] + [m["code"] for m in g.get("linked_out") or []]
+        codes += [m["code"] for m in g.get("members") or []] + [m["code"] for m in g.get("members_out") or []] + [m["code"] for m in g.get("linked_out") or []] + [m["code"] for m in g.get("hidden") or []]
         if g.get("lead"):
             codes.append(g["lead"]["code"])
     for m in f.get("movers") or []:

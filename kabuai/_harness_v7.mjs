@@ -90,8 +90,11 @@ console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・202
   const mk = (code, name, r1, extra = {}) => Object.assign({ code, name, sector: "非鉄金属", close: 1234, r1, r5: 3.2, tov_oku: 56.7, tov_ratio: 2.9, dev25: 8.1, rng: 5.0, shortable: "○", jsf_stop: false, daily_pub: false, tse_reg: false }, extra);
   const sample = { date: DATA.data_date, target_date: "2099-01-04", fresh: true, generated_at: "x", n_universe: 1067, window: 60, floor: 0.5, null_max: 0.42, n_groups_cand: 1, weak_day: true,
     groups: [{ kind: "テーマ", label: "インジウム", n: 6, n_hot: 2, passed: true, strong: true, score: 2.5, ratio_med: 2.1, ratio_sum: 1.8, breadth: 100, avg_r1: 6.8, avg_r5: 4.3, coh: 0.41,
-      lead: mk("5711", "三菱マテリアル", 5.84), members: [mk("5713", "住友金属鉱山", 10.76, { pts: 1300, pts_dev: -0.03, pts_time: "23:58 10/13" }), mk("5711", "三菱マテリアル", 5.84, { corr: null }), mk("5714", "ＤＯＷＡ", 5.64, { corr: 0.59, daily_pub: true })],
-      linked_out: [mk("4401", "ＡＤＥＫＡ", 2.1, { corr: 0.65, same_day: 100, n_big: 5, pts: 3000, pts_dev: 1.2 })] }],
+      lead: mk("5711", "三菱マテリアル", 5.84, { n_links: 2, n_big: 7 }), n_chain: 2, n_out: 3, n_big: 7,
+      members: [mk("5711", "三菱マテリアル", 5.84, { corr: null, n_links: 2, n_big: 7 }), mk("5713", "住友金属鉱山", 10.76, { corr: 0.71, n_links: 2, same_day: 86, n_big: 7, pts: 1300, pts_dev: -0.03, pts_time: "23:58 10/13" }), mk("5714", "ＤＯＷＡ", 5.64, { corr: 0.59, n_links: 1, same_day: 57, n_big: 7, daily_pub: true })],
+      members_out: [mk("5706", "三井金属", 1.2, { corr: 0.31, n_links: 0, same_day: 43, n_big: 7, shortable: "×" })],
+      linked_out: [mk("4401", "ＡＤＥＫＡ", 2.1, { corr: 0.65, same_day: 100, n_big: 5, pts: 3000, pts_dev: 1.2 })],
+      hidden: [mk("4382", "ＨＥＲＯＺ", 27.1, { corr_grp: 0.59, tov_ratio: 35.5, pts: 1428, pts_dev: 2.1 })] }],
     movers: [{ lead: mk("5713", "住友金属鉱山", 10.76, { pts: 1300, pts_dev: -0.03 }), linked: [mk("5714", "ＤＯＷＡ", 5.64, { corr: 0.78, same_day: 100, n_big: 9 }), mk("5707", "東邦亜鉛", 9.38, { corr: 0.66, same_day: null, n_big: 1, shortable: "×" })] },
              { lead: mk("3350", "メタプラネット", 16.06), linked: [] }],
     pts: { known: true, ok: 38, tried: 65, asof: "23:58 10/13", err: {}, skipped: false }, iss_known: true, alert_known: true,
@@ -102,6 +105,8 @@ console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・202
   check("連動: 貸借/売り禁/日々公表チップ", hv.includes("貸借○") && hv.includes("貸借×"));
   sandbox.flowSetTab("sector"); hv = go("#/");
   check("資金セクター タブ（🔥・主役チップ・グループ外連動・弱い日バナー）", clean(hv) && hv.includes("🔥 インジウム") && hv.includes("×2.1") && hv.includes("上昇100%") && hv.includes("主役</span>") && hv.includes("グループ外で主役に連動") && hv.includes("ＡＤＥＫＡ") && hv.includes("日々公表") && hv.includes("資金が集まったグループが少ない日"));
+  check("資金セクター v7.2: 鎖の本数・同日連動・+5%日・鎖の外(折りたたみ)・🧲隠れ連動", hv.includes("⛓️鎖2本／6") && hv.includes("鎖2本") && hv.includes("同日86%") && hv.includes("+5%日 7回") && hv.includes("鎖の外 3本") && hv.includes("三井金属") && hv.includes("0.31") && hv.includes("偶然の範囲") && hv.includes("群全体に連動") && hv.includes("ＨＥＲＯＺ") && hv.includes("0.59") && hv.includes("×36"));
+  { const g0 = { ...sample.groups[0], members_out: [], hidden: [], n_chain: 0, n_out: 0 }; DATA.flow = { ...sample, groups: [g0] }; hv = go("#/"); check("資金セクター v7.2: 鎖の外/隠れ連動が空でも崩れない", clean(hv) && !hv.includes("鎖の外") && !hv.includes("群全体に連動")); DATA.flow = sample; hv = go("#/"); }
   DATA.flow = { ...sample, groups: [], movers: [], weak_day: false }; hv = go("#/"); check("資金セクター 0件", clean(hv) && hv.includes("資金が集まったグループがありません"));
   sandbox.flowSetTab("link"); hv = go("#/"); check("連動 0件", clean(hv) && hv.includes("主役がいません"));
   DATA.flow = { ...sample, pts: { known: false, ok: 0, tried: 40, err: { http403: 40 }, skipped: false } }; hv = go("#/"); check("PTS取れず（403）の注記", clean(hv) && hv.includes("PTSは取れませんでした") && hv.includes("http403"));

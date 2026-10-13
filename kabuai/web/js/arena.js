@@ -86,15 +86,29 @@ function flowMoverCard(m) {
   return `<div class="card tight">${head}${body}</div>`;
 }
 function flowGroupCard(g) {
+  // v7.2（2026-10-14 本人「これをチンパンのサイバーのところにも載せて」）: 主役との相関順の「鎖」＋鎖の本数＋同日連動率＋鎖の外（偶然の範囲）＋群全体への隠れ連動
   const mark = (g.strong ? "🔥 " : "") + (g.passed ? "" : "⚠️弱 ");
+  const L = g.lead || {};
+  const fl = DATA.flow && DATA.flow.floor != null ? Number(DATA.flow.floor).toFixed(2) : "しきい値";
   const head = `<div class="pk-nm" style="margin-bottom:4px"><b>${mark}${esc(g.label)}</b> <span class="chip">${esc(g.kind)}</span>
-      <small>代金 ×${Number(g.ratio_med).toFixed(1)}（中央値・合計×${Number(g.ratio_sum).toFixed(1)}） ・ 上昇${Number(g.breadth).toFixed(0)}% ・ 平均<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)} ・ 熱い本${g.n_hot}/${g.n} ・ 連動${g.coh != null ? Number(g.coh).toFixed(2) : "—"} ・ 主役 ${esc((g.lead || {}).name || "")}</small></div>`;
-  const row = m => `<div class="uwrow"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>${m.code === (g.lead || {}).code ? ' <span class="chip">主役</span>' : ""}
-      <small>${esc(m.code)} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 代金${Number(m.tov_oku).toFixed(0)}億（×${Number(m.tov_ratio).toFixed(1)}） ・ 5日${fmtPct(m.r5)} ・ ${flowPts(m)}</small>
+      <small>代金 ×${Number(g.ratio_med).toFixed(1)}（中央値・合計×${Number(g.ratio_sum).toFixed(1)}） ・ 上昇${Number(g.breadth).toFixed(0)}% ・ 平均<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)} ・ 熱い本${g.n_hot}/${g.n} ・ 連動${g.coh != null ? Number(g.coh).toFixed(2) : "—"}${g.n_chain != null ? ` ・ ⛓️鎖${g.n_chain}本／${g.n}` : ""}</small></div>`;
+  const chain = m => {
+    const isLead = m.code === L.code;
+    const same = m.same_day != null ? `同日${Number(m.same_day).toFixed(0)}%` : "同日 —";
+    const links = m.n_links != null ? `鎖${m.n_links}本` : "";
+    return `<div class="uwrow"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>${isLead ? ' <span class="chip">主役</span>' : ""}
+      <small>${esc(m.code)} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 5日${fmtPct(m.r5)} ・ 代金${Number(m.tov_oku).toFixed(0)}億（×${Number(m.tov_ratio).toFixed(0)}） ・ ${flowPts(m)}</small>
       <div class="chips">${flowReg(m)}</div></div>
-    <div class="lv"><b>${m.corr != null ? Number(m.corr).toFixed(2) : "—"}</b><small>主役と<br>の連動</small></div></div>`;
+    <div class="lv"><b>${isLead ? "1.00" : (m.corr != null ? Number(m.corr).toFixed(2) : "—")}</b><small>${isLead ? `${links}<br>+5%日 ${g.n_big != null ? g.n_big : "—"}回` : `${links}<br>${esc(same)}`}</small></div></div>`;
+  };
+  const outRow = m => `<div class="uwrow" style="padding:6px 2px"><div class="pk-nm"><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a>
+      <small>${esc(m.code)} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 5日${fmtPct(m.r5)} ・ 代金${Number(m.tov_oku).toFixed(0)}億（×${Number(m.tov_ratio).toFixed(0)}） ・ ${flowPts(m)}${m.shortable ? ` ・ 貸借${esc(m.shortable)}${m.jsf_stop ? "🚫" : ""}` : ""}</small></div>
+    <div class="lv"><b class="muted">${m.corr != null ? Number(m.corr).toFixed(2) : "—"}</b><small>${m.n_links != null ? `鎖${m.n_links}本` : ""}</small></div></div>`;
+  const members = (g.members || []).map(chain).join("");
+  const outs = (g.members_out || []).length ? `<details class="note" style="margin-top:6px"><summary>鎖の外 ${g.n_out != null ? g.n_out : g.members_out.length}本（同じ${esc(g.kind)}でも主役と${fl}未満＝偶然の範囲・代金順${g.n_out > g.members_out.length ? `・上位${g.members_out.length}本` : ""}）</summary>${g.members_out.map(outRow).join("")}</details>` : "";
   const outside = (g.linked_out || []).length ? `<div class="note" style="margin-top:4px">🔗 グループ外で主役に連動: ${g.linked_out.map(x => `<a href="#/detail/${esc(x.code)}">${esc(x.name)}</a>（${Number(x.corr).toFixed(2)}・<span class="${cls(x.r1)}">${fmtPct(x.r1)}</span>${x.pts_dev != null ? `・PTS${fmtPct(x.pts_dev)}` : ""}）`).join("、")}</div>` : "";
-  return `<div class="card tight">${head}${(g.members || []).map(row).join("")}${outside}</div>`;
+  const hidden = (g.hidden || []).length ? `<div class="note" style="margin-top:4px">🧲 グループ外で群全体に連動（隠れ連動）: ${g.hidden.map(x => `<a href="#/detail/${esc(x.code)}">${esc(x.name)}</a>（${Number(x.corr_grp).toFixed(2)}・<span class="${cls(x.r1)}">${fmtPct(x.r1)}</span>・×${Number(x.tov_ratio).toFixed(0)}${x.pts_dev != null ? `・PTS${fmtPct(x.pts_dev)}` : ""}）`).join("、")}</div>` : "";
+  return `<div class="card tight">${head}${members}${outs}${outside}${hidden}</div>`;
 }
 function flowSection() {
   const f = DATA.flow;
