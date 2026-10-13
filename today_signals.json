@@ -1,40 +1,33 @@
 {
-  "date": "2026-10-13",
+  "date": "2026-10-14",
   "signals": [
     {
-      "ticker": "3391.T",
-      "name": "ツルハホールディングス",
+      "ticker": "2809.T",
+      "name": "キユーピー",
       "direction": "BUY",
-      "prev_close": 2123.5,
-      "limit_price": 2144
+      "prev_close": 4320.0,
+      "limit_price": 4360
     },
     {
-      "ticker": "8252.T",
-      "name": "丸井グループ",
+      "ticker": "6178.T",
+      "name": "日本郵政",
       "direction": "BUY",
-      "prev_close": 2751.0,
-      "limit_price": 2778
+      "prev_close": 2366.0,
+      "limit_price": 2389
     },
     {
-      "ticker": "9531.T",
-      "name": "東京瓦斯",
+      "ticker": "8801.T",
+      "name": "三井不動産",
       "direction": "BUY",
-      "prev_close": 5954.0,
-      "limit_price": 6010
+      "prev_close": 1445.0,
+      "limit_price": 1459
     },
     {
-      "ticker": "1969.T",
-      "name": "高砂熱学工業",
+      "ticker": "7649.T",
+      "name": "スギホールディングス",
       "direction": "BUY",
-      "prev_close": 4370.0,
-      "limit_price": 4410
-    },
-    {
-      "ticker": "8015.T",
-      "name": "豊田通商",
-      "direction": "BUY",
-      "prev_close": 7121.0,
-      "limit_price": 7190
+      "prev_close": 1208.0,
+      "limit_price": 1220
     }
   ]
 }

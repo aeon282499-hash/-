@@ -1757,7 +1757,7 @@
       "basis_date": "2026-10-09",
       "prev_close": 3700.0,
       "limit_price": 3700.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 10.12,
       "short": {
         "mark": "○",
@@ -1772,11 +1772,44 @@
       "atr_pct": 6.61,
       "vol_ratio": 5.6,
       "range_pct": 25.7,
-      "mcap_oku": 339
+      "mcap_oku": 339,
+      "entry_session": "2026-10-13",
+      "entry_open": 4180.0,
+      "entry_close": 4180.0,
+      "entry_fill": 4180.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "4493.T",
+      "name": "サイバーセキュリティクラウド",
+      "direction": "SELL",
+      "signal_date": "2026-10-14",
+      "basis_date": "2026-10-13",
+      "prev_close": 4180.0,
+      "limit_price": 4180.0,
+      "status": "pending",
+      "daily_gain": 12.97,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 200,
+      "entry_mode": "limit_day",
+      "dev25": 91.2,
+      "atr_pct": 6.85,
+      "vol_ratio": 2.9,
+      "range_pct": 10.6,
+      "mcap_oku": 374
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-13",
+  "last_report_date": "2026-10-14",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W41"
 }
