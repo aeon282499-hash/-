@@ -133,6 +133,17 @@ def fetch_pts_one(code4: str, timeout: float = 6.0) -> dict | None:
         return {"_err": str(e)[:60]}
 
 
+def asof_key(t: str) -> tuple:
+    """株探のPTS時刻「HH:MM　MM/DD」を (MM/DD, HH:MM) に。ナイトタイムは翌日06:00まで続くので文字列maxでは「23:59 10/13」が「00:11 10/14」に勝ってしまう。"""
+    parts = str(t or "").replace("　", " ").split()
+    return (parts[1], parts[0]) if len(parts) >= 2 else ("", str(t or ""))
+
+
+def latest_asof(ptsmap: dict) -> str | None:
+    vals = [v.get("time") for v in ptsmap.values() if v.get("time")]
+    return max(vals, key=asof_key) if vals else None
+
+
 def fetch_pts(codes: list[str], workers: int = 8) -> tuple[dict, dict]:
     """{code4: {px,dev,time}} と メタ(試行/成功/エラー種)。"""
     meta = {"tried": len(codes), "ok": 0, "err": {}}
@@ -207,7 +218,8 @@ def build_flow(data: dict, name_map: dict, data_date: str, iss: dict | None, ale
     ma25 = PC.iloc[-25:].mean(); dev25 = (last / ma25 - 1) * 100
     tov_ratio = TOV.iloc[-1] / med20
     rng = (PH.iloc[-1] - PL.iloc[-1]) / last * 100
-    uni = PC.columns[(has_today) & (med20 >= TOV_MIN) & (last >= PX_LO) & (last <= PX_HI)]
+    # 20日中央値が小さくても当日に代金が爆発した銘柄（倍率600倍の祭り銘柄など）は母集団に入れる（10/13 サイバートラストが落ちた）
+    uni = PC.columns[(has_today) & ((med20 >= TOV_MIN) | (TOV.iloc[-1] >= MOVER_TOV)) & (last >= PX_LO) & (last <= PX_HI)]
     uni = [c for c in uni if re.fullmatch(r"\d{3}[0-9A-Z]", c)]
     n_uni = len(uni)
     if n_uni < 30:
@@ -351,7 +363,21 @@ def build_flow(data: dict, name_map: dict, data_date: str, iss: dict | None, ale
     ptsmap, pts_meta = ({}, {"tried": 0, "ok": 0, "err": {}, "skipped": True})
     if want_pts and show_codes:
         ptsmap, pts_meta = fetch_pts(show_codes)
-    pts_asof = max((v["time"] for v in ptsmap.values()), default=None)
+    pts_src = "ci"
+    if not ptsmap:
+        # PCから置いた kabuai/pts_latest.json（pts_fetch_pc.py・Actions のIPは株探が405を返すため）。同じ引け日のものだけ使う
+        try:
+            with open(HERE / "pts_latest.json", encoding="utf-8") as f:
+                pj = json.load(f)
+            if str(pj.get("date")) == str(data_date) and pj.get("pts"):
+                ptsmap = {c: v for c, v in pj["pts"].items() if c in set(show_codes)} or dict(pj["pts"])
+                pts_meta = {"tried": int(pj.get("tried", 0)), "ok": len(ptsmap), "err": pj.get("err", {}), "skipped": False}
+                pts_src = f"pc {pj.get('fetched_at', '')}"
+        except FileNotFoundError:
+            pass
+        except Exception as _e:  # noqa: BLE001
+            pts_meta["err"] = dict(pts_meta.get("err", {}), pc_file=str(_e)[:60])
+    pts_asof = latest_asof(ptsmap)
 
     groups_out = []
     for g in picked:
@@ -375,7 +401,7 @@ def build_flow(data: dict, name_map: dict, data_date: str, iss: dict | None, ale
         "n_universe": n_uni, "window": WINDOW, "floor": floor, "null_max": _f(null_max),
         "n_groups_cand": n_passed, "weak_day": n_passed < 3, "groups": groups_out, "movers": movers_out,
         "pts": {"known": bool(ptsmap), "ok": pts_meta.get("ok", 0), "tried": pts_meta.get("tried", 0),
-                "asof": pts_asof, "err": pts_meta.get("err", {}), "skipped": bool(pts_meta.get("skipped"))},
+                "asof": pts_asof, "err": pts_meta.get("err", {}), "skipped": bool(pts_meta.get("skipped")), "src": pts_src},
         "iss_known": bool(iss), "alert_known": bool(alert),
         "rules": RULES, "stats": STATS, "elapsed_s": round(time.time() - t0, 1),
     }
