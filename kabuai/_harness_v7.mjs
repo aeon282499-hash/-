@@ -83,6 +83,35 @@ const uw = { date: DATA.data_date, target_date: "2099-01-04", generated_at: "x",
   DATA.uwick = bak; }
 { const bak = DATA.arena; DATA.arena = null; hv = go("#/"); check("土俵なしでも落ちない", clean(hv) && hv.includes("土俵リストがまだありません")); DATA.arena = bak; }
 
+console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・2026-10-14）──");
+{ const bak = DATA.flow;
+  let fl = null;
+  try { fl = JSON.parse(fs.readFileSync("_flow_test.json", "utf8")); } catch (e) { fl = null; }
+  const mk = (code, name, r1, extra = {}) => Object.assign({ code, name, sector: "非鉄金属", close: 1234, r1, r5: 3.2, tov_oku: 56.7, tov_ratio: 2.9, dev25: 8.1, rng: 5.0, shortable: "○", jsf_stop: false, daily_pub: false, tse_reg: false }, extra);
+  const sample = { date: DATA.data_date, target_date: "2099-01-04", fresh: true, generated_at: "x", n_universe: 1067, window: 60, floor: 0.5, null_max: 0.42, n_groups_cand: 1, weak_day: true,
+    groups: [{ kind: "テーマ", label: "インジウム", n: 6, n_hot: 2, passed: true, strong: true, score: 2.5, ratio_med: 2.1, ratio_sum: 1.8, breadth: 100, avg_r1: 6.8, avg_r5: 4.3, coh: 0.41,
+      lead: mk("5711", "三菱マテリアル", 5.84), members: [mk("5713", "住友金属鉱山", 10.76, { pts: 1300, pts_dev: -0.03, pts_time: "23:58 10/13" }), mk("5711", "三菱マテリアル", 5.84, { corr: null }), mk("5714", "ＤＯＷＡ", 5.64, { corr: 0.59, daily_pub: true })],
+      linked_out: [mk("4401", "ＡＤＥＫＡ", 2.1, { corr: 0.65, same_day: 100, n_big: 5, pts: 3000, pts_dev: 1.2 })] }],
+    movers: [{ lead: mk("5713", "住友金属鉱山", 10.76, { pts: 1300, pts_dev: -0.03 }), linked: [mk("5714", "ＤＯＷＡ", 5.64, { corr: 0.78, same_day: 100, n_big: 9 }), mk("5707", "東邦亜鉛", 9.38, { corr: 0.66, same_day: null, n_big: 1, shortable: "×" })] },
+             { lead: mk("3350", "メタプラネット", 16.06), linked: [] }],
+    pts: { known: true, ok: 38, tried: 65, asof: "23:58 10/13", err: {}, skipped: false }, iss_known: true, alert_known: true,
+    rules: ["r1", "r2"], stats: { chase: "後追い検証", day3: "祭り3日目", use: "使い道" }, elapsed_s: 1 };
+  DATA.flow = sample; sandbox.flowSetTab("link"); hv = go("#/");
+  check("連動 既定タブ＝主役→連動（2主役・連動2本＋単独）", clean(hv) && hv.includes("資金の流れ") && hv.includes("🎯") && hv.includes("住友金属鉱山") && hv.includes("0.78") && hv.includes("同日100%（9回）") && hv.includes("同日 —") && hv.includes("単独で動いた") && hv.includes("後追い買いは効きません"));
+  check("連動: PTS表示（取れた/取れない）", hv.includes("PTS ¥1,300") && hv.includes("PTS —") && hv.includes("23:58 10/13 時点") && hv.includes("38/65本"));
+  check("連動: 貸借/売り禁/日々公表チップ", hv.includes("貸借○") && hv.includes("貸借×"));
+  sandbox.flowSetTab("sector"); hv = go("#/");
+  check("資金セクター タブ（🔥・主役チップ・グループ外連動・弱い日バナー）", clean(hv) && hv.includes("🔥 インジウム") && hv.includes("×2.1") && hv.includes("上昇100%") && hv.includes("主役</span>") && hv.includes("グループ外で主役に連動") && hv.includes("ＡＤＥＫＡ") && hv.includes("日々公表") && hv.includes("資金が集まったグループが少ない日"));
+  DATA.flow = { ...sample, groups: [], movers: [], weak_day: false }; hv = go("#/"); check("資金セクター 0件", clean(hv) && hv.includes("資金が集まったグループがありません"));
+  sandbox.flowSetTab("link"); hv = go("#/"); check("連動 0件", clean(hv) && hv.includes("主役がいません"));
+  DATA.flow = { ...sample, pts: { known: false, ok: 0, tried: 40, err: { http403: 40 }, skipped: false } }; hv = go("#/"); check("PTS取れず（403）の注記", clean(hv) && hv.includes("PTSは取れませんでした") && hv.includes("http403"));
+  DATA.flow = { ...sample, pts: { skipped: true } }; hv = go("#/"); check("PTSスキップの注記", clean(hv) && hv.includes("PTSは取っていません"));
+  if (fl && !fl.error) { DATA.flow = fl; hv = go("#/"); check(`実データ(_flow_test.json ${fl.date}) 連動タブ`, clean(hv) && hv.includes("資金の流れ"), `主役${(fl.movers || []).length}`); sandbox.flowSetTab("sector"); hv = go("#/"); check("実データ 資金セクタータブ", clean(hv), `グループ${(fl.groups || []).length}`); sandbox.flowSetTab("link"); }
+  else console.log("  (skip) _flow_test.json なし＝実データ検証は省略");
+  DATA.flow = { error: "boom" }; hv = go("#/"); check("flow error", clean(hv) && hv.includes("今回は作れませんでした"));
+  DATA.flow = null; hv = go("#/"); check("flow 無し", clean(hv) && hv.includes("まだ作られていません"));
+  DATA.flow = bak; }
+
 console.log("── 2) 🧮電卓 ──");
 hv = go("#/calc"); check("電卓 空", clean(hv) && hv.includes("買値を入れると"));
 sandbox.calcSet("px", "3057"); hv = $get("#calc-out").innerHTML; check("電卓 買い 3057 一般（呼値5円→3,105）", clean(hv) && hv.includes("3,105") && hv.includes("2,966") && hv.includes("200"));

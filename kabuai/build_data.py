@@ -1180,6 +1180,21 @@ def build() -> dict:
         print(f"[build] 🎯上髭はスキップ（非致命）: {_e}")
         uwick = {"error": str(_e)}
 
+    # ── 💴資金セクター→🔗連動株→🌙PTS（2026-10-14 本人依頼「毎日PTSや資金の入ってるセクター・連動株をチンパンに配信・連動を中心に」）。flow_builder.py。非致命。
+    flow = None
+    try:
+        import flow_builder
+        flow = flow_builder.build_flow(data, name_map, data_date, _iss, _alert, SEC_OF)
+        if flow.get("error"):
+            print(f"[build] 💴資金/連動: 作れず（{flow['error']}）")
+        else:
+            _p = flow.get("pts") or {}
+            print(f"[build] 💴資金/連動: 母集団{flow['n_universe']} しきい値{flow['floor']} 候補{flow['n_groups_cand']}→{len(flow['groups'])}グループ "
+                  f"主役{len(flow['movers'])} PTS {_p.get('ok')}/{_p.get('tried')}{'（' + str(_p.get('err')) + '）' if _p.get('err') else ''} / {flow['elapsed_s']}s → {flow['target_date']} 分")
+    except Exception as _e:
+        print(f"[build] 💴資金/連動はスキップ（非致命）: {_e}")
+        flow = {"error": str(_e)}
+
     top = rows[:TOP_N]
     winnable = build_winnable(rows, data_date)
     print(f"[build] 🏆勝ちやすい順張り: 母集団{winnable.get('n_universe')} 価格帯内{winnable.get('n_band','-')} → {len(winnable.get('members', []))}件")
@@ -1218,6 +1233,7 @@ def build() -> dict:
         "winnable": winnable,    # 🏆勝ちやすい順張り（2026-09-09）
         "plan": plan,            # 📋作戦（2026-09-17）
         "uwick": uwick,          # 🎯上髭逆指値の明日の銘柄（2026-10-13・v7の核）
+        "flow": flow,            # 💴資金セクター→🔗連動株→🌙PTS（2026-10-14）
     }
     print(f"[build] scored {len(rows)} / {len(data)} 銘柄 "
           f"(skip {n_skip} 履歴不足ほか) / {time.time()-t0:.1f}s")

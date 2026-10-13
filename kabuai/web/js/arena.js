@@ -56,11 +56,73 @@ function arenaSection() {
     <div class="card tight">${(a.rows || []).map(row).join("")}</div>
     ${extra ? `<div class="card note"><b>材料あり（土俵外・代金順）</b>: ${extra}</div>` : ""}`;
 }
+// ── 💴資金セクター → 🔗連動株 → 🌙PTS（2026-10-14 本人依頼「毎日PTSや資金の入ってるセクター・連動株をチンパンに配信・連動を中心に」・flow_builder.py）
+let FLOW_TAB = "link";   // 既定は連動（本人「連動を中心にして」）
+function flowSetTab(t) { FLOW_TAB = t === "sector" ? "sector" : "link"; render(); }
+function flowPts(m) {
+  if (m == null || m.pts_dev == null) return `<span class="muted">PTS —</span>`;
+  return `PTS ${yen(m.pts)} <span class="${cls(m.pts_dev)}">${fmtPct(m.pts_dev)}</span>`;
+}
+function flowReg(m) {
+  const c = [];
+  if (m.shortable) c.push(`<span class="chip">貸借${esc(m.shortable)}${m.jsf_stop ? "・🚫売り禁" : ""}</span>`);
+  if (m.daily_pub) c.push(`<span class="chip wa">日々公表</span>`);
+  if (m.tse_reg) c.push(`<span class="chip wa">規制</span>`);
+  return c.join("");
+}
+function flowLinkedRow(x) {
+  const same = x.same_day != null ? `同日${Number(x.same_day).toFixed(0)}%（${x.n_big}回）` : "同日 —";
+  return `<div class="uwrow"><div class="pk-nm"><b><a href="#/detail/${esc(x.code)}">${esc(x.name)}</a></b>
+      <small>${esc(x.code)}${x.sector ? " ・ " + esc(x.sector) : ""} ・ ${yen(x.close)} <span class="${cls(x.r1)}">${fmtPct(x.r1)}</span> ・ 代金${Number(x.tov_oku).toFixed(0)}億（×${Number(x.tov_ratio).toFixed(1)}） ・ ${flowPts(x)}</small>
+      <div class="chips">${flowReg(x)}</div></div>
+    <div class="lv"><b>${Number(x.corr).toFixed(2)}</b><small>連動<br>${esc(same)}</small></div></div>`;
+}
+function flowMoverCard(m) {
+  const L = m.lead;
+  const head = `<div class="pk-nm" style="margin-bottom:4px"><b>🎯 <a href="#/detail/${esc(L.code)}">${esc(L.name)}</a></b>
+      <small>${esc(L.code)}${L.sector ? " ・ " + esc(L.sector) : ""} ・ ${yen(L.close)} <span class="${cls(L.r1)}">${fmtPct(L.r1)}</span> ・ 代金${Number(L.tov_oku).toFixed(0)}億（×${Number(L.tov_ratio).toFixed(1)}） ・ 25MA乖離${fmtPct(L.dev25)} ・ ${flowPts(L)}</small>
+      <div class="chips">${flowReg(L)}</div></div>`;
+  const body = (m.linked || []).length ? m.linked.map(flowLinkedRow).join("") : `<div class="empty">しきい値以上の連動株なし（単独で動いた）</div>`;
+  return `<div class="card tight">${head}${body}</div>`;
+}
+function flowGroupCard(g) {
+  const mark = (g.strong ? "🔥 " : "") + (g.passed ? "" : "⚠️弱 ");
+  const head = `<div class="pk-nm" style="margin-bottom:4px"><b>${mark}${esc(g.label)}</b> <span class="chip">${esc(g.kind)}</span>
+      <small>代金 ×${Number(g.ratio_med).toFixed(1)}（中央値・合計×${Number(g.ratio_sum).toFixed(1)}） ・ 上昇${Number(g.breadth).toFixed(0)}% ・ 平均<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)} ・ 熱い本${g.n_hot}/${g.n} ・ 連動${g.coh != null ? Number(g.coh).toFixed(2) : "—"} ・ 主役 ${esc((g.lead || {}).name || "")}</small></div>`;
+  const row = m => `<div class="uwrow"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>${m.code === (g.lead || {}).code ? ' <span class="chip">主役</span>' : ""}
+      <small>${esc(m.code)} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 代金${Number(m.tov_oku).toFixed(0)}億（×${Number(m.tov_ratio).toFixed(1)}） ・ 5日${fmtPct(m.r5)} ・ ${flowPts(m)}</small>
+      <div class="chips">${flowReg(m)}</div></div>
+    <div class="lv"><b>${m.corr != null ? Number(m.corr).toFixed(2) : "—"}</b><small>主役と<br>の連動</small></div></div>`;
+  const outside = (g.linked_out || []).length ? `<div class="note" style="margin-top:4px">🔗 グループ外で主役に連動: ${g.linked_out.map(x => `<a href="#/detail/${esc(x.code)}">${esc(x.name)}</a>（${Number(x.corr).toFixed(2)}・<span class="${cls(x.r1)}">${fmtPct(x.r1)}</span>${x.pts_dev != null ? `・PTS${fmtPct(x.pts_dev)}` : ""}）`).join("、")}</div>` : "";
+  return `<div class="card tight">${head}${(g.members || []).map(row).join("")}${outside}</div>`;
+}
+function flowSection() {
+  const f = DATA.flow;
+  const title = `<div class="hh" style="margin-top:16px">💴 資金の流れ → 🔗連動株 <span class="sub">${f && f.target_date ? esc(f.target_date) + " 分（" + esc(f.date || "") + " 引け）" : ""}</span></div>`;
+  if (!f) return title + `<div class="card"><div class="empty">まだ作られていません（夕方のビルドで反映）。</div></div>`;
+  if (f.error) return title + `<div class="card"><div class="empty">今回は作れませんでした（${esc(f.error)}）。次のビルドで再試行。</div></div>`;
+  const link = FLOW_TAB === "link";
+  const seg = `<div class="seg"><a class="${link ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動 ${(f.movers || []).length}</a><a class="${link ? "" : "on"}" onclick="flowSetTab('sector')">💴 資金セクター ${(f.groups || []).length}</a></div>`;
+  const st = f.stats || {};
+  const honest = `<div class="banner info"><b>後追い買いは効きません。</b>${esc(st.chase || "")}。<br>${esc(st.day3 || "")}。<br>${esc(st.use || "")}</div>`;
+  const p = f.pts || {};
+  const ptsNote = p.skipped ? "PTSは取っていません" : (p.known ? `PTS ${esc(p.asof || "")} 時点（株探/ジャパンネクスト）${p.ok}/${p.tried}本` : `PTSは取れませんでした（${p.tried || 0}本試行${p.err && Object.keys(p.err).length ? "・" + esc(Object.keys(p.err).join(",")) : ""}）`);
+  const weak = f.weak_day ? `<div class="banner warn">⚠️ 今日は資金が集まったグループが少ない日（基準を満たしたのは${f.n_groups_cand || 0}）。弱い順でも3つまで埋めています。</div>` : "";
+  let body;
+  if (link) {
+    body = (f.movers || []).length ? f.movers.map(flowMoverCard).join("") : `<div class="card"><div class="empty">今日は +7%以上・代金5億以上の主役がいません。</div></div>`;
+  } else {
+    body = weak + ((f.groups || []).length ? f.groups.map(flowGroupCard).join("") : `<div class="card"><div class="empty">今日は資金が集まったグループがありません。</div></div>`);
+  }
+  const foot = `<div class="note" style="margin-top:4px">📏 ${(f.rules || []).map(esc).join(" ／ ")}<br>母集団${f.n_universe || 0}銘柄・連動のしきい値${f.floor != null ? Number(f.floor).toFixed(2) : "—"}（偶然の99.9%点${f.null_max != null ? Number(f.null_max).toFixed(2) : "—"}）・${ptsNote}。</div>`;
+  return title + seg + honest + body + foot;
+}
 function viewArena() {
   const prep = (typeof planNewsSection === "function" ? planNewsSection() : "") + (typeof planEarnSection === "function" ? planEarnSection() : "");
   return `<h2>🌙 前夜の準備 <span class="sub">EOD ${esc(DATA.data_date || "")}・${esc(freshnessText())}</span></h2>
-    ${whenBar("🌙", "前夜（夕方のビルド後）に見る", "明日の上髭逆指値の候補と水準 → 土俵 → 材料と決算。注文の文面は📋朝の作戦、値段と株数は🧮電卓。")}
+    ${whenBar("🌙", "前夜（夕方のビルド後）に見る", "明日の上髭逆指値の候補と水準 → 資金の流れと連動株（PTS付き） → 土俵 → 材料と決算。注文の文面は📋朝の作戦、値段と株数は🧮電卓。")}
     ${uwickSection()}
+    ${flowSection()}
     ${arenaSection()}
     ${prep}
     <p class="disc">${esc(DATA.disclaimer)}</p>`;
