@@ -68,7 +68,7 @@ const uw = { date: DATA.data_date, target_date: "2099-01-04", generated_at: "x",
   calc: { tp: 1.5, sl: 3, loss_yen: 20000 }, rules: ["r1", "r2"], stats: { period: "p", buy: "b", sell: "s", control: "c", caveat: "v" },
   buy: [mkRow("3103", "ユニチカ", 1520, 1602, 1499, false), mkRow("7003", "三井Ｅ＆Ｓ", 4204, 4447, 4190, true, { jsf_warn: true }), mkRow("9999", "テスト売り禁", 800, 850, 790, false, { jsf_stop: true })],
   sell: [mkRow("3103", "ユニチカ", 1520, 1602, 1499, false), mkRow("7003", "三井Ｅ＆Ｓ", 4204, 4447, 4190, true, { jsf_warn: true })], n_sell_blocked: 1 };
-{ const bak = DATA.uwick;
+{ const bak = DATA.uwick, fbak = DATA.flow; DATA.flow = null;   // flow も uwrow を使うので行数チェックの間は外す
   DATA.uwick = uw; hv = go("#/");
   check("上髭 買い3本", clean(hv) && (hv.match(/class="uwrow/g) || []).length === 3 && hv.includes("1,603") && hv.includes("4,447.5") && hv.includes("買い逆指値") && hv.includes("勝てるとは言いません"));
   check("上髭 買い: 利確/損切り/株数チップ", hv.includes("利確 1") && hv.includes("損切り 1") && hv.includes("株（損失2万円）") && hv.includes("🧮 電卓へ"));
@@ -80,7 +80,7 @@ const uw = { date: DATA.data_date, target_date: "2099-01-04", generated_at: "x",
   DATA.uwick = { ...uw, sell: [], iss_known: false }; sandbox.uwSetSide("sell"); hv = go("#/"); check("上髭 売り: 貸借不明バナー", clean(hv) && hv.includes("貸借区分が取れなかった")); sandbox.uwSetSide("buy");
   DATA.uwick = { error: "boom" }; hv = go("#/"); check("上髭 error", clean(hv) && hv.includes("今回は作れませんでした"));
   DATA.uwick = null; hv = go("#/"); check("上髭 無し", clean(hv) && hv.includes("まだ作られていません"));
-  DATA.uwick = bak; }
+  DATA.uwick = bak; DATA.flow = fbak; }
 { const bak = DATA.arena; DATA.arena = null; hv = go("#/"); check("土俵なしでも落ちない", clean(hv) && hv.includes("土俵リストがまだありません")); DATA.arena = bak; }
 
 console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・2026-10-14）──");
