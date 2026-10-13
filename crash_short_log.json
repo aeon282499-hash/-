@@ -287,6 +287,27 @@
   "tov_oku": 5.4,
   "ma5_up": true,
   "loanable": "×",
+  "result_pct": 0.0,
+  "result_yen": 0,
+  "exec_date": "2026-10-09",
+  "exec_open": 2307.0,
+  "exec_close": 2197.0,
+  "gap_pct": -6.98,
+  "skipped": "GD",
+  "would_pct": 4.768
+ },
+ {
+  "ticker": "338A.T",
+  "code": "338A",
+  "name": "ＺｅｎｍｕＴｅｃｈ",
+  "d0": "2026-10-09",
+  "close": 4755.0,
+  "r1": -16.43,
+  "volx": 2.37,
+  "runup": 138.1,
+  "tov_oku": 59.2,
+  "ma5_up": true,
+  "loanable": "×",
   "result_pct": null,
   "result_yen": null
  }
