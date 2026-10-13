@@ -2403,5 +2403,102 @@
       "rsi": 42.88,
       "price": 2795.5
     }
+  },
+  "2026-10-13": {
+    "main:BUY:4922.T": {
+      "decision": "RSI",
+      "rsi": 54.38,
+      "price": 5645.0
+    },
+    "main:BUY:2502.T": {
+      "decision": "HOLD",
+      "rsi": 49.5,
+      "price": 1604.0
+    },
+    "main:BUY:2503.T": {
+      "decision": "HOLD",
+      "rsi": 49.91,
+      "price": 2850.0
+    },
+    "main:BUY:6841.T": {
+      "decision": "HOLD",
+      "rsi": 37.62,
+      "price": 4571.0
+    },
+    "main:BUY:3391.T": {
+      "decision": "HOLD",
+      "rsi": 39.16,
+      "price": 2110.5
+    },
+    "main:BUY:8252.T": {
+      "decision": "HOLD",
+      "rsi": 39.73,
+      "price": 2765.5
+    },
+    "main:BUY:9531.T": {
+      "decision": "HOLD",
+      "rsi": 44.95,
+      "price": 6034.0
+    },
+    "main:BUY:1969.T": {
+      "decision": "HOLD",
+      "rsi": 38.73,
+      "price": 4361.0
+    },
+    "main:BUY:8015.T": {
+      "decision": "HOLD",
+      "rsi": 48.88,
+      "price": 7293.0
+    },
+    "kiwami:BUY:2502.T": {
+      "decision": "HOLD",
+      "rsi": 49.39,
+      "price": 1603.5
+    },
+    "kiwami:BUY:2503.T": {
+      "decision": "HOLD",
+      "rsi": 49.85,
+      "price": 2849.5
+    },
+    "kiwami:BUY:6841.T": {
+      "decision": "HOLD",
+      "rsi": 37.43,
+      "price": 4567.0
+    },
+    "kiwami_mid:BUY:2502.T": {
+      "decision": "HOLD",
+      "rsi": 49.39,
+      "price": 1603.5
+    },
+    "kiwami_mid:BUY:2503.T": {
+      "decision": "HOLD",
+      "rsi": 49.85,
+      "price": 2849.5
+    },
+    "kiwami_mid:BUY:6841.T": {
+      "decision": "HOLD",
+      "rsi": 37.43,
+      "price": 4567.0
+    },
+    "kiwami_small:BUY:2502.T": {
+      "decision": "HOLD",
+      "rsi": 49.39,
+      "price": 1603.5
+    },
+    "kiwami_small:BUY:2503.T": {
+      "decision": "HOLD",
+      "rsi": 49.85,
+      "price": 2849.5
+    },
+    "kiwami_small:BUY:3391.T": {
+      "decision": "HOLD",
+      "rsi": 39.47,
+      "price": 2113.5
+    },
+    "kiwami_gokujo:BUY:8252.T": {
+      "decision": "HOLD",
+      "rsi": 40.1,
+      "price": 2767.5
+    }
   }
 }
