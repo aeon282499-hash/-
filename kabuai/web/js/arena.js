@@ -57,8 +57,31 @@ function arenaSection() {
     ${extra ? `<div class="card note"><b>材料あり（土俵外・代金順）</b>: ${extra}</div>` : ""}`;
 }
 // ── 💴資金セクター → 🔗連動株 → 🌙PTS（2026-10-14 本人依頼「毎日PTSや資金の入ってるセクター・連動株をチンパンに配信・連動を中心に」・flow_builder.py）
-let FLOW_TAB = "link";   // 既定は連動（本人「連動を中心にして」）
-function flowSetTab(t) { FLOW_TAB = t === "sector" ? "sector" : "link"; render(); }
+let FLOW_TAB = "link";   // 既定は連動（本人「連動を中心にして」）。"book"＝📚おすすめの連動銘柄集（v7.3・2026-10-15）
+function flowSetTab(t) { FLOW_TAB = (t === "sector" || t === "book") ? t : "link"; render(); }
+// ── 📚おすすめの連動銘柄集（link_collection.py・DATA.linkbook）: 前半/後半の両方で連動が成立し代金のあるグループ
+function bookGroupCard(g, idx, dupNo) {
+  const title = `${esc(g.label)}${dupNo ? "（" + dupNo + "）" : ""}`;
+  const head = `<div class="pk-nm" style="margin-bottom:4px"><b>${idx + 1}. ${g.cross ? "🧩 " : ""}${title}</b> <span class="chip">${esc(g.kind)}</span>${(g.alts || []).map(a => `<span class="tag">${esc(a)}</span>`).join("")}
+      <small>安定 <b>${Number(g.stab).toFixed(2)}</b>（前半${Number(g.h1).toFixed(2)}・後半${Number(g.h2).toFixed(2)}・全期間${Number(g.corr).toFixed(2)}） ・ ${g.n}本 ・ 代金中央${Number(g.tov_med_oku).toFixed(0)}億 ・ 今日<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)}${g.sectors ? " ・ " + esc(g.sectors) : ""}</small></div>`;
+  const row = m => `<div class="uwrow" style="padding:7px 2px"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>
+      <small>${esc(m.code)}${m.sector ? " ・ " + esc(m.sector) : ""} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 5日${fmtPct(m.r5)} ・ 代金${Number(m.tov_med_oku).toFixed(0)}億 ・ 値幅${Number(m.rng20).toFixed(1)}%${m.shortable ? ` ・ 貸借${esc(m.shortable)}${m.jsf_stop ? "🚫" : ""}` : ""}${m.daily_pub ? " ・ 日々公表" : ""}</small></div>
+    <div class="lv"><b>${m.hub != null ? Number(m.hub).toFixed(2) : "—"}</b><small>仲間との<br>平均</small></div></div>`;
+  const open = idx < 3 ? " open" : "";
+  return `<div class="card tight"><details${open}><summary style="cursor:pointer;list-style:none">${head}</summary>${(g.members || []).map(row).join("")}</details></div>`;
+}
+function bookBody() {
+  const b = DATA.linkbook;
+  if (!b) return `<div class="card"><div class="empty">まだ作られていません（夕方のビルドで反映）。</div></div>`;
+  if (b.error) return `<div class="card"><div class="empty">今回は作れませんでした（${esc(b.error)}）。次のビルドで再試行。</div></div>`;
+  const st = b.stats || {};
+  const honest = `<div class="banner info"><b>連動の強さを測った表で、買い推奨ではありません。</b>${esc(st.chase || "")}。<br>${esc(st.use || "")}</div>`;
+  const meta = `<div class="note" style="margin-bottom:8px">期間 ${esc(b.period || "")}（${b.n_days}営業日・前半/後半${b.half_days}日ずつ） ・ 母集団${b.n_universe}本 ・ しきい値 全期間${Number(b.floor).toFixed(2)}／前後半${Number(b.floor_half).toFixed(2)} ・ 辺${b.n_edges} ・ グループ${b.n_groups}（上位${(b.groups || []).length}を表示・上位3つは開いた状態）</div>`;
+  const seen = {}; const cards = (b.groups || []).map((g, i) => { seen[g.label] = (seen[g.label] || 0) + 1; return bookGroupCard(g, i, seen[g.label] > 1 ? seen[g.label] : 0); });
+  const dupFix = (b.groups || []).length ? cards.join("") : `<div class="card"><div class="empty">両期間で成立する連動グループがありません。</div></div>`;
+  const foot = `<div class="note" style="margin-top:4px">📏 ${(b.rules || []).map(esc).join(" ／ ")}</div>`;
+  return honest + meta + dupFix + foot;
+}
 function flowPts(m) {
   if (m == null || m.pts_dev == null) return `<span class="muted">PTS —</span>`;
   return `PTS ${yen(m.pts)} <span class="${cls(m.pts_dev)}">${fmtPct(m.pts_dev)}</span>`;
@@ -113,10 +136,16 @@ function flowGroupCard(g) {
 function flowSection() {
   const f = DATA.flow;
   const title = `<div class="hh" style="margin-top:16px">💴 資金の流れ → 🔗連動株 <span class="sub">${f && f.target_date ? esc(f.target_date) + " 分（" + esc(f.date || "") + " 引け）" : ""}</span></div>`;
-  if (!f) return title + `<div class="card"><div class="empty">まだ作られていません（夕方のビルドで反映）。</div></div>`;
-  if (f.error) return title + `<div class="card"><div class="empty">今回は作れませんでした（${esc(f.error)}）。次のビルドで再試行。</div></div>`;
-  const link = FLOW_TAB === "link";
-  const seg = `<div class="seg"><a class="${link ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動 ${(f.movers || []).length}</a><a class="${link ? "" : "on"}" onclick="flowSetTab('sector')">💴 資金セクター ${(f.groups || []).length}</a></div>`;
+  if (!f || f.error) {
+    const nb0 = (DATA.linkbook && DATA.linkbook.groups) ? DATA.linkbook.groups.length : 0;
+    const seg0 = `<div class="seg"><a class="${FLOW_TAB !== "book" ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動</a><a class="${FLOW_TAB === "book" ? "on" : ""}" onclick="flowSetTab('book')">📚 連動集 ${nb0}</a></div>`;
+    if (FLOW_TAB === "book") return title + seg0 + bookBody();
+    return title + seg0 + (!f ? `<div class="card"><div class="empty">まだ作られていません（夕方のビルドで反映）。</div></div>` : `<div class="card"><div class="empty">今回は作れませんでした（${esc(f.error)}）。次のビルドで再試行。</div></div>`);
+  }
+  const link = FLOW_TAB === "link"; const book = FLOW_TAB === "book";
+  const nb = (DATA.linkbook && DATA.linkbook.groups) ? DATA.linkbook.groups.length : 0;
+  const seg = `<div class="seg"><a class="${link ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動 ${(f.movers || []).length}</a><a class="${(!link && !book) ? "on" : ""}" onclick="flowSetTab('sector')">💴 資金セクター ${(f.groups || []).length}</a><a class="${book ? "on" : ""}" onclick="flowSetTab('book')">📚 連動集 ${nb}</a></div>`;
+  if (book) return title + seg + bookBody();
   const st = f.stats || {};
   const honest = `<div class="banner info"><b>後追い買いは効きません。</b>${esc(st.chase || "")}。<br>${esc(st.day3 || "")}。<br>${esc(st.use || "")}</div>`;
   const p = f.pts || {};

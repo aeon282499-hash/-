@@ -113,6 +113,23 @@ console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・202
   DATA.flow = { ...sample, pts: { skipped: true } }; hv = go("#/"); check("PTSスキップの注記", clean(hv) && hv.includes("PTSは取っていません"));
   if (fl && !fl.error) { DATA.flow = fl; hv = go("#/"); check(`実データ(_flow_test.json ${fl.date}) 連動タブ`, clean(hv) && hv.includes("資金の流れ"), `主役${(fl.movers || []).length}`); sandbox.flowSetTab("sector"); hv = go("#/"); check("実データ 資金セクタータブ", clean(hv), `グループ${(fl.groups || []).length}`); sandbox.flowSetTab("link"); }
   else console.log("  (skip) _flow_test.json なし＝実データ検証は省略");
+  // 📚連動集（v7.3・2026-10-15）
+  { const bb = DATA.linkbook;
+    const mkb = (code, name, hub, extra = {}) => Object.assign({ code, name, sector: "銀行業", close: 1234, r1: 1.2, r5: 3.4, tov_med_oku: 9.8, rng20: 2.3, hub, shortable: "○", jsf_stop: false, daily_pub: false, tse_reg: false }, extra);
+    const sampleB = { date: DATA.data_date, target_date: "2099-01-04", n_universe: 804, n_days: 81, half_days: 40, period: "06/16〜10/14", floor: 0.5, floor_half: 0.54, n_edges: 4195, n_groups: 72,
+      groups: [{ label: "地方銀行", kind: "テーマ", alts: ["金利上昇メリット"], sectors: "銀行業12", n: 2, cross: false, corr: 0.8, stab: 0.76, h1: 0.8, h2: 0.82, score: 2.6, avg_r1: 0.5, avg_r5: 1.1, tov_med_oku: 9.8, members: [mkb("8336", "武蔵野銀行", 0.83), mkb("7380", "十六フィナンシャルグループ", 0.83, { daily_pub: true, shortable: "×" })] },
+               { label: "地方銀行", kind: "テーマ", alts: [], sectors: "銀行業2", n: 2, cross: true, corr: 0.7, stab: 0.6, h1: 0.6, h2: 0.7, score: 2.0, avg_r1: -0.3, avg_r5: 0.2, tov_med_oku: 30, members: [mkb("7337", "ひろぎんホールディングス", 0.7), mkb("7327", "第四北越フィナンシャルグループ", 0.7)] }],
+      rules: ["b1"], stats: { chase: "翌日買い検証", use: "使い道B" } };
+    DATA.flow = sample; DATA.linkbook = sampleB; sandbox.flowSetTab("book"); hv = go("#/");
+    check("📚連動集 タブ（番号・重複ラベルの（2）・安定/前半後半・仲間との平均・代金中央・🧩・alts・買い推奨ではない）", clean(hv) && hv.includes("📚 連動集 2") && hv.includes("1. 地方銀行") && hv.includes("2. 🧩 地方銀行（2）") && hv.includes("安定 <b>0.76") && hv.includes("前半0.80・後半0.82") && hv.includes("武蔵野銀行") && hv.includes("0.83") && hv.includes("金利上昇メリット") && hv.includes("買い推奨ではありません") && hv.includes("翌日買い検証") && hv.includes("81営業日") && hv.includes("日々公表"));
+    DATA.linkbook = { ...sampleB, groups: [] }; hv = go("#/"); check("📚連動集 0件", clean(hv) && hv.includes("両期間で成立する連動グループがありません"));
+    DATA.linkbook = { error: "boomB" }; hv = go("#/"); check("📚連動集 error", clean(hv) && hv.includes("boomB"));
+    DATA.linkbook = null; hv = go("#/"); check("📚連動集 無し", clean(hv) && hv.includes("まだ作られていません"));
+    DATA.flow = null; DATA.linkbook = sampleB; hv = go("#/"); check("flow 無しでも📚連動集は見られる", clean(hv) && hv.includes("1. 地方銀行"));
+    let rb = null; try { rb = JSON.parse(fs.readFileSync("_linkbook_test.json", "utf8")); } catch (e) { rb = null; }
+    if (rb && !rb.error) { DATA.flow = sample; DATA.linkbook = rb; hv = go("#/"); check(`実データ(_linkbook_test.json ${rb.date}) 📚連動集`, clean(hv) && hv.includes("📚 連動集"), `グループ${(rb.groups || []).length}/${rb.n_groups}`); }
+    else console.log("  (skip) _linkbook_test.json なし");
+    DATA.linkbook = bb; sandbox.flowSetTab("link"); }
   DATA.flow = { error: "boom" }; hv = go("#/"); check("flow error", clean(hv) && hv.includes("今回は作れませんでした"));
   DATA.flow = null; hv = go("#/"); check("flow 無し", clean(hv) && hv.includes("まだ作られていません"));
   DATA.flow = bak; }
