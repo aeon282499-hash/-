@@ -1,35 +1,4 @@
 {
-  "date": "2026-10-14",
-  "signals": [
-    {
-      "ticker": "6178.T",
-      "name": "日本郵政",
-      "direction": "BUY",
-      "prev_close": 2366.0,
-      "limit_price": 2389,
-      "days_cover": 0.11162979767987648,
-      "vt5": 1.069,
-      "updn_vol": 0.883,
-      "rsi": 40.36,
-      "deviation": -4.63,
-      "vol_ratio": 1.07,
-      "range_ratio": 2.42,
-      "turnover": 12531024450.0
-    },
-    {
-      "ticker": "8801.T",
-      "name": "三井不動産",
-      "direction": "BUY",
-      "prev_close": 1445.0,
-      "limit_price": 1459,
-      "days_cover": 0.3291420187074489,
-      "vt5": 1.052,
-      "updn_vol": 0.971,
-      "rsi": 43.76,
-      "deviation": -1.92,
-      "vol_ratio": 1.13,
-      "range_ratio": 1.66,
-      "turnover": 16353045500.0
-    }
-  ]
+  "date": "2026-10-15",
+  "signals": []
 }

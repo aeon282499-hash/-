@@ -1790,7 +1790,7 @@
       "basis_date": "2026-10-13",
       "prev_close": 4180.0,
       "limit_price": 4180.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 12.97,
       "short": {
         "mark": "○",
@@ -1805,11 +1805,19 @@
       "atr_pct": 6.85,
       "vol_ratio": 2.9,
       "range_pct": 10.6,
-      "mcap_oku": 374
+      "mcap_oku": 374,
+      "skip_reason": "指値¥4,180に届かず（高値¥4,100）",
+      "entry_session": "2026-10-14",
+      "entry_open": 4040.0,
+      "entry_close": 3665.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-14",
+  "last_report_date": "2026-10-15",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W41"
 }

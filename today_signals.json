@@ -1,33 +1,4 @@
 {
-  "date": "2026-10-14",
-  "signals": [
-    {
-      "ticker": "2809.T",
-      "name": "キユーピー",
-      "direction": "BUY",
-      "prev_close": 4320.0,
-      "limit_price": 4360
-    },
-    {
-      "ticker": "6178.T",
-      "name": "日本郵政",
-      "direction": "BUY",
-      "prev_close": 2366.0,
-      "limit_price": 2389
-    },
-    {
-      "ticker": "8801.T",
-      "name": "三井不動産",
-      "direction": "BUY",
-      "prev_close": 1445.0,
-      "limit_price": 1459
-    },
-    {
-      "ticker": "7649.T",
-      "name": "スギホールディングス",
-      "direction": "BUY",
-      "prev_close": 1208.0,
-      "limit_price": 1220
-    }
-  ]
+  "date": "2026-10-15",
+  "signals": []
 }

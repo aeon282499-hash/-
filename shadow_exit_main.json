@@ -1541,11 +1541,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 1572.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 1.972,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-10-14"
   },
   {
     "signal_date": "2026-10-09",
@@ -1559,11 +1559,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 2769.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 2.925,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-10-14"
   },
   {
     "signal_date": "2026-10-09",
@@ -1577,10 +1577,10 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 4580.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": -1.223,
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-10-14"
   }
 ]
