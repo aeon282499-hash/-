@@ -1839,6 +1839,46 @@
       "close": 7281.0,
       "pnl": 2.16,
       "win": true
+    },
+    {
+      "date": "2026-10-14",
+      "ticker": "2809.T",
+      "name": "キユーピー",
+      "direction": "BUY",
+      "open": 4303.0,
+      "close": 4274.0,
+      "pnl": -0.67,
+      "win": false
+    },
+    {
+      "date": "2026-10-14",
+      "ticker": "6178.T",
+      "name": "日本郵政",
+      "direction": "BUY",
+      "open": 2361.0,
+      "close": 2335.5,
+      "pnl": -1.08,
+      "win": false
+    },
+    {
+      "date": "2026-10-14",
+      "ticker": "8801.T",
+      "name": "三井不動産",
+      "direction": "BUY",
+      "open": 1434.5,
+      "close": 1429.5,
+      "pnl": -0.35,
+      "win": false
+    },
+    {
+      "date": "2026-10-14",
+      "ticker": "7649.T",
+      "name": "スギホールディングス",
+      "direction": "BUY",
+      "open": 1197.5,
+      "close": 1217.0,
+      "pnl": 1.63,
+      "win": true
     }
   ]
 }
