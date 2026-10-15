@@ -1,4 +1,19 @@
 {
-  "date": "2026-10-15",
-  "signals": []
+  "date": "2026-10-16",
+  "signals": [
+    {
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
+      "direction": "BUY",
+      "prev_close": 1790.5,
+      "limit_price": 1808
+    },
+    {
+      "ticker": "8253.T",
+      "name": "クレディセゾン",
+      "direction": "BUY",
+      "prev_close": 4118.0,
+      "limit_price": 4155
+    }
+  ]
 }

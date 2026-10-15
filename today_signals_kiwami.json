@@ -1,4 +1,31 @@
 {
-  "date": "2026-10-15",
-  "signals": []
+  "date": "2026-10-16",
+  "signals": [
+    {
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
+      "direction": "BUY",
+      "prev_close": 1790.5,
+      "limit_price": 1808,
+      "days_cover": 0.1288880148968382,
+      "rsi": 34.14,
+      "deviation": -3.63,
+      "vol_ratio": 0.82,
+      "range_ratio": 2.05,
+      "turnover": 2404211600.0
+    },
+    {
+      "ticker": "8253.T",
+      "name": "クレディセゾン",
+      "direction": "BUY",
+      "prev_close": 4118.0,
+      "limit_price": 4155,
+      "days_cover": 0.3226645746227613,
+      "rsi": 26.87,
+      "deviation": -7.99,
+      "vol_ratio": 2.01,
+      "range_ratio": 1.05,
+      "turnover": 6788023500.0
+    }
+  ]
 }
