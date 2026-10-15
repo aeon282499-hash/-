@@ -24,6 +24,8 @@ jobs:
   # 待ちはpublicリポジトリのActions（分数無制限）で吸収する。
   # gapfade.py側に同日ガードがあるので、既存cronと二重に起動しても配信は1回だけ。
   trigger-gapfade:
+    # ⛔ 2026-10-15 本人「ギャップ売りフェードはいらん やめて」→ 停止（gapfade.yml 側も if: false・コード残置）
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 180

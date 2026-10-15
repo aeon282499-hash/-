@@ -39,6 +39,8 @@ concurrency:
 
 jobs:
   run:
+    # ⛔ 2026-10-15 本人「ギャップ売りフェードはいらん やめて」→ 配信停止（コード残置・再開は if を外す）
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
