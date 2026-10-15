@@ -30,16 +30,19 @@ HERE = Path(__file__).resolve().parent
 
 N_MAX = 120          # 相関の窓（営業日）上限。CI の取得は約95日なのでそれに合わせて縮む
 N_MIN = 60           # これ未満なら作らない
-LIQ_MIN = 5e8        # 20日中央値の代金 ≥5億（売買できる）
+LIQ_MIN = 3e8        # 20日中央値の代金 ≥3億（売買できる。10/15 本人「テーマ連動でまとめて」→小型テーマも拾うため5億→3億）
 PX_LO, PX_HI = 200, 15000
 GROUP_MAX = 12
-GROUPS_SHOW = 30
+GROUPS_SHOW = 40
+CORE_MIN = 3         # テーマの核＝3本以上
+OVERLAP_SKIP = 0.5   # 既に採ったグループと核が半分以上重なるテーマは省く
+DISPLAY_OVERLAP_SKIP = 0.34  # 表示する銘柄が既出と1/3以上重なるグループも省く（SBI登録用に別物だけ残す）
 RULES = [
-    f"母集団＝20日中央値の代金{LIQ_MIN/1e8:.0f}億以上・{PX_LO}〜{PX_HI:,}円・当日の足がある銘柄",
-    f"連動＝直近N日（最大{N_MAX}営業日・データがあるだけ）の日次リターンを市場(等加重)で残差化した相関。全期間と前半/後半の3つを出し、3つともしきい値以上のペアだけを辺にする",
-    "しきい値＝列シャッフルで出る偶然の99.9%点＋0.05（0.50〜0.60）。前半/後半は日数が少ないぶん高くなる",
-    f"グループ＝辺を強い順につないだもの（1グループ最大{GROUP_MAX}本）。ラベルはメンバーの半分以上を含む最小の株探テーマ／33業種",
-    "おすすめ順＝安定度（全ペアの min(前半,後半) の平均）×√本数。🧩＝複数の業種にまたがる（テーマ辞書に無い隠れた鎖）",
+    f"母集団＝20日中央値の代金{LIQ_MIN/1e8:.0f}億以上・{PX_LO}〜{PX_HI:,}円・当日の足がある銘柄（ETF除く）",
+    f"連動＝直近N日（最大{N_MAX}営業日）の日次リターンを市場(等加重)で残差化した相関。全期間と前半/後半の3つを出し、3つともしきい値以上のペアだけを辺にする",
+    "しきい値＝列シャッフルで出る偶然の99.9%点＋0.05（0.50〜0.60）",
+    f"グループ＝株探テーマごとに、辺でつながった最大のかたまり（核・{CORE_MIN}本以上・最大{GROUP_MAX}本は仲間との平均相関が高い順）。ラベルは核を一番よく覆うテーマ（他の候補はタグ）。テーマで拾えない組は33業種で穴埋め。核が半分以上、または表示銘柄が1/3以上重なるグループは省く",
+    "おすすめ順＝安定度（核の全ペアの min(前半,後半) の平均）×√本数。📋コピー＝SBIの登録銘柄に貼る用のコード列",
 ]
 STATS = {
     "chase": "連動株の翌日買い（日足10年・2016-07〜2026-08・n39,800）: 寄→引 平均−0.21%・勝率45%・母集団全体は−0.02%。祭り参加+GUで寄る型は−1.9%・勝率36%＝買えない",
@@ -136,49 +139,7 @@ def build_collection(data: dict, name_map: dict, data_date: str, iss: dict | Non
     E = [(float(CM[i, j]), int(i), int(j)) for i, j in zip(iu[ok], ju[ok])]
     E.sort(reverse=True)
 
-    parent = list(range(len(uni))); size = [1] * len(uni)
-
-    def find(a):
-        while parent[a] != a:
-            parent[a] = parent[parent[a]]; a = parent[a]
-        return a
-
-    for _, i, j in E:
-        a, b = find(i), find(j)
-        if a == b:
-            continue
-        if size[a] + size[b] > GROUP_MAX:
-            continue
-        if size[a] < size[b]:
-            a, b = b, a
-        parent[b] = a; size[a] += size[b]
-    comps: dict[int, list[int]] = {}
-    for i in range(len(uni)):
-        r = find(i)
-        comps.setdefault(r, []).append(i)
-    comps = [m for m in comps.values() if len(m) >= 2]
-
     themes = _load_themes(themes_path)
-    theme_sets = {k: set(v) for k, v in themes.items()}
-
-    def label_for(codes: list[str]) -> tuple[str, str, list[str], str]:
-        """(ラベル, 種別, 候補テーマ上位, 業種内訳)。業種が6割以上なら業種、無ければカバー率最大のテーマ（同率なら小さいテーマ）。"""
-        cs = set(codes)
-        secs = pd.Series([sec_of.get(c) for c in codes if sec_of.get(c)]).value_counts()
-        sec_txt = "・".join(f"{k}{int(v)}" for k, v in secs.head(4).items())
-        cands = []
-        for th, st in theme_sets.items():
-            cov = len(cs & st) / len(cs)
-            if cov >= 0.5:
-                cands.append((cov, -len(st), th))
-        cands.sort(reverse=True)
-        alts = [t for _, _, t in cands[:3]]
-        if len(secs) and secs.iloc[0] / len(codes) >= 0.6:
-            return str(secs.index[0]), "業種", alts, sec_txt
-        if cands:
-            return cands[0][2], "テーマ", alts[1:], sec_txt
-        hub = max(codes, key=lambda c: float(np.mean([CM[pos[c], pos[o]] for o in codes if o != c])))
-        return f"{_name(name_map, hub)} の鎖", "無名", [], sec_txt
 
     def minfo(c: str, mem: list[str]) -> dict:
         al = alert.get(c) or {}
@@ -189,22 +150,97 @@ def build_collection(data: dict, name_map: dict, data_date: str, iss: dict | Non
                 "shortable": "○" if str(iss.get(c, "")) == "2" else ("×" if iss else None),
                 "jsf_stop": bool(al.get("jsf_stop")), "daily_pub": bool(al.get("daily_pub")), "tse_reg": bool(al.get("tse_reg"))}
 
+    # 辺の隣接表
+    adj: dict[int, set[int]] = {}
+    for _, i, j in E:
+        adj.setdefault(i, set()).add(j); adj.setdefault(j, set()).add(i)
+
+    def core_of(codes: list[str]) -> list[int]:
+        """テーマ内の辺でつながった最大のかたまり（頂点番号）。"""
+        ids = [pos[c] for c in codes if c in pos]
+        idset = set(ids); seen: set[int] = set(); best: list[int] = []
+        for v in ids:
+            if v in seen:
+                continue
+            comp = []; stack = [v]; seen.add(v)
+            while stack:
+                x = stack.pop(); comp.append(x)
+                for y in adj.get(x, ()):
+                    if y in idset and y not in seen:
+                        seen.add(y); stack.append(y)
+            if len(comp) > len(best):
+                best = comp
+        return best
+
+    cands_def: list[tuple[str, str, list[str]]] = [("テーマ", th, list(mem)) for th, mem in themes.items()]
+    by_sec: dict[str, list[str]] = {}
+    for c in uni:
+        if sec_of.get(c):
+            by_sec.setdefault(sec_of[c], []).append(c)
+    cands_def += [("業種", sname, mem) for sname, mem in by_sec.items()]
+
+    def hub_of(v: int, comp: list[int]) -> float:
+        return float(np.mean([CM[v, o] for o in comp if o != v])) if len(comp) > 1 else 0.0
+
+    theme_in_uni = {th: set(c for c in mem if c in pos) for th, mem in themes.items()}
+
+    def best_label(core_codes: set[str], kind0: str, label0: str) -> tuple[str, str, int, list[str]]:
+        """核を一番よく覆うテーマ（同率なら小さいテーマ）。無ければ元のラベル。(ラベル, 種別, そのテーマの母集団内本数, 他の候補テーマ)"""
+        cands = []
+        for th, st in theme_in_uni.items():
+            if not st:
+                continue
+            cov = len(core_codes & st) / len(core_codes)
+            if cov >= 0.5:
+                cands.append((cov, -len(st), th))
+        cands.sort(reverse=True)
+        if cands:
+            return cands[0][2], "テーマ", -cands[0][1], [t for _, _, t in cands[1:4]]
+        return label0, kind0, len(core_codes), [t for _, _, t in cands[:3]]
+
+    built = []
+    seen_cores: list[set[str]] = []
+    for kind, label, mem in cands_def:
+        comp = core_of(mem)
+        if len(comp) < CORE_MIN:
+            continue
+        n_core = len(comp)
+        core_codes = set(uni[v] for v in comp)
+        # 同じ核（半分以上重なる）が別のテーマから既に出ていれば省く（銀行の核がクレジットカード/事業承継/証券…から何度も出るのを防ぐ）
+        if any(len(core_codes & sc) / len(core_codes) >= OVERLAP_SKIP for sc in seen_cores):
+            continue
+        seen_cores.append(core_codes)
+        label, kind, n_theme, alts = best_label(core_codes, kind, label)
+        comp = sorted(comp, key=lambda v: -hub_of(v, comp))[:GROUP_MAX]
+        pairs = [(a_, b_) for k, a_ in enumerate(comp) for b_ in comp[k + 1:]]
+        full = float(np.mean([CM[a_, b_] for a_, b_ in pairs]))
+        stab = float(np.mean([min(CM1[a_, b_], CM2[a_, b_]) for a_, b_ in pairs]))
+        h1 = float(np.mean([CM1[a_, b_] for a_, b_ in pairs])); h2 = float(np.mean([CM2[a_, b_] for a_, b_ in pairs]))
+        codes = [uni[v] for v in comp]
+        secs = pd.Series([sec_of.get(c) for c in codes if sec_of.get(c)]).value_counts()
+        built.append({"kind": kind, "label": label, "alts": alts, "codes": codes, "core": core_codes, "n_core": n_core, "n_theme": n_theme,
+                      "full": full, "stab": stab, "h1": h1, "h2": h2, "score": stab * np.sqrt(len(codes)),
+                      "sectors": "・".join(f"{k}{int(v)}" for k, v in secs.head(4).items()), "cross": len(secs) >= 2 and kind != "業種"})
+    # テーマ優先→業種で穴埋め。半分以上重なるものは省く
+    built.sort(key=lambda g: (g["kind"] != "テーマ", -g["score"]))
+    picked: list[dict] = []
+    for g in built:
+        cs = g["core"]
+        if any(len(cs & p["core"]) / len(cs) >= OVERLAP_SKIP for p in picked):
+            continue
+        if any(len(set(g["codes"]) & set(p["codes"])) / len(g["codes"]) >= DISPLAY_OVERLAP_SKIP for p in picked):
+            continue   # 表示する12本が既出と1/3以上重なるものも省く（SBIに登録する前提＝別のリストとして意味があるものだけ）
+        picked.append(g)
     groups = []
-    for m in comps:
-        codes = [uni[i] for i in m]
-        pairs = [(a, b) for k, a in enumerate(m) for b in m[k + 1:]]
-        full = float(np.mean([CM[a, b] for a, b in pairs]))
-        stab = float(np.mean([min(CM1[a, b], CM2[a, b]) for a, b in pairs]))
-        h1 = float(np.mean([CM1[a, b] for a, b in pairs])); h2 = float(np.mean([CM2[a, b] for a, b in pairs]))
-        label, kind, alts, sec_txt = label_for(codes)
-        secs = {sec_of.get(c) for c in codes if sec_of.get(c)}
-        mem = sorted(codes, key=lambda c: -float(np.mean([CM[pos[c], pos[o]] for o in codes if o != c])))
-        groups.append({"label": label, "kind": kind, "alts": alts, "sectors": sec_txt, "n": len(codes), "cross": len(secs) >= 2 and kind != "業種",
-                       "corr": _f(full), "stab": _f(stab), "h1": _f(h1), "h2": _f(h2),
-                       "score": _f(stab * np.sqrt(len(codes)), 3),
+    for g in picked:
+        codes = g["codes"]
+        groups.append({"label": g["label"], "kind": g["kind"], "alts": g["alts"], "sectors": g["sectors"], "n": len(codes), "n_core": g["n_core"], "n_theme": g["n_theme"],
+                       "cross": g["cross"], "corr": _f(g["full"]), "stab": _f(g["stab"]), "h1": _f(g["h1"]), "h2": _f(g["h2"]),
+                       "score": _f(g["score"], 3),
                        "avg_r1": _f(float(r1[codes].mean()), 1), "avg_r5": _f(float(r5[codes].mean()), 1),
                        "tov_med_oku": _f(float(med20[codes].median() / 1e8), 1),
-                       "members": [minfo(c, codes) for c in mem]})
+                       "codes": " ".join(codes),
+                       "members": [minfo(c, codes) for c in codes]})
     groups.sort(key=lambda g: -(g["score"] or 0))
     n_all = len(groups)
     groups = groups[:GROUPS_SHOW]

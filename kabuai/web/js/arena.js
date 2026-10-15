@@ -62,13 +62,26 @@ function flowSetTab(t) { FLOW_TAB = (t === "sector" || t === "book") ? t : "link
 // ── 📚おすすめの連動銘柄集（link_collection.py・DATA.linkbook）: 前半/後半の両方で連動が成立し代金のあるグループ
 function bookGroupCard(g, idx, dupNo) {
   const title = `${esc(g.label)}${dupNo ? "（" + dupNo + "）" : ""}`;
+  const codes = g.codes || (g.members || []).map(m => m.code).join(" ");
+  const nTxt = g.n_core != null ? `核${g.n_core}本${g.n_core > g.n ? "（上位" + g.n + "本を表示）" : ""}／テーマ内${g.n_theme}本` : `${g.n}本`;
   const head = `<div class="pk-nm" style="margin-bottom:4px"><b>${idx + 1}. ${g.cross ? "🧩 " : ""}${title}</b> <span class="chip">${esc(g.kind)}</span>${(g.alts || []).map(a => `<span class="tag">${esc(a)}</span>`).join("")}
-      <small>安定 <b>${Number(g.stab).toFixed(2)}</b>（前半${Number(g.h1).toFixed(2)}・後半${Number(g.h2).toFixed(2)}・全期間${Number(g.corr).toFixed(2)}） ・ ${g.n}本 ・ 代金中央${Number(g.tov_med_oku).toFixed(0)}億 ・ 今日<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)}${g.sectors ? " ・ " + esc(g.sectors) : ""}</small></div>`;
+      <small>安定 <b>${Number(g.stab).toFixed(2)}</b>（前半${Number(g.h1).toFixed(2)}・後半${Number(g.h2).toFixed(2)}・全期間${Number(g.corr).toFixed(2)}） ・ ${nTxt} ・ 代金中央${Number(g.tov_med_oku).toFixed(0)}億 ・ 今日<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)}${g.sectors ? " ・ " + esc(g.sectors) : ""}</small></div>`;
+  const copyBar = `<div class="chips" style="margin:4px 0 2px"><button class="btn sm" onclick="event.preventDefault();bookCopy(this,'${esc(codes)}')">📋 コードをコピー（SBI登録用）</button><span class="muted" style="font-size:11px">${esc(codes)}</span></div>`;
   const row = m => `<div class="uwrow" style="padding:7px 2px"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>
       <small>${esc(m.code)}${m.sector ? " ・ " + esc(m.sector) : ""} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 5日${fmtPct(m.r5)} ・ 代金${Number(m.tov_med_oku).toFixed(0)}億 ・ 値幅${Number(m.rng20).toFixed(1)}%${m.shortable ? ` ・ 貸借${esc(m.shortable)}${m.jsf_stop ? "🚫" : ""}` : ""}${m.daily_pub ? " ・ 日々公表" : ""}</small></div>
     <div class="lv"><b>${m.hub != null ? Number(m.hub).toFixed(2) : "—"}</b><small>仲間との<br>平均</small></div></div>`;
   const open = idx < 3 ? " open" : "";
-  return `<div class="card tight"><details${open}><summary style="cursor:pointer;list-style:none">${head}</summary>${(g.members || []).map(row).join("")}</details></div>`;
+  return `<div class="card tight"><details${open}><summary style="cursor:pointer;list-style:none">${head}</summary>${copyBar}${(g.members || []).map(row).join("")}</details></div>`;
+}
+function bookCopy(btn, text) {
+  const done = () => { try { btn.textContent = "✅ コピーした"; setTimeout(() => { btn.textContent = "📋 コードをコピー（SBI登録用）"; }, 1500); } catch (e) {} };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, () => bookCopyFallback(text, done)); }
+    else bookCopyFallback(text, done);
+  } catch (e) { bookCopyFallback(text, done); }
+}
+function bookCopyFallback(text, done) {
+  try { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {}
 }
 function bookBody() {
   const b = DATA.linkbook;
@@ -76,7 +89,8 @@ function bookBody() {
   if (b.error) return `<div class="card"><div class="empty">今回は作れませんでした（${esc(b.error)}）。次のビルドで再試行。</div></div>`;
   const st = b.stats || {};
   const honest = `<div class="banner info"><b>連動の強さを測った表で、買い推奨ではありません。</b>${esc(st.chase || "")}。<br>${esc(st.use || "")}</div>`;
-  const meta = `<div class="note" style="margin-bottom:8px">期間 ${esc(b.period || "")}（${b.n_days}営業日・前半/後半${b.half_days}日ずつ） ・ 母集団${b.n_universe}本 ・ しきい値 全期間${Number(b.floor).toFixed(2)}／前後半${Number(b.floor_half).toFixed(2)} ・ 辺${b.n_edges} ・ グループ${b.n_groups}（上位${(b.groups || []).length}を表示・上位3つは開いた状態）</div>`;
+  const sbi = `<div class="note" style="margin-bottom:6px">🗂 SBIに登録: 各グループの「📋 コードをコピー」→ SBI証券の 登録銘柄（ポートフォリオ）→ 銘柄の追加／一括登録 に貼り付け（コードは半角スペース区切り・1リスト50本まで）。グループ名をリスト名にすると見分けやすい。</div>`;
+  const meta = sbi + `<div class="note" style="margin-bottom:8px">期間 ${esc(b.period || "")}（${b.n_days}営業日・前半/後半${b.half_days}日ずつ） ・ 母集団${b.n_universe}本 ・ しきい値 全期間${Number(b.floor).toFixed(2)}／前後半${Number(b.floor_half).toFixed(2)} ・ 辺${b.n_edges} ・ グループ${b.n_groups}（上位${(b.groups || []).length}を表示・上位3つは開いた状態）</div>`;
   const seen = {}; const cards = (b.groups || []).map((g, i) => { seen[g.label] = (seen[g.label] || 0) + 1; return bookGroupCard(g, i, seen[g.label] > 1 ? seen[g.label] : 0); });
   const dupFix = (b.groups || []).length ? cards.join("") : `<div class="card"><div class="empty">両期間で成立する連動グループがありません。</div></div>`;
   const foot = `<div class="note" style="margin-top:4px">📏 ${(b.rules || []).map(esc).join(" ／ ")}</div>`;
