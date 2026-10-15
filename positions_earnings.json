@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-14",
+ "last_signal_date": "2026-10-15",
  "positions": [
   {
    "ticker": "6521.T",
@@ -666,6 +666,17 @@
    "exit_kind": "PEAD延長",
    "pnl_pct": 10.91,
    "pnl_yen": 40500
+  },
+  {
+   "ticker": "581A.T",
+   "name": "ＧＯ",
+   "type": "第１四半期",
+   "date": "2026-10-15",
+   "signal_price": 3455.0,
+   "shares": 100,
+   "rsi": 47.6,
+   "runup5": -7.4,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-02"
