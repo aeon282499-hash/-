@@ -2612,5 +2612,52 @@
       "rsi": 38.29,
       "price": 2750.0
     }
+  },
+  "2026-10-15": {
+    "main:BUY:3391.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8252.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:9531.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8801.T": {
+      "decision": "RSI",
+      "rsi": 50.27,
+      "price": 1466.0
+    },
+    "main:BUY:2809.T": {
+      "decision": "HOLD",
+      "rsi": 45.89,
+      "price": 4384.0
+    },
+    "main:BUY:6178.T": {
+      "decision": "HOLD",
+      "rsi": 43.69,
+      "price": 2382.0
+    },
+    "main:BUY:7649.T": {
+      "decision": "HOLD",
+      "rsi": 46.62,
+      "price": 1251.0
+    },
+    "kiwami_small:BUY:3391.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_gokujo:BUY:8252.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
