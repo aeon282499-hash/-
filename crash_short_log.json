@@ -314,5 +314,35 @@
   "exec_open": 5040.0,
   "exec_close": 5210.0,
   "gap_pct": 5.99
+ },
+ {
+  "ticker": "3927.T",
+  "code": "3927",
+  "name": "フーバーブレイン",
+  "d0": "2026-10-14",
+  "close": 1129.0,
+  "r1": -7.91,
+  "volx": 2.07,
+  "runup": 46.2,
+  "tov_oku": 9.0,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "4398.T",
+  "code": "4398",
+  "name": "ブロードバンドセキュリティ",
+  "d0": "2026-10-14",
+  "close": 2660.0,
+  "r1": -13.36,
+  "volx": 2.91,
+  "runup": 138.2,
+  "tov_oku": 9.7,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
