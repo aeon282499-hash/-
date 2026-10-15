@@ -1786,5 +1786,29 @@
     "exit_px": 1952.0,
     "pnl": -2.46,
     "yen": -12300
+  },
+  {
+    "date": "2026-10-15",
+    "ticker": "7453.T",
+    "gap": 4.34,
+    "open": 4595.0,
+    "prev_close": 4404.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
+  },
+  {
+    "date": "2026-10-15",
+    "ticker": "9409.T",
+    "gap": 3.47,
+    "open": 3015.0,
+    "prev_close": 2914.0,
+    "shares": 100,
+    "entry_px": null,
+    "exit_px": null,
+    "pnl": null,
+    "yen": null
   }
 ]
