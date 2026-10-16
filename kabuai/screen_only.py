@@ -54,6 +54,10 @@ JQUANTS_BASE = "https://api.jquants.com/v2"
 
 MIN_TURNOVER_OKU = float(os.getenv("MIN_TURNOVER_OKU", "5"))
 MAX_MCAP_OKU = float(os.getenv("MAX_MCAP_OKU", "1000"))   # 0=無制限。超大型(キオクシア/SBG等)をデイトレ土俵から外す
+# 💰タグ: 2026-07-17〜10-15 の60日で①候補に押し目ルールを機械的に当てた再生(RESULTS_screen_rule_60d.md)で
+# 唯一前半/後半ともプラスだった帯＝前日代金30〜100億(n=88・+0.46%/件・PF1.98)。隣の10〜30億は最悪(PF0.75)で
+# 単調でないため噪音の可能性あり＝「勝てる」とは書かない。全体は−0.04%/件・PF0.94・9〜10月はマイナス。
+TAG_TOV_LO, TAG_TOV_HI = float(os.getenv("TAG_TOV_LO", "30")), float(os.getenv("TAG_TOV_HI", "100"))
 PRICE_MIN, PRICE_MAX = 1_000, 20_000
 DIP_PCT, SURGE_PCT = -5.0, 5.0
 TOP_DIP, TOP_SURGE = 30, 15
@@ -231,7 +235,8 @@ def screen(daily: pd.DataFrame, names: dict):
 
 def fmt_row(r: dict) -> str:
     mc = f" 時総{r['mcap_oku']:,.0f}億" if r.get("mcap_oku") is not None else ""
-    return (f"`{r['code']}` {r['name'][:10]} ¥{r['close']:,.0f} "
+    tag = "💰" if (r.get("tov_oku") is not None and TAG_TOV_LO <= r["tov_oku"] < TAG_TOV_HI) else "　"
+    return (f"{tag}`{r['code']}` {r['name'][:10]} ¥{r['close']:,.0f} "
             f"5日{r['r5']:+.1f}% 代金{r['tov_oku']:.1f}億{mc} 75日線:{r['ma_pos']}")
 
 
@@ -384,7 +389,8 @@ def morning_payload(dips, surges, day, data_date) -> dict:
     hdr = (f"条件: 5日(前日÷6営業日前)で−{abs(DIP_PCT):.0f}%以下・前日終値{PRICE_MIN:,}〜{PRICE_MAX:,}円・"
            f"前日代金{MIN_TURNOVER_OKU:g}億以上"
            + (f"・時価総額{MAX_MCAP_OKU:,.0f}億未満" if MAX_MCAP_OKU > 0 else "")
-           + f"・下落率順・上位{TOP_DIP}\n前日={data_date} 終値基準\n\n")
+           + f"・下落率順・上位{TOP_DIP}\n前日={data_date} 終値基準\n"
+           f"💰=前日代金{TAG_TOV_LO:g}〜{TAG_TOV_HI:g}億（60日の機械再生で唯一プラスの帯・n=88・噪音の可能性あり。全体は−0.04%/件）\n\n")
     d_body = hdr + ("\n".join(fmt_row(r) for r in dips) if dips else "該当なし")
     s_hdr = f"条件: 5日で+{SURGE_PCT:.0f}%以上・同じ株価/代金条件・上昇率順・上位{TOP_SURGE}\n\n"
     s_body = s_hdr + ("\n".join(fmt_row(r) for r in surges) if surges else "該当なし")
