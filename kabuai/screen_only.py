@@ -21,6 +21,7 @@
   JQUANTS_API_KEY             必須
   DISCORD_WEBHOOK_SCREEN_URL  通知先（未設定なら送らず標準出力のみ）。URLはログに出さない。
   MIN_TURNOVER_OKU            前日売買代金の下限（億円・既定5）
+  MAX_MCAP_OKU                時価総額の上限（億円・既定1000=1000億以上は除外・0で無制限）。売りフェードと同じ土俵感
   SCREEN_LOOKBACK             日足の取得営業日数（既定85・75日線＋余裕）
   SCREEN_CACHE_DIR            日足の日別キャッシュ置き場（リプレイ用・任意）
   SCREEN_YF_INSECURE=1        PCのAV SSL傍受対策（curl_cffi verify=False）。CIでは不要。
@@ -52,6 +53,7 @@ PARENT = HERE.parent
 JQUANTS_BASE = "https://api.jquants.com/v2"
 
 MIN_TURNOVER_OKU = float(os.getenv("MIN_TURNOVER_OKU", "5"))
+MAX_MCAP_OKU = float(os.getenv("MAX_MCAP_OKU", "1000"))   # 0=無制限。超大型(キオクシア/SBG等)をデイトレ土俵から外す
 PRICE_MIN, PRICE_MAX = 1_000, 20_000
 DIP_PCT, SURGE_PCT = -5.0, 5.0
 TOP_DIP, TOP_SURGE = 30, 15
@@ -178,7 +180,9 @@ def load_daily(days: list) -> pd.DataFrame:
     df["code"] = df["Code"].astype(str).str[:4]
     df["close"] = pd.to_numeric(df["AdjC"], errors="coerce")
     df["turnover"] = pd.to_numeric(df["Va"], errors="coerce") if "Va" in df.columns else float("nan")
-    df = df.dropna(subset=["close"])[["code", "Date", "close", "turnover"]]
+    # MktCap は百万円単位（トヨタ 43,945,507 ≒ 43.9兆円で確認・2026-10-16）
+    df["mcap"] = pd.to_numeric(df["MktCap"], errors="coerce") if "MktCap" in df.columns else float("nan")
+    df = df.dropna(subset=["close"])[["code", "Date", "close", "turnover", "mcap"]]
     return df.sort_values(["code", "Date"])
 
 
@@ -208,10 +212,14 @@ def screen(daily: pd.DataFrame, names: dict):
         tov = g["turnover"].iloc[-1]
         tov_oku = float(tov) / 1e8 if pd.notna(tov) else None
         ma = float(c[-MA_DAYS:].mean()) if len(c) >= MA_DAYS else None
+        mc = g["mcap"].iloc[-1]
+        mcap_oku = float(mc) / 100 if pd.notna(mc) else None   # 百万円 → 億円
         rows.append({"code": code, "name": names.get(code, ""), "close": close, "r5": r5,
-                     "tov_oku": tov_oku, "ma_pos": _ma_pos(close, ma)})
+                     "tov_oku": tov_oku, "mcap_oku": mcap_oku, "ma_pos": _ma_pos(close, ma)})
 
     def base_ok(r: dict) -> bool:
+        if MAX_MCAP_OKU > 0 and r["mcap_oku"] is not None and r["mcap_oku"] >= MAX_MCAP_OKU:
+            return False
         return (PRICE_MIN <= r["close"] <= PRICE_MAX
                 and r["tov_oku"] is not None and r["tov_oku"] >= MIN_TURNOVER_OKU)
 
@@ -222,8 +230,9 @@ def screen(daily: pd.DataFrame, names: dict):
 
 
 def fmt_row(r: dict) -> str:
+    mc = f" 時総{r['mcap_oku']:,.0f}億" if r.get("mcap_oku") is not None else ""
     return (f"`{r['code']}` {r['name'][:10]} ¥{r['close']:,.0f} "
-            f"5日{r['r5']:+.1f}% 代金{r['tov_oku']:.1f}億 75日線:{r['ma_pos']}")
+            f"5日{r['r5']:+.1f}% 代金{r['tov_oku']:.1f}億{mc} 75日線:{r['ma_pos']}")
 
 
 # ───────────────────────── 5分足（③） ─────────────────────────
@@ -373,7 +382,9 @@ def _embed(title: str, body: str, color: int) -> dict:
 
 def morning_payload(dips, surges, day, data_date) -> dict:
     hdr = (f"条件: 5日(前日÷6営業日前)で−{abs(DIP_PCT):.0f}%以下・前日終値{PRICE_MIN:,}〜{PRICE_MAX:,}円・"
-           f"前日代金{MIN_TURNOVER_OKU:g}億以上・下落率順・上位{TOP_DIP}\n前日={data_date} 終値基準\n\n")
+           f"前日代金{MIN_TURNOVER_OKU:g}億以上"
+           + (f"・時価総額{MAX_MCAP_OKU:,.0f}億未満" if MAX_MCAP_OKU > 0 else "")
+           + f"・下落率順・上位{TOP_DIP}\n前日={data_date} 終値基準\n\n")
     d_body = hdr + ("\n".join(fmt_row(r) for r in dips) if dips else "該当なし")
     s_hdr = f"条件: 5日で+{SURGE_PCT:.0f}%以上・同じ株価/代金条件・上昇率順・上位{TOP_SURGE}\n\n"
     s_body = s_hdr + ("\n".join(fmt_row(r) for r in surges) if surges else "該当なし")

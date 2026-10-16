@@ -43,6 +43,7 @@ jobs:
       JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
       DISCORD_WEBHOOK_SCREEN_URL: ${{ secrets.DISCORD_WEBHOOK_SCREEN_URL }}
       MIN_TURNOVER_OKU: "5"        # 前日売買代金の下限（億円）
+      MAX_MCAP_OKU: "1000"         # 時価総額の上限（億円・1000億以上は除外・0で無制限）
       SCREEN_WAIT_MAX_MIN: "25"    # ③で 9:30 足が揃うのを待つ上限（分）
       PYTHONIOENCODING: utf-8
     steps:
