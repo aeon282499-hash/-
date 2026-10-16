@@ -233,9 +233,9 @@ def screen(daily: pd.DataFrame, names: dict):
     return dips, surges, data_date
 
 
-def fmt_row(r: dict) -> str:
+def fmt_row(r: dict, tag_on: bool = True) -> str:
     mc = f" 時総{r['mcap_oku']:,.0f}億" if r.get("mcap_oku") is not None else ""
-    tag = "💰" if (r.get("tov_oku") is not None and TAG_TOV_LO <= r["tov_oku"] < TAG_TOV_HI) else "　"
+    tag = "💰" if (tag_on and r.get("tov_oku") is not None and TAG_TOV_LO <= r["tov_oku"] < TAG_TOV_HI) else "　"
     return (f"{tag}`{r['code']}` {r['name'][:10]} ¥{r['close']:,.0f} "
             f"5日{r['r5']:+.1f}% 代金{r['tov_oku']:.1f}億{mc} 75日線:{r['ma_pos']}")
 
@@ -393,7 +393,7 @@ def morning_payload(dips, surges, day, data_date) -> dict:
            f"💰=前日代金{TAG_TOV_LO:g}〜{TAG_TOV_HI:g}億（60日の機械再生で唯一プラスの帯・n=88・噪音の可能性あり。全体は−0.04%/件）\n\n")
     d_body = hdr + ("\n".join(fmt_row(r) for r in dips) if dips else "該当なし")
     s_hdr = f"条件: 5日で+{SURGE_PCT:.0f}%以上・同じ株価/代金条件・上昇率順・上位{TOP_SURGE}\n\n"
-    s_body = s_hdr + ("\n".join(fmt_row(r) for r in surges) if surges else "該当なし")
+    s_body = s_hdr + ("\n".join(fmt_row(r, tag_on=False) for r in surges) if surges else "該当なし")
     ds = day.strftime("%m/%d")
     return {"embeds": [
         _embed(f"🔎 {ds} 今日の候補（押し目買い用）{len(dips)}本 — 銘柄選別のみ", d_body, 0x4DABF7),
