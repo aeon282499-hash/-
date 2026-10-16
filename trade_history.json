@@ -1879,6 +1879,16 @@
       "close": 1217.0,
       "pnl": 1.63,
       "win": true
+    },
+    {
+      "date": "2026-10-16",
+      "ticker": "8253.T",
+      "name": "クレディセゾン",
+      "direction": "BUY",
+      "open": 4129.0,
+      "close": 4186.0,
+      "pnl": 1.38,
+      "win": true
     }
   ]
 }
