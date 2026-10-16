@@ -1814,10 +1814,60 @@
       "pnl_pct": 0.0,
       "pnl_yen": 0,
       "win": false
+    },
+    {
+      "ticker": "153A.T",
+      "name": "カウリス",
+      "direction": "SELL",
+      "signal_date": "2026-10-19",
+      "basis_date": "2026-10-16",
+      "prev_close": 2660.0,
+      "limit_price": 2660.0,
+      "status": "pending",
+      "daily_gain": 12.76,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 300,
+      "entry_mode": "limit_day",
+      "dev25": 37.3,
+      "atr_pct": 13.6,
+      "vol_ratio": 1.7,
+      "range_pct": 15.2,
+      "mcap_oku": 150
+    },
+    {
+      "ticker": "4493.T",
+      "name": "サイバーセキュリティクラウド",
+      "direction": "SELL",
+      "signal_date": "2026-10-19",
+      "basis_date": "2026-10-16",
+      "prev_close": 3810.0,
+      "limit_price": 3810.0,
+      "status": "pending",
+      "daily_gain": 21.14,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 2,
+      "shares": 100,
+      "entry_mode": "limit_day",
+      "dev25": 59.0,
+      "atr_pct": 10.48,
+      "vol_ratio": 1.8,
+      "range_pct": 14.4,
+      "mcap_oku": 318
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-16",
+  "last_report_date": "2026-10-19",
   "last_monthly_report": "2026-09",
-  "last_weekly_report": "2026-W41"
+  "last_weekly_report": "2026-W42"
 }

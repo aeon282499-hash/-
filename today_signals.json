@@ -1,19 +1,40 @@
 {
-  "date": "2026-10-16",
+  "date": "2026-10-19",
   "signals": [
     {
-      "ticker": "4732.T",
-      "name": "ユー・エス・エス",
+      "ticker": "6370.T",
+      "name": "栗田工業",
       "direction": "BUY",
-      "prev_close": 1790.5,
-      "limit_price": 1808
+      "prev_close": 7402.0,
+      "limit_price": 7470
     },
     {
-      "ticker": "8253.T",
-      "name": "クレディセゾン",
+      "ticker": "6383.T",
+      "name": "ダイフク",
       "direction": "BUY",
-      "prev_close": 4118.0,
-      "limit_price": 4155
+      "prev_close": 5491.0,
+      "limit_price": 5540
+    },
+    {
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
+      "direction": "BUY",
+      "prev_close": 1206.5,
+      "limit_price": 1218
+    },
+    {
+      "ticker": "6471.T",
+      "name": "日本精工",
+      "direction": "BUY",
+      "prev_close": 1043.5,
+      "limit_price": 1053
+    },
+    {
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 743.0,
+      "limit_price": 750
     }
   ]
 }

@@ -1,31 +1,70 @@
 {
-  "date": "2026-10-16",
+  "date": "2026-10-19",
   "signals": [
     {
-      "ticker": "4732.T",
-      "name": "ユー・エス・エス",
+      "ticker": "6370.T",
+      "name": "栗田工業",
       "direction": "BUY",
-      "prev_close": 1790.5,
-      "limit_price": 1808,
-      "days_cover": 0.1288880148968382,
-      "rsi": 34.14,
-      "deviation": -3.63,
-      "vol_ratio": 0.82,
-      "range_ratio": 2.05,
-      "turnover": 2404211600.0
+      "prev_close": 7402.0,
+      "limit_price": 7470,
+      "days_cover": 0.28598326489709547,
+      "rsi": 37.85,
+      "deviation": -3.23,
+      "vol_ratio": 1.45,
+      "range_ratio": 2.11,
+      "turnover": 5534582000.0
     },
     {
-      "ticker": "8253.T",
-      "name": "クレディセゾン",
+      "ticker": "6383.T",
+      "name": "ダイフク",
       "direction": "BUY",
-      "prev_close": 4118.0,
-      "limit_price": 4155,
-      "days_cover": 0.3226645746227613,
-      "rsi": 26.87,
-      "deviation": -7.99,
-      "vol_ratio": 2.01,
-      "range_ratio": 1.05,
-      "turnover": 6788023500.0
+      "prev_close": 5491.0,
+      "limit_price": 5540,
+      "days_cover": 0.40034477983920924,
+      "rsi": 40.91,
+      "deviation": -2.28,
+      "vol_ratio": 1.42,
+      "range_ratio": 1.78,
+      "turnover": 13383016000.0
+    },
+    {
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
+      "direction": "BUY",
+      "prev_close": 1206.5,
+      "limit_price": 1218,
+      "days_cover": 0.40157407962654085,
+      "rsi": 39.99,
+      "deviation": -2.85,
+      "vol_ratio": 1.24,
+      "range_ratio": 1.54,
+      "turnover": 4037051650.0
+    },
+    {
+      "ticker": "6471.T",
+      "name": "日本精工",
+      "direction": "BUY",
+      "prev_close": 1043.5,
+      "limit_price": 1053,
+      "days_cover": 0.5736066078952836,
+      "rsi": 39.76,
+      "deviation": -3.09,
+      "vol_ratio": 1.54,
+      "range_ratio": 1.7,
+      "turnover": 3478866000.0
+    },
+    {
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 743.0,
+      "limit_price": 750,
+      "days_cover": 0.28048264006621293,
+      "rsi": 38.42,
+      "deviation": -3.79,
+      "vol_ratio": 4.97,
+      "range_ratio": 1.66,
+      "turnover": 3666053500.0
     }
   ]
 }
