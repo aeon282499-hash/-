@@ -2659,5 +2659,17 @@
       "rsi": null,
       "price": null
     }
+  },
+  "2026-10-16": {
+    "main:BUY:2809.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:6178.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
