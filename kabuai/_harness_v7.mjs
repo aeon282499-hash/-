@@ -61,6 +61,28 @@ check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 console.log("── 1) 🌙前夜の準備（ホーム）＋🕯️上髭 ──");
 let hv = go("#/");
 check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備") && hv.includes("上髭逆指値") && hv.includes("土俵"));
+// 📰 IR（v7.5・2026-10-17）: 無い時は空メッセージ・ある時は 好/悪/要精査 のタブと答え合わせ
+{ const bak = DATA.ir; DATA.ir = null; hv = go("#/"); check("IR 無し→空メッセージ", clean(hv) && hv.includes("IRの好材料・悪材料") && hv.includes("まだ作られていません"));
+  const mk = (id, date, time, code, name, title, tags, label, score, llm, react) => ({ id, date, time, intraday: time <= "15:30", code, name, sector: "情報･通信業", title, pdf: "https://www.release.tdnet.info/inbs/" + id + ".pdf", tags, material: true, admin: false,
+    rule: { label, score, reason: "r" }, llm, final: llm || { label, score, reason: "r", model: "rule" }, react: react || { day_chg: null, next_gap: null, next_chg: null, next_oc: null, next_date: null }, close: 1234, tov20_oku: 12.3 });
+  const D = DATA.data_date;
+  DATA.ir = { date: D, generated_at: "x", window: [D, "2026-01-01"], fetched: { [D]: 3, "2026-01-01": 2 },
+    rows: [mk("a1", D, "15:30", "7203", "トヨタ", "自己株式の取得に関するお知らせ", ["自社株買い"], "好材料", 2, null),
+           mk("a2", D, "16:00", "6758", "ソニー", "業績予想の修正に関するお知らせ", ["予想修正"], "要精査", 0, { label: "悪材料", score: -2, reason: "通期を12%下方修正", conf: 80, priced: false, model: "claude-opus-5-5", facts: "営業益 1,000→880億円" }),
+           mk("a3", D, "17:00", "9984", "ＳＢＧ", "第三者割当による新株式発行", ["エクイティ"], "悪材料", -2, null),
+           mk("b1", "2026-01-01", "14:00", "8306", "三菱ＵＦＪ", "増配のお知らせ", ["配当"], "好材料", 2, null, { day_chg: 1.5, next_gap: 0.8, next_chg: 0.2, next_oc: -0.6, next_date: "2026-01-02" })],
+    tags_count: { "自社株買い": 1, "予想修正": 1, "エクイティ": 1, "配当": 1 },
+    stats: { days: 2, from: "2026-01-01", to: D, rule: { "好材料": { n: 2, n_scored: 1, gap: 0.8, gap_hit: 100, chg: 0.2, chg_hit: 100, oc: -0.6, oc_hit: 0, day: 1.5, day_hit: 100, n_day: 1 }, "悪材料": { n: 1, n_scored: 0 } }, llm: { "好材料": { n: 0 }, "悪材料": { n: 1, n_scored: 0 } } },
+    llm: { available: true, judged: 1, model: "claude-opus-5-5", note: "n" }, basis: "b", rules: ["r1"] };
+  hv = go("#/");
+  check("IR 今日: 👍1/👎2/🔍0 と答え合わせ", clean(hv) && hv.includes("👍 好 1") && hv.includes("👎 悪 2") && hv.includes("🔍 要精査 0") && hv.includes("翌日 寄り平均") && hv.includes("Claude判定 1件"));
+  check("IR 好タブ: トヨタ行・既出・表題ルール", (hv.match(/class="irrow"/g) || []).length === 1 && hv.includes("トヨタ") && hv.includes("📌 既出") && hv.includes("📏 表題ルール"));
+  sandbox.irSetTab("bad"); hv = view();
+  check("IR 悪タブ: Claude判定の行にルール差とfacts", (hv.match(/class="irrow"/g) || []).length === 2 && hv.includes("🤖 Claude") && hv.includes("ルールは要精査") && hv.includes("営業益 1,000→880億円") && hv.includes("翌営業日の寄りで答え合わせ"));
+  sandbox.irSetDay("window"); sandbox.irSetTab("good"); hv = view();
+  check("IR 既出を含む: 三菱ＵＦＪの反応つき", (hv.match(/class="irrow"/g) || []).length === 2 && hv.includes("三菱ＵＦＪ") && hv.includes("+1.50%") && hv.includes("+0.80%"));
+  sandbox.irSetTab("all"); hv = view(); check("IR 全部タブ", clean(hv) && hv.includes("中立 0件") && hv.includes("事務開示 0件"));
+  sandbox.irSetDay("today"); sandbox.irSetTab("good"); DATA.ir = bak; }
 const mkRow = (code, name, close, high, low, t500, extra = {}) => Object.assign({ code, name, sector: "情報･通信業", close, open: close * 0.99, high, low, chg: 1.23, uw_pct: 4.1, rng_pct: 6.2, uw_ratio: 0.66, atr_pct: 5.5,
   turnover_oku: 42.1, tov20_oku: 30.5, tov_ratio: 1.4, vol_ratio: 1.3, body_up: true, t500, tick: t500 ? 0.5 : 1, buy_level: high + (t500 ? 0.5 : 1), sell_level: low - (t500 ? 0.5 : 1),
   shortable: "○", jsf_stop: false, jsf_warn: false, tse_reg: false }, extra);

@@ -67,6 +67,11 @@ jobs:
       # 月1更新でそれ以前をカバーする（140日のままだと直近5日しか判定できない）。
       KABUAI_API_LOOKBACK: "270"   # 🏆勝ちやすい順張りの250日リターンに必要（2026-09-09）
       KABUAI_PTS: "0"              # 株探はActionsのIPに405を返す(2026-10-14)→PTSは PC の pts_fetch_pc.py が置く kabuai/pts_latest.json を使う
+      # 📰IR（2026-10-17）: Claude 判定は Secrets に ANTHROPIC_API_KEY がある時だけ走る（無ければ空→ルール判定だけ）。
+      # 判定結果 kabuai/ir_judged.json は actions/cache で持ち回る＝同じ開示を何度も判定しない（費用の天井 KABUAI_IR_MAX 件/回）。
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      KABUAI_IR_LLM: "1"
+      KABUAI_IR_MAX: "60"
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v6
@@ -78,9 +83,25 @@ jobs:
       - name: パッケージインストール
         run: pip install -r kabuai/requirements.txt
 
+      - name: 📰IR Claude判定の持ち回り（ir_judged.json を復元）
+        id: ir-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: kabuai/ir_judged.json
+          key: ir-judged-${{ github.run_id }}
+          restore-keys: |
+            ir-judged-
+
       - name: データ生成（J-Quants V2 直取得）
         working-directory: kabuai
         run: python build_data.py
+
+      - name: 📰IR Claude判定の持ち回り（ir_judged.json を保存）
+        if: always() && hashFiles('kabuai/ir_judged.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: kabuai/ir_judged.json
+          key: ir-judged-${{ github.run_id }}
 
       - name: Pages 構成チェック
         run: |

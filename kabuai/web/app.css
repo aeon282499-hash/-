@@ -249,3 +249,16 @@ canvas{max-width:100%}
 .calc-tbl td b{font-size:17px}
 .calc-tbl tr.sel td{background:var(--sf2)}
 .calc-tbl .mut{color:var(--mut);font-size:12.5px}
+
+/* 📰 IRの好材料・悪材料（2026-10-17） */
+.irrow{padding:9px 4px;border-bottom:1px solid var(--ln)}
+.irrow:last-child{border-bottom:0}
+.irhead{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14.5px}
+.irhead small{color:var(--mut);font-size:12px}
+.irtitle{font-size:13.5px;margin:3px 0;line-height:1.35}
+.irtitle a{color:var(--tx)}
+.irv{display:inline-block;font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:auto;white-space:nowrap}
+.irv.good{background:rgba(52,199,89,.18);color:var(--up,#34c759)}
+.irv.bad{background:rgba(255,93,108,.18);color:var(--dn,#ff5d6c)}
+.irv.chk{background:rgba(255,183,3,.18);color:#d99a00}
+.irv.neu{background:var(--sf2);color:var(--mut)}

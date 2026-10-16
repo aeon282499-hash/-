@@ -177,7 +177,8 @@ function flowSection() {
 function viewArena() {
   const prep = (typeof planNewsSection === "function" ? planNewsSection() : "") + (typeof planEarnSection === "function" ? planEarnSection() : "");
   return `<h2>🌙 前夜の準備 <span class="sub">EOD ${esc(DATA.data_date || "")}・${esc(freshnessText())}</span></h2>
-    ${whenBar("🌙", "前夜（夕方のビルド後）に見る", "明日の上髭逆指値の候補と水準 → 資金の流れと連動株（PTS付き） → 土俵 → 材料と決算。注文の文面は📋朝の作戦、値段と株数は🧮電卓。")}
+    ${whenBar("🌙", "前夜（夕方のビルド後）に見る", "📰 今日のIRの好材料/悪材料（Claude判定・答え合わせ付き） → 上髭逆指値の候補 → 資金の流れと連動株 → 土俵 → 決算。値段と株数は🧮電卓。")}
+    ${typeof irSection === "function" ? irSection() : ""}
     ${uwickSection()}
     ${flowSection()}
     ${arenaSection()}

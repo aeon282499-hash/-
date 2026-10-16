@@ -5,3 +5,5 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 jpholiday>=0.1.8
 yfinance>=0.2.40   # 先物連動度タグ（1570.T と銘柄の5分足相関・correlation.py）
+pypdf>=5.0.0        # 📰IR: TDnet の PDF 冒頭を読む（ir_judge.py・2026-10-17）
+anthropic>=0.100.0  # 📰IR: Claude 判定（ANTHROPIC_API_KEY がある時だけ使う）
