@@ -886,9 +886,9 @@ def build() -> dict:
     # プラス差・2019年以降は8年中7年プラス。重い側への警告は符号不安定=根拠なしなので
     # バッジは軽い側にだけ付ける。週次残高スナップショット1本で全銘柄分を引ける・非致命。
     DC_LIGHT_MAX = 0.25
+    _snap = None; _snap_date = None     # v8: 🐵ランキングの空売り残高でも使う
     try:
         _tok = _jquants_key()
-        _snap = None
         for _back in range(3, 16):     # 直近の週次残高(金曜キー・翌週火曜公表)を遡って探す
             _ds = (datetime.now(JST) - timedelta(days=_back)).strftime("%Y-%m-%d")
             _mi = _jquants_get("/markets/margin-interest", _tok, {"date": _ds}).get("data", [])
@@ -896,6 +896,7 @@ def build() -> dict:
                 _snap = {str(_r.get("Code", ""))[:4]: _r for _r in _mi
                          if _is_common_stock(_r.get("Code", ""))}
                 print(f"[build] 🪶信用軽: 週次残高 {_ds} ({len(_snap)}銘柄)")
+                _snap_date = _ds
                 break
             time.sleep(0.2)
         if _snap:
@@ -948,6 +949,42 @@ def build() -> dict:
         _iss = _dp.fetch_iss_map(_tok2)
         _ratio = _dp.fetch_ratio_map(_tok2)
         _alert = _dp.fetch_alert_map(_tok2)
+        # ── 🐵ランキングの売り印と空売り残高（v8.0・2026-10-17 本人「売り金マークと空売り残高多いやつをわかりやすく・ランキングで銘柄選定するから」）
+        #    貸借(空売り可)/🚫売り禁/⚠️注意喚起/規制/日々公表 ＋ 週次の売残(ShrtVol)・買残(LongVol)・取組倍率・売残の前週比・売残÷1日の出来高(日分)。非致命。
+        try:
+            _prev_snap = None
+            if _snap_date:
+                _d0 = datetime.strptime(_snap_date, "%Y-%m-%d")
+                for _back in range(7, 12):
+                    _pd = (_d0 - timedelta(days=_back)).strftime("%Y-%m-%d")
+                    _pm = _jquants_get("/markets/margin-interest", _tok2, {"date": _pd}).get("data", [])
+                    if _pm:
+                        _prev_snap = {str(_r.get("Code", ""))[:4]: _r for _r in _pm}
+                        break
+                    time.sleep(0.2)
+            _n_heavy = 0
+            for r in rows[:TOP_N]:
+                c4 = r["code"]
+                it = _iss.get(c4) or _iss.get(c4 + ".T")
+                r["shortable"] = (it == "2") if it is not None else None
+                al = _alert.get(c4) or {}
+                r["jsf_stop"] = bool(al.get("jsf_stop")); r["jsf_warn"] = bool(al.get("jsf_warn")); r["tse_reg"] = bool(al.get("tse_reg")); r["daily_pub"] = bool(al.get("daily_pub"))
+                rec = (_snap or {}).get(c4)
+                if rec is None:
+                    continue
+                sv = float(rec.get("ShrtVol") or 0); lv = float(rec.get("LongVol") or 0)
+                r["short_vol"] = int(sv); r["long_vol"] = int(lv); r["margin_date"] = _snap_date
+                r["ratio"] = round(lv / sv, 2) if sv > 0 else None
+                adv_sh = ((r.get("turnover_oku") or 0) * 1e8) / (r.get("price") or 1) if (r.get("price") or 0) > 0 else 0
+                r["short_days"] = round(sv / adv_sh, 2) if adv_sh > 0 else None
+                pv = (_prev_snap or {}).get(c4)
+                if pv is not None and float(pv.get("ShrtVol") or 0) > 0:
+                    r["short_chg"] = round((sv / float(pv.get("ShrtVol")) - 1) * 100, 1)
+                if (r["short_days"] is not None and r["short_days"] >= 1.0) or (r["ratio"] is not None and r["ratio"] <= 1.0):
+                    _n_heavy += 1
+            print(f"[build] 🐵売り印: 貸借○{sum(1 for r in rows[:TOP_N] if r.get('shortable'))}・売り禁{sum(1 for r in rows[:TOP_N] if r.get('jsf_stop'))}・空売り多{_n_heavy}（残高 {_snap_date}／前週 {'あり' if _prev_snap else '無し'}）")
+        except Exception as _e:
+            print(f"[build] 🐵売り印はスキップ（非致命）: {_e}")
         _banned: list = []
         # data_date終値を「信号日」にする（<比較なので+1日。朝build=今日の寄り用/夜build=翌営業日用）
         _fade_today = (datetime.strptime(data_date, "%Y-%m-%d") + timedelta(days=1)).date()

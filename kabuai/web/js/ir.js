@@ -194,10 +194,9 @@ function irSection() {
   const st = ir.stats || {}, sr = st.rule || {}, sl = st.llm || {};
   const llm = ir.llm || {};
   const llmLine = llm.available ? `🤖 Claude判定 ${llm.judged || 0}件（${esc(llm.model || "")}）${llm.note ? " ・ " + esc(llm.note) : ""}` : `🤖 Claude判定は未稼働（${esc(llm.note || "ANTHROPIC_API_KEY が未設定")}）→ いまは📏表題ルールだけ`;
-  const honest = `<div class="banner info"><b>上がる/下がるの判定であって、翌日買えば儲かるという意味ではありません。</b>答え合わせ（直近${st.days || 0}営業日・${esc(st.from || "")}〜${esc(st.to || "")}）:<br>
-    📏ルール ${irStatLine("好材料", sr["好材料"])}<br>📏ルール ${irStatLine("悪材料", sr["悪材料"])}
+  const honest = vnote("上がる/下がるの判定で、翌日買えば儲かる意味ではありません。", `📏ルール ${irStatLine("好材料", sr["好材料"])}<br>📏ルール ${irStatLine("悪材料", sr["悪材料"])}
     ${sl["好材料"] && sl["好材料"].n ? `<br>🤖Claude ${irStatLine("好材料", sl["好材料"])}<br>🤖Claude ${irStatLine("悪材料", sl["悪材料"])}` : ""}
-    <br>${llmLine}</div>`;
+    <br>${llmLine}`, `答え合わせ（直近${st.days || 0}営業日・${(st.from || "").slice(5)}〜${(st.to || "").slice(5)}）`);
   let list;
   if (IR_TAB === "good") list = good.sort(byScore);
   else if (IR_TAB === "bad") list = bad.sort(byScore);

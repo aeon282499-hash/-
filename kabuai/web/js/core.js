@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "7.7.1",
+  VERSION: "8.0.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
@@ -58,7 +58,7 @@ const ROUTES = [];   // {test:(hash)=>bool, view:(hash)=>html, nav:"live"}
 function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
-  ["arena", "plan", "data", "calc"].forEach(k => {
+  ["ir", "arena", "flow", "shodo", "plan", "data", "calc"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }
@@ -76,10 +76,18 @@ function render() {
 
 // ── v5.2.1 タブ整理（2026-09-17 本人「タブがわかりづらい」）: いつ見るかで4本 ──
 //   📋朝の作戦(寄り前) / 🔥場中ライブ / 🎯前夜の準備(土俵+材料+明日の決算) / 📊データ(売り・EOD・探検はこの中でサブタブ)
-function whenBar(icon, when, what) {
-  return `<div class="banner info" style="margin-bottom:10px"><b>${icon} ${esc(when)}</b> … ${esc(what)}</div>`;
+function whenBar(icon, when, what) {   // v8: バナーではなく1行のメモ（本人「もっとUIよくして・検証を簡素化」2026-10-17）
+  return `<div class="note" style="margin:-6px 2px 10px">${icon} <b>${esc(when)}</b> … ${esc(what)}</div>`;
+}
+// v8: 検証の数字は1行の結論＋折りたたみ（開かなければ見えない）
+function vnote(one, detail, label = "検証の数字") {
+  return `<div class="vnote"><b>${one}</b>${detail ? `<details><summary>${esc(label)}</summary><div class="vbody">${detail}</div></details>` : ""}</div>`;
+}
+function flowSubNav(active) {
+  const t = [["flow", "#/flow", "💴 資金・🔗連動"], ["hot", "#/flow/hot", "🔥 株探の人気テーマ"]];
+  return `<div class="seg">${t.map(([k, h, l]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }
 function dataSubNav(active) {
-  const t = [["sell", "#/sell", "🔻 売り"], ["momentum", "#/momentum", "🐵 EODランキング"], ["explore", "#/explore", "🧭 探検"]];
+  const t = [["sell", "#/sell", "🔻 売り"], ["momentum", "#/momentum", "🐵 EODランキング"], ["search", "#/search", "🔍 銘柄検索"]];
   return `<div class="seg">${t.map(([k, h, l]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }

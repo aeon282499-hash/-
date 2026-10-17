@@ -32,7 +32,7 @@ function uwickSection() {
   const rows = (short ? u.sell : u.buy) || [];
   const seg = `<div class="seg"><a class="${short ? "" : "on"}" onclick="uwSetSide('buy')">📈 買い（高値抜け） ${(u.buy || []).length}</a><a class="${short ? "on" : ""}" onclick="uwSetSide('sell')">🩳 売り（安値割れ） ${(u.sell || []).length}</a></div>`;
   const stale = u.fresh ? "" : `<div class="banner warn">⚠️ これは過去分（${esc(u.target_date || "")}）の候補です。次の夕方ビルドで更新。</div>`;
-  const honest = `<div class="banner info"><b>勝てるとは言いません。</b>日足20年では ${esc((u.stats || {}).buy || "")}。${esc((u.stats || {}).sell || "")}。${(u.stats || {}).intraday ? `<br>${esc(u.stats.intraday)}。` : ""}${esc((u.stats || {}).caveat || "")} ここは<b>候補と逆指値の水準を並べる道具</b>です。</div>`;
+  const honest = vnote("勝てるとは言いません。候補と逆指値の水準を並べる道具です。", `日足20年: ${esc((u.stats || {}).buy || "")}。${esc((u.stats || {}).sell || "")}。${(u.stats || {}).intraday ? `<br>${esc(u.stats.intraday)}。` : ""}${esc((u.stats || {}).caveat || "")}`);
   const unknown = short && !u.iss_known ? `<div class="banner warn">⚠️ 貸借区分が取れなかった回は売り側が空になります（J-Quants margin-interest）。</div>` : "";
   const body = rows.length ? `<div class="card tight">${rows.map((r, i) => uwRow(r, i, UW_SIDE)).join("")}</div>`
     : `<div class="card"><div class="empty">${short ? `該当${u.matched || 0}銘柄のうち、貸借○で売り禁でないものがありません。` : `今日は上髭${(u.rules || [])[0] ? "" : ""}の条件に合う銘柄がありません（代金3億以上・300〜10,000円）。`}</div></div>`;
@@ -51,9 +51,8 @@ function arenaSection() {
     <div class="m-px">${r.heat != null ? Math.round(r.heat) : "—"}<br><small class="muted">熱</small></div></a>`;
   const extra = (a.materials_extra || []).map(r => `<a href="#/detail/${r.code}">${esc(r.name)}</a>(${r.code}/${esc((r.materials || [{}])[0].kind || "")})`).join("、");
   return title + (a.fresh ? "" : `<div class="banner warn">⚠️ これは過去分（${esc(a.target_date || "")}）の断面です。</div>`)
-    + `<div class="banner info"><b>上がる/下がるは付けません。</b>前夜のデータで「翌日日中に上がる銘柄」は選べない（26年BT＋AIの学習外検証で全滅）。ここは<b>人と注文が集まる順</b>。</div>
-    <div class="note" style="margin-bottom:10px">📏 ${(a.rules || []).map(esc).join(" ／ ")}</div>
-    <div class="card tight">${(a.rows || []).map(row).join("")}</div>
+    + vnote("上がる/下がるは付けません。人と注文が集まる順です。", `前夜のデータで「翌日日中に上がる銘柄」は選べない（26年BT＋AIの学習外検証で全滅）。<br>📏 ${(a.rules || []).map(esc).join(" ／ ")}`)
+    + `<div class="card tight">${(a.rows || []).map(row).join("")}</div>
     ${extra ? `<div class="card note"><b>材料あり（土俵外・代金順）</b>: ${extra}</div>` : ""}`;
 }
 // ── 💴資金セクター → 🔗連動株 → 🌙PTS（2026-10-14 本人依頼「毎日PTSや資金の入ってるセクター・連動株をチンパンに配信・連動を中心に」・flow_builder.py）
@@ -88,7 +87,7 @@ function bookBody() {
   if (!b) return `<div class="card"><div class="empty">まだ作られていません（夕方のビルドで反映）。</div></div>`;
   if (b.error) return `<div class="card"><div class="empty">今回は作れませんでした（${esc(b.error)}）。次のビルドで再試行。</div></div>`;
   const st = b.stats || {};
-  const honest = `<div class="banner info"><b>連動の強さを測った表で、買い推奨ではありません。</b>${esc(st.chase || "")}。<br>${esc(st.use || "")}</div>`;
+  const honest = vnote("連動の強さを測った表で、買い推奨ではありません。", `${esc(st.chase || "")}。<br>${esc(st.use || "")}`);
   const sbi = `<div class="note" style="margin-bottom:6px">🗂 SBIに登録: 各グループの「📋 コードをコピー」→ SBI証券の 登録銘柄（ポートフォリオ）→ 銘柄の追加／一括登録 に貼り付け（コードは半角スペース区切り・1リスト50本まで）。グループ名をリスト名にすると見分けやすい。</div>`;
   const meta = sbi + `<div class="note" style="margin-bottom:8px">期間 ${esc(b.period || "")}（${b.n_days}営業日・前半/後半${b.half_days}日ずつ） ・ 母集団${b.n_universe}本 ・ しきい値 全期間${Number(b.floor).toFixed(2)}／前後半${Number(b.floor_half).toFixed(2)} ・ 辺${b.n_edges} ・ グループ${b.n_groups}（上位${(b.groups || []).length}を表示・上位3つは開いた状態）</div>`;
   const seen = {}; const cards = (b.groups || []).map((g, i) => { seen[g.label] = (seen[g.label] || 0) + 1; return bookGroupCard(g, i, seen[g.label] > 1 ? seen[g.label] : 0); });
@@ -149,7 +148,7 @@ function flowGroupCard(g) {
 }
 function flowSection() {
   const f = DATA.flow;
-  const title = `<div class="hh" style="margin-top:16px">💴 資金の流れ → 🔗連動株 <span class="sub">${f && f.target_date ? esc(f.target_date) + " 分（" + esc(f.date || "") + " 引け）" : ""}</span></div>`;
+  const title = `<div class="hh">💴 資金の流れ → 🔗連動株 <span class="sub">${f && f.target_date ? esc(f.target_date) + " 分（" + esc(f.date || "") + " 引け）" : ""}</span></div>`;
   if (!f || f.error) {
     const nb0 = (DATA.linkbook && DATA.linkbook.groups) ? DATA.linkbook.groups.length : 0;
     const seg0 = `<div class="seg"><a class="${FLOW_TAB !== "book" ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動</a><a class="${FLOW_TAB === "book" ? "on" : ""}" onclick="flowSetTab('book')">📚 連動集 ${nb0}</a></div>`;
@@ -161,7 +160,7 @@ function flowSection() {
   const seg = `<div class="seg"><a class="${link ? "on" : ""}" onclick="flowSetTab('link')">🔗 主役→連動 ${(f.movers || []).length}</a><a class="${(!link && !book) ? "on" : ""}" onclick="flowSetTab('sector')">💴 資金セクター ${(f.groups || []).length}</a><a class="${book ? "on" : ""}" onclick="flowSetTab('book')">📚 連動集 ${nb}</a></div>`;
   if (book) return title + seg + bookBody();
   const st = f.stats || {};
-  const honest = `<div class="banner info"><b>後追い買いは効きません。</b>${esc(st.chase || "")}。<br>${esc(st.day3 || "")}。<br>${esc(st.use || "")}</div>`;
+  const honest = vnote("後追い買いは効きません。同じグループを同時に持たない・主役の急落を警報に。", `${esc(st.chase || "")}。<br>${esc(st.day3 || "")}。<br>${esc(st.use || "")}`);
   const p = f.pts || {};
   const ptsNote = p.skipped ? "PTSは取っていません" : (p.known ? `PTS ${esc(p.asof || "")} 時点（株探/ジャパンネクスト）${p.ok}/${p.tried}本` : `PTSは取れませんでした（${p.tried || 0}本試行${p.err && Object.keys(p.err).length ? "・" + esc(Object.keys(p.err).join(",")) : ""}）`);
   const weak = f.weak_day ? `<div class="banner warn">⚠️ 今日は資金が集まったグループが少ない日（基準を満たしたのは${f.n_groups_cand || 0}）。弱い順でも3つまで埋めています。</div>` : "";
@@ -174,14 +173,15 @@ function flowSection() {
   const foot = `<div class="note" style="margin-top:4px">📏 ${(f.rules || []).map(esc).join(" ／ ")}<br>母集団${f.n_universe || 0}銘柄・連動のしきい値${f.floor != null ? Number(f.floor).toFixed(2) : "—"}（偶然の99.9%点${f.null_max != null ? Number(f.null_max).toFixed(2) : "—"}）・${ptsNote}。</div>`;
   return title + seg + honest + body + foot;
 }
-function viewArena() {
+function viewArena() {   // v8: ホームは 上髭・土俵・材料・決算 だけ。📰IR / 💴資金 / 🚩初動 は独立タブ（本人「タブ増やす」2026-10-17）
   const prep = (typeof planNewsSection === "function" ? planNewsSection() : "") + (typeof planEarnSection === "function" ? planEarnSection() : "");
   return `<h2>🌙 前夜の準備 <span class="sub">EOD ${esc(DATA.data_date || "")}・${esc(freshnessText())}</span></h2>
-    ${whenBar("🌙", "前夜（夕方のビルド後）に見る", "📰 今日のIRの好材料/悪材料（Claude判定・答え合わせ付き） → 上髭逆指値の候補 → 資金の流れと連動株 → 土俵 → 決算。値段と株数は🧮電卓。")}
-    ${typeof irSection === "function" ? irSection() : ""}
+    ${whenBar("🌙", "夕方のビルド後に", "上髭逆指値 → 土俵 → 材料・決算。IR は📰、資金と連動は💴、初動ブレイクは🚩のタブ。")}
     ${uwickSection()}
-    ${flowSection()}
     ${arenaSection()}
     ${prep}
     <p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
+function viewIR() { return (typeof irSection === "function" ? irSection() : "") + `<p class="disc">${esc(DATA.disclaimer)}</p>`; }
+function viewFlow() { return flowSubNav("flow") + flowSection() + `<p class="disc">${esc(DATA.disclaimer)}</p>`; }
+function viewFlowHot() { return flowSubNav("hot") + (typeof viewHotThemes === "function" ? viewHotThemes().replace('<a class="back" href="#/explore">← 初動</a>', "") : ""); }

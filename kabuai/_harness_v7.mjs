@@ -54,7 +54,7 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 11, `${ev("ROUTES.length")}本`);
+check("ROUTES登録", ev("ROUTES.length") === 14, `${ev("ROUTES.length")}本`);
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
@@ -62,7 +62,7 @@ console.log("── 1) 🌙前夜の準備（ホーム）＋🕯️上髭 ──
 let hv = go("#/");
 check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備") && hv.includes("上髭逆指値") && hv.includes("土俵"));
 // 📰 IR（v7.5・2026-10-17）: 無い時は空メッセージ・ある時は 好/悪/要精査 のタブと答え合わせ
-{ const bak = DATA.ir; DATA.ir = null; hv = go("#/"); check("IR 無し→空メッセージ", clean(hv) && hv.includes("IRの好材料・悪材料") && hv.includes("まだ作られていません"));
+{ const bak = DATA.ir; DATA.ir = null; hv = go("#/ir"); check("IR 無し→空メッセージ", clean(hv) && hv.includes("IRの好材料・悪材料") && hv.includes("まだ作られていません"));
   const mk = (id, date, time, code, name, title, tags, label, score, llm, react) => ({ id, date, time, intraday: time <= "15:30", code, name, sector: "情報･通信業", title, pdf: "https://www.release.tdnet.info/inbs/" + id + ".pdf", tags, material: true, admin: false,
     rule: { label, score, reason: "r" }, llm, final: llm || { label, score, reason: "r", model: "rule" }, react: react || { day_chg: null, next_gap: null, next_chg: null, next_oc: null, next_date: null }, close: 1234, tov20_oku: 12.3 });
   const D = DATA.data_date;
@@ -74,7 +74,7 @@ check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備")
     tags_count: { "自社株買い": 1, "予想修正": 1, "エクイティ": 1, "配当": 1 },
     stats: { days: 2, from: "2026-01-01", to: D, rule: { "好材料": { n: 2, n_scored: 1, gap: 0.8, gap_hit: 100, chg: 0.2, chg_hit: 100, oc: -0.6, oc_hit: 0, day: 1.5, day_hit: 100, n_day: 1 }, "悪材料": { n: 1, n_scored: 0 } }, llm: { "好材料": { n: 0 }, "悪材料": { n: 1, n_scored: 0 } } },
     llm: { available: true, judged: 1, model: "claude-opus-5-5", note: "n" }, basis: "b", rules: ["r1"] };
-  hv = go("#/");
+  hv = go("#/ir");
   check("IR 今日: 👍1/👎2/🔍0 と答え合わせ", clean(hv) && hv.includes("👍 好 1") && hv.includes("👎 悪 2") && hv.includes("🔍 要精査 0") && hv.includes("翌日 寄り平均") && hv.includes("Claude判定 1件"));
   check("IR 好タブ: トヨタ行・既出・表題ルール", (hv.match(/class="irrow"/g) || []).length === 1 && hv.includes("トヨタ") && hv.includes("📌 既出") && hv.includes("📏 表題ルール"));
   sandbox.irSetTab("bad"); hv = view();
@@ -100,7 +100,7 @@ check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備")
   sandbox.irHotToggle(); hv = view(); check("IR 検索: 人気テーマ30件全部", hv.includes("テーマ30") && hv.includes("上位12に戻す")); sandbox.irHotToggle();
   sandbox.irSearchSet("宇宙開発関連"); hv = view(); check("IR 検索: 「〜関連」を落として本文と照合（衛星→0件でも宇宙の語で）", hv.includes("「宇宙開発関連」 0件"));
   ev(`IR_TXT["${D}"].rows[1].t = "量子コンピュータの開発";`); sandbox.irSearchSet("量子コンピューター"); hv = view(); check("IR 検索: 末尾の長音を落として照合", hv.includes("「量子コンピューター」 1件") && hv.includes("<mark>量子コンピュータ</mark>"));
-  DATA.ir.hot_themes = null; hv = go("#/"); check("IR 検索: 人気テーマ無し→予備の例（蓄電池入り）", hv.includes("例:") && hv.includes("蓄電池") && hv.includes("kabutan_hot_pc.py"));
+  DATA.ir.hot_themes = null; hv = go("#/ir"); check("IR 検索: 人気テーマ無し→予備の例（蓄電池入り）", hv.includes("例:") && hv.includes("蓄電池") && hv.includes("kabutan_hot_pc.py"));
   sandbox.irSetScope("window"); sandbox.irSearchSet(""); hv = view(); check("IR 検索: 消すと一覧に戻る", hv.includes('id="irmain" style=""') && hv.includes("👍 好 2") && !hv.includes("🔍「"));
   sandbox.irSetDay("today"); sandbox.irSetTab("good"); DATA.ir = bak; }
 const mkRow = (code, name, close, high, low, t500, extra = {}) => Object.assign({ code, name, sector: "情報･通信業", close, open: close * 0.99, high, low, chg: 1.23, uw_pct: 4.1, rng_pct: 6.2, uw_ratio: 0.66, atr_pct: 5.5,
@@ -141,19 +141,19 @@ console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・202
              { lead: mk("3350", "メタプラネット", 16.06), linked: [] }],
     pts: { known: true, ok: 38, tried: 65, asof: "23:58 10/13", err: {}, skipped: false }, iss_known: true, alert_known: true,
     rules: ["r1", "r2"], stats: { chase: "後追い検証", day3: "祭り3日目", use: "使い道" }, elapsed_s: 1 };
-  DATA.flow = sample; sandbox.flowSetTab("link"); hv = go("#/");
+  DATA.flow = sample; sandbox.flowSetTab("link"); hv = go("#/flow");
   check("連動 既定タブ＝主役→連動（2主役・連動2本＋単独）", clean(hv) && hv.includes("資金の流れ") && hv.includes("🎯") && hv.includes("住友金属鉱山") && hv.includes("0.78") && hv.includes("同日100%（9回）") && hv.includes("同日 —") && hv.includes("単独で動いた") && hv.includes("後追い買いは効きません"));
   check("連動: PTS表示（取れた/取れない）", hv.includes("PTS ¥1,300") && hv.includes("PTS —") && hv.includes("23:58 10/13 時点") && hv.includes("38/65本"));
   check("連動: 貸借/売り禁/日々公表チップ", hv.includes("貸借○") && hv.includes("貸借×"));
-  sandbox.flowSetTab("sector"); hv = go("#/");
+  sandbox.flowSetTab("sector"); hv = go("#/flow");
   check("資金セクター タブ（🔥・主役チップ・グループ外連動・弱い日バナー）", clean(hv) && hv.includes("🔥 インジウム") && hv.includes("×2.1") && hv.includes("上昇100%") && hv.includes("主役</span>") && hv.includes("グループ外で主役に連動") && hv.includes("ＡＤＥＫＡ") && hv.includes("日々公表") && hv.includes("資金が集まったグループが少ない日"));
   check("資金セクター v7.2: 鎖の本数・同日連動・+5%日・鎖の外(折りたたみ)・🧲隠れ連動", hv.includes("⛓️鎖2本／6") && hv.includes("鎖2本") && hv.includes("同日86%") && hv.includes("+5%日 7回") && hv.includes("鎖の外 3本") && hv.includes("三井金属") && hv.includes("0.31") && hv.includes("偶然の範囲") && hv.includes("群全体に連動") && hv.includes("ＨＥＲＯＺ") && hv.includes("0.59") && hv.includes("×36"));
-  { const g0 = { ...sample.groups[0], members_out: [], hidden: [], n_chain: 0, n_out: 0 }; DATA.flow = { ...sample, groups: [g0] }; hv = go("#/"); check("資金セクター v7.2: 鎖の外/隠れ連動が空でも崩れない", clean(hv) && !hv.includes("鎖の外") && !hv.includes("群全体に連動")); DATA.flow = sample; hv = go("#/"); }
-  DATA.flow = { ...sample, groups: [], movers: [], weak_day: false }; hv = go("#/"); check("資金セクター 0件", clean(hv) && hv.includes("資金が集まったグループがありません"));
-  sandbox.flowSetTab("link"); hv = go("#/"); check("連動 0件", clean(hv) && hv.includes("主役がいません"));
-  DATA.flow = { ...sample, pts: { known: false, ok: 0, tried: 40, err: { http403: 40 }, skipped: false } }; hv = go("#/"); check("PTS取れず（403）の注記", clean(hv) && hv.includes("PTSは取れませんでした") && hv.includes("http403"));
-  DATA.flow = { ...sample, pts: { skipped: true } }; hv = go("#/"); check("PTSスキップの注記", clean(hv) && hv.includes("PTSは取っていません"));
-  if (fl && !fl.error) { DATA.flow = fl; hv = go("#/"); check(`実データ(_flow_test.json ${fl.date}) 連動タブ`, clean(hv) && hv.includes("資金の流れ"), `主役${(fl.movers || []).length}`); sandbox.flowSetTab("sector"); hv = go("#/"); check("実データ 資金セクタータブ", clean(hv), `グループ${(fl.groups || []).length}`); sandbox.flowSetTab("link"); }
+  { const g0 = { ...sample.groups[0], members_out: [], hidden: [], n_chain: 0, n_out: 0 }; DATA.flow = { ...sample, groups: [g0] }; hv = go("#/flow"); check("資金セクター v7.2: 鎖の外/隠れ連動が空でも崩れない", clean(hv) && !hv.includes("鎖の外") && !hv.includes("群全体に連動")); DATA.flow = sample; hv = go("#/flow"); }
+  DATA.flow = { ...sample, groups: [], movers: [], weak_day: false }; hv = go("#/flow"); check("資金セクター 0件", clean(hv) && hv.includes("資金が集まったグループがありません"));
+  sandbox.flowSetTab("link"); hv = go("#/flow"); check("連動 0件", clean(hv) && hv.includes("主役がいません"));
+  DATA.flow = { ...sample, pts: { known: false, ok: 0, tried: 40, err: { http403: 40 }, skipped: false } }; hv = go("#/flow"); check("PTS取れず（403）の注記", clean(hv) && hv.includes("PTSは取れませんでした") && hv.includes("http403"));
+  DATA.flow = { ...sample, pts: { skipped: true } }; hv = go("#/flow"); check("PTSスキップの注記", clean(hv) && hv.includes("PTSは取っていません"));
+  if (fl && !fl.error) { DATA.flow = fl; hv = go("#/flow"); check(`実データ(_flow_test.json ${fl.date}) 連動タブ`, clean(hv) && hv.includes("資金の流れ"), `主役${(fl.movers || []).length}`); sandbox.flowSetTab("sector"); hv = go("#/flow"); check("実データ 資金セクタータブ", clean(hv), `グループ${(fl.groups || []).length}`); sandbox.flowSetTab("link"); }
   else console.log("  (skip) _flow_test.json なし＝実データ検証は省略");
   // 📚連動集（v7.3・2026-10-15）
   { const bb = DATA.linkbook;
@@ -162,18 +162,18 @@ console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・202
       groups: [{ label: "地方銀行", kind: "テーマ", alts: ["金利上昇メリット"], sectors: "銀行業12", n: 2, n_core: 5, n_theme: 9, codes: "8336 7380", cross: false, corr: 0.8, stab: 0.76, h1: 0.8, h2: 0.82, score: 2.6, avg_r1: 0.5, avg_r5: 1.1, tov_med_oku: 9.8, members: [mkb("8336", "武蔵野銀行", 0.83), mkb("7380", "十六フィナンシャルグループ", 0.83, { daily_pub: true, shortable: "×" })] },
                { label: "地方銀行", kind: "テーマ", alts: [], sectors: "銀行業2", n: 2, cross: true, corr: 0.7, stab: 0.6, h1: 0.6, h2: 0.7, score: 2.0, avg_r1: -0.3, avg_r5: 0.2, tov_med_oku: 30, members: [mkb("7337", "ひろぎんホールディングス", 0.7), mkb("7327", "第四北越フィナンシャルグループ", 0.7)] }],
       rules: ["b1"], stats: { chase: "翌日買い検証", use: "使い道B" } };
-    DATA.flow = sample; DATA.linkbook = sampleB; sandbox.flowSetTab("book"); hv = go("#/");
+    DATA.flow = sample; DATA.linkbook = sampleB; sandbox.flowSetTab("book"); hv = go("#/flow");
     check("📚連動集 タブ（番号・重複ラベルの（2）・安定/前半後半・仲間との平均・代金中央・🧩・alts・買い推奨ではない・📋コピー・核/テーマ内）", clean(hv) && hv.includes("📚 連動集 2") && hv.includes("コードをコピー") && hv.includes("8336 7380") && hv.includes("核5本（上位2本を表示）／テーマ内9本") && hv.includes("SBIに登録") && hv.includes("1. 地方銀行") && hv.includes("2. 🧩 地方銀行（2）") && hv.includes("安定 <b>0.76") && hv.includes("前半0.80・後半0.82") && hv.includes("武蔵野銀行") && hv.includes("0.83") && hv.includes("金利上昇メリット") && hv.includes("買い推奨ではありません") && hv.includes("翌日買い検証") && hv.includes("81営業日") && hv.includes("日々公表"));
-    DATA.linkbook = { ...sampleB, groups: [] }; hv = go("#/"); check("📚連動集 0件", clean(hv) && hv.includes("両期間で成立する連動グループがありません"));
-    DATA.linkbook = { error: "boomB" }; hv = go("#/"); check("📚連動集 error", clean(hv) && hv.includes("boomB"));
-    DATA.linkbook = null; hv = go("#/"); check("📚連動集 無し", clean(hv) && hv.includes("まだ作られていません"));
-    DATA.flow = null; DATA.linkbook = sampleB; hv = go("#/"); check("flow 無しでも📚連動集は見られる", clean(hv) && hv.includes("1. 地方銀行"));
+    DATA.linkbook = { ...sampleB, groups: [] }; hv = go("#/flow"); check("📚連動集 0件", clean(hv) && hv.includes("両期間で成立する連動グループがありません"));
+    DATA.linkbook = { error: "boomB" }; hv = go("#/flow"); check("📚連動集 error", clean(hv) && hv.includes("boomB"));
+    DATA.linkbook = null; hv = go("#/flow"); check("📚連動集 無し", clean(hv) && hv.includes("まだ作られていません"));
+    DATA.flow = null; DATA.linkbook = sampleB; hv = go("#/flow"); check("flow 無しでも📚連動集は見られる", clean(hv) && hv.includes("1. 地方銀行"));
     let rb = null; try { rb = JSON.parse(fs.readFileSync("_linkbook_test.json", "utf8")); } catch (e) { rb = null; }
-    if (rb && !rb.error) { DATA.flow = sample; DATA.linkbook = rb; hv = go("#/"); check(`実データ(_linkbook_test.json ${rb.date}) 📚連動集`, clean(hv) && hv.includes("📚 連動集"), `グループ${(rb.groups || []).length}/${rb.n_groups}`); }
+    if (rb && !rb.error) { DATA.flow = sample; DATA.linkbook = rb; hv = go("#/flow"); check(`実データ(_linkbook_test.json ${rb.date}) 📚連動集`, clean(hv) && hv.includes("📚 連動集"), `グループ${(rb.groups || []).length}/${rb.n_groups}`); }
     else console.log("  (skip) _linkbook_test.json なし");
     DATA.linkbook = bb; sandbox.flowSetTab("link"); }
-  DATA.flow = { error: "boom" }; hv = go("#/"); check("flow error", clean(hv) && hv.includes("今回は作れませんでした"));
-  DATA.flow = null; hv = go("#/"); check("flow 無し", clean(hv) && hv.includes("まだ作られていません"));
+  DATA.flow = { error: "boom" }; hv = go("#/flow"); check("flow error", clean(hv) && hv.includes("今回は作れませんでした"));
+  DATA.flow = null; hv = go("#/flow"); check("flow 無し", clean(hv) && hv.includes("まだ作られていません"));
   DATA.flow = bak; }
 
 console.log("── 2) 🧮電卓 ──");
@@ -202,6 +202,12 @@ console.log("── 4) 📊データ: 🔻売り / 🐵EOD / 🧭探検 / 検索
 hv = go("#/sell"); check("売り", clean(hv) && hv.includes("フェード") && hv.includes("モメンタム終了") && hv.includes("EODランキング"));
 hv = go("#/momentum"); check("EODランキング", clean(hv) && hv.includes("モメンタム") && (hv.match(/class="mrow/g) || []).length >= 10, `${(hv.match(/class="mrow/g) || []).length}行`);
 sandbox.setMomGrade("A"); hv = view(); check("EOD: Aフィルタ", clean(hv)); sandbox.setMomGrade("all");
+{ const r0 = DATA.ranking[0], bak = { ...r0 };   // v8: 売り印と空売り残高
+  Object.assign(r0, { shortable: true, jsf_stop: false, jsf_warn: true, tse_reg: false, daily_pub: true, short_vol: 1234567, long_vol: 800000, ratio: 0.65, short_days: 1.4, short_chg: 23.4 });
+  hv = go("#/momentum"); check("EOD: 貸借○・注意喚起・🔥空売り多の印", clean(hv) && hv.includes("貸借○ 空売り可") && hv.includes("⚠️ 注意喚起") && hv.includes("🔥 空売り多 売残 123万株（前週+23%） ・ 取組0.7倍 ・ 出来高1.4日分") && hv.includes("🔥 空売り多 1"));
+  sandbox.toggleMomShort(); hv = view(); check("EOD: 🔥空売り多フィルタ", (hv.match(/class="mrow/g) || []).length === 1); sandbox.toggleMomShort();
+  Object.assign(r0, { shortable: null, jsf_stop: true, short_vol: null }); hv = go("#/momentum"); check("EOD: 🚫売り禁", hv.includes("🚫 売り禁") && !hv.includes("貸借○ 空売り可"));
+  Object.keys(r0).forEach(k => { if (!(k in bak)) delete r0[k]; }); Object.assign(r0, bak); }
 hv = go("#/explore"); await new Promise(r => setTimeout(r, 20)); hv = go("#/explore"); check("探検トップ", clean(hv) && hv.includes("初動"));
 for (const c of ev("Object.keys(CAT_DEFS)")) { hv = go(`#/explore/${c}`); check(`探検/${c}`, clean(hv)); }
 hv = go("#/explore/break60"); check("探検/break60 翌朝ルールと新高値の数字", clean(hv) && hv.includes("寄りが前日終値+3%超なら買わない") && hv.includes("+1.35%/件"));
@@ -236,10 +242,15 @@ for (const c of codes) {
   go(`#/detail/${c}`); await sandbox.loadStockDetail(c);
   const d = $get("#dbody").innerHTML; check(`詳細 ${c}`, clean(d) && (d.includes("日足") || d.includes("EODデータ") || d.includes("の終値")), process.env.HDEBUG ? d.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 400) : "");
 }
-hv = go("#/about"); check("使い方 v7", clean(hv) && hv.includes("v7") && hv.includes("上髭逆指値") && !hv.includes("ライブの数字の読み方"));
+hv = go("#/about"); check("使い方 v8", clean(hv) && hv.includes("v8") && hv.includes("上髭逆指値") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは4本（前夜/作戦/データ/電卓）", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 4 && html.includes('id="nav-arena"') && html.includes('id="nav-calc"') && !html.includes('id="nav-live"'));
+check("ナビは7本（IR/前夜/資金/初動/作戦/データ/電卓）", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 7 && html.includes('id="nav-ir"') && html.includes('id="nav-flow"') && html.includes('id="nav-shodo"') && html.includes('id="nav-calc"') && !html.includes('id="nav-live"'));
+hv = go("#/ir"); check("📰IRタブ", clean(hv) && hv.includes("IRの好材料・悪材料") && !hv.includes("上髭逆指値"));
+hv = go("#/flow"); check("💴資金タブ", clean(hv) && hv.includes("資金の流れ") && hv.includes("株探の人気テーマ"));
+hv = go("#/flow/hot"); check("💴資金→🔥人気テーマ", clean(hv) && hv.includes("株探の人気テーマ30") && !hv.includes("← 初動"));
+hv = go("#/"); check("ホームに IR と資金が無い（別タブ）", clean(hv) && !hv.includes("IRの好材料・悪材料") && !hv.includes("資金の流れ →") && hv.includes("上髭逆指値") && hv.includes("土俵"));
+check("検証の数字は折りたたみ", hv.includes('class="vnote"') && hv.includes("<summary>検証の数字</summary>") && !hv.includes('class="banner info"><b>勝てる'));
 check("live.js を読み込まない", !srcs.includes("js/live.js") && srcs.includes("js/calc.js"));
 check("旧画面残置", fs.existsSync("web/legacy_v5.html") && fs.existsSync("web/legacy_v6.html") && fs.existsSync("web/js/day.js") && fs.existsSync("web/js/live.js"));
 console.log(fail ? `\n${fail} 件 NG` : "\nALL GREEN");

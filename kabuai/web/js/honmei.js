@@ -88,8 +88,8 @@ function viewHonmei() {
   const rest = [...restKeys].map(k => st.results[k]);
   const sm = honmeiStats(mine), sr = honmeiStats(rest);
   const f = v => v == null ? "—" : fmtPct(v);
-  const head = `<a class="back" href="#/explore">← 銘柄探検</a><h2>📝 本命の台帳 <span class="sub">${picks.length}本 ・ 紙</span></h2>
-    <div class="banner info">初動ブレイクで自分が選んだ「本命」が、同じ晩の候補全体に勝つかを測る紙。執行は10年BTと同じ＝翌朝の寄りで建てる（寄りが前日終値+3%超なら見送り）→20日目の終値、安値が建値−15%なら損切り。候補全体の当たり率は2.5%（40本に1本が+37%）。30〜40本たまったら本命の平均と候補全体の平均を比べる。</div>
+  const head = `<a class="back" href="#/explore">← 初動</a><h2>📝 本命の台帳 <span class="sub">${picks.length}本 ・ 紙</span></h2>
+    ${vnote("自分で選んだ本命が、同じ晩の候補全体に勝つかを測る紙。30本たまったら比べる。", "執行は10年BTと同じ＝翌朝の寄りで建てる（寄りが前日終値+3%超なら見送り）→20日目の終値、安値が建値−15%なら損切り。候補全体の当たり率は2.5%（40本に1本が+37%）。")}
     <div class="card"><div class="cd-line"><b>本命</b> ${sm.n}本 ／ 結果あり ${sm.n_fin}（確定 ${sm.n_done}）： 平均 <b class="${cls(sm.mean)}">${f(sm.mean)}</b> ・ 勝率 ${sm.win == null ? "—" : sm.win.toFixed(0) + "%"} ・ +20%以上 ${sm.big}本 ・ 見送り ${sm.skip}</div>
       <div class="cd-line"><b>同じ晩の候補の残り</b> ${sr.n}本 ／ 結果あり ${sr.n_fin}： 平均 <b class="${cls(sr.mean)}">${f(sr.mean)}</b> ・ 勝率 ${sr.win == null ? "—" : sr.win.toFixed(0) + "%"} ・ +20%以上 ${sr.big}本</div>
       ${sm.n_fin && sr.n_fin ? `<div class="cd-line">差（本命 − 残り）: <b class="${cls(sm.mean - sr.mean)}">${fmtPct(sm.mean - sr.mean)}</b>${sm.n_fin < 30 ? `<span class="muted">（まだ ${sm.n_fin}本・30本までは参考）</span>` : ""}</div>` : ""}
@@ -127,26 +127,26 @@ function precRow(r) {
 }
 function viewPrecursor() {
   const p = DATA.precursor;
-  const head = `<a class="back" href="#/explore">← 銘柄探検</a><h2>🧪 C/Dに材料が出た <span class="sub">${p && p.date ? esc(p.date) + " 終値時点" : ""}</span></h2>`;
+  const head = `<a class="back" href="#/explore">← 初動</a><h2>🧪 C/Dに材料が出た <span class="sub">${p && p.date ? esc(p.date) + " 終値時点" : ""}</span></h2>`;
   if (!p) return head + `<div class="card"><div class="empty">まだ作られていません（次のビルドで）。</div></div>`;
   if (p.error) return head + `<div class="card"><div class="empty">今回は作れませんでした（${esc(p.error)}）。</div></div>`;
   const c = p.counts || {};
-  const banner = `<div class="banner info"><b>予測ではなく、調べる候補の一覧。</b>${esc(p.note || "")}<br>ランクC/D（代金1億以上）${(p.n_cd || 0).toLocaleString()}本のうち ${p.n}本： 📰IR ${c.ir || 0}・🔥人気テーマ ${c.theme || 0}・💴資金セクター ${c.flow || 0}${p.hot_time ? `（株探 ${esc(p.hot_time)}）` : ""}。<br>並びは 好材料 → 要精査 → 当たった数 → 出来高。</div>`;
+  const banner = vnote(`予測ではなく、調べる候補の一覧。C/D ${(p.n_cd || 0).toLocaleString()}本のうち ${p.n}本（📰IR ${c.ir || 0}・🔥テーマ ${c.theme || 0}・💴資金 ${c.flow || 0}）。`, `${esc(p.note || "")}${p.hot_time ? `<br>株探 ${esc(p.hot_time)} 時点。` : ""}<br>並びは 好材料 → 要精査 → 当たった数 → 出来高。`);
   const rows = (p.rows || []);
   return head + banner + (rows.length ? `<div class="card tight">${rows.map(precRow).join("")}</div>` : `<div class="card"><div class="empty">該当なし（IR も熱いグループの動きも無い日）。</div></div>`) + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
 
 // ── 🔥 株探の人気テーマ30（v7.7.1・本人「株探の人気セクターがわかりやすいかな」）: 順位＋株探の代表＋このアプリ側の中身 ──
-function hotGoIR(name) { IR_Q = name; location.hash = "#/"; render(); }
+function hotGoIR(name) { IR_Q = name; location.hash = "#/ir"; render(); }
 function viewHotThemes() {
   const p = DATA.precursor, hot = DATA.ir && DATA.ir.hot_themes;
-  const head = `<a class="back" href="#/explore">← 銘柄探検</a><h2>🔥 株探の人気テーマ30 <span class="sub">${hot && hot.page_time ? "株探 " + esc(hot.page_time) + "・3日間のアクセス順" : ""}</span></h2>`;
+  const head = `<a class="back" href="#/explore">← 初動</a><h2>🔥 株探の人気テーマ30 <span class="sub">${hot && hot.page_time ? "株探 " + esc(hot.page_time) + "・3日間のアクセス順" : ""}</span></h2>`;
   const list = (p && p.hot_themes && p.hot_themes.length) ? p.hot_themes : null;
   if (!list) {
     if (hot && hot.themes) return head + `<div class="card tight">${hot.themes.map(t => `<div class="pickrow"><div class="pk-nm"><b>${t.rank}位 ${esc(t.name)}</b><small>${(t.stocks || []).map(s => `<a href="#/detail/${esc(s.code)}">${esc(s.name)}</a>`).join("・")}</small></div><div class="pk-ev"><a href="#" onclick="event.preventDefault();hotGoIR('${esc(t.name)}')">🔍 開示</a></div></div>`).join("")}</div><div class="note">中身（母集団・動いた本数）は次のビルドから。</div>`;
     return head + `<div class="card"><div class="empty">まだ取れていません（PC の kabutan_hot_pc.py が平日 8:15/16:30/23:50 に置く）。</div></div>`;
   }
-  const banner = `<div class="banner info">順位は株探の「人気テーマ」（3日間のアクセス数）。右の数字はこのアプリの母集団（代金のある銘柄）での中身＝<b>動いた</b>は今日 出来高2倍か+3%以上の本数、<b>平均</b>は前日比の平均。💴は資金セクターの熱いグループとして今日点灯した印。人気＝上がるではなく、上がった後に人気になる事の方が多い（祭り3日目以降の翌日買いは10年で−1.9%/件）。</div>`;
+  const banner = vnote("人気＝上がるではなく、上がった後に人気になる事の方が多い。", "順位は株探の「人気テーマ」（3日間のアクセス数）。右の数字はこのアプリの母集団での中身＝<b>動いた</b>は今日 出来高2倍か+3%以上の本数、<b>平均</b>は前日比の平均。💴は資金セクターの熱いグループとして今日点灯した印。祭り3日目以降の翌日買いは10年で−1.9%/件。");
   const rows = list.map(t => {
     const g = t.grades || {};
     const gr = ["S", "A", "B", "C", "D"].filter(k => g[k]).map(k => `${k}${g[k]}`).join(" ");
