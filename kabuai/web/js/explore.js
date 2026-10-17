@@ -8,7 +8,7 @@ async function loadExplorer() {
   return EXP;
 }
 const CAT_DEFS = {
-  break60: ["🚩", "初動ブレイク（10年検証済み）", "60日ぶり高値を初めて更新した陽線×出来高1.5倍以上。10年BT=PF1.22/勝率48.7%のバーベル（半分外れる）。"],
+  break60: ["🚩", "初動ブレイク（10年検証済み）", "60日ぶり高値を初めて更新した陽線×出来高1.5倍以上。負け筋（当日+20%・出来高10倍・抜き幅10%）は除外。10年BT=1件+0.64%/PF1.17、🆕新高値付きは+1.35%/PF1.35。勝率は約半分。"],
   shodo: ["🌱", "初動", "長期低迷から出来高を伴って75日線を上抜けた転換の初日"],
   shodo_wait: ["⏳", "初動待ち", "初動の条件にあと一歩（75日線のすぐ下まで接近）"],
   nagi: ["🤫", "静かな初動（凪ブレイク）", "凪（低ボラ）に静かな出来高増→20日高値を初突破した陽線。爆発前を狙う立花型。"],
@@ -35,7 +35,7 @@ function catRow(cat, r) {
   if (cat === "stop_high") { sub = `<div class="chips"><span class="chip dn">🔥 ${r.stuck ? "張り付き" : "S高タッチ"}</span>${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
   else if (cat === "shodo") { sub = `<div class="chips"><span class="chip buy">🌱 初動</span><span class="chip">出来高 ${r.volr != null ? r.volr + "倍" : "—"}</span></div>`; right = `<div class="pk-ev">初動 ${yen(r.shodo_price)}<small>${r.shodo_date || ""}</small></div>`; }
   else if (cat === "shodo_wait") { sub = `<div class="chips"><span class="chip">⏳ 75日線まで ${r.ma_gap_pct}%</span><span class="chip">条件 ${r.conds}/3</span></div>`; }
-  else if (cat === "break60") { sub = `<div class="chips"><span class="chip buy">🚩 60日ぶり高値ブレイク</span><span class="chip">出来高 ${r.volx != null ? r.volx + "倍" : "—"}</span>${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
+  else if (cat === "break60") { sub = `<div class="chips"><span class="chip buy">🚩 60日ぶり高値ブレイク</span>${r.new250 ? `<span class="chip buy">🆕 新高値(250日)</span>` : ""}<span class="chip">出来高 ${r.volx != null ? r.volx + "倍" : "—"}</span>${r.chg != null ? `<span class="chip">当日 +${r.chg}%</span>` : ""}${r.atr_pct != null ? `<span class="chip ${r.calm ? "" : "dn"}">${r.calm ? "凪" : "荒い"} ATR ${r.atr_pct}%</span>` : ""}${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
   else if (cat === "nagi") { sub = `<div class="chips"><span class="chip buy">🤫 凪ブレイク</span><span class="chip">出来高 ${r.volr != null ? r.volr + "倍" : "—"}</span><span class="chip">凪ATR ${r.atr_pct != null ? r.atr_pct + "%" : "—"}</span>${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
   else if (cat === "rising" || cat === "oshime") { sub = `<div class="chips"><span class="chip ${cat === "rising" ? "buy" : ""}">${cat === "rising" ? "🚀" : "🎯"} 押し ${r.pullback_pct}%</span><span class="chip">高値 ${yen(r.hi)}</span></div>`;
     right = `<div class="pk-ev">初動比 <span class="${r.price >= r.shodo_price ? "pos" : "neg"}">${r.shodo_price ? ((r.price / r.shodo_price - 1) * 100).toFixed(1) : "—"}%</span><small>${r.shodo_date || ""}</small></div>`; }
@@ -63,7 +63,9 @@ function viewExploreList(cat) {
     ? `<div class="card"><div style="font-weight:700;font-size:13px">🗓 日別のストップ高件数（直近）</div><div class="chips" style="margin-top:8px">${EXP.stop_high_history.slice(0, 10).map(h => `<span class="chip">${h.date.slice(5)} <b>${h.count}</b>件${h.stuck ? `（張付${h.stuck}）` : ""}</span>`).join("")}</div></div>` : "";
   const filters = (cat === "rebound") ? `<div class="gchips"><a class="gchip ${REB_FILTER === "all" ? "on" : ""}" onclick="event.preventDefault();setRebFilter('all')">すべて</a><a class="gchip ${REB_FILTER === "sagedomari" ? "on" : ""}" onclick="event.preventDefault();setRebFilter('sagedomari')">下げ止まりのみ</a></div>
        <input class="searchbox" style="margin-bottom:8px" type="search" placeholder="銘柄名・コードで絞り込み" value="${esc(EXP_Q)}" oninput="onExpSearch(this.value)">` : "";
+  const b60 = cat === "break60" ? `<div class="banner info" style="margin:0 0 8px"><b>翌朝のルール: 寄りが前日終値+3%超なら買わない</b>（10年で −1.7%/件の筋）。買えたら20日保有・損切り −15%。<br>
+    10年（上場廃止込み 12,396件・コスト0.2%）: 土台 +0.54%/件 → 負け筋を切って <b>+0.64%/件・PF1.17</b>、🆕新高値付き <b>+1.35%/件・PF1.35</b>（1日約2本）。勝率は48〜50%＝半分は外れる。凪（ATR4%未満）は外れが小さく、荒いは外れが大きい。並びは新しい日→🆕→出来高順。</div>` : "";
   return `<a class="back" href="#/explore">← 銘柄探検</a><h2>${e} ${l} <span class="sub">${n}件 ・ ${EXP.data_date || ""} 終値時点</span></h2>
-    <div class="note" style="margin:0 2px 8px">${d}${cat === "rebound" ? "。38.2〜50%ゾーン優先・押し率順" : ""}</div>
+    <div class="note" style="margin:0 2px 8px">${d}${cat === "rebound" ? "。38.2〜50%ゾーン優先・押し率順" : ""}</div>${b60}
     ${filters}${hist}<div id="explist">${catListInner(cat)}</div><div class="card note">${esc(EXP.note || "")}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
 }

@@ -212,7 +212,12 @@ def break60_recent(df: pd.DataFrame, cfg: dict) -> dict | None:
     10年BT(_bt_shodo_break.py・n=11,601): 翌寄り買い→20日保有・損切り-15%で
     平均+0.86%/件・PF1.22・陽性年9/11（負け年2018/2024・勝率48.7%＝外れ多め当たれば大きい型）。
     過去棄却のbt_breakout_catch(過熱済み銘柄の追っかけ)との違いは「初回性」＝30営業日
-    ブレイクが無かった後の最初の更新だけを拾う。"""
+    ブレイクが無かった後の最初の更新だけを拾う。
+    v7.6.2（2026-10-17 本人「初動ブレイクの精度をあげたい」・_bt_shodo_cond_1017.py/_bt_shodo_cond2_1017.py・J-Quants 10年 上場廃止込み n=12,396）:
+    負け筋を夕方に除外 = 当日+20%以上(−1.5%/件・中央値は損切り) / 出来高20日平均10倍以上(−0.7%) / 60日高値を10%以上抜き(−1.0%)。
+    執行ルール = 翌朝の寄りが前日終値+3%超なら買わない(−1.7%/件)。残り n=11,013 で +0.64%/件・PF1.17・後半(22〜)+0.82。
+    🆕新高値(250日高値も更新)は +1.35%/件・PF1.35・後半+1.67・1日約2本＝先頭に並べる。凪(事前ATR20%<4%)は勝率49.5%/裾30%2.6%、
+    荒い(≥4%)は勝率41%/裾30%17%＝タグで出す。勝率は48〜50%のまま＝精度は『負けを減らす』方向でしか上がらない。"""
     bc = cfg["break60"]
     need = int(bc["high_break_days"]) + int(bc["fresh_gap_days"]) + 5
     if len(df) < need:
@@ -225,15 +230,30 @@ def break60_recent(df: pd.DataFrame, cfg: dict) -> dict | None:
                   .max().fillna(0).astype(bool)
     volx = v / (v.rolling(20).mean().shift(1) + 1e-9)
     tov20 = (c * v).rolling(20).mean().shift(1)
+    chg = c.pct_change() * 100
+    over = (c / hi_n - 1) * 100
     trig = brk & ~prev_any & (c > o) \
-        & (volx >= float(bc["vol_ratio_min"])) & (tov20 >= float(bc["min_turnover"]))
+        & (volx >= float(bc["vol_ratio_min"])) & (tov20 >= float(bc["min_turnover"])) \
+        & (chg < float(bc.get("max_day_gain_pct", 20))) & (volx < float(bc.get("max_vol_ratio", 10))) \
+        & (over < float(bc.get("max_over_high_pct", 10)))          # v7.6.2 負け筋の除外（10年BT）
     recent = trig.tail(int(bc["recent_days"])).fillna(False)
     if not bool(recent.any()):
         return None
     ts = recent[recent].index[-1]
+    hi250 = c.rolling(250).max().shift(1)
+    h250 = hi250.loc[ts]
+    new250 = bool(c.loc[ts] > h250) if pd.notna(h250) else None     # 履歴250日未満なら不明
+    h, lo = df["High"], df["Low"]
+    tr = pd.concat([h - lo, (h - c.shift(1)).abs(), (lo - c.shift(1)).abs()], axis=1).max(axis=1)
+    atr = (tr.rolling(20).mean() / c * 100).shift(1).loc[ts]
     return {"date": ts.strftime("%Y-%m-%d"),
             "volx": round(float(volx.loc[ts]), 2),
             "hi60": round(float(hi_n.loc[ts]), 1),
+            "chg": round(float(chg.loc[ts]), 1),
+            "over60": round(float(over.loc[ts]), 1),
+            "new250": new250,
+            "atr_pct": round(float(atr), 1) if pd.notna(atr) else None,
+            "calm": (bool(atr < float(bc.get("calm_atr_pct", 4))) if pd.notna(atr) else None),
             "today": bool(ts == df.index[-1])}
 
 
@@ -493,7 +513,7 @@ def build_explorer(data: dict, name_map: dict, data_date: str, cfg: dict | None 
     cats["shodo"].sort(key=lambda x: x["shodo_date"], reverse=True)
     cats["shodo_wait"].sort(key=lambda x: x["ma_gap_pct"], reverse=True)
     cats["nagi"].sort(key=lambda x: (x["date"], x["volr"]), reverse=True)  # 新しい日→蓄積の強い順
-    cats["break60"].sort(key=lambda x: (x["date"], x["volx"]), reverse=True)  # 新しい日→出来高の強い順
+    cats["break60"].sort(key=lambda x: (x["date"], 1 if x.get("new250") else 0, x["volx"]), reverse=True)  # 新しい日→🆕新高値→出来高の強い順
     cats["rising"].sort(key=lambda x: x["pullback_pct"])
     cats["oshime"].sort(key=lambda x: x["pullback_pct"])
     cats["rebound"].sort(key=lambda x: (0 if x["in_zone"] else 1, x["fib_pct"]))

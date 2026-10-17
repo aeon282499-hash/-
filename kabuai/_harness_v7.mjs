@@ -204,6 +204,11 @@ hv = go("#/momentum"); check("EODランキング", clean(hv) && hv.includes("モ
 sandbox.setMomGrade("A"); hv = view(); check("EOD: Aフィルタ", clean(hv)); sandbox.setMomGrade("all");
 hv = go("#/explore"); await new Promise(r => setTimeout(r, 20)); hv = go("#/explore"); check("探検トップ", clean(hv) && hv.includes("初動"));
 for (const c of ev("Object.keys(CAT_DEFS)")) { hv = go(`#/explore/${c}`); check(`探検/${c}`, clean(hv)); }
+hv = go("#/explore/break60"); check("探検/break60 翌朝ルールと新高値の数字", clean(hv) && hv.includes("寄りが前日終値+3%超なら買わない") && hv.includes("+1.35%/件"));
+{ const bak = EXPJ.categories.break60; EXPJ.categories.break60 = [{ code: "3042", name: "セキュアヴェイル", price: 325, r1: 9.1, date: "2026-10-01", volx: 4.2, hi60: 314, chg: 9.1, over60: 3.5, new250: true, atr_pct: 2.1, calm: true, today: true },
+    { code: "9999", name: "荒い株", price: 1000, r1: 3, date: "2026-10-01", volx: 2.0, hi60: 980, chg: 3.0, over60: 2.0, new250: false, atr_pct: 6.5, calm: false, today: false }];
+  hv = go("#/explore/break60"); check("探検/break60 行: 🆕新高値・凪/荒いのチップ", clean(hv) && hv.includes("🆕 新高値(250日)") && hv.includes("凪 ATR 2.1%") && hv.includes("荒い ATR 6.5%") && hv.includes("当日 +9.1%"));
+  EXPJ.categories.break60 = bak; }
 hv = go("#/search"); await new Promise(r => setTimeout(r, 20));
 sandbox.onSearchInput("72"); hv = $get("#searchres").innerHTML; check("検索 '72'", clean(hv) && hv.includes("rcard"));
 const codes = (DATA.ranking || []).slice(0, 2).map(r => r.code).concat(((DATA.arena || {}).rows || []).slice(0, 1).map(r => r.code));
