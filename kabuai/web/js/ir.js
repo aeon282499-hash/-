@@ -1,7 +1,7 @@
 // ir.js — 📰 IR（適時開示）の好材料・悪材料（v7.5・2026-10-17 本人「brisk基準のIRの取得＋内容の精査→上がる/下がるを君が判断・既出も含めて」）
 // データ: latest.json["ir"]（ir_builder.py）。元は TDnet 直接・分類の基準は brisk のタグ体系（brisk のデータ自体は載せない＝規約）。
 // 判定: 📏ルール（表題の語）→ 🤖Claude（PDF冒頭を読んだ判定・ir_judge.py・キーがある時だけ）。最終判定 final は Claude があればそれ。
-// 答え合わせ: 📌既出（15:30までの開示）はその日の終値、🌙引け後は翌営業日の寄りギャップ/終値。stats に好/悪ごとの平均と的中率。
+// 答え合わせ: 📌既出（15:30より前の開示・15:30ちょうどは引け後）はその日の終値、🌙引け後は翌営業日の寄りギャップ/終値。stats に好/悪ごとの平均と的中率。
 let IR_TAB = "good";    // good | bad | check | all
 let IR_DAY = "today";   // today | window
 function irSetTab(t) { IR_TAB = t; render(); }
@@ -15,7 +15,7 @@ function irReact(r) {
   const x = r.react || {};
   const g = x.next_gap, c = x.next_chg, d = x.day_chg;
   if (r.intraday) {
-    const day = d != null ? `その日の終値 <b class="${cls(d)}">${fmtPct(d)}</b>` : `その日の終値 —`;
+    const day = d != null ? `その日の終値 <b class="${cls(d)}">${fmtPct(d)}</b><span class="muted">（開示前の動き込み）</span>` : `その日の終値 —`;
     const nxt = g != null ? ` ／ 翌日 寄り <b class="${cls(g)}">${fmtPct(g)}</b>・終値 <b class="${cls(c)}">${fmtPct(c)}</b>` : "";
     return `📌 既出（${esc(r.time)}）: ${day}${nxt}`;
   }

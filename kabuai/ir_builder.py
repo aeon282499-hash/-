@@ -45,7 +45,7 @@ JUDGED_PATH = HERE / "ir_judged.json"      # ir_judge.py が書く（PC から g
 WINDOW_DAYS = int(os.environ.get("KABUAI_IR_WINDOW", "3"))     # 画面に出す営業日数（当日＋既出2日）
 STATS_DAYS = int(os.environ.get("KABUAI_IR_STATS", "15"))      # 答え合わせの営業日数（TDnet は約1ヶ月分しか残らない）
 DEADLINE_SEC = float(os.environ.get("KABUAI_IR_DEADLINE", "240"))
-SESSION_END = "15:30"                                           # これ以前の開示＝場中（既出）
+SESSION_END = "15:30"                                           # これより前の開示＝場中（既出）。15:30ちょうどは引け後
 
 _ROW_RE = re.compile(
     r'<tr[^>]*>\s*<td[^>]*kjTime[^>]*>(.*?)</td>\s*<td[^>]*kjCode[^>]*>(.*?)</td>\s*<td[^>]*kjName[^>]*>(.*?)</td>'
@@ -437,7 +437,7 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
                 continue
             tags = tag_title(r["title"])
             score, label, reason = rule_verdict(r["title"], tags, r["name"])
-            intraday = bool(r["time"]) and r["time"] <= SESSION_END
+            intraday = bool(r["time"]) and r["time"] < SESSION_END   # 15:30ちょうどは大引け後＝翌日で答え合わせ(2026-10-17 本人「好材料なのに下がる」→313件が15:30開示だった)
             react = reaction(data, code, dd, intraday)
             j = jmap.get(r["id"])
             llm = None
@@ -511,7 +511,7 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
         "rules": [
             "好/悪はまず表題の語で（上方修正・増配・自社株買い・TOB対象＝好／下方修正・減配・増資・行政処分・上場廃止＝悪）",
             "決算短信・月次・中計・資本提携の割当など方向が表題で決まらない物は🔍要精査＝Claudeが中身（PDF冒頭）を読んで判定",
-            f"{SESSION_END}までの開示＝📌既出（その日の終値の反応を付ける）／引け後の開示＝翌営業日の寄りギャップと終値で答え合わせ",
+            f"{SESSION_END}より前の開示＝📌既出（その日の終値の反応＝開示前の値動きも含む）／引け後の開示＝翌営業日の寄りギャップと終値で答え合わせ",
             "上がる/下がるの判定であって、翌日買えば儲かるという意味ではない（答え合わせの数字が全て）",
         ],
     }

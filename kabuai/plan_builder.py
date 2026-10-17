@@ -149,6 +149,46 @@ def next_trading_day(d: date) -> date:
     return cur
 
 
+GOKUJO_MAX_SLOTS = 1      # shadow_exit.GOKUJO_MAX_SLOTS と同じ(1枠・現金余力100万到達で2)
+GOKUJO_PX_CAP = 10000     # shadow_exit.GOKUJO_PX_CAP と同じ(値がさ見送り)
+
+
+def gokujo_rows(target_s: str, earn_codes: set, _iss, _nm, how) -> tuple[list[dict], list[dict]]:
+    """👑極上の注文(台帳が枠内に取った玉だけ)と見送り(紙)を返す。配信 shadow_exit.send_discord と同じ見せ方。"""
+    orders: list[dict] = []; paper: list[dict] = []
+    j = _load_json("today_signals_gokujo.json") or {}
+    if str(j.get("date", "")) != target_s:
+        return orders, paper
+    sigs = [s for s in (j.get("signals") or []) if s.get("direction", "BUY") == "BUY"]
+    led = _load_json("shadow_exit_gokujo.json") or []
+    led = (led.get("positions") if isinstance(led, dict) else led) or []
+    recorded = [str(x.get("ticker", "")) for x in led if x.get("signal_date") == target_s and x.get("status") in ("pending", "open")]
+    held = [x for x in led if x.get("status") in ("pending", "open") and x.get("signal_date") != target_s]
+    estimated = not recorded and not held      # 台帳に今夜の痕跡が無い＝ビルドが台帳より先に走った
+    if estimated:
+        free = GOKUJO_MAX_SLOTS
+        for s in sigs:
+            if free <= 0: break
+            if (s.get("prev_close") or 0) > GOKUJO_PX_CAP: continue
+            recorded.append(str(s.get("ticker", ""))); free -= 1
+    slot_full = bool(sigs) and not recorded
+    for rank, s in enumerate(sigs, 1):
+        tk = str(s.get("ticker", "")); c4 = tk.replace(".T", "")[:4]
+        base = {
+            "system": "👑極上", "pri": 2, "rank": rank, "code": c4, "name": s.get("name") or _nm(c4), "side": "買い",
+            "note": " / ".join(x for x in (f"#{rank}", f"前日終値 {int(round(s.get('prev_close') or 0)):,}円", (f"RSI{s['rsi']:.0f}" if s.get("rsi") is not None else ""), (f"乖離{s['deviation']:+.1f}%" if s.get("deviation") is not None else "")) if x),
+            "iss": _iss(c4), "prev": s.get("prev_close"),
+        }
+        if tk in recorded:
+            warns = ["⚠️明日決算発表＝保有中に決算をまたぐ" if c4 in earn_codes else "", "台帳未更新＝配信と同じ規則で推定（配信の#1と一致するはず）" if estimated else ""]
+            orders.append({**base, "size": GOKUJO_SIZE, "order": how(s), "warn": " ／ ".join(w for w in warns if w)})
+        else:
+            why = (f"枠満杯（保有中: {'・'.join(str(x.get('name') or x.get('ticker')) for x in held)}）" if (slot_full and held)
+                   else ("値がさ（1万円超＝1玉に収まらない）" if (s.get("prev_close") or 0) > GOKUJO_PX_CAP else f"#{rank}＝枠外（極上は{GOKUJO_MAX_SLOTS}枠・配信は#1だけ）"))
+            paper.append({**base, "system": "👑極上 見送り", "size": "撃たない", "order": f"見送り：{why}", "warn": ""})
+    return orders, paper
+
+
 def _load_json(name: str):
     p = PARENT / name
     try:
@@ -274,13 +314,18 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
                 "warn": "⚠️明日決算発表＝保有中に決算をまたぐ" if c4 in earn_codes else "",
                 "iss": _iss(c4), "prev": s.get("prev_close"),
             })
+    # 2026-10-17 本人「極上と配信が違う気がする」: 配信(shadow_exit.send_discord)は台帳が枠内(1枠)に記帳した玉だけを
+    # 「#1 を買う」と出し、枠あふれ分は文面に出さない。ここも同じ＝台帳 shadow_exit_gokujo.json の今夜分(status pending/open・
+    # signal_date==target)だけを注文に、残りの候補は📝紙(見送り)へ。台帳がまだ無い回(ビルドが台帳コミットより先に走った時)は
+    # 配信と同じ規則で推定(保有中なら枠満杯・空きなら候補順の#1・値がさ1万円超は見送り)して「推定」と明記。
     try:
-        _sig_rows("today_signals_gokujo.json", "👑極上", 2, GOKUJO_SIZE, "買い",
-                  lambda s: (f"寄指 買い {int(round(s['limit_price'])):,}円以下 → 3営業日目の大引けで売り（初日引け-1%以下なら翌朝処分）" if s.get("limit_price") else "寄り成行 買い → 3営業日目の大引けで売り"), orders)
+        _ho = lambda s: (f"寄指 買い {int(round(s['limit_price'])):,}円以下 → 3営業日目の大引けで売り（初日引け-1%以下なら翌朝処分）" if s.get("limit_price") else "寄り成行 買い → 3営業日目の大引けで売り")
+        g_orders, g_paper = gokujo_rows(target_s, earn_codes, _iss, _nm, _ho)
+        orders.extend(g_orders); paper.extend(g_paper)
         # 極み買いは 2026-09-21・🔻極み売りは 2026-09-27 本人「極みは廃止・極上だけ」で廃止＝出さない
     except Exception as e:
         print(f"[plan] 極み/極上節スキップ: {e}")
-    orders.sort(key=lambda o: (o["pri"], o["system"], o["code"]))
+    orders.sort(key=lambda o: (o["pri"], o["system"], o.get("rank", 0), o["code"]))   # 極上は配信と同じ候補順(rank)
 
     # ④ 📰 材料（TDnet当日開示・全社）
     news: list[dict] = []
