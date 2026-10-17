@@ -135,3 +135,27 @@ function viewPrecursor() {
   const rows = (p.rows || []);
   return head + banner + (rows.length ? `<div class="card tight">${rows.map(precRow).join("")}</div>` : `<div class="card"><div class="empty">該当なし（IR も熱いグループの動きも無い日）。</div></div>`) + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
+
+// ── 🔥 株探の人気テーマ30（v7.7.1・本人「株探の人気セクターがわかりやすいかな」）: 順位＋株探の代表＋このアプリ側の中身 ──
+function hotGoIR(name) { IR_Q = name; location.hash = "#/"; render(); }
+function viewHotThemes() {
+  const p = DATA.precursor, hot = DATA.ir && DATA.ir.hot_themes;
+  const head = `<a class="back" href="#/explore">← 銘柄探検</a><h2>🔥 株探の人気テーマ30 <span class="sub">${hot && hot.page_time ? "株探 " + esc(hot.page_time) + "・3日間のアクセス順" : ""}</span></h2>`;
+  const list = (p && p.hot_themes && p.hot_themes.length) ? p.hot_themes : null;
+  if (!list) {
+    if (hot && hot.themes) return head + `<div class="card tight">${hot.themes.map(t => `<div class="pickrow"><div class="pk-nm"><b>${t.rank}位 ${esc(t.name)}</b><small>${(t.stocks || []).map(s => `<a href="#/detail/${esc(s.code)}">${esc(s.name)}</a>`).join("・")}</small></div><div class="pk-ev"><a href="#" onclick="event.preventDefault();hotGoIR('${esc(t.name)}')">🔍 開示</a></div></div>`).join("")}</div><div class="note">中身（母集団・動いた本数）は次のビルドから。</div>`;
+    return head + `<div class="card"><div class="empty">まだ取れていません（PC の kabutan_hot_pc.py が平日 8:15/16:30/23:50 に置く）。</div></div>`;
+  }
+  const banner = `<div class="banner info">順位は株探の「人気テーマ」（3日間のアクセス数）。右の数字はこのアプリの母集団（代金のある銘柄）での中身＝<b>動いた</b>は今日 出来高2倍か+3%以上の本数、<b>平均</b>は前日比の平均。💴は資金セクターの熱いグループとして今日点灯した印。人気＝上がるではなく、上がった後に人気になる事の方が多い（祭り3日目以降の翌日買いは10年で−1.9%/件）。</div>`;
+  const rows = list.map(t => {
+    const g = t.grades || {};
+    const gr = ["S", "A", "B", "C", "D"].filter(k => g[k]).map(k => `${k}${g[k]}`).join(" ");
+    const movers = (t.movers || []).filter(m => (m.vol_x || 0) >= 2 || (m.r1 || 0) >= 3).map(m => `<a class="chip ${m.grade === "S" || m.grade === "A" ? "buy" : (m.grade === "C" || m.grade === "D") ? "acc" : ""}" href="#/detail/${esc(m.code)}">${esc(m.name)} ${m.grade}${m.r1 != null ? " " + fmtPct1(m.r1) : ""}${m.vol_x != null ? " ×" + m.vol_x : ""}</a>`).join("");
+    const rep = (t.stocks || []).map(s => `<a href="#/detail/${esc(s.code)}">${esc(s.name)}</a>`).join("・");
+    const fl = t.flow ? `<span class="chip wa">💴 資金 ${t.flow.strong ? "強" : ""}${t.flow.n_hot != null ? " 熱" + t.flow.n_hot + "本" : ""}</span>` : "";
+    return `<div class="pickrow" style="display:block"><div class="pk-nm"><b>${t.rank}位 ${esc(t.name)}</b> <small>株探の代表: ${rep || "—"}</small>
+      <div class="chips"><span class="chip">${t.n}本中 動いた <b>${t.n_moving}</b></span><span class="chip ${cls(t.avg_r1)}">平均 ${fmtPct1(t.avg_r1)}</span>${gr ? `<span class="chip">${gr}</span>` : ""}${fl}<a class="chip" href="#" onclick="event.preventDefault();hotGoIR('${esc(t.name)}')">🔍 開示を検索</a></div>
+      ${movers ? `<div class="chips" style="margin-top:4px">${movers}</div>` : ""}</div></div>`;
+  }).join("");
+  return head + banner + `<div class="card tight">${rows}</div><div class="note">C/D（青）は「まだ走っていない仲間」＝🧪材料が出たC/D と同じ見方。S/A（緑）は走った後。</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
+}

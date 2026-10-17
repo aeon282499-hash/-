@@ -17,17 +17,18 @@ const CAT_DEFS = {
   rebound: ["⚡", "短期反発候補", "急騰後にフィボ38.2〜50%押しゾーンで押し目形成中"],
   stop_high: ["🔥", "ストップ高", "値幅制限いっぱいまで買われた銘柄（張り付き含む）"],
   precursor: ["🧪", "C/Dに材料が出た", "まだ走っていないランクC/Dで、今日のIR・株探の人気テーマ・資金セクターの熱いグループに当たり、出来高か値が動き始めた銘柄。予測ではなく調べる候補（10年: C/D→A以上は0.8%）。"],
+  hot: ["🔥", "株探の人気テーマ30", "株探の人気テーマ（3日間のアクセス順）を、このアプリの母集団で中身（動いた本数・平均・ランク分布・動いた銘柄）付きで。"],
   honmei: ["📝", "本命の台帳（紙）", "初動ブレイクで自分が選んだ本命を記録し、翌寄り建て→20日/−15%で答え合わせ。同じ晩の候補全体と比べる。"] };
 function expReload(hash) { loadExplorer().then(() => { if ((location.hash || "#/") === hash) render(); }); }
 function viewExplore() {
   if (!EXP) { expReload("#/explore"); return `${dataSubNav("explore")}<h2>🧭 銘柄探検</h2><div class="sk-wrap"><div class="sk"></div><div class="sk"></div></div>`; }
-  const c = { ...(EXP.counts || {}), precursor: (DATA.precursor && DATA.precursor.rows || []).length, honmei: honmeiLoad().picks.length };
+  const c = { ...(EXP.counts || {}), precursor: (DATA.precursor && DATA.precursor.rows || []).length, honmei: honmeiLoad().picks.length, hot: (DATA.ir && DATA.ir.hot_themes && DATA.ir.hot_themes.themes || []).length };
   const cell = k => { const [e, l, d] = CAT_DEFS[k];
     return `<a class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" href="#/explore/${k}"><span style="font-size:20px">${e}</span>
       <span style="flex:1;min-width:0"><b>${l}</b><span class="note" style="display:block">${d}</span></span>
       <b style="font-size:18px;color:${(c[k] || 0) ? "var(--up)" : "var(--mut)"}">${c[k] || 0}</b><span class="muted" style="font-size:11px">件</span></a>`; };
   return `${dataSubNav("explore")}<h2>🧭 銘柄探検 <span class="sub">${EXP.data_date || ""} 終値時点・優位性は未検証（勝率は出しません）</span></h2>
-    <div class="hh">スイング狙い</div>${["break60", "honmei", "precursor", "shodo", "shodo_wait", "nagi", "rising", "oshime"].map(cell).join("")}
+    <div class="hh">スイング狙い</div>${["break60", "honmei", "precursor", "hot", "shodo", "shodo_wait", "nagi", "rising", "oshime"].map(cell).join("")}
     <div class="hh">デイトレ・短期</div>${["rebound", "stop_high"].map(cell).join("")}
     <div class="card note">${esc(EXP.note || "")} 状態は毎日引け後のバッチで更新。</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
@@ -59,6 +60,7 @@ function catListInner(cat) {
 function viewExploreList(cat) {
   if (cat === "honmei") return viewHonmei();
   if (cat === "precursor") return viewPrecursor();
+  if (cat === "hot") return viewHotThemes();
   if (!EXP) { expReload(`#/explore/${cat}`); return `<div class="sk-wrap"><div class="sk"></div></div>`; }
   EXP_CAT_CUR = cat;
   const def = CAT_DEFS[cat]; if (!def) return `<div class="card"><div class="empty">不明なカテゴリです。</div></div>`;

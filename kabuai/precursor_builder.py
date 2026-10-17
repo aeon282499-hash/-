@@ -96,7 +96,30 @@ def build(rows: list[dict], ir: dict | None, flow: dict | None, data_date: str) 
         return (ir_rank, -x["n_trig"], -(x["vol_x"] or 0))
     out.sort(key=key)
     counts = {"ir": sum(1 for x in out if x["ir"]), "theme": sum(1 for x in out if "theme" in x["trig"]), "flow": sum(1 for x in out if "flow" in x["trig"])}
-    return {"date": data_date, "n_cd": n_cd, "n": len(out), "rows": out[:MAX_ROWS], "counts": counts,
+    # 🔥 株探 人気テーマ30 の中身（v7.7.1・本人「株探の人気セクターがわかりやすいかな」）: 順位・株探の代表3銘柄・母集団の本数/動いた本数/平均騰落/ランク分布/動いた上位
+    by_code = {str(r.get("code")): r for r in rows}
+    flow_label = {}
+    for g in (flow or {}).get("groups") or []:
+        flow_label[str(g.get("label") or "")] = {"score": g.get("score"), "n_hot": g.get("n_hot"), "strong": g.get("strong")}
+    hot_detail = []
+    for t in (hot.get("themes") or []):
+        name = t.get("name")
+        mem = [by_code[str(c)] for c in (themes.get(name) or []) if str(c) in by_code]
+        def _vx(r):
+            v = r.get("vol_x")
+            return v if v is not None else r.get("vr")
+        moving = [r for r in mem if ((_vx(r) or 0) >= MOVE_VOLX) or ((r.get("r1") or 0) >= MOVE_R1)]
+        gc = {k: 0 for k in ("S", "A", "B", "C", "D")}
+        for r in mem:
+            if r.get("grade") in gc:
+                gc[r["grade"]] += 1
+        r1s = [r["r1"] for r in mem if r.get("r1") is not None]
+        movers = sorted(mem, key=lambda r: -((_vx(r) or 0) * 10 + (r.get("r1") or 0)))[:6]
+        hot_detail.append({"rank": t.get("rank"), "name": name, "stocks": (t.get("stocks") or [])[:3], "n_dict": len(themes.get(name) or []),
+                           "n": len(mem), "n_moving": len(moving), "avg_r1": (round(sum(r1s) / len(r1s), 2) if r1s else None), "grades": gc,
+                           "flow": flow_label.get(name),
+                           "movers": [{"code": str(r.get("code")), "name": r.get("name"), "grade": r.get("grade"), "r1": r.get("r1"), "vol_x": (round(float(_vx(r)), 1) if _vx(r) is not None else None), "price": r.get("price")} for r in movers]})
+    return {"date": data_date, "n_cd": n_cd, "n": len(out), "rows": out[:MAX_ROWS], "counts": counts, "hot_themes": hot_detail,
             "hot_time": hot.get("page_time"), "n_hot_themes": len(hot_themes), "n_groups": len({g for v in group_of.values() for g in v}),
             "note": "まだ走っていない（ランクC/D・代金1億以上）銘柄のうち、今日 IR が出た／株探の人気テーマや資金セクターの熱いグループの仲間で動き始めた（出来高2倍か+3%）物。"
                     "10年BT: C/Dが20日以内にA以上になる率は0.8%・初動ブレイク点灯日でも2.5%＝予測ではなく、調べる候補の一覧。"}

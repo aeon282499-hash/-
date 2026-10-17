@@ -223,7 +223,11 @@ hv = go("#/explore/break60"); check("探検/break60 翌朝ルールと新高値�
     rows: [{ code: "3042", name: "セキュアヴェイル", grade: "D", momentum: 3.1, price: 298, r1: 2.4, vol_x: 1.2, turnover_oku: 1.5, sector: "情報･通信業", ir: { label: "好材料", score: 2, title: "大型受注のお知らせ", time: "15:30", intraday: false, pdf: "https://x/a.pdf" }, themes: [{ rank: 1, name: "サイバーセキュリティ" }], groups: [], trig: ["ir"], n_trig: 1, moving: false },
       { code: "4382", name: "ＨＥＲＯＺ", grade: "C", momentum: 31.3, price: 893, r1: 4.6, vol_x: 2.5, turnover_oku: 3.2, sector: "情報･通信業", ir: null, themes: [{ rank: 6, name: "人工知能" }], groups: ["テーマセキュリティソフト"], trig: ["theme", "flow"], n_trig: 2, moving: true }] };
   hv = go("#/explore/precursor"); check("材料が出たC/D: 2行・IR/テーマ/資金のチップ", clean(hv) && hv.includes("📰 好材料 +2") && hv.includes("🔥 1位 サイバーセキュリティ") && hv.includes("💴 テーマセキュリティソフト") && hv.includes("出来高 2.5倍") && hv.includes("まだ動いていない") && hv.includes("大型受注"));
-  hv = go("#/explore"); check("探検トップに本命と材料の箱", hv.includes("本命の台帳") && hv.includes("C/Dに材料が出た"));
+  hv = go("#/explore"); check("探検トップに本命と材料の箱", hv.includes("本命の台帳") && hv.includes("C/Dに材料が出た") && hv.includes("株探の人気テーマ30"));
+  DATA.precursor.hot_themes = [{ rank: 1, name: "サイバーセキュリティ", stocks: [{ code: "3692", name: "ＦＦＲＩセキュリティ" }], n_dict: 40, n: 12, n_moving: 7, avg_r1: 6.3, grades: { S: 1, A: 0, B: 2, C: 3, D: 6 }, flow: { score: 9.6, n_hot: 11, strong: true },
+      movers: [{ code: "2326", name: "デジタルアーツ", grade: "D", r1: 8.17, vol_x: 5.5, price: 4000 }, { code: "3042", name: "セキュアヴェイル", grade: "S", r1: 18.8, vol_x: 1.9, price: 950 }] }];
+  hv = go("#/explore/hot"); check("人気テーマ30: 順位・中身・動いた銘柄・💴", clean(hv) && hv.includes("1位 サイバーセキュリティ") && hv.includes("12本中 動いた <b>7</b>") && hv.includes("S1 B2 C3 D6") && hv.includes("💴 資金 強 熱11本") && hv.includes("デジタルアーツ D +8.2% ×5.5") && hv.includes("🔍 開示を検索"));
+  DATA.precursor.hot_themes = null; hv = go("#/explore/hot"); check("人気テーマ30: 中身なし→株探の順位だけ", clean(hv) && (hv.includes("中身（母集団・動いた本数）は次のビルドから") || hv.includes("まだ取れていません")));
   DATA.precursor = bak; }
 hv = go("#/search"); await new Promise(r => setTimeout(r, 20));
 sandbox.onSearchInput("72"); hv = $get("#searchres").innerHTML; check("検索 '72'", clean(hv) && hv.includes("rcard"));
