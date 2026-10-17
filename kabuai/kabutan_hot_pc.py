@@ -100,9 +100,11 @@ def run(dry: bool = False) -> int:
     if dry:
         log(f"dry-run: {OUT} に書いた（アップロードなし）")
         return 0
-    if prev and [t["name"] for t in prev.get("themes", [])] == [t["name"] for t in j["themes"]] and prev.get("page_time") == j["page_time"]:
-        log("前回と同じ順位・同じ時刻なのでアップロードしない（無駄なビルドを避ける）")
+    if prev and prev.get("uploaded") and [t["name"] for t in prev.get("themes", [])] == [t["name"] for t in j["themes"]] and prev.get("page_time") == j["page_time"]:
+        log("前回アップロードした物と同じ順位・同じ時刻なのでアップロードしない（無駄なビルドを避ける）")
         return 0
+    j["uploaded"] = True      # dry-run で書いた物と区別する（dry-run の後の本番がスキップされないように）
+    OUT.write_text(json.dumps(j, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     ok = upload(OUT, f"chore(kabuai): 株探 人気テーマ {j['page_time']}（PCから取得）[hot-themes]")
     log("アップロード成功 → kabuai.yml のビルドが走る" if ok else "アップロード失敗")
     return 0 if ok else 2
