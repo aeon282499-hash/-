@@ -82,6 +82,19 @@ check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備")
   sandbox.irSetDay("window"); sandbox.irSetTab("good"); hv = view();
   check("IR 既出を含む: 三菱ＵＦＪの反応つき", (hv.match(/class="irrow"/g) || []).length === 2 && hv.includes("三菱ＵＦＪ") && hv.includes("+1.50%") && hv.includes("+0.80%"));
   sandbox.irSetTab("all"); hv = view(); check("IR 全部タブ", clean(hv) && hv.includes("中立 0件") && hv.includes("事務開示 0件"));
+  // 🔍開示検索（v7.6）: 検索箱＋例チップ・本文ファイル（IR_TXT）を注入して AND 検索・表記ゆれ・本文の一致箇所・無い日は表題で代用
+  check("IR 検索箱と例チップ", hv.includes('id="irq"') && hv.includes("フィジカルAI") && hv.includes("エヌヴィディア") && hv.includes('id="irmain" style=""'));
+  ev(`IR_IDX = { days: [{ date: "${D}", n: 2, n_text: 2 }, { date: "2026-01-01", n: 1, n_text: 0 }], n: 3, n_text: 2, pending: 1 };
+      IR_TXT["${D}"] = { date: "${D}", n: 2, n_text: 2, rows: [
+        { id: "a1", time: "15:30", code: "7203", name: "トヨタ", title: "自己株式の取得に関するお知らせ", pdf: "https://x/a1.pdf", tags: ["自社株買い"], intraday: false, label: "好材料", score: 2, react: { day_chg: null, next_gap: null, next_chg: null, next_date: null }, t: "当社は、フィジカル ＡＩ 戦略の一環として NVIDIA と協業し、自己株式を取得します。", p: 2 },
+        { id: "a9", time: "12:00", code: "4689", name: "ＬＩＮＥヤフー", title: "サイバーセキュリティ対策の強化について", pdf: "", tags: ["その他"], intraday: true, label: "中立", score: 0, react: { day_chg: -0.5, next_gap: null, next_chg: null, next_date: null }, t: "セキュリティ 体制を強化", p: 1 }] };`);
+  sandbox.irSearchSet("フィジカルAI"); hv = view();
+  check("IR 検索: フィジカルAI→本文で1件・一致箇所・一覧は隠す", clean(hv) && hv.includes("🔍「フィジカルAI」 1件") && hv.includes("<mark>フィジカルai</mark>") && hv.includes("トヨタ") && hv.includes('id="irmain" style="display:none"'));
+  sandbox.irSearchSet("エヌヴィディア"); hv = view(); check("IR 検索: 表記ゆれ エヌヴィディア→nvidia", hv.includes("🔍「エヌヴィディア」 1件") && hv.includes("<mark>nvidia</mark>"));
+  sandbox.irSearchSet("サイバーセキュリティ トヨタ"); hv = view(); check("IR 検索: AND で0件", hv.includes("「サイバーセキュリティ トヨタ」 0件") && hv.includes("該当なし"));
+  sandbox.irSearchSet("セキュリティ"); hv = view(); check("IR 検索: 表題・本文の両方で1件（既出の反応つき）", hv.includes("「セキュリティ」 1件") && hv.includes("ＬＩＮＥヤフー") && hv.includes("📌 既出") && hv.includes("-0.50%"));
+  sandbox.irSetScope("all"); sandbox.irSearchSet("増配"); hv = view(); check("IR 検索: 本文ファイルの無い日は表題で代用（三菱ＵＦＪ）", hv.includes("「増配」 1件") && hv.includes("三菱ＵＦＪ") && hv.includes("本文は未取得"));
+  sandbox.irSetScope("window"); sandbox.irSearchSet(""); hv = view(); check("IR 検索: 消すと一覧に戻る", hv.includes('id="irmain" style=""') && hv.includes("👍 好 2") && !hv.includes("🔍「"));
   sandbox.irSetDay("today"); sandbox.irSetTab("good"); DATA.ir = bak; }
 const mkRow = (code, name, close, high, low, t500, extra = {}) => Object.assign({ code, name, sector: "情報･通信業", close, open: close * 0.99, high, low, chg: 1.23, uw_pct: 4.1, rng_pct: 6.2, uw_ratio: 0.66, atr_pct: 5.5,
   turnover_oku: 42.1, tov20_oku: 30.5, tov_ratio: 1.4, vol_ratio: 1.3, body_up: true, t500, tick: t500 ? 0.5 : 1, buy_level: high + (t500 ? 0.5 : 1), sell_level: low - (t500 ? 0.5 : 1),

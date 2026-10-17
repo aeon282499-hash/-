@@ -488,6 +488,16 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
     wkeys = {w.isoformat() for w in window}
     today_key = window[0].isoformat() if window else ""
     # 画面に渡すのは 当日=全件、それ以前（既出）=好/悪/要精査だけ（中立・事務は落として JSON を軽くする）
+    # 🔍開示検索（v7.6・2026-10-17）: 全開示の PDF 本文冒頭を取って data/ir_text/<日付>.json に。latest.json には入れない。非致命。
+    search_meta = None
+    try:
+        import ir_text
+        search_meta = ir_text.build_search(rows_all)
+        run = search_meta.get("run") or {}
+        print(f"  [ir] 開示検索: {search_meta['n']}件中 本文あり{search_meta['n_text']}（今回 取得{run.get('ok')}/失敗{run.get('ng')}/{run.get('elapsed_s')}s・未取得{search_meta['pending']}）")
+    except Exception as e:
+        print(f"  [ir] 開示検索はスキップ（非致命）: {e}")
+        search_meta = {"error": str(e)[:200]}
     rows_win = [r for r in rows_all if r["date"] == today_key or (r["date"] in wkeys and r["final"]["label"] != "中立")]
     for r in rows_win:
         r["title"] = r["title"][:140]
@@ -506,7 +516,7 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
     return {
         "date": data_date, "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M"), "window": [w.isoformat() for w in window],
         "fetched": {k: (len(v) if v is not None else None) for k, v in fetched.items()},
-        "rows": rows_win, "tags_count": tags_count, "stats": stats, "llm": llm_meta,
+        "rows": rows_win, "tags_count": tags_count, "stats": stats, "llm": llm_meta, "search": search_meta,
         "basis": "brisk（timely-disclosure.brisk.jp）のタグ体系を基準に、元データは TDnet を直接。brisk のデータは載せない（規約: 加工・第三者提供の禁止）。",
         "rules": [
             "好/悪はまず表題の語で（上方修正・増配・自社株買い・TOB対象＝好／下方修正・減配・増資・行政処分・上場廃止＝悪）",

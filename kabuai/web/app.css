@@ -262,3 +262,7 @@ canvas{max-width:100%}
 .irv.bad{background:rgba(255,93,108,.18);color:var(--dn,#ff5d6c)}
 .irv.chk{background:rgba(255,183,3,.18);color:#d99a00}
 .irv.neu{background:var(--sf2);color:var(--mut)}
+
+/* 🔍開示検索（v7.6）: 本文の一致箇所 */
+.irsnip{word-break:break-all;line-height:1.6}
+.irrow mark{background:rgba(255,217,61,.35);color:inherit;border-radius:3px;padding:0 1px}

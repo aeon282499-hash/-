@@ -72,6 +72,8 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       KABUAI_IR_LLM: "1"
       KABUAI_IR_MAX: "60"
+      # 🔍開示検索（2026-10-17）: PDF 本文冒頭を取る時間の上限（秒）。初回は15日分≈4,500件で足りない→1日4便で追いつく
+      KABUAI_IR_TEXT_DEADLINE: "200"
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@v6
@@ -92,6 +94,14 @@ jobs:
           restore-keys: |
             ir-judged-
 
+      - name: 🔍開示検索の本文キャッシュの持ち回り（ir_text.json を復元）
+        uses: actions/cache/restore@v4
+        with:
+          path: kabuai/ir_text.json
+          key: ir-text-${{ github.run_id }}
+          restore-keys: |
+            ir-text-
+
       - name: データ生成（J-Quants V2 直取得）
         working-directory: kabuai
         run: python build_data.py
@@ -102,6 +112,13 @@ jobs:
         with:
           path: kabuai/ir_judged.json
           key: ir-judged-${{ github.run_id }}
+
+      - name: 🔍開示検索の本文キャッシュの持ち回り（ir_text.json を保存）
+        if: always() && hashFiles('kabuai/ir_text.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: kabuai/ir_text.json
+          key: ir-text-${{ github.run_id }}
 
       - name: Pages 構成チェック
         run: |
