@@ -118,6 +118,11 @@ def main() -> int:
         return 0
     ok = upload(path, f"chore(kabuai): 夜間PTS {data_date} {meta['ok']}本（PCから取得・{out['fetched_at']}）")
     log("アップロード成功 → kabuai.yml のビルドが走る" if ok else "アップロード失敗")
+    try:   # 株探 人気テーマ（2026-10-17・📰IR 開示検索の例チップ）も同じ便で更新。失敗してもPTSの結果には影響しない
+        import kabutan_hot_pc
+        kabutan_hot_pc.run(dry=False)
+    except Exception as e:
+        log(f"人気テーマの更新はスキップ: {e}")
     return 0 if ok else 2
 
 

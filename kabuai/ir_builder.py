@@ -513,8 +513,22 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
     print(f"  [ir] 窓{len(window)}日 {n_win}件（材料{sum(1 for r in rows_win if r['material'])}・好{sum(1 for r in rows_win if r['final']['label']=='好材料')}・"
           f"悪{sum(1 for r in rows_win if r['final']['label']=='悪材料')}・要精査{sum(1 for r in rows_win if r['final']['label']=='要精査')}）"
           f"／答え合わせ{stats['days']}日 {len(rows_all)}件・Claude判定{llm_meta['judged']} {time.monotonic()-t0:.0f}s")
+    # 株探 人気テーマ【ベスト30】（kabutan_hot_pc.py が PC から取って main に置く kabuai/kabutan_hot.json・2026-10-17 本人「株たんみながら人気テーマを取得」）
+    hot = None
+    try:
+        with open(HERE / "kabutan_hot.json", encoding="utf-8") as f:
+            hj = json.load(f)
+        if isinstance(hj, dict) and isinstance(hj.get("themes"), list) and hj["themes"]:
+            hot = {"fetched_at": hj.get("fetched_at"), "page_time": hj.get("page_time"), "period": hj.get("period"), "src": hj.get("src"),
+                   "themes": [{"rank": t.get("rank"), "name": t.get("name"), "stocks": (t.get("stocks") or [])[:3]} for t in hj["themes"][:30]]}
+            print(f"  [ir] 株探 人気テーマ {len(hot['themes'])}件（{hot['page_time']}）")
+    except FileNotFoundError:
+        print("  [ir] 株探 人気テーマ: kabutan_hot.json が無い（PC の kabutan_hot_pc.py が置く）")
+    except Exception as e:
+        print(f"  [ir] 株探 人気テーマ 読込失敗: {e}")
     return {
         "date": data_date, "generated_at": datetime.now(JST).strftime("%Y-%m-%d %H:%M"), "window": [w.isoformat() for w in window],
+        "hot_themes": hot,
         "fetched": {k: (len(v) if v is not None else None) for k, v in fetched.items()},
         "rows": rows_win, "tags_count": tags_count, "stats": stats, "llm": llm_meta, "search": search_meta,
         "basis": "brisk（timely-disclosure.brisk.jp）のタグ体系を基準に、元データは TDnet を直接。brisk のデータは載せない（規約: 加工・第三者提供の禁止）。",

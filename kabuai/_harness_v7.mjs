@@ -94,6 +94,13 @@ check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備")
   sandbox.irSearchSet("サイバーセキュリティ トヨタ"); hv = view(); check("IR 検索: AND で0件", hv.includes("「サイバーセキュリティ トヨタ」 0件") && hv.includes("該当なし"));
   sandbox.irSearchSet("セキュリティ"); hv = view(); check("IR 検索: 表題・本文の両方で1件（既出の反応つき）", hv.includes("「セキュリティ」 1件") && hv.includes("ＬＩＮＥヤフー") && hv.includes("📌 既出") && hv.includes("-0.50%"));
   sandbox.irSetScope("all"); sandbox.irSearchSet("増配"); hv = view(); check("IR 検索: 本文ファイルの無い日は表題で代用（三菱ＵＦＪ）", hv.includes("「増配」 1件") && hv.includes("三菱ＵＦＪ") && hv.includes("本文は未取得"));
+  DATA.ir.hot_themes = { fetched_at: "2026-10-17 20:40", page_time: "2026-10-17 20:30", period: "3日間のアクセス", themes: Array.from({ length: 30 }, (_, i) => ({ rank: i + 1, name: i === 0 ? "サイバーセキュリティ" : i === 4 ? "蓄電池" : `テーマ${i + 1}`, stocks: i === 0 ? [{ code: "3692", name: "ＦＦＲＩセキュリティ" }, { code: "4498", name: "サイバートラスト" }] : [] })) };
+  sandbox.irSearchSet("サイバーセキュリティ"); hv = view();
+  check("IR 検索: 株探 人気テーマのチップ(上位12)＋代表銘柄", clean(hv) && hv.includes("株探 人気テーマ（3日間のアクセス・10-17 20:30）") && hv.includes("蓄電池") && !hv.includes("テーマ13") && hv.includes("＋18") && hv.includes("1位「サイバーセキュリティ」の代表") && hv.includes("ＦＦＲＩセキュリティ"));
+  sandbox.irHotToggle(); hv = view(); check("IR 検索: 人気テーマ30件全部", hv.includes("テーマ30") && hv.includes("上位12に戻す")); sandbox.irHotToggle();
+  sandbox.irSearchSet("宇宙開発関連"); hv = view(); check("IR 検索: 「〜関連」を落として本文と照合（衛星→0件でも宇宙の語で）", hv.includes("「宇宙開発関連」 0件"));
+  ev(`IR_TXT["${D}"].rows[1].t = "量子コンピュータの開発";`); sandbox.irSearchSet("量子コンピューター"); hv = view(); check("IR 検索: 末尾の長音を落として照合", hv.includes("「量子コンピューター」 1件") && hv.includes("<mark>量子コンピュータ</mark>"));
+  DATA.ir.hot_themes = null; hv = go("#/"); check("IR 検索: 人気テーマ無し→予備の例（蓄電池入り）", hv.includes("例:") && hv.includes("蓄電池") && hv.includes("kabutan_hot_pc.py"));
   sandbox.irSetScope("window"); sandbox.irSearchSet(""); hv = view(); check("IR 検索: 消すと一覧に戻る", hv.includes('id="irmain" style=""') && hv.includes("👍 好 2") && !hv.includes("🔍「"));
   sandbox.irSetDay("today"); sandbox.irSetTab("good"); DATA.ir = bak; }
 const mkRow = (code, name, close, high, low, t500, extra = {}) => Object.assign({ code, name, sector: "情報･通信業", close, open: close * 0.99, high, low, chg: 1.23, uw_pct: 4.1, rng_pct: 6.2, uw_ratio: 0.66, atr_pct: 5.5,

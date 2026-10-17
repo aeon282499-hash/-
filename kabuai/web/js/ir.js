@@ -53,7 +53,9 @@ const IR_TXT = {};           // 日付 → {date, n, n_text, rows}（data/ir_tex
 let IR_IDX = null;           // data/ir_text/index.json（{days:[{date,n,n_text}], n, n_text, pending, note}）・false＝無い
 const IR_PENDING = {};       // 読み込み中の日付
 let IR_TIMER = null;
-const IR_EXAMPLES = ["フィジカルAI", "エヌヴィディア", "サイバーセキュリティ", "データセンター", "量子", "防衛", "上方修正"];
+const IR_EXAMPLES = ["フィジカルAI", "エヌヴィディア", "サイバーセキュリティ", "蓄電池", "データセンター", "量子", "防衛", "上方修正"];   // 株探の人気テーマが無い時の予備
+let IR_HOT_ALL = false;      // 人気テーマのチップを30件全部出すか（既定は上位12）
+function irHotToggle() { IR_HOT_ALL = !IR_HOT_ALL; render(); }
 // 表記ゆれ（正規化後の語 → 同じ扱いにする語）。正規化＝NFKC・小文字・空白なし
 const IR_SYN = {
   "エヌヴィディア": ["エヌビディア", "nvidia"], "エヌビディア": ["エヌヴィディア", "nvidia"], "nvidia": ["エヌビディア", "エヌヴィディア"],
@@ -61,12 +63,20 @@ const IR_SYN = {
   "サイバーセキュリティ": ["サイバーセキュリティー", "cybersecurity", "サイバー攻撃", "サイバー防御"], "セキュリティ": ["セキュリティー", "security"],
   "データセンター": ["datacenter", "データセンタ", "dc事業"], "半導体": ["semiconductor"], "生成ai": ["generativeai", "生成系ai"],
   "ロボット": ["ロボティクス", "robot"], "量子": ["quantum", "量子コンピュータ"], "防衛": ["防衛省", "防衛装備", "defense"],
-  "蓄電": ["蓄電池", "蓄電システム", "ess"], "ペロブスカイト": ["perovskite"], "核融合": ["フュージョン", "fusion"], "宇宙": ["衛星", "space"],
+  "蓄電": ["蓄電池", "蓄電システム", "ess"], "蓄電池": ["蓄電", "蓄電システム", "二次電池", "バッテリー", "ess"], "全固体電池": ["全固体", "固体電池"],
+  "人工知能": ["ai", "人工知能"], "情報セキュリティ": ["セキュリティ", "security"], "半導体製造装置": ["製造装置", "半導体装置"],
+  "量子コンピューター": ["量子コンピュータ", "量子"], "自動運転車": ["自動運転"], "核融合発電": ["核融合", "フュージョン"], "レアアース": ["希土類"],
+  "セキュリティソフト": ["セキュリティ"], "半導体部材・部品": ["半導体"], "光デバイス": ["光通信", "光ファイバ", "光電"], "造船": ["船舶"], "宇宙開発関連": ["宇宙", "衛星"], "ペロブスカイト": ["perovskite"], "核融合": ["フュージョン", "fusion"], "宇宙": ["衛星", "space"],
   "上方修正": ["上方修正", "上振れ", "増額修正"], "下方修正": ["下方修正", "下振れ", "減額修正"], "自社株買い": ["自己株式の取得", "自己株式取得"],
 };
 const irNorm = s => String(s == null ? "" : s).normalize("NFKC").toLowerCase().replace(/\s+/g, "");
-function irTerms(q) {
-  return String(q || "").split(/[\s　,、]+/).map(irNorm).filter(Boolean).map(t => [t, ...(IR_SYN[t] || []).map(irNorm)]);
+function irTerms(q) {   // 株探のテーマ名の飾り（「〜関連」「〜銘柄」・末尾の長音）も落とした形を同じ語として扱う
+  return String(q || "").split(/[\s　,、]+/).map(irNorm).filter(Boolean).map(t => {
+    const vs = [t, ...(IR_SYN[t] || []).map(irNorm)];
+    const bare = t.replace(/(関連|銘柄)$/, ""); if (bare && bare !== t) vs.push(bare, ...(IR_SYN[bare] || []).map(irNorm));
+    const noLong = t.replace(/ー$/, ""); if (noLong && noLong !== t) vs.push(noLong);
+    return [...new Set(vs.filter(Boolean))];
+  });
 }
 function irRefresh() {
   const el = document.getElementById("irres"); if (el) el.innerHTML = irSearchResults();
@@ -141,14 +151,29 @@ function irSearchResults() {
     </div>`;
   }).join("");
   const more = hits.length > 150 ? `<div class="note">…ほか ${hits.length - 150}件（語を足して絞る）</div>` : "";
-  return scope + head + (rows ? `<div class="card tight" style="margin-top:6px">${rows}</div>` : `<div class="empty">該当なし${loading ? "（読み込み中）" : ""}。語を減らすか「本文のある全日」に広げる。</div>`) + more;
+  return scope + head + irHotLine(q) + (rows ? `<div class="card tight" style="margin-top:6px">${rows}</div>` : `<div class="empty">該当なし${loading ? "（読み込み中）" : ""}。語を減らすか「本文のある全日」に広げる。</div>`) + more;
 }
+function irHotThemes() { const h = DATA && DATA.ir && DATA.ir.hot_themes; return (h && Array.isArray(h.themes) && h.themes.length) ? h : null; }
+function irChip(k, extra = "") { return `<span class="chip ${IR_Q === k ? "acc" : "wa"}" style="cursor:pointer" onclick="irSearchSet('${esc(k)}')">${extra}${esc(k)}</span>`; }
 function irSearchBox() {
-  const ex = IR_EXAMPLES.map(k => `<span class="chip ${IR_Q === k ? "acc" : "wa"}" style="cursor:pointer" onclick="irSearchSet('${esc(k)}')">${esc(k)}</span>`).join("");
+  const hot = irHotThemes();
+  let chips;
+  if (hot) {   // 株探 人気テーマ【ベスト30】（PCから取得・3日間のアクセス順）
+    const ts = hot.themes.slice(0, IR_HOT_ALL ? 30 : 12);
+    chips = `<span class="muted" style="font-size:11px">株探 人気テーマ（${esc(hot.period || "3日間")}・${esc((hot.page_time || hot.fetched_at || "").slice(5))}）:</span>` + ts.map(t => irChip(t.name, `<small class="muted">${t.rank}</small> `)).join("")
+      + (hot.themes.length > 12 ? `<span class="chip" style="cursor:pointer" onclick="irHotToggle()">${IR_HOT_ALL ? "上位12に戻す" : `＋${hot.themes.length - 12}`}</span>` : "");
+  } else {
+    chips = `<span class="muted" style="font-size:11px">例:</span>` + IR_EXAMPLES.map(k => irChip(k)).join("") + `<span class="muted" style="font-size:11px">（株探の人気テーマは PC の kabutan_hot_pc.py が置くと出る）</span>`;
+  }
   return `<div class="card" style="margin-bottom:8px">
     <input id="irq" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="🔍 開示を検索：社名・コード・表題・本文（PDF冒頭）" value="${esc(IR_Q)}" oninput="irSearch(this.value)">
-    <div class="chips" style="margin-top:6px"><span class="muted" style="font-size:11px">例:</span>${ex}${IR_Q ? `<span class="chip" style="cursor:pointer" onclick="irSearchSet('')">✕ 消す</span>` : ""}</div>
+    <div class="chips" style="margin-top:6px">${chips}${IR_Q ? `<span class="chip" style="cursor:pointer" onclick="irSearchSet('')">✕ 消す</span>` : ""}</div>
     <div id="irres">${irSearchResults()}</div></div>`;
+}
+function irHotLine(q) {   // 検索語が株探の人気テーマなら、その代表銘柄（株探の表示順3本）を出す
+  const hot = irHotThemes(); if (!hot) return "";
+  const t = hot.themes.find(x => irNorm(x.name) === irNorm(q)); if (!t || !(t.stocks || []).length) return "";
+  return `<div class="note">株探 人気テーマ ${t.rank}位「${esc(t.name)}」の代表: ${t.stocks.map(s => `<a href="#/detail/${esc(s.code)}">${esc(s.name)}</a>`).join("・")}</div>`;
 }
 
 function irSection() {
