@@ -15,17 +15,19 @@ const CAT_DEFS = {
   rising: ["🚀", "上昇中", "初動後もトレンド継続中（押しが浅い）"],
   oshime: ["🎯", "押し目", "初動後の上昇から調整中（フィボ押しの範囲内）"],
   rebound: ["⚡", "短期反発候補", "急騰後にフィボ38.2〜50%押しゾーンで押し目形成中"],
-  stop_high: ["🔥", "ストップ高", "値幅制限いっぱいまで買われた銘柄（張り付き含む）"] };
+  stop_high: ["🔥", "ストップ高", "値幅制限いっぱいまで買われた銘柄（張り付き含む）"],
+  precursor: ["🧪", "C/Dに材料が出た", "まだ走っていないランクC/Dで、今日のIR・株探の人気テーマ・資金セクターの熱いグループに当たり、出来高か値が動き始めた銘柄。予測ではなく調べる候補（10年: C/D→A以上は0.8%）。"],
+  honmei: ["📝", "本命の台帳（紙）", "初動ブレイクで自分が選んだ本命を記録し、翌寄り建て→20日/−15%で答え合わせ。同じ晩の候補全体と比べる。"] };
 function expReload(hash) { loadExplorer().then(() => { if ((location.hash || "#/") === hash) render(); }); }
 function viewExplore() {
   if (!EXP) { expReload("#/explore"); return `${dataSubNav("explore")}<h2>🧭 銘柄探検</h2><div class="sk-wrap"><div class="sk"></div><div class="sk"></div></div>`; }
-  const c = EXP.counts || {};
+  const c = { ...(EXP.counts || {}), precursor: (DATA.precursor && DATA.precursor.rows || []).length, honmei: honmeiLoad().picks.length };
   const cell = k => { const [e, l, d] = CAT_DEFS[k];
     return `<a class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" href="#/explore/${k}"><span style="font-size:20px">${e}</span>
       <span style="flex:1;min-width:0"><b>${l}</b><span class="note" style="display:block">${d}</span></span>
       <b style="font-size:18px;color:${(c[k] || 0) ? "var(--up)" : "var(--mut)"}">${c[k] || 0}</b><span class="muted" style="font-size:11px">件</span></a>`; };
   return `${dataSubNav("explore")}<h2>🧭 銘柄探検 <span class="sub">${EXP.data_date || ""} 終値時点・優位性は未検証（勝率は出しません）</span></h2>
-    <div class="hh">スイング狙い</div>${["break60", "shodo", "shodo_wait", "nagi", "rising", "oshime"].map(cell).join("")}
+    <div class="hh">スイング狙い</div>${["break60", "honmei", "precursor", "shodo", "shodo_wait", "nagi", "rising", "oshime"].map(cell).join("")}
     <div class="hh">デイトレ・短期</div>${["rebound", "stop_high"].map(cell).join("")}
     <div class="card note">${esc(EXP.note || "")} 状態は毎日引け後のバッチで更新。</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
@@ -35,7 +37,7 @@ function catRow(cat, r) {
   if (cat === "stop_high") { sub = `<div class="chips"><span class="chip dn">🔥 ${r.stuck ? "張り付き" : "S高タッチ"}</span>${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
   else if (cat === "shodo") { sub = `<div class="chips"><span class="chip buy">🌱 初動</span><span class="chip">出来高 ${r.volr != null ? r.volr + "倍" : "—"}</span></div>`; right = `<div class="pk-ev">初動 ${yen(r.shodo_price)}<small>${r.shodo_date || ""}</small></div>`; }
   else if (cat === "shodo_wait") { sub = `<div class="chips"><span class="chip">⏳ 75日線まで ${r.ma_gap_pct}%</span><span class="chip">条件 ${r.conds}/3</span></div>`; }
-  else if (cat === "break60") { sub = `<div class="chips"><span class="chip buy">🚩 60日ぶり高値ブレイク</span>${r.new250 ? `<span class="chip buy">🆕 新高値(250日)</span>` : ""}<span class="chip">出来高 ${r.volx != null ? r.volx + "倍" : "—"}</span>${r.chg != null ? `<span class="chip">当日 +${r.chg}%</span>` : ""}${r.atr_pct != null ? `<span class="chip ${r.calm ? "" : "dn"}">${r.calm ? "凪" : "荒い"} ATR ${r.atr_pct}%</span>` : ""}${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
+  else if (cat === "break60") { sub = `<div class="chips"><span class="chip buy">🚩 60日ぶり高値ブレイク</span>${r.new250 ? `<span class="chip buy">🆕 新高値(250日)</span>` : ""}<span class="chip">出来高 ${r.volx != null ? r.volx + "倍" : "—"}</span>${r.chg != null ? `<span class="chip">当日 +${r.chg}%</span>` : ""}${r.atr_pct != null ? `<span class="chip ${r.calm ? "" : "dn"}">${r.calm ? "凪" : "荒い"} ATR ${r.atr_pct}%</span>` : ""}${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}<br><button class="hbtn ${honmeiHas(r.code) ? "on" : ""}" onclick="event.preventDefault();event.stopPropagation();honmeiToggle('${r.code}')">${honmeiHas(r.code) ? "📝 本命" : "本命"}</button></div>`; }
   else if (cat === "nagi") { sub = `<div class="chips"><span class="chip buy">🤫 凪ブレイク</span><span class="chip">出来高 ${r.volr != null ? r.volr + "倍" : "—"}</span><span class="chip">凪ATR ${r.atr_pct != null ? r.atr_pct + "%" : "—"}</span>${r.today ? `<span class="chip">当日</span>` : ""}</div>`; right = `<div class="pk-ev">${r.date || ""}</div>`; }
   else if (cat === "rising" || cat === "oshime") { sub = `<div class="chips"><span class="chip ${cat === "rising" ? "buy" : ""}">${cat === "rising" ? "🚀" : "🎯"} 押し ${r.pullback_pct}%</span><span class="chip">高値 ${yen(r.hi)}</span></div>`;
     right = `<div class="pk-ev">初動比 <span class="${r.price >= r.shodo_price ? "pos" : "neg"}">${r.shodo_price ? ((r.price / r.shodo_price - 1) * 100).toFixed(1) : "—"}%</span><small>${r.shodo_date || ""}</small></div>`; }
@@ -55,6 +57,8 @@ function catListInner(cat) {
   return `<div class="card tight">${items.map(r => catRow(cat, r)).join("")}</div>`;
 }
 function viewExploreList(cat) {
+  if (cat === "honmei") return viewHonmei();
+  if (cat === "precursor") return viewPrecursor();
   if (!EXP) { expReload(`#/explore/${cat}`); return `<div class="sk-wrap"><div class="sk"></div></div>`; }
   EXP_CAT_CUR = cat;
   const def = CAT_DEFS[cat]; if (!def) return `<div class="card"><div class="empty">不明なカテゴリです。</div></div>`;

@@ -208,7 +208,23 @@ hv = go("#/explore/break60"); check("探検/break60 翌朝ルールと新高値�
 { const bak = EXPJ.categories.break60; EXPJ.categories.break60 = [{ code: "3042", name: "セキュアヴェイル", price: 325, r1: 9.1, date: "2026-10-01", volx: 4.2, hi60: 314, chg: 9.1, over60: 3.5, new250: true, atr_pct: 2.1, calm: true, today: true },
     { code: "9999", name: "荒い株", price: 1000, r1: 3, date: "2026-10-01", volx: 2.0, hi60: 980, chg: 3.0, over60: 2.0, new250: false, atr_pct: 6.5, calm: false, today: false }];
   hv = go("#/explore/break60"); check("探検/break60 行: 🆕新高値・凪/荒いのチップ", clean(hv) && hv.includes("🆕 新高値(250日)") && hv.includes("凪 ATR 2.1%") && hv.includes("荒い ATR 6.5%") && hv.includes("当日 +9.1%"));
+  // 📝本命（v7.7）: ボタン→localStorage→台帳・候補全体との比較。🧪材料が出たC/D。
+  check("探検/break60 本命ボタン", hv.includes('class="hbtn "') && hv.includes(">本命</button>"));
+  sandbox.honmeiToggle("3042"); hv = view(); check("本命を押すと📝に変わる", hv.includes("📝 本命") && ev("honmeiLoad().picks.length") === 1 && ev("honmeiLoad().picks[0].cands.length") === 2);
+  hv = go("#/explore/honmei"); check("本命の台帳: 行と候補数", clean(hv) && hv.includes("セキュアヴェイル") && hv.includes("候補 2本") && hv.includes("同じ晩の候補の残り"));
+  { const ch = { dates: ["2026-10-01", "2026-10-02", "2026-10-03"], o: [320, 330, 335], h: [330, 340, 345], l: [310, 325, 330], c: [325, 338, 340], v: [1, 1, 1] };
+    const r = sandbox.honmeiEval({ chart: ch }, "2026-10-01"); check("本命の答え合わせ: 翌寄り建て・進行中", r.status === "open" && r.entry === 330 && Math.abs(r.pnl - (340 / 330 - 1) * 100) < 1e-9 && r.days === 1);
+    const r2 = sandbox.honmeiEval({ chart: { ...ch, o: [320, 336, 335] } }, "2026-10-01"); check("本命の答え合わせ: 寄り+3%超は見送り", r2.status === "skip");
+    const r3 = sandbox.honmeiEval({ chart: { ...ch, l: [310, 325, 270] } }, "2026-10-01"); check("本命の答え合わせ: −15%で損切り", r3.status === "done" && r3.pnl === -15 && r3.how === "損切り"); }
+  sandbox.honmeiToggle("3042"); check("本命をもう一度押すと消える", ev("honmeiLoad().picks.length") === 0);
   EXPJ.categories.break60 = bak; }
+{ const bak = DATA.precursor; DATA.precursor = null; hv = go("#/explore/precursor"); check("材料が出たC/D: 無し", clean(hv) && hv.includes("まだ作られていません"));
+  DATA.precursor = { date: DATA.data_date, n_cd: 1500, n: 2, counts: { ir: 1, theme: 1, flow: 1 }, hot_time: "2026-10-17 20:30", note: "n",
+    rows: [{ code: "3042", name: "セキュアヴェイル", grade: "D", momentum: 3.1, price: 298, r1: 2.4, vol_x: 1.2, turnover_oku: 1.5, sector: "情報･通信業", ir: { label: "好材料", score: 2, title: "大型受注のお知らせ", time: "15:30", intraday: false, pdf: "https://x/a.pdf" }, themes: [{ rank: 1, name: "サイバーセキュリティ" }], groups: [], trig: ["ir"], n_trig: 1, moving: false },
+      { code: "4382", name: "ＨＥＲＯＺ", grade: "C", momentum: 31.3, price: 893, r1: 4.6, vol_x: 2.5, turnover_oku: 3.2, sector: "情報･通信業", ir: null, themes: [{ rank: 6, name: "人工知能" }], groups: ["テーマセキュリティソフト"], trig: ["theme", "flow"], n_trig: 2, moving: true }] };
+  hv = go("#/explore/precursor"); check("材料が出たC/D: 2行・IR/テーマ/資金のチップ", clean(hv) && hv.includes("📰 好材料 +2") && hv.includes("🔥 1位 サイバーセキュリティ") && hv.includes("💴 テーマセキュリティソフト") && hv.includes("出来高 2.5倍") && hv.includes("まだ動いていない") && hv.includes("大型受注"));
+  hv = go("#/explore"); check("探検トップに本命と材料の箱", hv.includes("本命の台帳") && hv.includes("C/Dに材料が出た"));
+  DATA.precursor = bak; }
 hv = go("#/search"); await new Promise(r => setTimeout(r, 20));
 sandbox.onSearchInput("72"); hv = $get("#searchres").innerHTML; check("検索 '72'", clean(hv) && hv.includes("rcard"));
 const codes = (DATA.ranking || []).slice(0, 2).map(r => r.code).concat(((DATA.arena || {}).rows || []).slice(0, 1).map(r => r.code));
