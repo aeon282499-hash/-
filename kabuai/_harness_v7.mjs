@@ -59,7 +59,7 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 14, `${ev("ROUTES.length")}本`);
+check("ROUTES登録", ev("ROUTES.length") === 15, `${ev("ROUTES.length")}本`);
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
@@ -211,11 +211,13 @@ sandbox.setMomGrade("A"); hv = view(); check("EOD: Aフィルタ", clean(hv)); s
 { const r0 = DATA.ranking[0], bak = { ...r0 };   // v8: 売り印と空売り残高
   Object.assign(r0, { shortable: true, jsf_stop: false, jsf_warn: true, tse_reg: false, daily_pub: true, short_vol: 1234567, long_vol: 800000, ratio: 0.65, short_days: 1.4, short_chg: 23.4 });
   const nHeavy = () => DATA.ranking.filter(r => sandbox.momHeavy(r)).length, nStop = () => DATA.ranking.filter(r => r.jsf_stop).length;
-  hv = go("#/momentum"); check("EOD: 貸借○・注意喚起・🔥空売り多の印(v8.1 大きい札＋ゲージ)", clean(hv) && hv.includes('class="sbadge up">貸借○ 空売り可') && hv.includes("⚠️ 注意喚起") && hv.includes('class="sbadge hot">🔥 空売り多') && hv.includes("売残 <b>123万株</b> ＝ 出来高の <b class=\"hot\">1.4日分</b> ・ 取組 <b>0.7倍</b>") && hv.includes("（売り長）") && hv.includes("前週 <b class=\"pos\">+23%</b>") && hv.includes('class="sm-bar"') && hv.includes(`🔥 空売り多 ${nHeavy()}</a>`));
-  check("EOD: 🔥空売り残高が多いカード（上部・日数と取組）", hv.includes(`🔥 空売り残高が多い ${nHeavy()}本`) && hv.includes('class="srow"') && hv.includes("1.4日分") && hv.includes("印の読み方"));
-  sandbox.toggleMomSort(); hv = view(); check("EOD: 📉売残多い順 → 1行目が r0", hv.includes("売残多い順 ✓") && hv.indexOf(`#/detail/${r0.code}"`) < hv.indexOf('class="mrow') + 200 && hv.indexOf('class="mrow') > 0); sandbox.toggleMomSort();
-  sandbox.toggleMomShort(); hv = view(); check("EOD: 🔥空売り多フィルタ", (hv.match(/class="mrow/g) || []).length === nHeavy()); sandbox.toggleMomShort();
-  Object.assign(r0, { shortable: null, jsf_stop: true, short_vol: null }); hv = go("#/momentum"); check("EOD: 🚫売り禁（札＋上部の売り禁一覧）", hv.includes('class="sbadge dn">🚫 売り禁') && hv.includes(`🚫 売り禁 ${nStop()}本`) && hv.includes(`🚫 ${r0.name}`) && (hv.match(/class="sbadge up">貸借○ 空売り可/g) || []).length === DATA.ranking.filter(r => r.shortable === true && !r.jsf_stop).length);
+  hv = go("#/short"); check("🩳空売り: 貸借○・注意喚起・🔥空売り多の印(v8.1 大きい札＋ゲージ・v8.4で🩳タブへ)", clean(hv) && hv.includes('class="sbadge up">貸借○ 空売り可') && hv.includes("⚠️ 注意喚起") && hv.includes('class="sbadge hot">🔥 空売り多') && hv.includes("売残 <b>123万株</b> ＝ 出来高の <b class=\"hot\">1.4日分</b> ・ 取組 <b>0.7倍</b>") && hv.includes("（売り長）") && hv.includes("前週 <b class=\"pos\">+23%</b>") && hv.includes('class="sm-bar"') && hv.includes(`🔥 空売り多 ${nHeavy()}</a>`));
+  check("🩳空売り: 🔥空売り残高が多いカード（上部・日数と取組）", hv.includes(`🔥 空売り残高が多い ${nHeavy()}本`) && hv.includes('class="srow"') && hv.includes("1.4日分") && hv.includes("印の読み方"));
+  check("🩳空売り: 既定は📉売残多い順 → 1行目が r0", hv.includes("売残多い順 ✓") && hv.indexOf(`#/detail/${r0.code}"`) < hv.indexOf('class="mrow') + 200 && hv.indexOf('class="mrow') > 0);
+  sandbox.toggleMomSort(); hv = view(); check("🩳空売り: 🐵ランキング順に切替", hv.includes("ランキング順") && !hv.includes("売残多い順 ✓")); sandbox.toggleMomSort();
+  sandbox.setShFilter("heavy"); hv = view(); check("🩳空売り: 🔥空売り多フィルタ", (hv.match(/class="mrow/g) || []).length === nHeavy()); sandbox.setShFilter("stop"); hv = view(); check("🩳空売り: 🚫売り禁フィルタ", (hv.match(/class="mrow/g) || []).length === nStop()); sandbox.setShFilter("all");
+  Object.assign(r0, { shortable: null, jsf_stop: true, short_vol: null }); hv = go("#/short"); check("🩳空売り: 🚫売り禁（札＋上部の売り禁一覧）", hv.includes('class="sbadge dn">🚫 売り禁') && hv.includes(`🚫 売り禁 ${nStop()}本`) && hv.includes(`🚫 ${r0.name}`) && (hv.match(/class="sbadge up">貸借○ 空売り可/g) || []).length === DATA.ranking.filter(r => r.shortable === true && !r.jsf_stop).length);
+  hv = go("#/"); check("🐵ランキング v8.4: 🚫売り禁は小さい印だけ・ゲージなし", clean(hv) && hv.includes("🚫売り禁") && !hv.includes("smeter") && !hv.includes("shortsum"));
   Object.assign(r0, { short_vol: 500000, long_vol: 900000, ratio: 1.8, short_days: 2.2 }); go(`#/detail/${r0.code}`); await sandbox.loadStockDetail(r0.code); hv = $get("#dbody").innerHTML;
   check("詳細: 🩳空売りの状況カード", clean(hv) && hv.includes("🩳 空売りの状況") && hv.includes("🚫 売り禁") && hv.includes("2.2日分") && hv.includes("買残90万株"));
   Object.keys(r0).forEach(k => { if (!(k in bak)) delete r0[k]; }); Object.assign(r0, bak); }
@@ -253,10 +255,12 @@ for (const c of codes) {
   go(`#/detail/${c}`); await sandbox.loadStockDetail(c);
   const d = $get("#dbody").innerHTML; check(`詳細 ${c}`, clean(d) && (d.includes("日足") || d.includes("EODデータ") || d.includes("の終値")), process.env.HDEBUG ? d.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 400) : "");
 }
-hv = go("#/about"); check("使い方 v8.2", clean(hv) && hv.includes("v8.2") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
+hv = go("#/about"); check("使い方 v8.4", clean(hv) && hv.includes("v8.4") && hv.includes("空売り") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは5本（ランキング/初動/作戦/電卓/AI調教）v8.3", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 5 && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+check("ナビは6本（ランキング/空売り/初動/作戦/電卓/AI調教）v8.4", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 6 && html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+hv = go("#/short"); check("🩳空売り v8.4: 描画（データ有＝一覧・無＝空メッセージ）", clean(hv) && hv.includes("🩳 空売り") && ((hv.includes("gchip") && hv.includes("空売り残高が多い")) || hv.includes("付いていません")));
+hv = go("#/"); check("🐵ランキング v8.4: 売残ゲージと🔥カードは出さない", clean(hv) && !hv.includes("shortsum") && !hv.includes("smeter") && !hv.includes("売残多い順"));
 hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
 hv = go("#/explore"); check("🚩初動に 資金・連動/人気テーマ の切替 v8.2", hv.includes("💴 資金・連動") && hv.includes("🔥 人気テーマ"));
 hv = go("#/ir"); check("📰IRタブ", clean(hv) && hv.includes("IRの好材料・悪材料") && !hv.includes("上髭逆指値"));

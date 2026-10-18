@@ -3,6 +3,7 @@
 // v8.2 (2026-10-19 本人「やっぱりIRいらない」): #/ir のルートとタブを外した（ir.js は 🧪C/D材料の irChip 用に残置）
 route("#/flow/hot", "shodo", viewFlowHot);  // v8: 💴資金 → 🔥株探の人気テーマ
 route("#/flow", "shodo", viewFlow);    // v8.2: 💴資金は🚩初動の切替に（本人「資金もまとめる」「前夜いらない」）         // v8: 💴資金の流れ→連動株→連動集 は独立タブ
+route("#/short", "short", viewShort);   // v8.4: 🩳空売り（本人「この空売りとモメンタムはタブわけて」2026-10-19）
 route("#/search", "data", viewSearch);
 route("#/detail/", "data", h => viewDetail(decodeURIComponent(h.split("/")[2])));
 route("#/plan", "plan", viewPlan);

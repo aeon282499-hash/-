@@ -1,11 +1,13 @@
-// momentum.js — 🐵EOD（モメンタム指数ランキング・🏆勝ちやすい順張り・持ち株コーチ・ウォッチ）
+// momentum.js — 🐵EOD（モメンタム指数ランキング・🏆勝ちやすい順張り・持ち株コーチ・ウォッチ）＋ 🩳空売り（v8.4・2026-10-19 本人「この空売りとモメンタムはタブわけて」）
 // 指数の高さ＝予測ではない（Sは翌10日平均-2.65%）。眺める/ウォッチ用と明示（v4方針を継承）。
 let MOM_GRADE = "all";
 let MOM_SHORT = false;      // v8: 🔥空売り多だけ（本人「売り金マークと空売り残高多いやつをわかりやすく」2026-10-17）
-let MOM_SORT = "rank";      // v8.1: "rank"=勢い順 / "short"=売残(出来高の日数)多い順
+let MOM_SORT = "short";     // v8.1: "rank"=勢い順 / "short"=売残(出来高の日数)多い順（v8.4からは🩳空売りタブ側の状態・既定は売残多い順）
+let SH_FILTER = "all";      // v8.4 🩳: all / heavy(🔥空売り多) / stop(🚫売り禁) / ok(貸借○)
 function setMomGrade(g) { MOM_GRADE = g; render(); }
 function toggleMomShort() { MOM_SHORT = !MOM_SHORT; render(); }
 function toggleMomSort() { MOM_SORT = MOM_SORT === "short" ? "rank" : "short"; render(); }
+function setShFilter(f) { SH_FILTER = f; render(); }
 const fmtKabu = v => v == null ? "—" : v >= 1e8 ? (v / 1e8).toFixed(1) + "億株" : v >= 1e4 ? Math.round(v / 1e4).toLocaleString() + "万株" : Number(v).toLocaleString() + "株";
 // 🔥空売り多 ＝ 売残が1日の出来高以上（買い戻すのに1日以上かかる）か、売残が買残以上（取組1倍以下＝売り長）
 function momHeavy(r) { return (r.short_days != null && r.short_days >= 1) || (r.ratio != null && r.ratio <= 1); }
@@ -62,14 +64,12 @@ function viewMomentum() {
   });
   const rk = DATA.ranking || [], gc = DATA.grade_counts || {};
   const chip = (g, lbl) => `<a class="gchip ${MOM_GRADE === g ? "on" : ""}" onclick="event.preventDefault();setMomGrade('${g}')">${lbl}</a>`;
-  let list = MOM_GRADE === "all" ? rk : rk.filter(r => r.grade === MOM_GRADE);
-  if (MOM_SHORT) list = list.filter(momHeavy);
-  if (MOM_SORT === "short") list = [...list].sort((a, b) => ((b.short_days ?? -1) - (a.short_days ?? -1)) || ((a.ratio ?? 99) - (b.ratio ?? 99)));
+  const list = MOM_GRADE === "all" ? rk : rk.filter(r => r.grade === MOM_GRADE);   // v8.4: 🔥/📉 の絞り込みは🩳空売りタブへ
   const sw = DATA.sell_watch, swCodes = new Set(((sw && sw.members) || []).map(m => m.code));
   const rows = list.map(r => `<a class="mrow" href="#/detail/${r.code}">
       <div class="grb ${esc(r.grade || "D")}">${esc(r.grade || "-")}</div>
-      <div class="m-nm"><b>${esc(r.name)}${swCodes.has(r.code) ? ' <span class="chip dn" style="padding:0 6px">🔻終了サイン</span>' : ""}${r.days_cover != null && r.days_cover < 0.25 ? ' <span class="chip up" style="padding:0 6px">🪶信用軽</span>' : ""}</b>
-        <small>${r.code} ・ 勢い${r.momentum != null ? Math.round(r.momentum) : "—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ 値動き${r.rng20 != null && isFinite(Number(r.rng20)) ? Number(r.rng20).toFixed(1) + "%" : "—"}</small>${momShortChips(r)}</div>
+      <div class="m-nm"><b>${esc(r.name)}${swCodes.has(r.code) ? ' <span class="chip dn" style="padding:0 6px">🔻終了サイン</span>' : ""}${r.days_cover != null && r.days_cover < 0.25 ? ' <span class="chip up" style="padding:0 6px">🪶信用軽</span>' : ""}${r.jsf_stop ? ' <span class="chip dn" style="padding:0 6px">🚫売り禁</span>' : ""}</b>
+        <small>${r.code} ・ 勢い${r.momentum != null ? Math.round(r.momentum) : "—"} ・ 5日 ${fmtPct(r.r5)} ・ 代金${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ 値動き${r.rng20 != null && isFinite(Number(r.rng20)) ? Number(r.rng20).toFixed(1) + "%" : "—"}</small></div>
       <div class="m-px">${yen(r.price)}<br>${pctTag(r.r1) || "—"}</div></a>`).join("");
   const mk = DATA.market || {};
   const segs = mk.segments ? Object.values(mk.segments).filter(s => s && s.available).map(s => `<span class="chip">${esc(String(s.label || "").split("市場")[0])} ${s.score}<b>[${esc(s.grade)}]</b>${esc(s.regime || "")}</span>`).join("") : "";
@@ -84,11 +84,31 @@ function viewMomentum() {
         <div class="kpi"><div class="l">25MA乖離</div><div class="v ${cls(mk.ma_dev_pct)}">${fmtPct1(mk.ma_dev_pct)}</div><div class="s">等加重</div></div></div>
       ${segs ? `<div class="chips" style="margin-top:8px">${segs}</div>` : ""}</div>` : ""}
     <h2>🐵 モメンタム <span class="sub">${DATA.data_date || ""} 終値・強さ/過熱ランキング</span></h2>
-    ${vnote("買い推奨ではありません。S ほど翌10日の平均はマイナス（過熱の目印）。", "眺める／ウォッチ用。売り印と空売り残高の読み方は上の🔥カードに。残高は週次（金曜分・火曜公表）＝日々の変化は映らない。")}
-    ${momShortSummary(rk)}
-    <div class="gchips">${chip("all", `すべて ${rk.length}`)}${chip("S", `S ${gc.S || 0}`)}${chip("A", `A ${gc.A || 0}`)}${chip("B", `B ${gc.B || 0}`)}${chip("C", "C")}${chip("D", "D")}<a class="gchip ${MOM_SHORT ? "on" : ""}" onclick="event.preventDefault();toggleMomShort()">🔥 空売り多 ${rk.filter(momHeavy).length}</a><a class="gchip ${MOM_SORT === "short" ? "on" : ""}" onclick="event.preventDefault();toggleMomSort()">${MOM_SORT === "short" ? "📉 売残多い順 ✓" : "📉 売残多い順"}</a></div>
+    ${vnote("買い推奨ではありません。S ほど翌10日の平均はマイナス（過熱の目印）。", "眺める／ウォッチ用。売り禁・貸借・空売り残高は🩳空売りタブに分けた（同じ50本）。")}
+    <div class="gchips">${chip("all", `すべて ${rk.length}`)}${chip("S", `S ${gc.S || 0}`)}${chip("A", `A ${gc.A || 0}`)}${chip("B", `B ${gc.B || 0}`)}${chip("C", "C")}${chip("D", "D")}</div>
     <div class="card tight">${rows || `<div class="empty">該当なし</div>`}</div>
     ${winnableSection()}
+    <p class="disc">${esc(DATA.disclaimer)}</p>`;
+}
+// 🩳 空売り（v8.4）: ランキング50本の 売り禁/貸借/注意喚起 と 空売り残高（売残・出来高の日数・取組・前週比）だけを集めた画面
+function viewShort() {
+  const rk = DATA.ranking || [];
+  const mdate = (rk.find(r => r.margin_date) || {}).margin_date || "";
+  const have = rk.filter(r => r.short_vol != null || r.shortable != null || r.jsf_stop);
+  if (!rk.length || !have.length) return `<h2>🩳 空売り <span class="sub">${DATA.data_date || ""} 終値</span></h2><div class="card empty">貸借区分・空売り残高がまだ付いていません（次のビルドで）</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
+  const nHeavy = rk.filter(momHeavy).length, nStop = rk.filter(r => r.jsf_stop).length, nOk = rk.filter(r => r.shortable === true && !r.jsf_stop).length;
+  let list = SH_FILTER === "heavy" ? rk.filter(momHeavy) : SH_FILTER === "stop" ? rk.filter(r => r.jsf_stop) : SH_FILTER === "ok" ? rk.filter(r => r.shortable === true && !r.jsf_stop) : rk;
+  if (MOM_SORT !== "rank") list = [...list].sort((a, b) => ((b.short_days ?? -1) - (a.short_days ?? -1)) || ((a.ratio ?? 99) - (b.ratio ?? 99)));
+  const fchip = (k, lbl) => `<a class="gchip ${SH_FILTER === k ? "on" : ""}" onclick="event.preventDefault();setShFilter('${k}')">${lbl}</a>`;
+  const rows = list.map(r => `<a class="mrow" href="#/detail/${r.code}">
+      <div class="grb ${esc(r.grade || "D")}">${esc(r.grade || "-")}</div>
+      <div class="m-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ${yen(r.price)} ・ 前日比 ${fmtPct(r.r1)} ・ 代金${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"}</small>${momShortChips(r)}</div>
+      <div class="m-px">${r.short_days != null ? `<span class="${r.short_days >= 1 ? "hot" : ""}">${Number(r.short_days).toFixed(1)}日分</span>` : "—"}<small>${r.ratio != null ? "取組 " + Number(r.ratio).toFixed(1) + "倍" : "取組 —"}</small></div></a>`).join("");
+  return `<h2>🩳 空売り <span class="sub">${DATA.data_date || ""} 終値・残高は ${esc(mdate)} 時点（週次）</span></h2>
+    ${vnote("ランキング50本の売り禁・貸借・空売り残高。買い/売りの推奨ではありません。", "売残は週次（金曜分・火曜公表）＝日々の変化は映らない。🔥＝売残が1日の出来高以上か取組1倍以下。踏み上げの燃料ではあるが、売残が厚いほど翌20日は悪い（10年n193万・小型 超過−0.74%）＝『売残が多い＝買い』ではない。")}
+    ${momShortSummary(rk)}
+    <div class="gchips">${fchip("all", `すべて ${rk.length}`)}${fchip("heavy", `🔥 空売り多 ${nHeavy}`)}${fchip("stop", `🚫 売り禁 ${nStop}`)}${fchip("ok", `貸借○ ${nOk}`)}<a class="gchip ${MOM_SORT === "rank" ? "" : "on"}" onclick="event.preventDefault();toggleMomSort()">${MOM_SORT === "rank" ? "🐵 ランキング順" : "📉 売残多い順 ✓"}</a></div>
+    <div class="card tight">${rows || `<div class="empty">該当なし</div>`}</div>
     <p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
 function winnableSection() {
