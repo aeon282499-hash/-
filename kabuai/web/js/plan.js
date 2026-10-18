@@ -38,7 +38,7 @@ function planNow(target_date) {
   if (hm < 859) return ["⏰ 寄り前：注文を出す時間", "下の注文をそのまま出す。フェードは寄り成行（下寄りでも建てる・売り禁だけ料の帯で種別を変える）。崩壊/極上の寄指は線より下で寄ったら約定しない＝それで正解（追いかけない）。"];
   if (hm < 1455) return ["🙅 場中：触らない", "日計り（フェード/崩壊）は引けまで持つ。損切りは置かない（日中ストップは26年で全部劣化）。3日持ちの玉は出口日だけ確認。"];
   if (hm < 1531) return ["🔔 引け：手仕舞いの時間", "日計りは15:25までに『引け成行』で買い戻し。今日が出口日の3日持ちも引け成行。持ち越し禁止。"];
-  return ["📝 引け後：答え合わせ", "下の『直近の答え合わせ』と🎯前夜の準備（17時のビルドで材料が載る）へ。"];
+  return ["📝 引け後", "17時のビルドで明日の作戦に更新されます。"];
 }
 
 // ── 現金余力 → 今日のサイズ（ラダーの機械的な適用・端末に保存）──
@@ -139,18 +139,10 @@ function viewPlan() {
   const p = DATA.plan;
   if (!p) return `<h2>📋 朝の作戦</h2><div class="card"><div class="empty">作戦データがまだありません（次のビルドで反映）。</div></div><p class="disc">${esc(DATA.disclaimer)}</p>`;
   const orders = p.orders || [], paper = p.paper || [], holdings = p.holdings || [];
-  const [nowTitle, nowText] = planNow(p.target_date);
   const cash = planCash(), sz = planSizes(cash);
-  const head = `<h2>📋 朝の作戦 <span class="sub">${esc(p.target_date || "")} 分（${esc(p.date || "")} 引け・${esc(p.generated_at || "")} 生成）</span></h2>
-    <div class="banner dn" style="margin-bottom:8px"><b>${esc(nowTitle)}</b><br><span style="font-size:14.5px">${esc(nowText)}</span></div>
-    ${planCashBox(cash, sz)}
-    <div id="plan-live">${planLiveInner()}</div>`;
+  const head = `<h2>📋 朝の作戦 <span class="sub">${esc(p.target_date || "")} 分（${esc(p.date || "")} 引け・${esc(p.generated_at || "")} 生成）</span></h2>`;   // v8.4.1: 🌙前夜バナー・💰現金余力の箱・ライブ行は外した（本人「ここもいらない」）
   // ① 実弾の注文
-  const live = orders.filter(o => !(sz && /なし|停止/.test(planSizeFor(o, sz) || "")));
-  const lead = orders.length
-    ? `<div class="banner dn">🔴 <b>今日の実弾 ${live.length}本</b>：書いてある注文をそのまま出す。日計り（フェード/崩壊）は<b>必ず大引けで手仕舞い</b>。${live.length < orders.length ? `<br><span style="font-size:14px">現金余力のラダーで ${orders.length - live.length}本は今日出さない。</span>` : ""}</div>`
-    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:14px">フェードGO・極上の2系統とも該当なし＝撃たないのが正解の日。</span></div>`;
-  const ordersHtml = `<div class="hh">🔴 実弾の注文 <span class="sub">フェード①／②・極上（サイズは💰現金余力のラダーで決まる）</span></div>${lead}${orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : ""}`;
+  const ordersHtml = orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : `<div class="card empty">今日は撃つ玉なし（フェード・極上とも該当なし）</div>`;   // v8.4.1: 見出しと赤いバナーは外した
   // ② 保有中の玉と出口
   const holdHtml = holdings.length ? `<div class="hh" style="margin-top:14px">📦 保有中の玉と出口 <span class="sub">${holdings.filter(h => h.exit_today).length}本が今日出口</span></div><div class="card tight">${holdings.map(planHoldRow).join("")}</div>` : "";
   // ③ 紙・撃たない
@@ -158,7 +150,9 @@ function viewPlan() {
   // ④ 答え合わせ ⑤ ラダー
   const recentHtml = planRecent(p.recent);
   const ladderHtml = `<details class="card" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">💰 資金ラダー（ルール）</summary><div class="note" style="margin-top:6px">${(p.ladder || []).map(l => `<div>・${esc(l)}</div>`).join("")}</div></details>`;
-  return head + ordersHtml + holdHtml + paperHtml + planCheckHtml() + recentHtml + ladderHtml + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
+  // v8.4.1（2026-10-19 本人「いらないここの項目」）: ✅注文前チェック・📝直近の答え合わせ・💰資金ラダーは画面から外す（関数は残置）
+  void recentHtml; void ladderHtml;
+  return head + ordersHtml + holdHtml + paperHtml + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
 }
 // 🎯前夜の準備（arena.js）から呼ぶ: 📰材料 と 📅明日の決算
 function planNewsSection() { const p = DATA.plan; if (!p) return ""; return planSections(p).newsHtml; }

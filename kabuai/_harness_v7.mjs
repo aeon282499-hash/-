@@ -194,10 +194,8 @@ sandbox.calcSet("px", "9800"); sandbox.calcSet("sh", ""); hv = $get("#calc-out")
 console.log("── 3) 📋作戦（✅チェック吸収） ──");
 hv = go("#/plan"); check("作戦(データ無しでも落ちない)", clean(hv) && hv.includes("作戦"));
 { const bak = DATA.plan; DATA.plan = JSON.parse(fs.readFileSync("_plan_sample.json", "utf8"));
-  hv = go("#/plan"); check("作戦: サンプル注入", clean(hv) && hv.includes("実弾の注文") && hv.includes("資金ラダー") && hv.includes("寄指"));
-  check("作戦: ✅注文前チェック", hv.includes("注文前チェック") && hv.includes("0 / 7") && hv.includes("あと <b>7</b>"));
-  for (let i = 0; i < 7; i++) sandbox.planToggleCheck(i); hv = view(); check("作戦: チェック7/7→OKバナー", clean(hv) && hv.includes("7つ全部OK"));
-  sandbox.planClearChecks(); hv = view(); check("作戦: 全部外す", hv.includes("0 / 7"));
+  hv = go("#/plan"); check("作戦: サンプル注入", clean(hv) && hv.includes("寄指") && hv.includes("朝の作戦"));
+  check("作戦 v8.4.1: ✅チェック/📝答え合わせ/💰ラダーは出さない（本人「いらない」）", !hv.includes("注文前チェック") && !hv.includes("直近の答え合わせ") && !hv.includes("資金ラダー（ルール）") && !hv.includes("現金余力") && !hv.includes("今日の実弾") && !hv.includes("実弾の注文 <span"));
   hv = go("#/arena"); check("前夜: 材料＋明日の決算", clean(hv) && hv.includes("材料") && hv.includes("明日の決算発表"));
   sandbox.planSetCash("20"); hv = go("#/plan"); check("作戦: 現金余力20万→②ゼロ", clean(hv) && hv.includes("今日は出さない"));
   sandbox.planSetCash(""); localStorageShim.removeItem("kabuai_cash");
@@ -255,14 +253,14 @@ for (const c of codes) {
   go(`#/detail/${c}`); await sandbox.loadStockDetail(c);
   const d = $get("#dbody").innerHTML; check(`詳細 ${c}`, clean(d) && (d.includes("日足") || d.includes("EODデータ") || d.includes("の終値")), process.env.HDEBUG ? d.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 400) : "");
 }
-hv = go("#/about"); check("使い方 v8.4", clean(hv) && hv.includes("v8.4") && hv.includes("空売り") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
+hv = go("#/about"); check("使い方 v8.4.1", clean(hv) && hv.includes("v8.4.1") && hv.includes("空売り") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
 check("ナビは6本（ランキング/空売り/初動/作戦/電卓/AI調教）v8.4", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 6 && html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
 hv = go("#/short"); check("🩳空売り v8.4: 描画（データ有＝一覧・無＝空メッセージ）", clean(hv) && hv.includes("🩳 空売り") && ((hv.includes("gchip") && hv.includes("空売り残高が多い")) || hv.includes("付いていません")));
 hv = go("#/"); check("🐵ランキング v8.4: 売残ゲージと🔥カードは出さない", clean(hv) && !hv.includes("shortsum") && !hv.includes("smeter") && !hv.includes("売残多い順"));
 hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
-hv = go("#/explore"); check("🚩初動に 資金・連動/人気テーマ の切替 v8.2", hv.includes("💴 資金・連動") && hv.includes("🔥 人気テーマ"));
+hv = go("#/explore"); check("🚩初動の切替は 🔥人気テーマ だけ（v8.4.1 資金・連動は外した）", hv.includes("🔥 人気テーマ") && !hv.includes("💴 資金・連動"));
 hv = go("#/ir"); check("📰IRタブ", clean(hv) && hv.includes("IRの好材料・悪材料") && !hv.includes("上髭逆指値"));
 hv = go("#/flow"); check("💴資金（初動の切替）", clean(hv) && hv.includes("資金の流れ") && hv.includes("人気テーマ"));
 hv = go("#/flow/hot"); check("💴資金→🔥人気テーマ", clean(hv) && hv.includes("株探の人気テーマ30") && !hv.includes("← 初動"));
