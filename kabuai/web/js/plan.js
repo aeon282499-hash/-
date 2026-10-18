@@ -8,7 +8,7 @@ function planOrderRow(o, sizeOverride) {
   const sizeCls = off ? "" : "dn";
   return `<a class="pickrow" href="#/detail/${o.code}"><div class="pk-nm"><b><span class="chip ${sizeCls}" style="font-weight:800">${esc(o.system)}</span> ${esc(o.name)}</b>
       <small>${o.code} ・ ${esc(o.side)} ・ <b>${esc(size)}</b>${o.iss ? " ・ 貸借" + esc(o.iss) : ""}${o.note ? " ・ " + esc(o.note) : ""}</small>
-      <div class="chips"><span class="chip ${sizeCls}">${off ? "（今日は出さない）" : esc(o.order)}</span></div>${warn}</div></a>`;
+      <div class="chips"><span class="chip ${sizeCls}" style="white-space:normal;line-height:1.5;text-align:left">${off ? "（今日は出さない）" : esc(o.order)}</span></div>${warn}</div></a>`;
 }
 function planNewsRow(n) {
   const kinds = (n.kinds || []).map(k => `<span class="chip wa">${esc(k)}</span>`).join("");
@@ -142,14 +142,14 @@ function viewPlan() {
   const [nowTitle, nowText] = planNow(p.target_date);
   const cash = planCash(), sz = planSizes(cash);
   const head = `<h2>📋 朝の作戦 <span class="sub">${esc(p.target_date || "")} 分（${esc(p.date || "")} 引け・${esc(p.generated_at || "")} 生成）</span></h2>
-    <div class="banner dn" style="margin-bottom:8px"><b>${esc(nowTitle)}</b><br><span style="font-size:12.5px">${esc(nowText)}</span></div>
+    <div class="banner dn" style="margin-bottom:8px"><b>${esc(nowTitle)}</b><br><span style="font-size:14.5px">${esc(nowText)}</span></div>
     ${planCashBox(cash, sz)}
     <div id="plan-live">${planLiveInner()}</div>`;
   // ① 実弾の注文
   const live = orders.filter(o => !(sz && /なし|停止/.test(planSizeFor(o, sz) || "")));
   const lead = orders.length
-    ? `<div class="banner dn">🔴 <b>今日の実弾 ${live.length}本</b>：書いてある注文をそのまま出す。日計り（フェード/崩壊）は<b>必ず大引けで手仕舞い</b>。${live.length < orders.length ? `<br><span style="font-size:12px">現金余力のラダーで ${orders.length - live.length}本は今日出さない。</span>` : ""}</div>`
-    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:12px">フェードGO・極上の2系統とも該当なし＝撃たないのが正解の日。</span></div>`;
+    ? `<div class="banner dn">🔴 <b>今日の実弾 ${live.length}本</b>：書いてある注文をそのまま出す。日計り（フェード/崩壊）は<b>必ず大引けで手仕舞い</b>。${live.length < orders.length ? `<br><span style="font-size:14px">現金余力のラダーで ${orders.length - live.length}本は今日出さない。</span>` : ""}</div>`
+    : `<div class="banner"><b>今日は撃つ玉なし</b><br><span class="muted" style="font-size:14px">フェードGO・極上の2系統とも該当なし＝撃たないのが正解の日。</span></div>`;
   const ordersHtml = `<div class="hh">🔴 実弾の注文 <span class="sub">フェード①／②・極上（サイズは💰現金余力のラダーで決まる）</span></div>${lead}${orders.length ? `<div class="card tight">${orders.map(o => planOrderRow(o, planSizeFor(o, sz))).join("")}</div>` : ""}`;
   // ② 保有中の玉と出口
   const holdHtml = holdings.length ? `<div class="hh" style="margin-top:14px">📦 保有中の玉と出口 <span class="sub">${holdings.filter(h => h.exit_today).length}本が今日出口</span></div><div class="card tight">${holdings.map(planHoldRow).join("")}</div>` : "";

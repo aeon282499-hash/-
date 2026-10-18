@@ -48,10 +48,10 @@ function momShortSummary(rk) {
       <div class="s-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 売残${fmtKabu(r.short_vol)}${r.short_chg != null ? `（前週${r.short_chg >= 0 ? "+" : ""}${Math.round(r.short_chg)}%）` : ""}${r.jsf_stop ? ' ・ <span class="neg" style="font-weight:800">🚫売り禁</span>' : ""}${r.jsf_warn ? ' ・ <span class="warn">⚠️注意喚起</span>' : ""}</small></div>
       <div class="s-kv"><div class="v ${r.short_days != null && r.short_days >= 1 ? "hot" : ""}">${r.short_days != null ? Number(r.short_days).toFixed(1) + "日分" : "—"}</div><div class="l">出来高の</div></div>
       <div class="s-kv"><div class="v ${r.ratio != null && r.ratio <= 1 ? "hot" : ""}">${r.ratio != null ? Number(r.ratio).toFixed(1) + "倍" : "—"}</div><div class="l">取組</div></div></a>`;
-  return `<div class="card shortsum"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🔥 空売り残高が多い ${heavy.length}本</b><span class="muted" style="font-size:11.5px">ランキング${rk.length}本のうち・残高は ${esc(mdate)} 時点（週次）</span></div>
+  return `<div class="card shortsum"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🔥 空売り残高が多い ${heavy.length}本</b><span class="muted" style="font-size:13.5px">ランキング${rk.length}本のうち・残高は ${esc(mdate)} 時点（週次）</span></div>
     <div class="note" style="margin:4px 0 6px">「出来高の◯日分」＝売り方が全部買い戻すのにかかる日数。<b>1日分以上</b>か<b>取組1倍以下（売残≧買残＝売り長）</b>で🔥。踏み上げの燃料＝上がると売り方の買い戻しが乗る。売り方は逆日歩に注意。</div>
     ${heavy.length ? `<div class="tight">${heavy.map(row).join("")}</div>` : `<div class="empty">今週は該当なし</div>`}
-    <div style="margin-top:10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🚫 売り禁 ${stop.length}本</b><span class="muted" style="font-size:11.5px">制度信用の新規売り停止＝個人は普通には空売りできない（SBI一日信用HYPER/一般信用は別枠在庫）</span></div>
+    <div style="margin-top:10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🚫 売り禁 ${stop.length}本</b><span class="muted" style="font-size:13.5px">制度信用の新規売り停止＝個人は普通には空売りできない（SBI一日信用HYPER/一般信用は別枠在庫）</span></div>
     ${stop.length ? `<div class="chips" style="margin-top:6px">${stop.map(r => `<a class="sbadge dn" href="#/detail/${r.code}">🚫 ${esc(r.name)} <span style="opacity:.75;font-weight:600">${r.code}</span></a>`).join("")}</div>` : `<div class="empty" style="padding:6px 0">売り禁なし</div>`}
     <div class="note" style="margin-top:8px">印の読み方: <span class="sbadge dn lg">🚫 売り禁</span>＝制度信用で新規売り不可 ／ <span class="sbadge up lg">貸借○ 空売り可</span>＝制度信用で空売りできる ／ <span class="sbadge mut lg">制度×</span>＝信用買いだけの銘柄 ／ <span class="sbadge wa lg">⚠️ 注意喚起</span>＝日証金の注意喚起（逆日歩警戒） ／ <span class="sbadge hot lg">🔥 空売り多</span>＝売残が重い。各行の棒は売残÷1日の出来高（3日分で満タン）。</div></div>`;
 }
@@ -74,12 +74,11 @@ function viewMomentum() {
   const mk = DATA.market || {};
   const segs = mk.segments ? Object.values(mk.segments).filter(s => s && s.available).map(s => `<span class="chip">${esc(String(s.label || "").split("市場")[0])} ${s.score}<b>[${esc(s.grade)}]</b>${esc(s.regime || "")}</span>`).join("") : "";
   return `
-    ${dataSubNav("momentum")}
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">銘柄コード・名前で検索…</span>${WATCH.length ? `<span class="tag">⭐ ${WATCH.length}</span>` : ""}</a>
     <div id="poscoach">${posCoach()}</div>
     ${WATCH.length ? `<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>` : ""}
-    ${mk.available ? `<div class="card"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>地合い（EOD）</b><span class="muted" style="font-size:11.5px">${esc(mk.label || "")}</span></div>
-      <div class="kpis"><div class="kpi"><div class="l">スコア</div><div class="v">${mk.score} <span style="font-size:12px">[${esc(mk.grade)}]</span></div><div class="s">${esc(mk.regime || "")}</div></div>
+    ${mk.available ? `<div class="card"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>地合い（EOD）</b><span class="muted" style="font-size:13.5px">${esc(mk.label || "")}</span></div>
+      <div class="kpis"><div class="kpi"><div class="l">スコア</div><div class="v">${mk.score} <span style="font-size:14px">[${esc(mk.grade)}]</span></div><div class="s">${esc(mk.regime || "")}</div></div>
         <div class="kpi"><div class="l">上昇銘柄</div><div class="v">${mk.breadth_pct}%</div><div class="s">幅</div></div>
         <div class="kpi"><div class="l">20日</div><div class="v ${cls(mk.trail20_pct)}">${fmtPct1(mk.trail20_pct)}</div><div class="s">等加重</div></div>
         <div class="kpi"><div class="l">25MA乖離</div><div class="v ${cls(mk.ma_dev_pct)}">${fmtPct1(mk.ma_dev_pct)}</div><div class="s">等加重</div></div></div>
@@ -99,7 +98,7 @@ function winnableSection() {
       <small>${m.code} ・ ${yen(m.price)} ・ 前日比 ${pctTag(m.r1) || "—"} ・ 代金${m.turnover_oku != null ? Math.round(m.turnover_oku) + "億" : "—"}${m.sector ? " ・ " + esc(m.sector) : ""}</small>
       <div class="chips"><span class="chip">値動き ${m.vol60 != null ? Number(m.vol60).toFixed(1) + "%/日" : "—"}</span><span class="chip up">250日 ${fmtPct(m.ret250)}</span><span class="chip up">120日 ${fmtPct(m.ret120)}</span></div></div>
     <div class="m-px">${m.score != null ? Math.round(m.score) : "—"}<br><small class="muted">点</small></div></a>`;
-  return `<details class="card"><summary>🏆 勝ちやすい順張り <span class="muted" style="font-weight:400;font-size:12px">持ち越し(20〜40日)用・上位${w.top_n || 20}</span></summary>
+  return `<details class="card"><summary>🏆 勝ちやすい順張り <span class="muted" style="font-weight:400;font-size:14px">持ち越し(20〜40日)用・上位${w.top_n || 20}</span></summary>
     <div class="dbody">${vnote("「勢いが強い順」ではなく「静かに上がり続けている中低位株」の順。20〜40日持つ前提。", "翌日の寄りで買って20〜40日持つ前提。デイトレ向きではありません（5日では+0.19%）。")}
     ${ms.length ? `<div class="card tight">${ms.map(row).join("")}</div>` : `<div class="empty">本日は該当なし</div>`}
     <div class="note">ルール: ${esc(w.rule || "")}。検証${esc(st.period || "")}: 上位20を翌日寄りで買って20日後＝<b>市場平均比${esc(st.vs_market_20d || "")}</b>・勝ち年${esc(st.win_years || "")}・時代別 ${esc(st.eras || "")}。</div></div></details>`;

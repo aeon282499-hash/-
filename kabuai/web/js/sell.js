@@ -14,7 +14,7 @@ function fadeSection() {
     const gos = picks.filter(p => p.verdict === "GO"), nos = picks.filter(p => p.verdict !== "GO");
     const maxg = Math.max(...picks.map(p => Number(p.gain) || 0));
     const lead = gos.length ? `<div class="banner dn">🔴 <b>本日GO ${gos.length}件</b>：翌営業日（朝ビルドなら今日）の寄りで空売り→<b>当日の引けで必ず買い戻し</b>（持ち越し禁止）。①100万/②50万。</div>`
-      : `<div class="banner"><b>今日は撃つ日じゃない（見送り）</b><br><span class="muted" style="font-size:12px">売れる銘柄の最大が前日+${maxg.toFixed(1)}% ＜ GO基準+${goMin}%。撃たないのが正解の日。</span></div>`;
+      : `<div class="banner"><b>今日は撃つ日じゃない（見送り）</b><br><span class="muted" style="font-size:14px">売れる銘柄の最大が前日+${maxg.toFixed(1)}% ＜ GO基準+${goMin}%。撃たないのが正解の日。</span></div>`;
     body = lead + `<div class="card tight">${gos.map(p => row(p, true)).join("")}${nos.map(p => row(p, false)).join("")}</div>`;
   }
   return `<div class="hh">🩳 デイトレ売り（フェード） <span class="sub">${esc(fd.date || "")} 終値時点・実弾の主力</span></div>
@@ -29,7 +29,7 @@ function sellHero() {
   const rows = st.sell.map(r => `<a class="pickrow" href="#/detail/${r.code}"><div class="pk-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 前日終値 ${yen(r.price)}${r.sector ? ` ・ ${esc(r.sector)}` : ""}</small>
       <div class="chips"><span class="chip dn">🔻 最弱セクターの急騰売り${(r.day_change != null && !isNaN(r.day_change)) ? ` 前日+${Number(r.day_change).toFixed(1)}%` : ""}</span></div></div></a>`).join("");
   return `<div class="card danger"><div class="hh" style="margin:0 0 6px">🔻 セクターローテSELL <span class="sub">${esc(st.date || "")} 当日分</span></div>
-    <div style="font-size:12.5px;line-height:1.65">最弱セクターで急騰した銘柄の反落を取る、<b>過去5年すべてプラス（PF${s.pf != null ? s.pf : 1.37}）</b>の検証済み売り。1日1件まで。</div>
+    <div style="font-size:14.5px;line-height:1.65">最弱セクターで急騰した銘柄の反落を取る、<b>過去5年すべてプラス（PF${s.pf != null ? s.pf : 1.37}）</b>の検証済み売り。1日1件まで。</div>
     <div class="list">${rows}</div><div class="note" style="margin-top:8px">🚪 ${esc(st.plan_sell || "")}</div></div>`;
 }
 function viewSell() {

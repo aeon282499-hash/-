@@ -54,15 +54,16 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 14, `${ev("ROUTES.length")}本`);
+check("ROUTES登録", ev("ROUTES.length") === 13, `${ev("ROUTES.length")}本`);
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
 console.log("── 1) 🌙前夜の準備（ホーム）＋🕯️上髭 ──");
-let hv = go("#/");
-check("ホーム＝前夜の準備", clean(hv) && hv.includes("前夜の準備") && hv.includes("上髭逆指値") && hv.includes("土俵"));
+let hv = go("#/arena");
+check("#/arena＝前夜の準備（v8.2でタブ外）", clean(hv) && hv.includes("前夜の準備") && hv.includes("上髭逆指値") && hv.includes("土俵"));
 // 📰 IR（v7.5・2026-10-17）: 無い時は空メッセージ・ある時は 好/悪/要精査 のタブと答え合わせ
-{ const bak = DATA.ir; DATA.ir = null; hv = go("#/ir"); check("IR 無し→空メッセージ", clean(hv) && hv.includes("IRの好材料・悪材料") && hv.includes("まだ作られていません"));
+{ ev('ROUTES.unshift({ prefix: "#/ir", nav: "ir", fn: viewIR })');   // v8.2: #/ir は外したので検証中だけ差し込む
+  const bak = DATA.ir; DATA.ir = null; hv = go("#/ir"); check("IR 無し→空メッセージ", clean(hv) && hv.includes("IRの好材料・悪材料") && hv.includes("まだ作られていません"));
   const mk = (id, date, time, code, name, title, tags, label, score, llm, react) => ({ id, date, time, intraday: time <= "15:30", code, name, sector: "情報･通信業", title, pdf: "https://www.release.tdnet.info/inbs/" + id + ".pdf", tags, material: true, admin: false,
     rule: { label, score, reason: "r" }, llm, final: llm || { label, score, reason: "r", model: "rule" }, react: react || { day_chg: null, next_gap: null, next_chg: null, next_oc: null, next_date: null }, close: 1234, tov20_oku: 12.3 });
   const D = DATA.data_date;
@@ -111,19 +112,19 @@ const uw = { date: DATA.data_date, target_date: "2099-01-04", generated_at: "x",
   buy: [mkRow("3103", "ユニチカ", 1520, 1602, 1499, false), mkRow("7003", "三井Ｅ＆Ｓ", 4204, 4447, 4190, true, { jsf_warn: true }), mkRow("9999", "テスト売り禁", 800, 850, 790, false, { jsf_stop: true })],
   sell: [mkRow("3103", "ユニチカ", 1520, 1602, 1499, false), mkRow("7003", "三井Ｅ＆Ｓ", 4204, 4447, 4190, true, { jsf_warn: true })], n_sell_blocked: 1 };
 { const bak = DATA.uwick, fbak = DATA.flow; DATA.flow = null;   // flow も uwrow を使うので行数チェックの間は外す
-  DATA.uwick = uw; hv = go("#/");
+  DATA.uwick = uw; hv = go("#/arena");
   check("上髭 買い3本", clean(hv) && (hv.match(/class="uwrow/g) || []).length === 3 && hv.includes("1,603") && hv.includes("4,447.5") && hv.includes("買い逆指値") && hv.includes("勝てるとは言いません"));
   check("上髭 買い: 利確/損切り/株数チップ", hv.includes("利確 1") && hv.includes("損切り 1") && hv.includes("株（損失2万円）") && hv.includes("🧮 電卓へ"));
   sandbox.uwSetSide("sell"); hv = view();
   check("上髭 売り2本（売り禁は除外済み・注意喚起チップ）", clean(hv) && (hv.match(/class="uwrow/g) || []).length === 2 && hv.includes("売り逆指値") && hv.includes("1,498") && hv.includes("注意喚起") && hv.includes("1本除外"));
   sandbox.uwSetSide("buy");
-  DATA.uwick = { ...uw, fresh: false }; hv = go("#/"); check("上髭 過去分バナー", clean(hv) && hv.includes("過去分"));
-  DATA.uwick = { ...uw, buy: [], sell: [], matched: 0 }; hv = go("#/"); check("上髭 0件", clean(hv) && hv.includes("条件に合う銘柄がありません"));
-  DATA.uwick = { ...uw, sell: [], iss_known: false }; sandbox.uwSetSide("sell"); hv = go("#/"); check("上髭 売り: 貸借不明バナー", clean(hv) && hv.includes("貸借区分が取れなかった")); sandbox.uwSetSide("buy");
-  DATA.uwick = { error: "boom" }; hv = go("#/"); check("上髭 error", clean(hv) && hv.includes("今回は作れませんでした"));
-  DATA.uwick = null; hv = go("#/"); check("上髭 無し", clean(hv) && hv.includes("まだ作られていません"));
+  DATA.uwick = { ...uw, fresh: false }; hv = go("#/arena"); check("上髭 過去分バナー", clean(hv) && hv.includes("過去分"));
+  DATA.uwick = { ...uw, buy: [], sell: [], matched: 0 }; hv = go("#/arena"); check("上髭 0件", clean(hv) && hv.includes("条件に合う銘柄がありません"));
+  DATA.uwick = { ...uw, sell: [], iss_known: false }; sandbox.uwSetSide("sell"); hv = go("#/arena"); check("上髭 売り: 貸借不明バナー", clean(hv) && hv.includes("貸借区分が取れなかった")); sandbox.uwSetSide("buy");
+  DATA.uwick = { error: "boom" }; hv = go("#/arena"); check("上髭 error", clean(hv) && hv.includes("今回は作れませんでした"));
+  DATA.uwick = null; hv = go("#/arena"); check("上髭 無し", clean(hv) && hv.includes("まだ作られていません"));
   DATA.uwick = bak; DATA.flow = fbak; }
-{ const bak = DATA.arena; DATA.arena = null; hv = go("#/"); check("土俵なしでも落ちない", clean(hv) && hv.includes("土俵リストがまだありません")); DATA.arena = bak; }
+{ const bak = DATA.arena; DATA.arena = null; hv = go("#/arena"); check("土俵なしでも落ちない", clean(hv) && hv.includes("土俵リストがまだありません")); DATA.arena = bak; }
 
 console.log("── 1b) 💴資金の流れ→🔗連動株（flow_builder・2026-10-14）──");
 { const bak = DATA.flow;
@@ -192,7 +193,7 @@ hv = go("#/plan"); check("作戦(データ無しでも落ちない)", clean(hv) 
   check("作戦: ✅注文前チェック", hv.includes("注文前チェック") && hv.includes("0 / 7") && hv.includes("あと <b>7</b>"));
   for (let i = 0; i < 7; i++) sandbox.planToggleCheck(i); hv = view(); check("作戦: チェック7/7→OKバナー", clean(hv) && hv.includes("7つ全部OK"));
   sandbox.planClearChecks(); hv = view(); check("作戦: 全部外す", hv.includes("0 / 7"));
-  hv = go("#/"); check("前夜: 材料＋明日の決算", clean(hv) && hv.includes("材料") && hv.includes("明日の決算発表"));
+  hv = go("#/arena"); check("前夜: 材料＋明日の決算", clean(hv) && hv.includes("材料") && hv.includes("明日の決算発表"));
   sandbox.planSetCash("20"); hv = go("#/plan"); check("作戦: 現金余力20万→②ゼロ", clean(hv) && hv.includes("今日は出さない"));
   sandbox.planSetCash(""); localStorageShim.removeItem("kabuai_cash");
   DATA.plan = { ...DATA.plan, orders: [], paper: [], news: [], earnings_tomorrow: [] }; hv = go("#/plan"); check("作戦: 全部ゼロ件", clean(hv) && hv.includes("撃つ玉なし"));
@@ -247,14 +248,16 @@ for (const c of codes) {
   go(`#/detail/${c}`); await sandbox.loadStockDetail(c);
   const d = $get("#dbody").innerHTML; check(`詳細 ${c}`, clean(d) && (d.includes("日足") || d.includes("EODデータ") || d.includes("の終値")), process.env.HDEBUG ? d.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 400) : "");
 }
-hv = go("#/about"); check("使い方 v8", clean(hv) && hv.includes("v8") && hv.includes("上髭逆指値") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
+hv = go("#/about"); check("使い方 v8.2", clean(hv) && hv.includes("v8.2") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは7本（IR/前夜/資金/初動/作戦/データ/電卓）", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 7 && html.includes('id="nav-ir"') && html.includes('id="nav-flow"') && html.includes('id="nav-shodo"') && html.includes('id="nav-calc"') && !html.includes('id="nav-live"'));
+check("ナビは4本（ランキング/初動/作戦/電卓）v8.2", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 4 && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
+hv = go("#/explore"); check("🚩初動に 資金・連動/人気テーマ の切替 v8.2", hv.includes("💴 資金・連動") && hv.includes("🔥 人気テーマ"));
 hv = go("#/ir"); check("📰IRタブ", clean(hv) && hv.includes("IRの好材料・悪材料") && !hv.includes("上髭逆指値"));
-hv = go("#/flow"); check("💴資金タブ", clean(hv) && hv.includes("資金の流れ") && hv.includes("株探の人気テーマ"));
+hv = go("#/flow"); check("💴資金（初動の切替）", clean(hv) && hv.includes("資金の流れ") && hv.includes("人気テーマ"));
 hv = go("#/flow/hot"); check("💴資金→🔥人気テーマ", clean(hv) && hv.includes("株探の人気テーマ30") && !hv.includes("← 初動"));
-hv = go("#/"); check("ホームに IR と資金が無い（別タブ）", clean(hv) && !hv.includes("IRの好材料・悪材料") && !hv.includes("資金の流れ →") && hv.includes("上髭逆指値") && hv.includes("土俵"));
+hv = go("#/arena"); check("ホームに IR と資金が無い（別タブ）", clean(hv) && !hv.includes("IRの好材料・悪材料") && !hv.includes("資金の流れ →") && hv.includes("上髭逆指値") && hv.includes("土俵"));
 check("検証の数字は折りたたみ", hv.includes('class="vnote"') && hv.includes("<summary>検証の数字</summary>") && !hv.includes('class="banner info"><b>勝てる'));
 check("live.js を読み込まない", !srcs.includes("js/live.js") && srcs.includes("js/calc.js"));
 check("旧画面残置", fs.existsSync("web/legacy_v5.html") && fs.existsSync("web/legacy_v6.html") && fs.existsSync("web/js/day.js") && fs.existsSync("web/js/live.js"));

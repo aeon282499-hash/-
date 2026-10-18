@@ -26,8 +26,8 @@ function viewExplore() {
   const cell = k => { const [e, l, d] = CAT_DEFS[k];
     return `<a class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" href="#/explore/${k}"><span style="font-size:20px">${e}</span>
       <span style="flex:1;min-width:0"><b>${l}</b><span class="note" style="display:block">${d}</span></span>
-      <b style="font-size:18px;color:${(c[k] || 0) ? "var(--up)" : "var(--mut)"}">${c[k] || 0}</b><span class="muted" style="font-size:11px">件</span></a>`; };
-  return `<h2>🚩 初動 <span class="sub">${EXP.data_date || ""} 終値時点</span></h2>
+      <b style="font-size:18px;color:${(c[k] || 0) ? "var(--up)" : "var(--mut)"}">${c[k] || 0}</b><span class="muted" style="font-size:13px">件</span></a>`; };
+  return `${flowSubNav("shodo")}<h2>🚩 初動 <span class="sub">${EXP.data_date || ""} 終値時点</span></h2>
     <div class="hh">初動ブレイクと本命</div>${["break60", "honmei", "precursor"].map(cell).join("")}
     <div class="hh">その他の探検（優位性は未検証）</div>${["hot", "shodo", "shodo_wait", "nagi", "rising", "oshime", "rebound", "stop_high"].map(cell).join("")}
     <div class="card note">${esc(EXP.note || "")} 状態は毎日引け後のバッチで更新。</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
@@ -66,7 +66,7 @@ function viewExploreList(cat) {
   const def = CAT_DEFS[cat]; if (!def) return `<div class="card"><div class="empty">不明なカテゴリです。</div></div>`;
   const [e, l, d] = def, n = (EXP.counts || {})[cat] || 0;
   const hist = (cat === "stop_high" && (EXP.stop_high_history || []).length)
-    ? `<div class="card"><div style="font-weight:700;font-size:13px">🗓 日別のストップ高件数（直近）</div><div class="chips" style="margin-top:8px">${EXP.stop_high_history.slice(0, 10).map(h => `<span class="chip">${h.date.slice(5)} <b>${h.count}</b>件${h.stuck ? `（張付${h.stuck}）` : ""}</span>`).join("")}</div></div>` : "";
+    ? `<div class="card"><div style="font-weight:700;font-size:15px">🗓 日別のストップ高件数（直近）</div><div class="chips" style="margin-top:8px">${EXP.stop_high_history.slice(0, 10).map(h => `<span class="chip">${h.date.slice(5)} <b>${h.count}</b>件${h.stuck ? `（張付${h.stuck}）` : ""}</span>`).join("")}</div></div>` : "";
   const filters = (cat === "rebound") ? `<div class="gchips"><a class="gchip ${REB_FILTER === "all" ? "on" : ""}" onclick="event.preventDefault();setRebFilter('all')">すべて</a><a class="gchip ${REB_FILTER === "sagedomari" ? "on" : ""}" onclick="event.preventDefault();setRebFilter('sagedomari')">下げ止まりのみ</a></div>
        <input class="searchbox" style="margin-bottom:8px" type="search" placeholder="銘柄名・コードで絞り込み" value="${esc(EXP_Q)}" oninput="onExpSearch(this.value)">` : "";
   const b60 = cat === "break60" ? vnote("翌朝: 寄りが前日終値+3%超なら買わない。買えたら20日保有・損切り −15%。半分は外れる。", `寄り+3%超は10年で −1.7%/件の筋。10年（上場廃止込み 12,396件・コスト0.2%）: 土台 +0.54%/件 → 負け筋（当日+20%・出来高10倍・抜き幅10%）を切って <b>+0.64%/件・PF1.17</b>、🆕新高値付き <b>+1.35%/件・PF1.35</b>（1日約2本）。勝率48〜50%。凪（ATR4%未満）は外れが小さく、荒いは外れが大きい。並びは新しい日→🆕→出来高順。`) : "";

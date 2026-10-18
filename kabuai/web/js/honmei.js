@@ -103,7 +103,7 @@ function viewHonmei() {
       : r.status === "wait" ? `<span class="muted">翌日の寄り待ち</span>` : `<span class="muted">データ待ち</span>`;
     return `<div class="pickrow"><div class="pk-nm"><b><a href="#/detail/${esc(p.code)}">${esc(p.name)}</a></b> <small>${esc(p.code)} ・ ${esc(p.date)} ・ 終値 ${p.price ? yen(p.price) : "—"}${r.entry ? " → 建値 " + yen(r.entry) : ""}</small>
       <div class="chips">${p.new250 ? `<span class="chip buy">🆕 新高値</span>` : ""}${p.calm === false ? `<span class="chip dn">荒い</span>` : ""}${p.reason ? `<span class="chip wa">${esc(p.reason)}</span>` : ""}<span class="chip">候補 ${(p.cands || []).length}本</span></div></div>
-      <div class="pk-ev">${res}<br><a onclick="event.preventDefault();honmeiRemove('${esc(p.date)}','${esc(p.code)}')" href="#" class="muted" style="font-size:11px">消す</a></div></div>`;
+      <div class="pk-ev">${res}<br><a onclick="event.preventDefault();honmeiRemove('${esc(p.date)}','${esc(p.code)}')" href="#" class="muted" style="font-size:13px">消す</a></div></div>`;
   }).join("");
   const copy = `<div class="note" style="margin-top:6px"><a href="#" onclick="event.preventDefault();honmeiCopy()">📋 台帳をテキストでコピー</a>（バックアップ用・端末の localStorage にだけ保存されています）</div>`;
   return head + `<div class="card tight">${rowsHtml}</div>` + copy + `<p class="disc">${esc(DATA.disclaimer)}</p>`;
@@ -121,7 +121,7 @@ function precRow(r) {
   const th = (r.themes || []).map(t => `<span class="chip acc">🔥 ${t.rank}位 ${esc(t.name)}</span>`).join("");
   const gr = (r.groups || []).map(g => `<span class="chip wa">💴 ${esc(g)}</span>`).join("");
   const mv = r.moving ? `<span class="chip">${r.vol_x != null ? `出来高 ${r.vol_x}倍` : ""}${r.r1 != null ? ` ${fmtPct1(r.r1)}` : ""}</span>` : `<span class="chip muted">まだ動いていない</span>`;
-  const title = irx ? `<div class="irtitle" style="font-size:12px">${irx.pdf ? `<a href="${esc(irx.pdf)}" target="_blank" rel="noopener">${esc(irx.time || "")} ${esc(irx.title)} 📄</a>` : esc(irx.title)}</div>` : "";
+  const title = irx ? `<div class="irtitle" style="font-size:14px">${irx.pdf ? `<a href="${esc(irx.pdf)}" target="_blank" rel="noopener">${esc(irx.time || "")} ${esc(irx.title)} 📄</a>` : esc(irx.title)}</div>` : "";
   return `<div class="pickrow" style="display:block"><div class="pk-nm"><b><a href="#/detail/${esc(r.code)}">${esc(r.name)}</a></b> <small>${esc(r.code)} ・ ${esc(r.sector || "")} ・ ${yen(r.price)} ・ ランク ${esc(r.grade)}（${r.momentum}）・ 代金${r.turnover_oku}億</small>
     <div class="chips">${irChip}${th}${gr}${mv}</div>${title}</div></div>`;
 }

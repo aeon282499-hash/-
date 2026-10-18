@@ -92,7 +92,7 @@ function liveClockInner() {
   const age = liveAgeSec(), stale = age != null && age > 180 && LIVE.state !== "closed";
   const dot = LIVE.state === "closed" ? "" : (stale ? "stale" : "on");
   const ageTxt = age == null ? "" : age < 60 ? `${age}秒前` : `${Math.floor(age / 60)}分前`;
-  return `<span class="ldot ${dot}"></span><span class="lt">${esc(LIVE.hhmm || "")} <span class="muted" style="font-weight:600;font-size:12px">${esc(LIVE_STATE[LIVE.state] || LIVE.state || "")}</span></span>
+  return `<span class="ldot ${dot}"></span><span class="lt">${esc(LIVE.hhmm || "")} <span class="muted" style="font-weight:600;font-size:14px">${esc(LIVE_STATE[LIVE.state] || LIVE.state || "")}</span></span>
     <span class="ls">${LIVE_WS_OK ? "⚡ 即時受信" : "🔄 30秒ごと確認"}${ageTxt ? " ・ 更新 " + ageTxt : ""}</span>
     <span class="lr">${esc(LIVE.source || "")}<br>${esc(LIVE.interval_note || "")}</span>`;
 }
@@ -111,13 +111,13 @@ function liveToggle(kind, key) { const k = kind + ":" + key; if (L_OPEN.has(k)) 
 function stockRow(m, opts) {
   if (!m) return "";
   const o = opts || {};
-  const themes = (L_THEME_OF[m.code] || []).slice(0, 2).map(t => `<span class="chip acc" style="padding:0 6px;font-size:9.5px">${esc(t)}</span>`).join("");
+  const themes = (L_THEME_OF[m.code] || []).slice(0, 2).map(t => `<span class="chip acc" style="padding:0 6px;font-size:11.5px">${esc(t)}</span>`).join("");
   return `<a class="srow" href="#/detail/${m.code}">
     <div class="sn"><b>${esc(m.name)}${m.hi ? ' <span class="hiflag">🔺高値</span>' : ""}${hotTag(m.flow5)}</b>
       <small>${m.code}${o.showSector && m.sector ? " ・ " + esc(m.sector) : ""} ・ 代金${oku(m.tov)}${o.showThemes && themes ? " " + themes : ""}</small></div>
     <div class="sv"><span class="${cls(m.chg)}">${fmtPct1(m.chg)}</span><small>本日</small></div>
     <div class="sv"><span class="${cls(m.d5)}">${m.d5 == null ? "—" : fmtPct1(m.d5)}</span><small>5分</small></div>
-    <div class="sv"><span class="${cls(m.vwap_dev)}" style="font-size:12px">${m.vwap_dev == null ? "—" : fmtPct1(m.vwap_dev)}</span><small>VWAP</small></div></a>`;
+    <div class="sv"><span class="${cls(m.vwap_dev)}" style="font-size:14px">${m.vwap_dev == null ? "—" : fmtPct1(m.vwap_dev)}</span><small>VWAP</small></div></a>`;
 }
 function sortMembers(codes) {
   const v = m => (m[L_MSORT] == null || isNaN(m[L_MSORT])) ? (L_MDIR < 0 ? -1e9 : 1e9) : Number(m[L_MSORT]);
@@ -125,18 +125,18 @@ function sortMembers(codes) {
 }
 function memberSortBar() {
   const arrow = L_MDIR < 0 ? "▼" : "▲";
-  return `<div class="lhead" style="margin:8px 0 2px"><span class="muted" style="font-size:11px">並び替え（もう一度押すと逆順）</span>
+  return `<div class="lhead" style="margin:8px 0 2px"><span class="muted" style="font-size:13px">並び替え（もう一度押すと逆順）</span>
     <span class="sortsel">${MEMBER_SORTS.map(([k, l]) => `<a class="${L_MSORT === k ? "on" : ""}" onclick="event.preventDefault();liveSetMSort('${k}')">${l}${L_MSORT === k ? " " + arrow : ""}</a>`).join("")}</span></div>`;
 }
 function groupCard(kind, g) {
   const key = kind + ":" + g.key, open = L_OPEN.has(key);
   const up = g.up_ratio == null ? 0 : Math.round(g.up_ratio * 100);
-  const src = g.src === "kabutan" ? ' <span class="chip" style="padding:0 5px;font-size:9px;vertical-align:middle">株探</span>' : "";
+  const src = g.src === "kabutan" ? ' <span class="chip" style="padding:0 5px;font-size:11px;vertical-align:middle">株探</span>' : "";
   const shown = (g.members || []).length, omitted = Math.max(0, (g.n || 0) - shown);
   let body = "";
   if (open) {
     const rows = sortMembers(g.members).map(m => stockRow(m, { showThemes: kind === "sectors" })).join("");
-    const note = omitted ? `<div class="muted" style="font-size:10.5px;padding:6px 0 2px">他${omitted}銘柄は当日代金1億未満のため省略</div>` : "";
+    const note = omitted ? `<div class="muted" style="font-size:12.5px;padding:6px 0 2px">他${omitted}銘柄は当日代金1億未満のため省略</div>` : "";
     body = `<div class="gbody">${g.desc ? `<div class="gdesc">${esc(g.desc)}</div>` : ""}${rows ? memberSortBar() + rows + note : `<div class="empty">${(g.n && !shown) ? "並び上位外のため構成銘柄は省略中（上位に入ると表示・約1分ごと）" : "構成銘柄のデータなし"}</div>`}</div>`;
   }
   return `<div class="gcard${open ? " open" : ""}">
@@ -144,8 +144,8 @@ function groupCard(kind, g) {
       <div class="gname"><b>${esc(g.label)}${src}${hotTag(g.flow5)}</b><small>${g.n}銘柄 ・ 上昇${up}% ・ 代金${g.tov != null ? oku(g.tov) : "—"}</small>
         <div class="upbar"><i style="width:${up}%"></i></div></div>
       <div class="gstat">${chgSpan(g.chg_w, 1)}<small>本日</small></div>
-      <div class="gstat"><span class="chg ${cls(g.d5_w)}" style="font-size:13px">${g.d5_w == null ? "—" : fmtPct1(g.d5_w)}</span><small>5分</small></div>
-      <div class="gstat" style="min-width:36px"><span style="font-size:14px;color:var(--mut)">${open ? "▴" : "▾"}</span></div>
+      <div class="gstat"><span class="chg ${cls(g.d5_w)}" style="font-size:15px">${g.d5_w == null ? "—" : fmtPct1(g.d5_w)}</span><small>5分</small></div>
+      <div class="gstat" style="min-width:36px"><span style="font-size:16px;color:var(--mut)">${open ? "▴" : "▾"}</span></div>
     </div>${body}
   </div>`;
 }
@@ -155,8 +155,8 @@ function groupsInner() {
   if (L_SEG === "themes" && q) arr = arr.filter(g => String(g.label).toLowerCase().includes(q) || String(g.key).toLowerCase().includes(q));
   const total = arr.length;
   const show = (L_SEG === "themes" && !L_ALL && !q) ? arr.slice(0, L_TOP) : arr;
-  const more = total > show.length ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:13px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">残り ${total - show.length}テーマを表示 ▾</a>`
-    : (L_ALL && L_SEG === "themes" && total > L_TOP ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:13px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">上位${L_TOP}だけに戻す ▴</a>` : "");
+  const more = total > show.length ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:15px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">残り ${total - show.length}テーマを表示 ▾</a>`
+    : (L_ALL && L_SEG === "themes" && total > L_TOP ? `<a class="card" style="display:block;text-align:center;color:var(--acc);font-weight:700;font-size:15px;cursor:pointer" onclick="event.preventDefault();liveToggleAll()">上位${L_TOP}だけに戻す ▴</a>` : "");
   return (show.map(g => groupCard(L_SEG, g)).join("") || `<div class="empty">該当なし</div>`) + more;
 }
 function sortGroups(arr) {
@@ -180,9 +180,9 @@ function liveBody() {
   let body = "";
   if (L_SEG === "themes" || L_SEG === "sectors") {
     const arr = LIVE[L_SEG] || [];
-    body = `<div class="lhead"><span class="muted" style="font-size:12px">${L_SEG === "themes" ? `${arr.length}テーマ（手作り${arr.filter(g => g.src === "hand").length}＋株探${LIVE.n_themes_kabutan || 0}）` : `${arr.length}業種`}・タップで構成銘柄</span></div>
-      <div class="lhead" style="margin-top:0"><span class="muted" style="font-size:11px">並び替え</span><span class="sortsel">${GROUP_SORTS.map(([k, l]) => sortBtn(k, l)).join("")}</span></div>
-      ${L_SEG === "themes" ? `<input class="searchbox" style="padding:9px 12px;font-size:14px;margin-bottom:8px" type="search" placeholder="テーマ名で絞り込み（例: 半導体・防衛・データセンター）" value="${esc(L_Q)}" oninput="liveSetQ(this.value)">` : ""}
+    body = `<div class="lhead"><span class="muted" style="font-size:14px">${L_SEG === "themes" ? `${arr.length}テーマ（手作り${arr.filter(g => g.src === "hand").length}＋株探${LIVE.n_themes_kabutan || 0}）` : `${arr.length}業種`}・タップで構成銘柄</span></div>
+      <div class="lhead" style="margin-top:0"><span class="muted" style="font-size:13px">並び替え</span><span class="sortsel">${GROUP_SORTS.map(([k, l]) => sortBtn(k, l)).join("")}</span></div>
+      ${L_SEG === "themes" ? `<input class="searchbox" style="padding:9px 12px;font-size:16px;margin-bottom:8px" type="search" placeholder="テーマ名で絞り込み（例: 半導体・防衛・データセンター）" value="${esc(L_Q)}" oninput="liveSetQ(this.value)">` : ""}
       <div id="live-groups">${groupsInner()}</div>`;
   } else {
     const tabs = [["gain", "上昇率"], ["lose", "下落率"], ["tovtop", "代金"], ["hot5", "資金の勢い(5分)"], ["hot", "資金の勢い(当日)"]];
@@ -198,9 +198,9 @@ function liveBody() {
     <div class="livebar" id="live-clock">${liveClockInner()}</div>
     ${dayNote}
     <div class="card">
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>市場全体</b><span class="muted" style="font-size:11.5px">流動性上位${(LIVE.got || 0).toLocaleString()}銘柄（代金1億以上＋テーマ構成）</span></div>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>市場全体</b><span class="muted" style="font-size:13.5px">流動性上位${(LIVE.got || 0).toLocaleString()}銘柄（代金1億以上＋テーマ構成）</span></div>
       <div class="kpis">
-        <div class="kpi"><div class="l">上昇 / 下落</div><div class="v"><span class="pos">${mk.adv || 0}</span> <span class="muted" style="font-size:12px">/</span> <span class="neg">${mk.dec || 0}</span></div><div class="s">上昇${advPct}%</div></div>
+        <div class="kpi"><div class="l">上昇 / 下落</div><div class="v"><span class="pos">${mk.adv || 0}</span> <span class="muted" style="font-size:14px">/</span> <span class="neg">${mk.dec || 0}</span></div><div class="s">上昇${advPct}%</div></div>
         <div class="kpi"><div class="l">騰落（代金加重）</div><div class="v ${cls(mk.chg_w)}">${fmtPct1(mk.chg_w)}</div><div class="s">大型に引っ張られる値</div></div>
         <div class="kpi"><div class="l">騰落（中央値）</div><div class="v ${cls(mk.chg_med)}">${fmtPct1(mk.chg_med)}</div><div class="s">ふつうの銘柄の値</div></div>
         <div class="kpi"><div class="l">市場の商い</div><div class="v ${flowCls(mk.flow)}">${flowTxt(mk.flow)}</div><div class="s">いつもの何倍か（×1.0＝平常）</div></div>

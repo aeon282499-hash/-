@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "8.1.0",
+  VERSION: "8.2.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
@@ -58,7 +58,7 @@ const ROUTES = [];   // {test:(hash)=>bool, view:(hash)=>html, nav:"live"}
 function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
-  ["ir", "arena", "flow", "shodo", "plan", "data", "calc"].forEach(k => {
+  ["momentum", "shodo", "plan", "calc"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }
@@ -70,7 +70,7 @@ function render() {
     const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
     $("#view").innerHTML = r.fn(h);
   } catch (e) {
-    $("#view").innerHTML = `<div class="card"><b>表示エラー</b><div class="muted" style="font-size:12px;margin-top:6px">${esc(e.message)}</div></div>`;
+    $("#view").innerHTML = `<div class="card"><b>表示エラー</b><div class="muted" style="font-size:16px;margin-top:6px">${esc(e.message)}</div></div>`;
   }
 }
 
@@ -84,7 +84,7 @@ function vnote(one, detail, label = "検証の数字") {
   return `<div class="vnote"><b>${one}</b>${detail ? `<details><summary>${esc(label)}</summary><div class="vbody">${detail}</div></details>` : ""}</div>`;
 }
 function flowSubNav(active) {
-  const t = [["flow", "#/flow", "💴 資金・🔗連動"], ["hot", "#/flow/hot", "🔥 株探の人気テーマ"]];
+  const t = [["shodo", "#/explore", "🚩 初動"], ["flow", "#/flow", "💴 資金・連動"], ["hot", "#/flow/hot", "🔥 人気テーマ"]];   // v8.2: 💴資金・人気テーマは🚩初動の切替に
   return `<div class="seg">${t.map(([k, h, l]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }
 function dataSubNav(active) {

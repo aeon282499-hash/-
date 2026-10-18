@@ -108,8 +108,8 @@ function yearLine(ks) {
   const st = buyStat({ signals: ks }); if (!st) return "";
   const ys = sigYears(st.k); if (!ys) return "";
   const pos = ys.filter(y => y.avg > 0).length;
-  const cells = ys.map(y => `<span class="yrcell ${y.avg > 0 ? "pos" : "neg"}"><b>${y.y}</b>${y.avg > 0 ? "+" : ""}${y.avg}%<span class="muted" style="display:block;font-size:9px">勝率${y.win}%</span></span>`).join("");
-  return `<div class="muted" style="margin-top:9px;font-size:11.5px">📅 年別の実績（この型・保有${st.hold}日/-${st.sl}%）— <b style="color:var(--tx)">${ys.length}年中${pos}年プラス</b>：</div><div class="yrline">${cells}</div>`;
+  const cells = ys.map(y => `<span class="yrcell ${y.avg > 0 ? "pos" : "neg"}"><b>${y.y}</b>${y.avg > 0 ? "+" : ""}${y.avg}%<span class="muted" style="display:block;font-size:11px">勝率${y.win}%</span></span>`).join("");
+  return `<div class="muted" style="margin-top:9px;font-size:13.5px">📅 年別の実績（この型・保有${st.hold}日/-${st.sl}%）— <b style="color:var(--tx)">${ys.length}年中${pos}年プラス</b>：</div><div class="yrline">${cells}</div>`;
 }
 
 // ── ⭐ ウォッチ（localStorage kabuai_watch 継承）──
@@ -128,8 +128,8 @@ function watchSummaryInner() {
   if (!found.length) return `<span class="muted">⭐ ウォッチ ${WATCH.length}件（本日のデータ対象外）</span>`;
   const chips = found.map(r => `<a class="chip${isCand(r) ? " buy" : ""}" href="#/detail/${r.code}">${esc(r.name)} ${isCand(r) ? "✅" : ""}${pctTag(r.r1) ? " " + pctTag(r.r1) : ""}</a>`).join("");
   const n = found.filter(isCand).length;
-  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b><a style="margin-left:auto;color:var(--acc);font-weight:600;font-size:12px" href="#/search">一覧 →</a></div>
-    <div class="muted" style="font-size:12px;margin-bottom:6px">${n ? `<b class="pos">${n}件に参考シグナル点灯</b>` : "本日、参考シグナルの点灯はありません"}</div><div class="chips">${chips}</div>`;
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>⭐ ウォッチ ${found.length}件</b><a style="margin-left:auto;color:var(--acc);font-weight:600;font-size:14px" href="#/search">一覧 →</a></div>
+    <div class="muted" style="font-size:14px;margin-bottom:6px">${n ? `<b class="pos">${n}件に参考シグナル点灯</b>` : "本日、参考シグナルの点灯はありません"}</div><div class="chips">${chips}</div>`;
 }
 
 // ── 📒 持ち株コーチ（localStorage kabuai_pos 継承・出口=保有8日/-12%）──
@@ -176,10 +176,10 @@ function posCoach() {
     else { act = `🟢 ホールド（${day}日目／${PLAN.hold}日・手仕舞いめど ${bizAdd(p.date, PLAN.hold)}）・損切り ¥${slP.toLocaleString()}`; }
     return `<div class="poschip"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
         <a href="#/detail/${p.code}" style="font-weight:800">${esc(p.name || p.code)}</a>
-        <span class="muted" style="font-size:11px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}${p.shares ? `×${p.shares}株` : ""}</span>
-        <span style="margin-left:auto;font-weight:800" class="${pnl != null ? cls(pnl) : ""}">${pnl != null ? fmtPct(pnl) : "—"}${yenV != null ? `<span style="font-size:11px;font-weight:600">（${yenV >= 0 ? "+" : "−"}¥${Math.abs(yenV).toLocaleString()}）</span>` : ""}</span>
+        <span class="muted" style="font-size:13px">${p.code}・${p.date}に¥${(+p.entry).toLocaleString()}${p.shares ? `×${p.shares}株` : ""}</span>
+        <span style="margin-left:auto;font-weight:800" class="${pnl != null ? cls(pnl) : ""}">${pnl != null ? fmtPct(pnl) : "—"}${yenV != null ? `<span style="font-size:13px;font-weight:600">（${yenV >= 0 ? "+" : "−"}¥${Math.abs(yenV).toLocaleString()}）</span>` : ""}</span>
         <button class="posdel" onclick="event.preventDefault();delPos(${i})">売った/削除</button></div>
-      <div class="${actCls}" style="font-size:12.5px;margin-top:4px">${act}</div></div>`;
+      <div class="${actCls}" style="font-size:14.5px;margin-top:4px">${act}</div></div>`;
   }).join("");
   const avg = cnt ? sum / cnt : null;
   const summary = `<div class="possum"><b>保有 ${a.length}件</b>${avg != null ? `<span>平均損益 <b class="${cls(avg)}">${fmtPct(avg)}</b></span>` : ""}

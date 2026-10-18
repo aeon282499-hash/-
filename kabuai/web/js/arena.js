@@ -65,7 +65,7 @@ function bookGroupCard(g, idx, dupNo) {
   const nTxt = g.n_core != null ? `核${g.n_core}本${g.n_core > g.n ? "（上位" + g.n + "本を表示）" : ""}／テーマ内${g.n_theme}本` : `${g.n}本`;
   const head = `<div class="pk-nm" style="margin-bottom:4px"><b>${idx + 1}. ${g.cross ? "🧩 " : ""}${title}</b> <span class="chip">${esc(g.kind)}</span>${(g.alts || []).map(a => `<span class="tag">${esc(a)}</span>`).join("")}
       <small>安定 <b>${Number(g.stab).toFixed(2)}</b>（前半${Number(g.h1).toFixed(2)}・後半${Number(g.h2).toFixed(2)}・全期間${Number(g.corr).toFixed(2)}） ・ ${nTxt} ・ 代金中央${Number(g.tov_med_oku).toFixed(0)}億 ・ 今日<span class="${cls(g.avg_r1)}">${fmtPct(g.avg_r1)}</span> ・ 5日${fmtPct(g.avg_r5)}${g.sectors ? " ・ " + esc(g.sectors) : ""}</small></div>`;
-  const copyBar = `<div class="chips" style="margin:4px 0 2px"><button class="btn sm" onclick="event.preventDefault();bookCopy(this,'${esc(codes)}')">📋 コードをコピー（SBI登録用）</button><span class="muted" style="font-size:11px">${esc(codes)}</span></div>`;
+  const copyBar = `<div class="chips" style="margin:4px 0 2px"><button class="btn sm" onclick="event.preventDefault();bookCopy(this,'${esc(codes)}')">📋 コードをコピー（SBI登録用）</button><span class="muted" style="font-size:13px">${esc(codes)}</span></div>`;
   const row = m => `<div class="uwrow" style="padding:7px 2px"><div class="pk-nm"><b><a href="#/detail/${esc(m.code)}">${esc(m.name)}</a></b>
       <small>${esc(m.code)}${m.sector ? " ・ " + esc(m.sector) : ""} ・ ${yen(m.close)} <span class="${cls(m.r1)}">${fmtPct(m.r1)}</span> ・ 5日${fmtPct(m.r5)} ・ 代金${Number(m.tov_med_oku).toFixed(0)}億 ・ 値幅${Number(m.rng20).toFixed(1)}%${m.shortable ? ` ・ 貸借${esc(m.shortable)}${m.jsf_stop ? "🚫" : ""}` : ""}${m.daily_pub ? " ・ 日々公表" : ""}</small></div>
     <div class="lv"><b>${m.hub != null ? Number(m.hub).toFixed(2) : "—"}</b><small>仲間との<br>平均</small></div></div>`;
@@ -176,7 +176,7 @@ function flowSection() {
 function viewArena() {   // v8: ホームは 上髭・土俵・材料・決算 だけ。📰IR / 💴資金 / 🚩初動 は独立タブ（本人「タブ増やす」2026-10-17）
   const prep = (typeof planNewsSection === "function" ? planNewsSection() : "") + (typeof planEarnSection === "function" ? planEarnSection() : "");
   return `<h2>🌙 前夜の準備 <span class="sub">EOD ${esc(DATA.data_date || "")}・${esc(freshnessText())}</span></h2>
-    ${whenBar("🌙", "夕方のビルド後に", "上髭逆指値 → 土俵 → 材料・決算。IR は📰、資金と連動は💴、初動ブレイクは🚩のタブ。")}
+    ${whenBar("🌙", "夕方のビルド後に", "上髭逆指値 → 土俵 → 材料・決算（v8.2でタブからは外した画面・#/arena）。")}
     ${uwickSection()}
     ${arenaSection()}
     ${prep}

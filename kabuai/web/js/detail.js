@@ -27,7 +27,7 @@ function shortCardFor(code) {
   const word = r.jsf_stop ? "制度信用の新規売りが止まっている銘柄。個人は普通には空売りできない（SBI一日信用HYPER/一般信用の在庫なら売れることがある）。"
     : r.shortable === true ? "制度信用で空売りできる銘柄。" : r.shortable === false ? "信用買いだけの銘柄（制度信用の空売りは不可）。" : "";
   const heavy = momHeavy(r) ? " 売残が重い＝上がると売り方の買い戻しが乗る（踏み上げの燃料）。売り方は逆日歩に注意。" : "";
-  return `<div class="card ${momHeavy(r) ? "shortsum" : ""}"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🩳 空売りの状況</b>${r.margin_date ? `<span class="muted" style="font-size:11.5px">残高は ${esc(r.margin_date)} 時点（週次・金曜分）</span>` : ""}</div>
+  return `<div class="card ${momHeavy(r) ? "shortsum" : ""}"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🩳 空売りの状況</b>${r.margin_date ? `<span class="muted" style="font-size:13.5px">残高は ${esc(r.margin_date)} 時点（週次・金曜分）</span>` : ""}</div>
     ${badges ? `<div class="sbadges" style="margin-top:6px">${badges}</div>` : ""}${meter}
     <div class="note" style="margin-top:6px">${esc(word)}${esc(heavy)}${r.short_vol != null && r.long_vol != null ? ` 売残${fmtKabu(r.short_vol)}／買残${fmtKabu(r.long_vol)}。` : ""}</div></div>`;
 }
@@ -37,7 +37,7 @@ function liveNow(code) {
   const m = (typeof LIVE !== "undefined" && LIVE && LIVE.stocks) ? LIVE.stocks[code] : null;
   if (!m) return "";
   const themes = (L_THEME_OF[code] || []).map(t => `<span class="chip acc">${esc(t)}</span>`).join("");
-  return `<div class="card danger"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🔥 いま</b><span class="muted" style="font-size:11.5px">${esc(LIVE.hhmm || "")} ${esc(LIVE_STATE[LIVE.state] || "")}・取引所リアルタイム</span></div>
+  return `<div class="card danger"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🔥 いま</b><span class="muted" style="font-size:13.5px">${esc(LIVE.hhmm || "")} ${esc(LIVE_STATE[LIVE.state] || "")}・取引所リアルタイム</span></div>
     <div class="kpis">
       <div class="kpi"><div class="l">現在値</div><div class="v">${m.last != null ? yen(m.last) : "—"}</div><div class="s ${cls(m.chg)}">${fmtPct1(m.chg)} 本日</div></div>
       <div class="kpi"><div class="l">5分の値動き</div><div class="v ${cls(m.d5)}">${m.d5 == null ? "—" : fmtPct1(m.d5)}</div><div class="s">${m.hi ? "🔺 高値更新中" : ""}</div></div>
@@ -48,11 +48,11 @@ function liveNow(code) {
 function exitGuide(ks, fut) {
   const st = buyStat({ signals: ks }); if (!st) return "";
   const ftNote = fut && fut.tag === "高連動"
-    ? `<div class="warn" style="font-size:12px;margin-top:6px">⚠ <b>${ftagPct(fut.corr) || "日経連動 高"}（高連動）</b>: 日経先物と一緒に振られやすく、型が壊れやすい銘柄。</div>`
-    : (fut && fut.tag === "自力" ? `<div class="pos" style="font-size:12px;margin-top:6px">🟢 <b>${ftagPct(fut.corr) || "日経連動 低"}（自力）</b>: 日経に振られにくく、自分の需給で動くタイプ。</div>` : "");
+    ? `<div class="warn" style="font-size:14px;margin-top:6px">⚠ <b>${ftagPct(fut.corr) || "日経連動 高"}（高連動）</b>: 日経先物と一緒に振られやすく、型が壊れやすい銘柄。</div>`
+    : (fut && fut.tag === "自力" ? `<div class="pos" style="font-size:14px;margin-top:6px">🟢 <b>${ftagPct(fut.corr) || "日経連動 低"}（自力）</b>: 日経に振られにくく、自分の需給で動くタイプ。</div>` : "");
   return `<div class="card exitcard"><div style="font-weight:800">🚪 買いの目安（期待値・出口） <span class="muted" style="font-weight:400">（✅${esc(st.emoji)}${esc(st.label)}）</span></div>
-    <div style="margin-top:6px"><span class="${st.ev >= 0 ? "pos" : "neg"}" style="font-size:18px;font-weight:800">期待値 ${st.ev >= 0 ? "+" : ""}${st.ev}%</span><span class="muted" style="font-size:11px">/件（出口ルール込みの過去平均）</span></div>
-    <div style="margin-top:4px;font-size:13px"><b>保有${st.hold}日めど</b>・<b>損切り-${st.sl}%</b>・利確なし・勝率${st.win}%</div>
+    <div style="margin-top:6px"><span class="${st.ev >= 0 ? "pos" : "neg"}" style="font-size:18px;font-weight:800">期待値 ${st.ev >= 0 ? "+" : ""}${st.ev}%</span><span class="muted" style="font-size:13px">/件（出口ルール込みの過去平均）</span></div>
+    <div style="margin-top:4px;font-size:15px"><b>保有${st.hold}日めど</b>・<b>損切り-${st.sl}%</b>・利確なし・勝率${st.win}%</div>
     ${yearLine(ks)}${ftNote}
     <div class="note" style="margin-top:6px">※次の寄り付きでのエントリー想定。固定ルールの過去シミュレーション（手数料等未考慮）で将来を保証しません。</div></div>`;
 }
@@ -65,7 +65,7 @@ function renderDetail(s) {
       <div style="display:flex;align-items:center;gap:10px">
         ${star(s.code)}
         <div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:800">${esc(s.name)}</div>
-          <div class="pchip muted" style="font-size:12px">${s.code}${i.sector ? " ・ " + esc(i.sector) : ""} ・ ${yen(i.price)} ${pctTag(i.r1)}</div></div>
+          <div class="pchip muted" style="font-size:14px">${s.code}${i.sector ? " ・ " + esc(i.sector) : ""} ・ ${yen(i.price)} ${pctTag(i.r1)}</div></div>
         <div>${ftagChip(futRow)}</div></div>
       ${planBannerFor(s.code)}
       ${sigChips({ signals: s.signals, futures_tag: null }) || `<div class="nosig">本日、参考シグナルの点灯はありません</div>`}
@@ -132,7 +132,7 @@ async function loadSearch() {
 function searchCard(r) {
   const lv = (typeof LIVE !== "undefined" && LIVE && LIVE.stocks) ? LIVE.stocks[r.code] : null;
   return `<a class="rcard" href="#/detail/${r.code}"><div class="top">${star(r.code)}
-      <div style="flex:1;min-width:0"><div><b>${esc(r.name)}</b>${r.illiq ? ` <span class="tag warn" style="border-color:var(--wa);font-size:10px">⚠️低流動</span>` : ""}</div>
+      <div style="flex:1;min-width:0"><div><b>${esc(r.name)}</b>${r.illiq ? ` <span class="tag warn" style="border-color:var(--wa);font-size:12px">⚠️低流動</span>` : ""}</div>
         <div class="pchip">${r.code}${r.sector ? " ・ " + esc(r.sector) : ""} ・ ${yen(r.price)} ${pctTag(r.r1)}</div></div>
       ${lv ? `<div class="pk-ev"><span class="${cls(lv.chg)}">${fmtPct1(lv.chg)}</span><small>🔥いま ${flowTxt(lv.flow5)}</small></div>` : ""}</div>
       ${planLine(r)}
@@ -174,8 +174,8 @@ function viewSearch() {
 function planBannerFor(code) {
   const p = DATA && DATA.plan; if (!p) return "";
   const o = (p.orders || []).find(x => x.code === code), h = (p.holdings || []).find(x => x.code === code), pp = (p.paper || []).find(x => x.code === code);
-  if (o) return `<div class="banner dn" style="margin:8px 0"><b>📋 今日の作戦: ${esc(o.system)} ${esc(o.side)} ${esc(o.size)}</b><br><span style="font-size:12.5px">${esc(o.order)}</span>${o.warn ? `<br><span style="font-size:12px">${esc(o.warn)}</span>` : ""}</div>`;
-  if (h) return `<div class="banner dn" style="margin:8px 0"><b>📦 保有中: ${esc(h.system)} ${esc(h.side)} ${esc(h.size)}・建値 ${yen(h.entry_open)}（${h.hold_days != null ? h.hold_days + "日目" : ""}）</b><br><span style="font-size:12.5px">${h.exit_today ? "今日が出口日＝大引け成行" : "出口 " + esc(h.exit_date || "") + "（3営業日目の大引け）"}／${esc(h.rule)}</span></div>`;
+  if (o) return `<div class="banner dn" style="margin:8px 0"><b>📋 今日の作戦: ${esc(o.system)} ${esc(o.side)} ${esc(o.size)}</b><br><span style="font-size:14.5px">${esc(o.order)}</span>${o.warn ? `<br><span style="font-size:14px">${esc(o.warn)}</span>` : ""}</div>`;
+  if (h) return `<div class="banner dn" style="margin:8px 0"><b>📦 保有中: ${esc(h.system)} ${esc(h.side)} ${esc(h.size)}・建値 ${yen(h.entry_open)}（${h.hold_days != null ? h.hold_days + "日目" : ""}）</b><br><span style="font-size:14.5px">${h.exit_today ? "今日が出口日＝大引け成行" : "出口 " + esc(h.exit_date || "") + "（3営業日目の大引け）"}／${esc(h.rule)}</span></div>`;
   if (pp) return `<div class="banner info" style="margin:8px 0"><b>📝 紙の対照: ${esc(pp.system)}</b> … ${esc(pp.size)}</div>`;
   return "";
 }

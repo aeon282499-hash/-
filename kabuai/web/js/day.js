@@ -88,7 +88,7 @@ function stopBanner(f) {
 function noData() {
   if (!LIVE) return `<div class="empty">${esc(LIVE_ERR || "読み込み中…")}</div>`;
   const d = String(LIVE.ts || "").slice(0, 10);
-  return `<div class="banner warn">10月ルールの候補データがまだありません。<br><span class="muted" style="font-size:14px">PCの監視（FiboDaytrade）が動くと、平日9時台から出ます。最後の配信: ${esc(d)} ${esc(LIVE.hhmm || "")}</span></div>`;
+  return `<div class="banner warn">10月ルールの候補データがまだありません。<br><span class="muted" style="font-size:16px">PCの監視（FiboDaytrade）が動くと、平日9時台から出ます。最後の配信: ${esc(d)} ${esc(LIVE.hhmm || "")}</span></div>`;
 }
 
 // ── 📐 候補 ──
@@ -144,7 +144,7 @@ function viewCands() {
   return `<h1>📐 候補<small>${esc(String(f.ts || "").slice(5, 10))} ・ 並び＝重なり→窓2%未満</small></h1>
     ${old ? `<div class="banner warn">これは ${esc(String(f.ts || "").slice(0, 10))} の結果です（今日の分はまだ）。</div>` : ""}
     ${stopBanner(f)}
-    ${active.length ? active.map(c => card(c, f)).join("") : `<div class="empty">いま狙える候補はありません。<br><span style="font-size:14px">朝の波の高値が決まると出ます（11:00まで）。</span></div>`}
+    ${active.length ? active.map(c => card(c, f)).join("") : `<div class="empty">いま狙える候補はありません。<br><span style="font-size:16px">朝の波の高値が決まると出ます（11:00まで）。</span></div>`}
     ${done.length ? `<div class="sec">決済した候補（${done.length}）</div>${done.map(c => card(c, f)).join("")}` : ""}
     ${ended.length ? `<button class="toggle" onclick="toggleEnded()">${SHOW_ENDED ? "▲ 見送り・終了を隠す" : `▼ 見送り・終了も見る（${ended.length}）`}</button>${SHOW_ENDED ? ended.map(c => card(c, f)).join("") : ""}` : ""}
     <div class="note">カードを押すと 起点・高値 を表示。<b>発注はしません（候補の提示だけ）</b>。38.2%の指値は1回だけ・ナンピンなし。約定から30分で撤退、11:30で全部決済。</div>`;
@@ -193,7 +193,7 @@ function viewPaper() {
   const used = Math.min(100, Math.max(0, (p.pnl_yen < 0 ? -p.pnl_yen : 0) / Math.abs(lim.pnl_yen || -40000) * 100));
   const byTp = p.pnl_by_tp || {};
   return `<h1>📊 今日の紙トレード<small>本線 +${esc(main)}% ・ ${esc(String(f.ts || "").slice(5, 16))}</small></h1>
-    ${p.stopped ? stopBanner(f) : `<div class="banner ok"><b>▶ 続行できる</b><br><span style="font-size:15px">止まる条件: −4万円 ／ 2連敗 ／ 8回</span></div>`}
+    ${p.stopped ? stopBanner(f) : `<div class="banner ok"><b>▶ 続行できる</b><br><span style="font-size:17px">止まる条件: −4万円 ／ 2連敗 ／ 8回</span></div>`}
     <div class="kpi num">
       <div><small>損益（本線）</small><b class="${cls(p.pnl_yen)}">${sYen(p.pnl_yen)}</b><div class="bar"><i style="width:${used.toFixed(0)}%"></i></div><span class="lim">−4万円で停止</span></div>
       <div><small>回数</small><b>${p.trades || 0}<span class="lim"> / ${lim.trades || 8}回</span></b></div>
@@ -262,7 +262,7 @@ function o5Card(r, i) {
 function o5PaperBar() {
   const o = O5L(); if (!o) return "";
   const p = o.paper || {};
-  return `<div class="banner ${p.stopped ? "stop" : "ok"}" style="font-size:15px"><b>${p.stopped ? "⛔ " + esc(p.stop_reason) : "▶ 場中ライン稼働中"}</b>
+  return `<div class="banner ${p.stopped ? "stop" : "ok"}" style="font-size:17px"><b>${p.stopped ? "⛔ " + esc(p.stop_reason) : "▶ 場中ライン稼働中"}</b>
     <br>紙トレード ${p.trades || 0}回（${p.wins || 0}勝${p.losses || 0}敗） <b class="${cls(p.pnl_yen)}">${sYen(p.pnl_yen)}</b> ・ ${esc(String(o.ts || "").slice(11, 16))}更新 ・ ${esc((o.rules || {}).stop || "")}</div>`;
 }
 let O5SORT = "r5";          // 並べ替え: r5=5日騰落の深い順 / mcap=時価総額の大きい順 / tov=20日代金の多い順（10/8 本人「時価総額の列足して」）
@@ -288,7 +288,7 @@ function viewOshime5() {
   return `<h1>✂️ 上ヒゲ刈り取り候補<small>${esc(String(O5.target_date || "").slice(5))} 分 ・ ${esc(String(O5.date || "").slice(5))} 引けで選んだ${(O5.rows || []).length}本</small></h1>
     ${old ? `<div class="banner warn">これは ${esc(O5.target_date || "")} 分の候補です（次の分は夜19時ごろ）。</div>` : ""}
     <div class="note" style="margin-bottom:10px"><b>入る</b>: ${esc(O5.entry || "")}<br><b>出る</b>: ${esc(O5.exit || "")}</div>
-    <div class="banner warn" style="font-size:15px">⛔ ${(O5.skip_rules || []).map(esc).join("<br>⛔ ")}</div>
+    <div class="banner warn" style="font-size:17px">⛔ ${(O5.skip_rules || []).map(esc).join("<br>⛔ ")}</div>
     ${o5PaperBar()}
     ${o5SortBar()}
     ${o5Order(O5.rows || []).map(([r, i]) => o5Card(r, i)).join("")}
@@ -306,7 +306,7 @@ const ceilTick = (v, t) => Math.round(Math.ceil(v / t - 1e-9) * t * 10) / 10;
 const floorTick = (v, t) => Math.round(Math.floor(v / t + 1e-9) * t * 10) / 10;
 function calcOut() {
   const px = Number(CALC.px), t500 = CALC.t500, short = CALC.side === "sell";
-  if (!(px > 0)) return `<div class="empty" style="font-size:15px">${short ? "売値" : "買値"}を入れると、利確・損切りの値段と株数が出ます。</div>`;
+  if (!(px > 0)) return `<div class="empty" style="font-size:17px">${short ? "売値" : "買値"}を入れると、利確・損切りの値段と株数が出ます。</div>`;
   const t = tickOf(px, t500);
   // 買い: 利確は上(+tp%)・損切りは下(−sl%)、呼値へ切り上げ。空売り: 利確は下(−tp%)・損切りは上(+sl%)、呼値へ切り下げ（どちらも「約束の%より不利にならない」側へ丸める）
   const tpRaw = short ? px * (1 - CALC.tp / 100) : px * (1 + CALC.tp / 100), slRaw = short ? px * (1 + CALC.sl / 100) : px * (1 - CALC.sl / 100);
@@ -336,7 +336,7 @@ function viewCalc() {
   const picks = ((O5 && O5.rows) || []).map(r => `<a class="tag pri" style="cursor:pointer;margin:0 6px 6px 0;display:inline-block" onclick="calcPick('${esc(r.code)}')">${esc(r.name)}</a>`).join("");
   const inp = "width:100%;font-size:22px;padding:10px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--sf2);color:var(--tx);box-sizing:border-box";
   const short = CALC.side === "sell";
-  const sideBtn = (k, label) => `<a class="tag ${CALC.side === k ? "pri" : ""}" style="cursor:pointer;display:inline-block;padding:8px 16px;font-size:16px;margin-right:8px" onclick="calcSet('side','${k}')">${label}</a>`;
+  const sideBtn = (k, label) => `<a class="tag ${CALC.side === k ? "pri" : ""}" style="cursor:pointer;display:inline-block;padding:8px 16px;font-size:18px;margin-right:8px" onclick="calcSet('side','${k}')">${label}</a>`;
   return `<h1>🧮 電卓<small>${short ? `空売り：利確−${CALC.tp}%・損切り+${CALC.sl}%` : `買い：利確+${CALC.tp}%・損切り−${CALC.sl}%`}</small></h1>
     <div class="cd">
       <div style="margin-bottom:10px">${sideBtn("buy", "📈 買い")}${sideBtn("sell", "🩳 空売り")}</div>
@@ -344,7 +344,7 @@ function viewCalc() {
       <input type="number" inputmode="decimal" step="0.1" value="${esc(CALC.px)}" oninput="calcSet('px', this.value)" style="${inp}" placeholder="例 3057">
       <label style="display:block;font-weight:800;margin:10px 0 4px">株数（空なら損失2万円で自動）</label>
       <input type="number" inputmode="numeric" step="100" value="${esc(CALC.sh)}" oninput="calcSet('sh', this.value)" style="${inp}" placeholder="自動">
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:15px"><input type="checkbox" ${CALC.t500 ? "checked" : ""} onchange="calcSet('t500', this.checked)"> TOPIX500の銘柄（呼値が細かい）</label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:17px"><input type="checkbox" ${CALC.t500 ? "checked" : ""} onchange="calcSet('t500', this.checked)"> TOPIX500の銘柄（呼値が細かい）</label>
     </div>
     <div class="cd" id="calc-out">${calcOut()}</div>
     ${picks ? `<div class="sec">✂️上ヒゲの候補から入れる</div><div>${picks}</div>` : ""}

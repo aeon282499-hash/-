@@ -28,7 +28,7 @@ const calcYen = v => (v == null || isNaN(v)) ? "—" : (v > 0 ? "+" : v < 0 ? "�
 const CALC_TPS = [1.5, 3, 5], CALC_SLS = [1, 2, 3];
 function calcOut() {
   const px = Number(CALC.px), t500 = CALC.t500, short = CALC.side === "sell";
-  if (!(px > 0)) return `<div class="empty" style="font-size:14px">${short ? "売値" : "買値"}を入れると、利確・損切りの値段と株数が出ます。</div>`;
+  if (!(px > 0)) return `<div class="empty" style="font-size:16px">${short ? "売値" : "買値"}を入れると、利確・損切りの値段と株数が出ます。</div>`;
   const slSel = CALC_SLS.includes(Number(CALC.sl)) ? Number(CALC.sl) : 3;
   const base = calcLevels(px, CALC.side, t500, CALC.tp, slSel);
   const sh = Number(CALC.sh) > 0 ? Math.floor(Number(CALC.sh)) : base.auto;
@@ -67,7 +67,7 @@ function viewCalc() {
       <input type="number" inputmode="decimal" step="0.1" value="${esc(CALC.px)}" oninput="calcSet('px', this.value)" class="calc-in" placeholder="例 3057">
       <label style="display:block;font-weight:800;margin:10px 0 4px">株数（空なら損失2万円で自動）</label>
       <input type="number" inputmode="numeric" step="100" value="${esc(CALC.sh)}" oninput="calcSet('sh', this.value)" class="calc-in" placeholder="自動">
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px"><input type="checkbox" ${CALC.t500 ? "checked" : ""} onchange="calcSet('t500', this.checked)"> TOPIX500の銘柄（呼値が細かい）</label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:16px"><input type="checkbox" ${CALC.t500 ? "checked" : ""} onchange="calcSet('t500', this.checked)"> TOPIX500の銘柄（呼値が細かい）</label>
     </div>
     <div class="card" id="calc-out">${calcOut()}</div>
     <div class="note">計算だけです。発注はしません。</div>

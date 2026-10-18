@@ -35,7 +35,7 @@ function irRow(r) {
     <div class="irtitle">${r.pdf ? `<a href="${esc(r.pdf)}" target="_blank" rel="noopener">${esc(r.title)} 📄</a>` : esc(r.title)}</div>
     <div class="chips">${src}${ruleDiff}${tags}</div>
     ${f.reason ? `<div class="note">${esc(f.reason)}${r.llm && r.llm.facts ? `<br><span class="muted">${esc(r.llm.facts)}</span>` : ""}</div>` : ""}
-    <div class="cd-line num" style="font-size:13px">${irReact(r)}</div>
+    <div class="cd-line num" style="font-size:15px">${irReact(r)}</div>
   </div>`;
 }
 function irStatLine(lab, s) {
@@ -147,7 +147,7 @@ function irSearchResults() {
       <div class="irhead"><small>${esc(r.date)} ${esc(r.time)}</small> <a href="#/detail/${esc(r.code)}"><b>${esc(r.name)}</b></a> <small>${esc(r.code)}</small> ${irBadge({ label: r.label, score: r.score })} ${tags}</div>
       <div class="irtitle">${r.pdf ? `<a href="${esc(r.pdf)}" target="_blank" rel="noopener">${esc(r.title)} 📄</a>` : esc(r.title)}</div>
       ${snip ? `<div class="note irsnip">${snip}</div>` : (r.t ? "" : `<div class="note muted">本文は未取得（表題・社名で一致）</div>`)}
-      <div class="cd-line num" style="font-size:13px">${irReact(r)}</div>
+      <div class="cd-line num" style="font-size:15px">${irReact(r)}</div>
     </div>`;
   }).join("");
   const more = hits.length > 150 ? `<div class="note">…ほか ${hits.length - 150}件（語を足して絞る）</div>` : "";
@@ -160,10 +160,10 @@ function irSearchBox() {
   let chips;
   if (hot) {   // 株探 人気テーマ【ベスト30】（PCから取得・3日間のアクセス順）
     const ts = hot.themes.slice(0, IR_HOT_ALL ? 30 : 12);
-    chips = `<span class="muted" style="font-size:11px">株探 人気テーマ（${esc(hot.period || "3日間")}・${esc((hot.page_time || hot.fetched_at || "").slice(5))}）:</span>` + ts.map(t => irChip(t.name, `<small class="muted">${t.rank}</small> `)).join("")
+    chips = `<span class="muted" style="font-size:13px">株探 人気テーマ（${esc(hot.period || "3日間")}・${esc((hot.page_time || hot.fetched_at || "").slice(5))}）:</span>` + ts.map(t => irChip(t.name, `<small class="muted">${t.rank}</small> `)).join("")
       + (hot.themes.length > 12 ? `<span class="chip" style="cursor:pointer" onclick="irHotToggle()">${IR_HOT_ALL ? "上位12に戻す" : `＋${hot.themes.length - 12}`}</span>` : "");
   } else {
-    chips = `<span class="muted" style="font-size:11px">例:</span>` + IR_EXAMPLES.map(k => irChip(k)).join("") + `<span class="muted" style="font-size:11px">（株探の人気テーマは PC の kabutan_hot_pc.py が置くと出る）</span>`;
+    chips = `<span class="muted" style="font-size:13px">例:</span>` + IR_EXAMPLES.map(k => irChip(k)).join("") + `<span class="muted" style="font-size:13px">（株探の人気テーマは PC の kabutan_hot_pc.py が置くと出る）</span>`;
   }
   return `<div class="card" style="margin-bottom:8px">
     <input id="irq" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="🔍 開示を検索：社名・コード・表題・本文（PDF冒頭）" value="${esc(IR_Q)}" oninput="irSearch(this.value)">
