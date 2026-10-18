@@ -54,7 +54,7 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 13, `${ev("ROUTES.length")}本`);
+check("ROUTES登録", ev("ROUTES.length") === 14, `${ev("ROUTES.length")}本`);
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
@@ -251,7 +251,7 @@ for (const c of codes) {
 hv = go("#/about"); check("使い方 v8.2", clean(hv) && hv.includes("v8.2") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは4本（ランキング/初動/作戦/電卓）v8.2", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 4 && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+check("ナビは5本（ランキング/初動/作戦/電卓/AI調教）v8.3", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 5 && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
 hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
 hv = go("#/explore"); check("🚩初動に 資金・連動/人気テーマ の切替 v8.2", hv.includes("💴 資金・連動") && hv.includes("🔥 人気テーマ"));
 hv = go("#/ir"); check("📰IRタブ", clean(hv) && hv.includes("IRの好材料・悪材料") && !hv.includes("上髭逆指値"));
@@ -261,5 +261,14 @@ hv = go("#/arena"); check("ホームに IR と資金が無い（別タブ）", c
 check("検証の数字は折りたたみ", hv.includes('class="vnote"') && hv.includes("<summary>検証の数字</summary>") && !hv.includes('class="banner info"><b>勝てる'));
 check("live.js を読み込まない", !srcs.includes("js/live.js") && srcs.includes("js/calc.js"));
 check("旧画面残置", fs.existsSync("web/legacy_v5.html") && fs.existsSync("web/legacy_v6.html") && fs.existsSync("web/js/day.js") && fs.existsSync("web/js/live.js"));
+console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
+{ hv = go("#/coach"); check("AI調教: 空で描画", clean(hv) && hv.includes("AI調教") && hv.includes("人格をコピー") && hv.includes("sk-ant-") && !hv.includes(">🤖 Claude に聞く<"));
+  const c0 = DATA.ranking[0].code; sandbox.coachPick(c0); hv = $get("#coach-stock").innerHTML; check("AI調教: 銘柄を選ぶ→事実カード", clean(hv) && hv.includes("解剖プロンプトをコピー") && hv.includes(DATA.ranking[0].name));
+  const p = ev(`coachStockPrompt("${c0}")`); check("AI調教: 解剖プロンプト（人格＋数字＋問い）", p.includes("前提ペルソナ") && p.includes("【値動き】") && p.includes("【需給】") && p.includes("【あなたへの問い】") && !p.includes("undefined") && !p.includes("NaN"), `${p.length}字`);
+  sandbox.coachSet("words", "ここまで下げたからそろそろ戻るはず。決算まで持てばナンピンでも取り返せる"); hv = $get("#coach-excuse").innerHTML; check("AI調教: 言い訳チェッカー4型", (hv.match(/🔪/g) || []).length === 4);
+  sandbox.coachSet("words", ""); sandbox.coachPick("0000"); hv = $get("#coach-stock").innerHTML; check("AI調教: 無いコード", clean(hv) && hv.includes("データに無い"));
+  sandbox.coachSetKey("sk-ant-test-1234567890"); sandbox.coachPick(c0); sandbox.render(); hv = view(); check("AI調教: 鍵あり→Claudeに聞くボタン", clean(hv) && hv.includes(">🤖 Claude に聞く<") && hv.includes("保存済み")); sandbox.coachSetKey("");
+  hv = go(`#/coach/${c0}`); check("AI調教: #/coach/<code> で直接開く", clean(hv) && hv.includes(DATA.ranking[0].name));
+  go(`#/detail/${c0}`); await sandbox.loadStockDetail(c0); check("詳細→🧠AI調教リンク", $get("#dbody").innerHTML.includes(`#/coach/${c0}`)); }
 console.log(fail ? `\n${fail} 件 NG` : "\nALL GREEN");
 process.exit(fail ? 1 : 0);

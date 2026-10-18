@@ -11,6 +11,7 @@ route("#/momentum", "momentum", viewMomentum);   // v8.2: 🐵ランキングは
 route("#/explore/", "shodo", h => viewExploreList(decodeURIComponent(h.split("/")[2])));
 route("#/explore", "shodo", viewExplore);   // v8: 🚩初動（探検）は独立タブ
 route("#/calc", "calc", viewCalc);
+route("#/coach", "coach", viewCoach);   // v8.3: 🧠AI調教（人格プロンプト・銘柄の解剖・言い訳チェッカー・任意でClaude直接）
 route("#/about", "arena", viewAbout);
 route("#/arena", "arena", viewArena);
 route("#/", "momentum", viewMomentum);   // v8.2: ホーム＝🐵ランキング（本人「あれ一番欲しい」「前夜いらない」）。🌙前夜は #/arena に残置（タブなし）

@@ -68,6 +68,7 @@ function renderDetail(s) {
           <div class="pchip muted" style="font-size:14px">${s.code}${i.sector ? " ・ " + esc(i.sector) : ""} ・ ${yen(i.price)} ${pctTag(i.r1)}</div></div>
         <div>${ftagChip(futRow)}</div></div>
       ${planBannerFor(s.code)}
+      <div class="note" style="margin:4px 0 2px"><a href="#/coach/${esc(s.code)}">🧠 AI調教に解剖させる →</a></div>
       ${sigChips({ signals: s.signals, futures_tag: null }) || `<div class="nosig">本日、参考シグナルの点灯はありません</div>`}
       <div class="ret3">
         <div class="b"><div class="l">前日比</div><div class="v ${cls(i.r1)}">${fmtPct(i.r1)}</div></div>

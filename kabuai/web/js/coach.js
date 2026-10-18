@@ -144,7 +144,7 @@ function coachOutHtml() {
   if (COACH.busy) return `<div class="note">🤖 Claude が解剖中…（30秒〜2分）</div>`;
   if (COACH.err) return `<div class="warn" style="font-size:12.5px">⚠ ${esc(COACH.err)}</div>`;
   if (!COACH.out) return "";
-  return `<div class="card accent"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🤖 Claude の解剖</b><span class="muted" style="font-size:11px">${esc(COACH.usage || "")}</span></div>
+  return `<div class="card accent"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🤖 Claude の解剖</b><span class="muted" style="font-size:12px">${esc(COACH.usage || "")}</span></div>
     <div style="white-space:pre-wrap;font-size:13px;line-height:1.75;margin-top:8px">${esc(COACH.out)}</div>
     <div class="note" style="margin-top:8px">AIの断言をそのまま判断にしない。情報源・数字の時点・反対シナリオを自分で確認する。</div></div>`;
 }
@@ -161,7 +161,7 @@ function coachStockHtml() {
     <div class="note" style="margin-top:6px">終値 <b>${yen(r.price)}</b> ・ 5日 ${fmtPct1(r.r5)} ・ 1ヶ月 ${fmtPct1(r.r20)} ・ RSI ${coachN(r.rsi, 0)} ・ 出来高 ${r.vol_x != null ? coachN(r.vol_x, 1) + "倍" : "—"} ・ 代金 ${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ シグナル ${f.sig.length ? esc(f.sig.join("/")) : "なし"} ・ IR ${f.irRows.length}件 ・ 資金 ${f.groups.length ? esc(f.groups.join("/")) : "なし"}</div>
     <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyStock(this)">📋 解剖プロンプトをコピー</button>
       ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk()" ${COACH.busy ? "disabled" : ""}>🤖 Claude に聞く</button>` : `<span class="note">🔑 鍵を入れると、ここで Claude に聞ける</span>`}</div>
-    <details class="note" style="margin-top:6px"><summary style="cursor:pointer">貼る文面を見る（人格＋この銘柄の数字＋言い分＋問い）</summary><pre style="white-space:pre-wrap;font-size:11px;line-height:1.6;margin:6px 0 0">${esc(coachStockPrompt(code))}</pre></details>
+    <details class="note" style="margin-top:6px"><summary style="cursor:pointer">貼る文面を見る（人格＋この銘柄の数字＋言い分＋問い）</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.6;margin:6px 0 0">${esc(coachStockPrompt(code))}</pre></details>
     <div id="coach-out" style="margin-top:8px">${coachOutHtml()}</div>`;
 }
 function coachPickChips() {
@@ -207,4 +207,3 @@ function viewCoach(h) {
     <div class="note">ここは考える道具。発注はしない。AIが「買え」と言っても、数字の時点と反対シナリオを見てから自分で決める。</div>
     <p class="disc">${esc(DATA.disclaimer || "")}</p>`;
 }
-route("#/coach", "coach", viewCoach);
