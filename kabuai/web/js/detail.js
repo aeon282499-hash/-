@@ -19,6 +19,18 @@ async function loadStockDetail(code) {
   const lastC = (ch && ch.c && ch.c.length) ? ch.c[ch.c.length - 1] : ((s.indicators || {}).price || 0);
   drawCandle(ch, (isCand({ signals: s.signals }) && lastC > 0) ? { stop: lastC * (1 - PLAN.sl / 100) } : null);
 }
+// v8.1 🩳空売りの状況（売り印＋週次の売残）。🐵ランキング上位にある銘柄だけ出せる（latest.json の行に持たせている）
+function shortCardFor(code) {
+  const r = (DATA.ranking || []).find(x => x.code === code);
+  if (!r || (r.shortable == null && r.short_vol == null && !r.jsf_stop)) return "";
+  const badges = momShortBadges(r), meter = momShortMeter(r);
+  const word = r.jsf_stop ? "制度信用の新規売りが止まっている銘柄。個人は普通には空売りできない（SBI一日信用HYPER/一般信用の在庫なら売れることがある）。"
+    : r.shortable === true ? "制度信用で空売りできる銘柄。" : r.shortable === false ? "信用買いだけの銘柄（制度信用の空売りは不可）。" : "";
+  const heavy = momHeavy(r) ? " 売残が重い＝上がると売り方の買い戻しが乗る（踏み上げの燃料）。売り方は逆日歩に注意。" : "";
+  return `<div class="card ${momHeavy(r) ? "shortsum" : ""}"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🩳 空売りの状況</b>${r.margin_date ? `<span class="muted" style="font-size:11.5px">残高は ${esc(r.margin_date)} 時点（週次・金曜分）</span>` : ""}</div>
+    ${badges ? `<div class="sbadges" style="margin-top:6px">${badges}</div>` : ""}${meter}
+    <div class="note" style="margin-top:6px">${esc(word)}${esc(heavy)}${r.short_vol != null && r.long_vol != null ? ` 売残${fmtKabu(r.short_vol)}／買残${fmtKabu(r.long_vol)}。` : ""}</div></div>`;
+}
 function findStock(code) { return (DATA.ranking || []).find(r => r.code === code) || (SEARCH && SEARCH.find(r => r.code === code)) || undefined; }
 // 🔥ライブに載っていれば「いま」を出す（流動性上位・テーマ構成・土俵・上位リストの銘柄だけ）
 function liveNow(code) {
@@ -64,6 +76,7 @@ function renderDetail(s) {
         <div class="b"><div class="l">1ヶ月</div><div class="v ${cls(i.r20)}">${fmtPct(i.r20)}</div></div></div>
       <div class="note" style="margin-top:6px">EOD: <b>${DATA.data_date || "最新"} の終値</b>時点（場中は変わりません）。</div>
     </div>
+    ${shortCardFor(s.code)}
     ${liveNow(s.code)}
     ${exitGuide(s.signals, fut)}
     ${posForm(s.code, s.name, i.price)}

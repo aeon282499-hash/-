@@ -280,3 +280,27 @@ nav a .i{font-size:17px}
 .vnote summary{display:inline;cursor:pointer;color:var(--acc);font-size:11px;margin-left:6px}
 .vnote .vbody{display:block;margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--sf2);border:1px solid var(--ln);font-size:11.5px;color:var(--mut)}
 .vnote .vbody b{color:var(--tx)}
+
+/* v8.1 売り印（大きい札）と空売り残高ゲージ（本人「売り禁マークと空売り残高多いやつをわかりやすく」2026-10-18） */
+.sbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.sbadge{display:inline-block;font-size:12px;font-weight:800;line-height:1.35;padding:3px 9px;border-radius:7px;border:1.5px solid var(--ln);background:var(--sf2);color:var(--tx2);white-space:nowrap;text-decoration:none}
+.sbadge.dn{color:#fff;background:var(--dn);border-color:var(--dn)}
+.sbadge.up{color:var(--up);background:var(--up-bg);border-color:rgba(43,212,126,.6)}
+.sbadge.wa{color:var(--wa);background:var(--wa-bg);border-color:rgba(255,181,71,.7)}
+.sbadge.hot{color:#fff;background:var(--hot);border-color:var(--hot)}
+.sbadge.mut{color:var(--mut)}
+.smeter{margin-top:4px}
+.smeter .sm-line{font-size:11.5px;color:var(--tx2);white-space:normal;line-height:1.5}
+.smeter .sm-line b{color:var(--tx)} .smeter .sm-line b.hot,.smeter .sm-line .hot{color:var(--hot)} .smeter .sm-line b.wa{color:var(--wa)}
+.sm-bar{height:6px;border-radius:4px;background:var(--sf3);overflow:hidden;margin-top:3px}
+.sm-bar i{display:block;height:100%;border-radius:4px;background:var(--mut)}
+.sm-bar i.wa{background:var(--wa)} .sm-bar i.hot{background:linear-gradient(90deg,var(--wa),var(--hot))}
+.smeter.heavy .sm-line{font-weight:600}
+.card.shortsum{border-color:rgba(255,106,61,.5)}
+.srow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);text-decoration:none;color:inherit}
+.srow:last-child{border-bottom:0}
+.s-nm{flex:1;min-width:0} .s-nm b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-nm small{display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-kv{flex:0 0 auto;min-width:54px;text-align:right}
+.s-kv .v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2} .s-kv .v.hot{color:var(--hot)}
+.s-kv .l{font-size:10px;color:var(--mut)}

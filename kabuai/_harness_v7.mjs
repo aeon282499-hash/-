@@ -204,9 +204,14 @@ hv = go("#/momentum"); check("EODランキング", clean(hv) && hv.includes("モ
 sandbox.setMomGrade("A"); hv = view(); check("EOD: Aフィルタ", clean(hv)); sandbox.setMomGrade("all");
 { const r0 = DATA.ranking[0], bak = { ...r0 };   // v8: 売り印と空売り残高
   Object.assign(r0, { shortable: true, jsf_stop: false, jsf_warn: true, tse_reg: false, daily_pub: true, short_vol: 1234567, long_vol: 800000, ratio: 0.65, short_days: 1.4, short_chg: 23.4 });
-  hv = go("#/momentum"); check("EOD: 貸借○・注意喚起・🔥空売り多の印", clean(hv) && hv.includes("貸借○ 空売り可") && hv.includes("⚠️ 注意喚起") && hv.includes("🔥 空売り多 売残 123万株（前週+23%） ・ 取組0.7倍 ・ 出来高1.4日分") && hv.includes("🔥 空売り多 1"));
-  sandbox.toggleMomShort(); hv = view(); check("EOD: 🔥空売り多フィルタ", (hv.match(/class="mrow/g) || []).length === 1); sandbox.toggleMomShort();
-  Object.assign(r0, { shortable: null, jsf_stop: true, short_vol: null }); hv = go("#/momentum"); check("EOD: 🚫売り禁", hv.includes("🚫 売り禁") && !hv.includes("貸借○ 空売り可"));
+  const nHeavy = () => DATA.ranking.filter(r => sandbox.momHeavy(r)).length, nStop = () => DATA.ranking.filter(r => r.jsf_stop).length;
+  hv = go("#/momentum"); check("EOD: 貸借○・注意喚起・🔥空売り多の印(v8.1 大きい札＋ゲージ)", clean(hv) && hv.includes('class="sbadge up">貸借○ 空売り可') && hv.includes("⚠️ 注意喚起") && hv.includes('class="sbadge hot">🔥 空売り多') && hv.includes("売残 <b>123万株</b> ＝ 出来高の <b class=\"hot\">1.4日分</b> ・ 取組 <b>0.7倍</b>") && hv.includes("（売り長）") && hv.includes("前週 <b class=\"pos\">+23%</b>") && hv.includes('class="sm-bar"') && hv.includes(`🔥 空売り多 ${nHeavy()}</a>`));
+  check("EOD: 🔥空売り残高が多いカード（上部・日数と取組）", hv.includes(`🔥 空売り残高が多い ${nHeavy()}本`) && hv.includes('class="srow"') && hv.includes("1.4日分") && hv.includes("印の読み方"));
+  sandbox.toggleMomSort(); hv = view(); check("EOD: 📉売残多い順 → 1行目が r0", hv.includes("売残多い順 ✓") && hv.indexOf(`#/detail/${r0.code}"`) < hv.indexOf('class="mrow') + 200 && hv.indexOf('class="mrow') > 0); sandbox.toggleMomSort();
+  sandbox.toggleMomShort(); hv = view(); check("EOD: 🔥空売り多フィルタ", (hv.match(/class="mrow/g) || []).length === nHeavy()); sandbox.toggleMomShort();
+  Object.assign(r0, { shortable: null, jsf_stop: true, short_vol: null }); hv = go("#/momentum"); check("EOD: 🚫売り禁（札＋上部の売り禁一覧）", hv.includes('class="sbadge dn">🚫 売り禁') && hv.includes(`🚫 売り禁 ${nStop()}本`) && hv.includes(`🚫 ${r0.name}`) && (hv.match(/class="sbadge up">貸借○ 空売り可/g) || []).length === DATA.ranking.filter(r => r.shortable === true && !r.jsf_stop).length);
+  Object.assign(r0, { short_vol: 500000, long_vol: 900000, ratio: 1.8, short_days: 2.2 }); go(`#/detail/${r0.code}`); await sandbox.loadStockDetail(r0.code); hv = $get("#dbody").innerHTML;
+  check("詳細: 🩳空売りの状況カード", clean(hv) && hv.includes("🩳 空売りの状況") && hv.includes("🚫 売り禁") && hv.includes("2.2日分") && hv.includes("買残90万株"));
   Object.keys(r0).forEach(k => { if (!(k in bak)) delete r0[k]; }); Object.assign(r0, bak); }
 hv = go("#/explore"); await new Promise(r => setTimeout(r, 20)); hv = go("#/explore"); check("探検トップ", clean(hv) && hv.includes("初動"));
 for (const c of ev("Object.keys(CAT_DEFS)")) { hv = go(`#/explore/${c}`); check(`探検/${c}`, clean(hv)); }
