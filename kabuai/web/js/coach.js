@@ -119,10 +119,11 @@ function coachCopy(btn, text, label) {
 function coachCopyPersona(btn) { coachCopy(btn, COACH_PERSONA, "📋 人格をコピー"); }
 function coachCopyStock(btn) { const p = coachStockPrompt(COACH.code); if (p) coachCopy(btn, p, "📋 解剖プロンプトをコピー"); }
 // APIキーがある時だけ: ブラウザから直接 Anthropic Messages API（SDKの無い素のHTMLなので fetch）。鍵は端末の localStorage のみ・サーバには置かない。
-async function coachAsk() {
-  const key = coachKey(), prompt = coachStockPrompt(COACH.code);
+async function coachAsk(kind) {
+  kind = kind || "stock";
+  const key = coachKey(), prompt = kind === "screen" ? coachScreenPrompt() : coachStockPrompt(COACH.code);
   if (!key || !prompt || COACH.busy) return;
-  COACH.busy = true; COACH.err = ""; COACH.out = ""; coachPaintOut();
+  COACH.busy = true; COACH.err = ""; COACH.out = ""; COACH.outKind = kind; coachPaintOut();
   const t0 = Date.now();
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -139,18 +140,95 @@ async function coachAsk() {
   } catch (e) { COACH.err = String(e && e.message || e); }
   COACH.busy = false; coachPaintOut();
 }
-function coachPaintOut() { const el = document.getElementById("coach-out"); if (el) el.innerHTML = coachOutHtml(); }
+function coachPaintOut() {
+  for (const id of ["coach-out", "coach-screen-out"]) { const el = document.getElementById(id); if (!el) continue; el.innerHTML = ((id === "coach-screen-out") === (COACH.outKind === "screen")) ? coachOutHtml() : ""; }
+}
 function coachOutHtml() {
-  if (COACH.busy) return `<div class="note">🤖 Claude が解剖中…（30秒〜2分）</div>`;
-  if (COACH.err) return `<div class="warn" style="font-size:12.5px">⚠ ${esc(COACH.err)}</div>`;
+  if (COACH.busy) return `<div class="note">🤖 Claude が解剖中…（${esc(COACH.model)}）</div>`;
+  if (COACH.err) return `<div class="note" style="color:var(--dn)">⚠️ ${esc(COACH.err)}</div>`;
   if (!COACH.out) return "";
-  return `<div class="card accent"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🤖 Claude の解剖</b><span class="muted" style="font-size:12px">${esc(COACH.usage || "")}</span></div>
-    <div style="white-space:pre-wrap;font-size:13px;line-height:1.75;margin-top:8px">${esc(COACH.out)}</div>
-    <div class="note" style="margin-top:8px">AIの断言をそのまま判断にしない。情報源・数字の時点・反対シナリオを自分で確認する。</div></div>`;
+  return `<div class="card" style="margin:0;border-color:rgba(79,156,255,.45)"><div style="font-weight:800">🤖 Claude の解剖 <span class="muted" style="font-weight:400;font-size:12px">${esc(COACH.usage || "")}</span></div>
+    <pre style="white-space:pre-wrap;font-size:14px;line-height:1.7;margin:6px 0 0">${esc(COACH.out)}</pre>
+    <div class="note" style="margin-top:6px">AIの断言をそのまま判断にしない。数字の時点と反対シナリオを自分で確認。</div></div>`;
+}
+// ── 🏆 最強スクリーニング（人格の6か条をアプリの数字で機械的に当てる・2026-10-19 本人「きみが銘柄最強を選定して提案するんだよ スクリーニングして」）──
+// 母集団 = 🐵ランキング50本 ＋ 順張り系シグナル（強買い集め/買い集め/加速/昇格）の点灯銘柄。反転系（押し目/反転）は母集団に入れない（順張りだけ）。
+// 除外 = アプリの検証で負け筋に当たるもの。点数 = トレンドの長さ・高値への近さ・資金の集まり・静かさ。勝率は約半分のまま＝選定であって保証ではない。
+const COACH_UP_GROUPS = ["strong_accum", "accum", "accel", "promote"];
+function coachScreenRows() {
+  const seen = new Map();
+  for (const r of (DATA.ranking || [])) seen.set(r.code, Object.assign({}, r));
+  const groups = (DATA.signals && DATA.signals.groups) || {};
+  for (const k of COACH_UP_GROUPS) for (const m of ((groups[k] || {}).members || [])) if (!seen.has(m.code)) seen.set(m.code, Object.assign({}, m));
+  const minOku = DATA.pick_min_oku || 10, maxRng = DATA.pick_max_rng || 6;
+  const out = [];
+  for (const r of seen.values()) {
+    const no = [];
+    if (r.price > 0 && r.price < BUY_PRICE_MIN) no.push(`低位 ${yen(r.price)}`);
+    if (r.rng20 != null && r.rng20 >= maxRng) no.push(`荒い ${coachN(r.rng20)}%/日`);
+    if (r.r1 != null && r.r1 >= 20) no.push(`当日 +${coachN(r.r1, 0)}%`);
+    if (r.vol_x != null && r.vol_x >= 10) no.push(`出来高 ${coachN(r.vol_x, 0)}倍`);
+    if (r.rsi != null && r.rsi >= 85) no.push(`RSI ${coachN(r.rsi, 0)}`);
+    if (r.turnover_oku != null && r.turnover_oku < minOku) no.push(`代金 ${Math.round(r.turnover_oku)}億`);
+    if (r.r20 != null && r.r20 <= 0) no.push(`1ヶ月 ${coachP(r.r20)}`);
+    const sig = r.signals || [];
+    if (sig.length && !sig.some(k => COACH_UP_GROUPS.includes(k)) && sig.some(k => /dip|reversal/.test(k))) no.push("反転系だけ");
+    let sc = 0; const why = [];
+    if (r.r20 != null && r.r20 > 0) { const p = Math.min(25, Math.round(r.r20 * 25 / 30)); sc += p; why.push(`1ヶ月 ${coachP(r.r20)}`); }
+    if (r.ret120 != null && r.ret120 > 0) { sc += 10; why.push(`120日 ${coachP(r.ret120)}`); }
+    if (r.ret250 != null && r.ret250 > 0) { sc += 10; why.push(`250日 ${coachP(r.ret250)}`); }
+    if (r.off_peak20 != null) { const o = Math.abs(r.off_peak20); if (o <= 2) { sc += 15; why.push("20日高値圏"); } else if (o <= 5) { sc += 8; why.push(`高値から −${coachN(o)}%`); } }
+    if (r.grade === "S" || r.grade === "A") { sc += 10; why.push(`${r.grade}評価`); } else if (r.grade === "B") sc += 5;
+    let gs = 0; for (const k of sig) gs += k === "strong_accum" ? 15 : k === "accum" ? 8 : k === "accel" ? 8 : k === "promote" ? 5 : 0;
+    if (gs) { sc += Math.min(20, gs); why.push(sig.filter(k => COACH_UP_GROUPS.includes(k)).map(k => (groups[k] || {}).label || k).join("/")); }
+    if (r.rng20 != null) { if (r.rng20 < 3) { sc += 10; why.push("静か"); } else if (r.rng20 < 4.5) sc += 5; }
+    if (r.turnover_oku != null && r.turnover_oku >= 30) sc += 5;
+    if (r.rsi != null && r.rsi >= 75) { sc -= 5; why.push(`RSI ${coachN(r.rsi, 0)}`); }
+    out.push({ r, no, sc, why });
+  }
+  const ok = out.filter(x => !x.no.length).sort((a, b) => b.sc - a.sc), ng = out.filter(x => x.no.length);
+  return { ok, ng, n: out.length };
+}
+function coachScreenPrompt() {
+  const { ok } = coachScreenRows(); if (!ok.length) return "";
+  const d = DATA.data_date || "最新営業日";
+  const rows = ok.slice(0, 8).map((x, i) => { const r = x.r; return `${i + 1}. ${r.name}（${r.code}）終値 ${yen(r.price)} ・ 前日比 ${coachP(r.r1)} ・ 5日 ${coachP(r.r5)} ・ 1ヶ月 ${coachP(r.r20)}${r.ret250 != null ? ` ・ 250日 ${coachP(r.ret250)}` : ""} ・ 指数 ${coachN(r.momentum, 0)}（${r.grade || "-"}）・ RSI ${coachN(r.rsi, 0)} ・ 代金 ${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "不明"} ・ 20日値動き ${coachN(r.rng20)}%/日${r.off_peak20 != null ? ` ・ 20日高値から −${coachN(Math.abs(r.off_peak20))}%` : ""} ・ 篩い ${x.sc}点（${x.why.join("・")}）`; });
+  const words = COACH.words.trim();
+  return `${COACH_PERSONA}
+
+＝＝＝＝＝ 相談 ＝＝＝＝＝
+以下は私のアプリ（終値ベース・J-Quants日足）が機械的に篩った順張り候補です。${d} の終値で、場中の値動きは含みません。負け筋（低位・荒い・当日+20%・出来高10倍・RSI85・代金10億未満・1ヶ月マイナス・反転系）は除外済み。
+
+【候補】
+${rows.join("\n")}
+${words ? `\n【私の言い分】\n${words}\n` : ""}
+【あなたへの問い】
+1. この中から翌営業日の寄りで建てる1本を選べ（該当なしなら「見送り」と言え）。選ぶ理由は上の数字だけで示せ。
+2. 選ばなかった候補は、1行ずつ落とした理由を書け。
+3. 選んだ1本の損切り水準（%と理由）・降りる目安（日数・条件）・寄りが前日終値+3%超で始まった場合の扱い。
+4. 期待値の見立て（勝率×平均利益−敗率×平均損失）。根拠が無ければ「不明」と言え。参考: このアプリの初動ブレイクは10年で1件+0.64%・勝率約半分。
+5. 上の数字で確認できないことは「不明」と言い、見るべき情報源（時点つき）を挙げよ。「上がる／下がる」の断言は不要。`;
+}
+function coachCopyScreen(btn) { const p = coachScreenPrompt(); if (p) coachCopy(btn, p, "📋 候補ごとコピー"); }
+function coachScreenHtml() {
+  const { ok, ng, n } = coachScreenRows(), hasKey = !!coachKey();
+  if (!n) return `<div class="empty">データ読み込み中</div>`;
+  const top = ok.slice(0, 5);
+  const row = (x, i) => { const r = x.r; return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
+      <b style="font-size:15px">${i + 1}</b><a href="#/detail/${esc(r.code)}"><b>${esc(r.name)}</b></a><span class="muted" style="font-size:12px">${esc(r.code)}</span>
+      <span>${yen(r.price)}</span>${pctTag(r.r1)}<span class="chip up">${x.sc}点</span>
+      <span class="muted" style="font-size:12px">${esc(x.why.join("・"))}</span>
+      <button class="btn" style="margin-left:auto" onclick="event.preventDefault();coachPick('${esc(r.code)}');var e=document.getElementById('coach-stock');if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth'})">解剖</button></div>`; };
+  return `<div class="note">母集団 ${n}本 → 負け筋を除外 ${ng.length}本 → 残り ${ok.length}本の上位。勝率は約半分（初動ブレイク10年 +0.64%/件）。</div>
+    ${top.length ? top.map(row).join("") : `<div class="empty">今日は全部が負け筋。見送り。</div>`}
+    <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyScreen(this)">📋 候補ごとコピー</button>
+      ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk('screen')" ${COACH.busy ? "disabled" : ""}>🤖 Claude に1本選ばせる</button>` : ""}</div>
+    ${ng.length ? `<details class="note" style="margin-top:6px"><summary style="cursor:pointer">除外 ${ng.length}本の理由</summary>${ng.slice(0, 40).map(x => `<div>${esc(x.r.name)} ${esc(x.r.code)}: ${esc(x.no.join("・"))}</div>`).join("")}</details>` : ""}
+    <div id="coach-screen-out" style="margin-top:8px">${COACH.outKind === "screen" ? coachOutHtml() : ""}</div>`;
 }
 function coachStockHtml() {
   const code = COACH.code.trim();
-  if (!code) return `<div class="note">コードを入れるか、上のチップから選ぶ。</div>`;
+  if (!code) return `<div class="note">🏆の「解剖」を押すか、コードを入れる。</div>`;
   const f = coachFacts(code);
   if (!f) return `<div class="note">${esc(code)} はこのアプリのデータに無い（ランキング・検索の対象外か、まだ読み込み中）。</div>`;
   const r = f.r, hasKey = !!coachKey();
@@ -160,16 +238,14 @@ function coachStockHtml() {
     ${badges ? `<div class="sbadges" style="margin-top:6px">${badges}</div>` : ""}
     <div class="note" style="margin-top:6px">終値 <b>${yen(r.price)}</b> ・ 5日 ${fmtPct1(r.r5)} ・ 1ヶ月 ${fmtPct1(r.r20)} ・ RSI ${coachN(r.rsi, 0)} ・ 出来高 ${r.vol_x != null ? coachN(r.vol_x, 1) + "倍" : "—"} ・ 代金 ${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ シグナル ${f.sig.length ? esc(f.sig.join("/")) : "なし"} ・ IR ${f.irRows.length}件 ・ 資金 ${f.groups.length ? esc(f.groups.join("/")) : "なし"}</div>
     <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyStock(this)">📋 解剖プロンプトをコピー</button>
-      ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk()" ${COACH.busy ? "disabled" : ""}>🤖 Claude に聞く</button>` : `<span class="note">🔑 鍵を入れると、ここで Claude に聞ける</span>`}</div>
-    <details class="note" style="margin-top:6px"><summary style="cursor:pointer">貼る文面を見る（人格＋この銘柄の数字＋言い分＋問い）</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.6;margin:6px 0 0">${esc(coachStockPrompt(code))}</pre></details>
-    <div id="coach-out" style="margin-top:8px">${coachOutHtml()}</div>`;
+      ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk()" ${COACH.busy ? "disabled" : ""}>🤖 Claude に聞く</button>` : ""}</div>
+    <details class="note" style="margin-top:6px"><summary style="cursor:pointer">貼る文面を見る</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.6;margin:6px 0 0">${esc(coachStockPrompt(code))}</pre></details>
+    <div id="coach-out" style="margin-top:8px">${COACH.outKind !== "screen" ? coachOutHtml() : ""}</div>`;
 }
 function coachPickChips() {
-  const uw = ((DATA.uwick || {}).buy || []).slice(0, 6), rk = (DATA.ranking || []).slice(0, 8);
+  const uw = ((DATA.uwick || {}).buy || []).slice(0, 6);
   const chip = (x, k) => `<span class="chip ${k}" style="cursor:pointer" onclick="coachPick('${esc(x.code)}')">${esc(x.name)}</span>`;
-  const a = uw.length ? `<div class="note" style="margin-top:4px">🌙 上髭 買い側: ${uw.map(x => chip(x, "acc")).join(" ")}</div>` : "";
-  const b = rk.length ? `<div class="note" style="margin-top:4px">🐵 ランキング: ${rk.map(x => chip(x, x.grade === "S" ? "up" : "")).join(" ")}</div>` : "";
-  return a + b;
+  return uw.length ? `<div class="note" style="margin-top:4px">🌙 上髭 買い側: ${uw.map(x => chip(x, "acc")).join(" ")}</div>` : "";
 }
 function coachPick(code) { COACH.code = code; const el = document.getElementById("coach-code"); if (el) el.value = code; coachSet("code", code); }
 function viewCoach(h) {
@@ -177,33 +253,29 @@ function viewCoach(h) {
   if (!COACH.words) COACH.words = coachLoadWords();
   if (typeof loadSearch === "function" && typeof SEARCH !== "undefined" && !SEARCH) setTimeout(() => { loadSearch().then(() => { const el = document.getElementById("coach-stock"); if (el) el.innerHTML = coachStockHtml(); }); }, 0);
   const key = coachKey();
-  return `<h2>🧠 AI調教 <span class="sub">勝者の人格をAIに憑依させ、自分の言い訳を糾弾させる</span></h2>
-    ${whenBar("🧠", "買う前・迷った時に", "①人格をAIの個人設定に貼る → ②銘柄の数字と自分の言い分を1本にしてAIに解剖させる。③言い訳の型は即答。発注はしない。")}
-    ${vnote("AIは鏡。曖昧な質問には凡庸な答えしか返らない。だから人格と数字を先に渡す。<b>AIの断言は判断にしない</b>（情報源・時点・反対シナリオを確認）。",
-      "元ネタ: AI惣菜『AI調教術』（2026-07-18）。このアプリの数字＝終値スナップショット（場中不変）。人格は「順張りだけ・期待値だけ・損切り即執行・言い訳を糾弾・捏造禁止・上がる/下がるを言わない」の6か条。記事が挙げる餌（名著）: 勝つ投資 負けない投資／マーケットの魔術師／デイトレード 発想術／出来高・価格分析の完全ガイド／ゾーン 相場心理学入門。ルール即答の数字: 反発買い＝26年全形マイナス・当日完結デイトレ＝17ヶ月−62.8%・初動ブレイク当日+20%＝−1.5%/件・出来高10倍＝−0.7%/件。", "出典と数字")}
-    <h2 style="font-size:15px">① 人格（AIの個人設定に貼る）</h2>
-    <div class="card"><pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;margin:0;max-height:220px;overflow:auto">${esc(COACH_PERSONA)}</pre>
-      <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyPersona(this)">📋 人格をコピー</button></div>
-      <div class="note" style="margin-top:6px">貼る場所: ChatGPT → 設定 → パーソナライズ → カスタム指示「どのように応答してほしいか」／ Gemini → 設定 → 保存した情報／ Claude → プロジェクトの指示 or プロフィール設定。貼った瞬間から、そのAIは慰めない。</div></div>
-    <h2 style="font-size:15px">② 銘柄を解剖させる</h2>
+  return `<h2>🧠 AI調教</h2>
+    ${whenBar("🧠", "買う前に", "🏆候補 → 解剖 → 言い訳は即答。発注はしない。")}
+    <h2 style="font-size:15px">🏆 最強候補（${esc(DATA.data_date || "")} 終値・機械の篩い）</h2>
+    <div class="card" id="coach-screen">${coachScreenHtml()}</div>
+    <h2 style="font-size:15px">🔪 解剖</h2>
     <div class="card">
-      <label style="display:block;font-weight:800;margin-bottom:4px">銘柄コード</label>
-      <input id="coach-code" type="text" inputmode="numeric" maxlength="5" value="${esc(COACH.code)}" oninput="coachSet('code', this.value.trim())" class="calc-in" style="font-size:18px" placeholder="例 3042">
+      <input id="coach-code" type="text" inputmode="numeric" maxlength="5" value="${esc(COACH.code)}" oninput="coachSet('code', this.value.trim())" class="calc-in" style="font-size:18px" placeholder="銘柄コード">
       ${coachPickChips()}
-      <label style="display:block;font-weight:800;margin:10px 0 4px">私の言い分（買いたい理由・迷い・言い訳をそのまま）</label>
-      <textarea rows="3" oninput="coachSet('words', this.value)" class="calc-in" style="font-size:14px;line-height:1.5;resize:vertical" placeholder="例: ここまで下げたからそろそろ戻るはず。決算まで持てば…">${esc(COACH.words)}</textarea>
+      <textarea rows="3" oninput="coachSet('words', this.value)" class="calc-in" style="font-size:14px;line-height:1.5;resize:vertical;margin-top:8px" placeholder="私の言い分（買いたい理由・迷い・言い訳をそのまま）">${esc(COACH.words)}</textarea>
       <div id="coach-excuse" style="margin-top:6px">${coachExcuseHtml()}</div>
     </div>
     <div class="card" id="coach-stock">${coachStockHtml()}</div>
+    <h2 style="font-size:15px">🎭 人格（AIの個人設定に貼る）</h2>
+    <div class="card"><div class="chips"><button class="btn" onclick="event.preventDefault();coachCopyPersona(this)">📋 人格をコピー</button><span class="note">貼る先: ChatGPT カスタム指示／Gemini 保存した情報／Claude プロジェクト指示</span></div>
+      <details class="note" style="margin-top:6px"><summary style="cursor:pointer">全文を見る</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;margin:6px 0 0">${esc(COACH_PERSONA)}</pre></details>
+      ${vnote("", "元ネタ: AI惣菜『AI調教術』（2026-07-18）。数字は終値スナップショット。負け筋の数字: 反発買い＝26年全形マイナス・デイトレ＝17ヶ月−62.8%・初動ブレイク当日+20%＝−1.5%/件・出来高10倍＝−0.7%/件・初動ブレイク10年 +0.64%/件 PF1.17・勝率約半分。篩いの点数は機械的な並べ替えで、勝率を上げる証明はない。", "出典と数字")}</div>
     <h2 style="font-size:15px">🔑 Claude に直接聞く（任意）</h2>
     <div class="card">
-      <div class="note">Anthropic の APIキーを入れると「🤖 Claude に聞く」がこの画面に出る。鍵は<b>この端末のブラウザ（localStorage）だけ</b>に保存し、このアプリのサーバには送らない。呼び出しは端末から Anthropic へ直接（モデル ${esc(COACH.model)}・1回 数円〜十数円）。鍵が無くても ①②のコピーで ChatGPT/Gemini に貼れる。</div>
-      <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+      <div style="display:flex;gap:6px;align-items:center">
         <input id="coach-key" type="password" value="${esc(key)}" class="calc-in" style="font-size:13px;flex:1" placeholder="sk-ant-…" autocomplete="off">
         <button class="btn" onclick="event.preventDefault();coachSetKey(document.getElementById('coach-key').value)">${key ? "更新" : "保存"}</button>
         ${key ? `<button class="btn" onclick="event.preventDefault();coachSetKey('')">消す</button>` : ""}</div>
-      ${key ? `<div class="note" style="margin-top:6px">🔑 保存済み（${esc(key.slice(0, 10))}…）。共有端末では「消す」。</div>` : ""}
+      <div class="note" style="margin-top:6px">鍵はこの端末のブラウザだけに保存。Anthropic へ直接（1回 数円〜十数円）。${key ? ` 🔑 保存済み（${esc(key.slice(0, 10))}…）` : ""}</div>
     </div>
-    <div class="note">ここは考える道具。発注はしない。AIが「買え」と言っても、数字の時点と反対シナリオを見てから自分で決める。</div>
     <p class="disc">${esc(DATA.disclaimer || "")}</p>`;
 }
