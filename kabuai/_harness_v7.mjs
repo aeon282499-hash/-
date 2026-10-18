@@ -30,9 +30,14 @@ const lsStore = {};
 const localStorageShim = { getItem: k => (k in lsStore ? lsStore[k] : null), setItem: (k, v) => { lsStore[k] = String(v); }, removeItem: k => { delete lsStore[k]; } };
 const stockJson = code => { try { return JSON.parse(fs.readFileSync(`${DD}/stocks/${code}.json`, "utf8")); } catch (e) { return null; } };
 const sandbox = { document: documentShim, window: windowShim, location: locationShim, localStorage: localStorageShim,
-  console, navigator: {}, history: { back() {} },
-  fetch: async (u) => {
+  console, navigator: {}, history: { back() {} }, Date,
+  fetch: async (u, opt) => {
     const s = String(u);
+    if (s.includes("api.anthropic.com")) { sandbox._api = { url: s, opt }; const m = sandbox._apiMode || "ok";
+      if (m === "401") return { ok: false, status: 401, json: async () => ({ error: { type: "authentication_error", message: "invalid x-api-key" } }) };
+      if (m === "refusal") return { ok: true, status: 200, json: async () => ({ stop_reason: "refusal", stop_details: { category: "policy" }, content: [] }) };
+      if (m === "net") throw new TypeError("Failed to fetch");
+      return { ok: true, status: 200, json: async () => ({ model: "claude-opus-5-5", stop_reason: "end_turn", content: [{ type: "text", text: "結論: 持つな。" }], usage: { input_tokens: 1234, output_tokens: 321 } }) }; }
     if (s.includes("search_index")) return { ok: true, status: 200, json: async () => SIDX };
     if (s.includes("explorer")) return { ok: true, status: 200, json: async () => EXPJ };
     const m = s.match(/stocks\/([^./]+)\.json/);
@@ -269,6 +274,15 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
   sandbox.coachSet("words", ""); sandbox.coachPick("0000"); hv = $get("#coach-stock").innerHTML; check("AI調教: 無いコード", clean(hv) && hv.includes("データに無い"));
   sandbox.coachSetKey("sk-ant-test-1234567890"); sandbox.coachPick(c0); sandbox.render(); hv = view(); check("AI調教: 鍵あり→Claudeに聞くボタン", clean(hv) && hv.includes(">🤖 Claude に聞く<") && hv.includes("保存済み")); sandbox.coachSetKey("");
   hv = go(`#/coach/${c0}`); check("AI調教: #/coach/<code> で直接開く", clean(hv) && hv.includes(DATA.ranking[0].name));
+  sandbox.coachPick(c0); await sandbox.coachAsk(); check("AI調教: 鍵なし→APIを呼ばない", !sandbox._api);
+  sandbox.coachSetKey("sk-ant-test-1234567890"); sandbox.coachPick(c0); await sandbox.coachAsk();
+  { const a = sandbox._api, hd = a && a.opt.headers, b = a && JSON.parse(a.opt.body);
+    check("AI調教: API本文（model/system=人格/userに人格を二重に入れない/fallbacks既定）", !!b && b.model === "claude-opus-5-5" && b.max_tokens === 4000 && b.fallbacks === "default" && hd["anthropic-beta"] === "server-side-fallback-2026-07-01" && hd["anthropic-dangerous-direct-browser-access"] === "true" && b.system.startsWith("【前提ペルソナ】") && !b.messages[0].content.includes("【前提ペルソナ】") && b.messages[0].content.includes("【あなたへの問い】"));
+    hv = $get("#coach-out").innerHTML; check("AI調教: 成功→回答と使用量", clean(hv) && hv.includes("持つな") && hv.includes("入力1234"));
+    sandbox._apiMode = "401"; await sandbox.coachAsk(); const e1 = $get("#coach-out").innerHTML.includes("HTTP 401");
+    sandbox._apiMode = "refusal"; await sandbox.coachAsk(); const e2 = $get("#coach-out").innerHTML.includes("断られた");
+    sandbox._apiMode = "net"; await sandbox.coachAsk(); const e3 = $get("#coach-out").innerHTML.includes("Failed to fetch") && ev("COACH.busy") === false;
+    check("AI調教: 401/拒否/通信失敗を落ちずに表示", e1 && e2 && e3); sandbox._apiMode = "ok"; sandbox.coachSetKey(""); }
   go(`#/detail/${c0}`); await sandbox.loadStockDetail(c0); check("詳細→🧠AI調教リンク", $get("#dbody").innerHTML.includes(`#/coach/${c0}`)); }
 console.log(fail ? `\n${fail} 件 NG` : "\nALL GREEN");
 process.exit(fail ? 1 : 0);
