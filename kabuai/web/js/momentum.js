@@ -23,17 +23,35 @@ function momShortBadges(r, big = true) {
   if (r.short_vol != null && momHeavy(r)) c.push(`<span class="${k} hot">🔥 空売り多</span>`);
   return c.join("");
 }
-// 売残の中身を日本語で: 売残 45万株 ＝ 出来高の2.3日分 ・ 取組2.1倍 ・ 前週+10%  ＋ ゲージ（3日分で満タン）
+// v8.4.2（2026-10-19 本人「取組0.4とかわかりずらい・細かな数字わかりやすく・線の色よくわからん」）: 取組倍率と色の棒をやめて言葉で
+//   売り方：買い方 ＝ 売残 vs 買残。ratio(買残÷売残) ≤1 → 売り長 / ≤2 → 互角 / それ以上 → 買い長
+function momSideWord(r) {
+  if (r.ratio == null) return null;
+  const q = Number(r.ratio);
+  if (!(q > 0)) return { w: "売り長", cls: "hot", d: "買い方ほぼゼロ" };
+  const d = `売り1：買い${q >= 10 ? Math.round(q) : q.toFixed(1)}`;
+  if (q <= 1) return { w: "売り長", cls: "hot", d };
+  if (q <= 2) return { w: "互角", cls: "wa", d };
+  return { w: "買い長", cls: "", d };
+}
+//   重さ ＝ 全部買い戻すのにかかる日数（1日の出来高で）。🔥重い＝1日分以上か売り長 / やや重い＝0.5日分以上 / 軽い
+function momWeight(r) {
+  if (r.short_days == null && r.ratio == null) return null;
+  if (momHeavy(r)) return { w: "🔥 重い", cls: "hot" };
+  if (r.short_days != null && r.short_days >= 0.5) return { w: "やや重い", cls: "wa" };
+  return { w: "軽い", cls: "mut" };
+}
 function momShortMeter(r) {
   if (r.short_vol == null) return "";
-  const d = r.short_days, hv = momHeavy(r);
-  const lvl = d == null ? "" : d >= 1 ? "hot" : d >= 0.5 ? "wa" : "";
-  const pct = d == null ? 0 : Math.max(3, Math.min(100, d / 3 * 100));
-  const chg = r.short_chg != null ? `前週 <b class="${r.short_chg >= 0 ? "pos" : "neg"}">${r.short_chg >= 0 ? "+" : ""}${Math.round(r.short_chg)}%</b>` : "";
-  const ratio = r.ratio != null ? `取組 <b>${Number(r.ratio).toFixed(1)}倍</b>${r.ratio <= 1 ? "<span class=\"hot\">（売り長）</span>" : ""}` : "";
-  const days = d != null ? `＝ 出来高の <b class="${lvl}">${Number(d).toFixed(1)}日分</b>` : "";
-  return `<div class="smeter ${hv ? "heavy" : ""}"><div class="sm-line">売残 <b>${fmtKabu(r.short_vol)}</b> ${days}${ratio ? " ・ " + ratio : ""}${chg ? " ・ " + chg : ""}</div>
-    <div class="sm-bar"><i class="${lvl}" style="width:${pct.toFixed(0)}%"></i></div></div>`;
+  const d = r.short_days, hv = momHeavy(r), side = momSideWord(r), wt = momWeight(r);
+  const chg = r.short_chg != null ? `<i class="${r.short_chg >= 0 ? "pos" : "neg"}">先週より ${r.short_chg >= 0 ? "+" : ""}${Math.round(r.short_chg)}%</i>` : "";
+  const rows = [
+    `<div class="sm-r"><span class="k">空売り残</span><span class="v"><b>${fmtKabu(r.short_vol)}</b> ${chg}</span></div>`,
+    d != null ? `<div class="sm-r"><span class="k">買い戻しに</span><span class="v"><b class="${d >= 1 ? "hot" : d >= 0.5 ? "wa" : ""}">${Number(d).toFixed(1)}日分</b> <i>の出来高</i></span></div>` : "",
+    side ? `<div class="sm-r"><span class="k">売り方：買い方</span><span class="v"><b class="${side.cls}">${side.w}</b> <i>${side.d}</i></span></div>` : "",
+    wt ? `<div class="sm-r"><span class="k">重さ</span><span class="v"><b class="${wt.cls}">${wt.w}</b></span></div>` : "",
+  ].join("");
+  return `<div class="smeter ${hv ? "heavy" : ""}">${rows}</div>`;
 }
 function momShortChips(r) {
   const b = momShortBadges(r), m = momShortMeter(r);
@@ -47,15 +65,14 @@ function momShortSummary(rk) {
   const stop = rk.filter(r => r.jsf_stop);
   const mdate = (rk.find(r => r.margin_date) || {}).margin_date || "";
   const row = r => `<a class="srow" href="#/detail/${r.code}"><div class="grb ${esc(r.grade || "D")}">${esc(r.grade || "-")}</div>
-      <div class="s-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 売残${fmtKabu(r.short_vol)}${r.short_chg != null ? `（前週${r.short_chg >= 0 ? "+" : ""}${Math.round(r.short_chg)}%）` : ""}${r.jsf_stop ? ' ・ <span class="neg" style="font-weight:800">🚫売り禁</span>' : ""}${r.jsf_warn ? ' ・ <span class="warn">⚠️注意喚起</span>' : ""}</small></div>
-      <div class="s-kv"><div class="v ${r.short_days != null && r.short_days >= 1 ? "hot" : ""}">${r.short_days != null ? Number(r.short_days).toFixed(1) + "日分" : "—"}</div><div class="l">出来高の</div></div>
-      <div class="s-kv"><div class="v ${r.ratio != null && r.ratio <= 1 ? "hot" : ""}">${r.ratio != null ? Number(r.ratio).toFixed(1) + "倍" : "—"}</div><div class="l">取組</div></div></a>`;
+      <div class="s-nm"><b>${esc(r.name)}</b><small>${r.code} ・ 売残${fmtKabu(r.short_vol)}${r.short_chg != null ? `（前週${r.short_chg >= 0 ? "+" : ""}${Math.round(r.short_chg)}%）` : ""}${r.jsf_stop ? ' ・ <span class="neg" style="font-weight:800">🚫売り禁</span>' : ""}${r.jsf_warn ? ' ・ <span class="warn">⚠️注意喚起</span>' : ""}</small>${(() => { const sd = momSideWord(r); return sd ? `<small><b class="${sd.cls}">${sd.w}</b>（${sd.d}）</small>` : ""; })()}</div>
+      <div class="s-kv"><div class="v ${r.short_days != null && r.short_days >= 1 ? "hot" : ""}">${r.short_days != null ? Number(r.short_days).toFixed(1) + "日分" : "—"}</div><div class="l">買い戻しに</div></div></a>`;
   return `<div class="card shortsum"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🔥 空売り残高が多い ${heavy.length}本</b><span class="muted" style="font-size:13.5px">ランキング${rk.length}本のうち・残高は ${esc(mdate)} 時点（週次）</span></div>
-    <div class="note" style="margin:4px 0 6px">「出来高の◯日分」＝売り方が全部買い戻すのにかかる日数。<b>1日分以上</b>か<b>取組1倍以下（売残≧買残＝売り長）</b>で🔥。踏み上げの燃料＝上がると売り方の買い戻しが乗る。売り方は逆日歩に注意。</div>
+    <div class="note" style="margin:4px 0 6px">「買い戻しに◯日分」＝売り方が全部買い戻すのにかかる日数（1日の出来高で）。<b>1日分以上</b>か<b>売り長（売り方≧買い方）</b>で🔥。上がると売り方の買い戻しが乗る＝踏み上げの燃料。売り方は逆日歩に注意。</div>
     ${heavy.length ? `<div class="tight">${heavy.map(row).join("")}</div>` : `<div class="empty">今週は該当なし</div>`}
     <div style="margin-top:10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>🚫 売り禁 ${stop.length}本</b><span class="muted" style="font-size:13.5px">制度信用の新規売り停止＝個人は普通には空売りできない（SBI一日信用HYPER/一般信用は別枠在庫）</span></div>
     ${stop.length ? `<div class="chips" style="margin-top:6px">${stop.map(r => `<a class="sbadge dn" href="#/detail/${r.code}">🚫 ${esc(r.name)} <span style="opacity:.75;font-weight:600">${r.code}</span></a>`).join("")}</div>` : `<div class="empty" style="padding:6px 0">売り禁なし</div>`}
-    <div class="note" style="margin-top:8px">印の読み方: <span class="sbadge dn lg">🚫 売り禁</span>＝制度信用で新規売り不可 ／ <span class="sbadge up lg">貸借○ 空売り可</span>＝制度信用で空売りできる ／ <span class="sbadge mut lg">制度×</span>＝信用買いだけの銘柄 ／ <span class="sbadge wa lg">⚠️ 注意喚起</span>＝日証金の注意喚起（逆日歩警戒） ／ <span class="sbadge hot lg">🔥 空売り多</span>＝売残が重い。各行の棒は売残÷1日の出来高（3日分で満タン）。</div></div>`;
+    <div class="note" style="margin-top:8px">印の読み方: <span class="sbadge dn lg">🚫 売り禁</span>＝制度信用で新規売り不可 ／ <span class="sbadge up lg">貸借○ 空売り可</span>＝制度信用で空売りできる ／ <span class="sbadge mut lg">制度×</span>＝信用買いだけの銘柄 ／ <span class="sbadge wa lg">⚠️ 注意喚起</span>＝日証金の注意喚起（逆日歩警戒） ／ <span class="sbadge hot lg">🔥 空売り多</span>＝売残が重い。重さ: 🔥重い＝買い戻しに1日分以上か売り長 ／ やや重い＝0.5日分以上 ／ 軽い＝それ未満。</div></div>`;
 }
 function viewMomentum() {
   if (WATCH.length || loadPos().length) loadSearch().then(() => {
@@ -102,10 +119,9 @@ function viewShort() {
   const fchip = (k, lbl) => `<a class="gchip ${SH_FILTER === k ? "on" : ""}" onclick="event.preventDefault();setShFilter('${k}')">${lbl}</a>`;
   const rows = list.map(r => `<a class="mrow" href="#/detail/${r.code}">
       <div class="grb ${esc(r.grade || "D")}">${esc(r.grade || "-")}</div>
-      <div class="m-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ${yen(r.price)} ・ 前日比 ${fmtPct(r.r1)} ・ 代金${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"}</small>${momShortChips(r)}</div>
-      <div class="m-px">${r.short_days != null ? `<span class="${r.short_days >= 1 ? "hot" : ""}">${Number(r.short_days).toFixed(1)}日分</span>` : "—"}<small>${r.ratio != null ? "取組 " + Number(r.ratio).toFixed(1) + "倍" : "取組 —"}</small></div></a>`).join("");
+      <div class="m-nm"><b>${esc(r.name)}</b><small>${r.code} ・ ${yen(r.price)} ・ 前日比 ${fmtPct(r.r1)} ・ 代金${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"}</small>${momShortChips(r)}</div></a>`).join("");
   return `<h2>🩳 空売り <span class="sub">${DATA.data_date || ""} 終値・残高は ${esc(mdate)} 時点（週次）</span></h2>
-    ${vnote("ランキング50本の売り禁・貸借・空売り残高。買い/売りの推奨ではありません。", "売残は週次（金曜分・火曜公表）＝日々の変化は映らない。🔥＝売残が1日の出来高以上か取組1倍以下。踏み上げの燃料ではあるが、売残が厚いほど翌20日は悪い（10年n193万・小型 超過−0.74%）＝『売残が多い＝買い』ではない。")}
+    ${vnote("ランキング50本の売り禁・貸借・空売り残高。買い/売りの推奨ではありません。", "売残は週次（金曜分・火曜公表）＝日々の変化は映らない。🔥＝買い戻しに1日分以上か売り長（売り方≧買い方）。踏み上げの燃料ではあるが、売残が厚いほど翌20日は悪い（10年n193万・小型 超過−0.74%）＝『売残が多い＝買い』ではない。")}
     ${momShortSummary(rk)}
     <div class="gchips">${fchip("all", `すべて ${rk.length}`)}${fchip("heavy", `🔥 空売り多 ${nHeavy}`)}${fchip("stop", `🚫 売り禁 ${nStop}`)}${fchip("ok", `貸借○ ${nOk}`)}<a class="gchip ${MOM_SORT === "rank" ? "" : "on"}" onclick="event.preventDefault();toggleMomSort()">${MOM_SORT === "rank" ? "🐵 ランキング順" : "📉 売残多い順 ✓"}</a></div>
     <div class="card tight">${rows || `<div class="empty">該当なし</div>`}</div>
