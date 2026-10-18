@@ -278,6 +278,10 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
   sandbox.coachSet("words", ""); sandbox.coachPick("0000"); hv = $get("#coach-stock").innerHTML; check("AI調教: 無いコード", clean(hv) && hv.includes("データに無い"));
   sandbox.coachSetKey("sk-ant-test-1234567890"); sandbox.coachPick(c0); sandbox.render(); hv = view(); check("AI調教: 鍵あり→Claudeに聞くボタン", clean(hv) && hv.includes(">🤖 Claude に聞く<") && hv.includes("保存済み")); sandbox.coachSetKey("");
   hv = go(`#/coach/${c0}`); check("AI調教: #/coach/<code> で直接開く", clean(hv) && hv.includes(DATA.ranking[0].name));
+  { const sc = ev("coachScreenRows()"); check("🏆最強候補: 母集団→除外→上位（負け筋ゼロ・点数降順）", sc.n > 20 && sc.ok.length > 0 && sc.ok.every(x => !x.no.length && x.r.price >= 1000 && (x.r.rng20 == null || x.r.rng20 < 6) && (x.r.rsi == null || x.r.rsi < 85)) && sc.ok.every((x, i, a) => !i || a[i - 1].sc >= x.sc), `${sc.n}→除外${sc.ng.length}→残${sc.ok.length}`);
+    hv = go("#/coach"); check("🏆最強候補: 画面に上位と「解剖」ボタン・除外の理由", clean(hv) && hv.includes("🏆 最強候補") && hv.includes(sc.ok[0].r.name) && hv.includes(">解剖<") && hv.includes("除外 " + sc.ng.length + "本") && hv.includes("候補ごとコピー") && !hv.includes("Claude に1本選ばせる"));
+    const sp = ev("coachScreenPrompt()"); check("🏆最強候補: 候補プロンプト（人格＋上位8本＋1本選べ）", sp.startsWith("【前提ペルソナ】") && sp.includes("【候補】") && sp.includes("1本を選べ") && sp.includes(sc.ok[0].r.name) && !/NaN|undefined/.test(sp), `${sp.length}字`);
+    sandbox.coachSetKey("sk-ant-test-1234567890"); hv = go("#/coach"); check("🏆最強候補: 鍵あり→Claudeに1本選ばせる", hv.includes("Claude に1本選ばせる")); sandbox._api = null; await sandbox.coachAsk("screen"); { const b = sandbox._api && JSON.parse(sandbox._api.opt.body); check("🏆最強候補: 🤖は候補プロンプトを送る", !!b && b.messages[0].content.includes("【候補】") && !b.messages[0].content.includes("【前提ペルソナ】")); } sandbox.coachSetKey(""); sandbox._api = null; }
   sandbox.coachPick(c0); await sandbox.coachAsk(); check("AI調教: 鍵なし→APIを呼ばない", !sandbox._api);
   sandbox.coachSetKey("sk-ant-test-1234567890"); sandbox.coachPick(c0); await sandbox.coachAsk();
   { const a = sandbox._api, hd = a && a.opt.headers, b = a && JSON.parse(a.opt.body);
