@@ -166,8 +166,8 @@ function coachScreenRows() {
     if (r.price > 0 && r.price < BUY_PRICE_MIN) no.push(`低位 ${yen(r.price)}`);
     if (r.rng20 != null && r.rng20 >= maxRng) no.push(`荒い ${coachN(r.rng20)}%/日`);
     if (r.r1 != null && r.r1 >= 20) no.push(`当日 +${coachN(r.r1, 0)}%`);
-    if (r.vol_x != null && r.vol_x >= 10) no.push(`出来高 ${coachN(r.vol_x, 0)}倍`);
-    if (r.rsi != null && r.rsi >= 85) no.push(`RSI ${coachN(r.rsi, 0)}`);
+    if (r.vol_x != null && r.vol_x >= 10) no.push(`出来高 ふだんの${coachN(r.vol_x, 0)}倍`);
+    if (r.rsi != null && r.rsi >= 85) no.push("過熱（RSI " + coachN(r.rsi, 0) + "）");
     if (r.turnover_oku != null && r.turnover_oku < minOku) no.push(`代金 ${Math.round(r.turnover_oku)}億`);
     if (r.r20 != null && r.r20 <= 0) no.push(`1ヶ月 ${coachP(r.r20)}`);
     const sig = r.signals || [];
@@ -182,7 +182,7 @@ function coachScreenRows() {
     if (gs) { sc += Math.min(20, gs); why.push(sig.filter(k => COACH_UP_GROUPS.includes(k)).map(k => (groups[k] || {}).label || k).join("/")); }
     if (r.rng20 != null) { if (r.rng20 < 3) { sc += 10; why.push("静か"); } else if (r.rng20 < 4.5) sc += 5; }
     if (r.turnover_oku != null && r.turnover_oku >= 30) sc += 5;
-    if (r.rsi != null && r.rsi >= 75) { sc -= 5; why.push(`RSI ${coachN(r.rsi, 0)}`); }
+    if (r.rsi != null && r.rsi >= 75) { sc -= 5; why.push("過熱ぎみ"); }
     out.push({ r, no, sc, why });
   }
   const ok = out.filter(x => !x.no.length).sort((a, b) => b.sc - a.sc), ng = out.filter(x => x.no.length);
@@ -215,7 +215,7 @@ function coachScreenHtml() {
   const top = ok.slice(0, 5);
   const row = (x, i) => { const r = x.r; return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
       <b style="font-size:15px">${i + 1}</b><a href="#/detail/${esc(r.code)}"><b>${esc(r.name)}</b></a><span class="muted" style="font-size:12px">${esc(r.code)}</span>
-      <span>${yen(r.price)}</span>${pctTag(r.r1)}<span class="chip up">${x.sc}点</span>
+      <span>${yen(r.price)}</span>${pctTag(r.r1)}
       <span class="muted" style="font-size:12px">${esc(x.why.join("・"))}</span>
       <span style="font-size:12px;flex-basis:100%">損切 <b>${yen(Math.round(r.price * 0.97))}</b>（−3%）${r.ma5_dev != null ? ` ・ 5日線 <b>${yen(Math.round(r.price / (1 + r.ma5_dev / 100)))}</b>` : ""} ・ 利確 <b>${yen(Math.round(r.price * 1.05))}</b>（+5%）・ 寄り ${yen(Math.round(r.price * 1.03))} 超は見送り</span>
       <button class="btn" style="margin-left:auto" onclick="event.preventDefault();coachPick('${esc(r.code)}');var e=document.getElementById('coach-stock');if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth'})">解剖</button></div>`; };
@@ -236,7 +236,7 @@ function coachStockHtml() {
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><a href="#/detail/${esc(code)}"><b style="font-size:16px">${esc(r.name)}</b></a><span class="muted" style="font-size:12px">${esc(code)}${r.sector ? " ・ " + esc(r.sector) : ""}</span>
       <span class="chip ${r.grade === "S" || r.grade === "A" ? "up" : ""}">${esc(r.grade || "-")} 指数${coachN(r.momentum, 0)}</span>${pctTag(r.r1)}</div>
     ${badges ? `<div class="sbadges" style="margin-top:6px">${badges}</div>` : ""}
-    <div class="note" style="margin-top:6px">終値 <b>${yen(r.price)}</b> ・ 5日 ${fmtPct1(r.r5)} ・ 1ヶ月 ${fmtPct1(r.r20)} ・ RSI ${coachN(r.rsi, 0)} ・ 出来高 ${r.vol_x != null ? coachN(r.vol_x, 1) + "倍" : "—"} ・ 代金 ${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ シグナル ${f.sig.length ? esc(f.sig.join("/")) : "なし"} ・ IR ${f.irRows.length}件 ・ 資金 ${f.groups.length ? esc(f.groups.join("/")) : "なし"}</div>
+    <div class="note" style="margin-top:6px">終値 <b>${yen(r.price)}</b> ・ 5日 ${fmtPct1(r.r5)} ・ 1ヶ月 ${fmtPct1(r.r20)} ・ RSI ${coachN(r.rsi, 0)} ・ 出来高 ${r.vol_x != null ? "ふだんの" + coachN(r.vol_x, 1) + "倍" : "—"} ・ 代金 ${r.turnover_oku != null ? Math.round(r.turnover_oku) + "億" : "—"} ・ シグナル ${f.sig.length ? esc(f.sig.join("/")) : "なし"} ・ IR ${f.irRows.length}件 ・ 資金 ${f.groups.length ? esc(f.groups.join("/")) : "なし"}</div>
     <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyStock(this)">📋 解剖プロンプトをコピー</button>
       ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk()" ${COACH.busy ? "disabled" : ""}>🤖 Claude に聞く</button>` : ""}</div>
     <details class="note" style="margin-top:6px"><summary style="cursor:pointer">貼る文面を見る</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.6;margin:6px 0 0">${esc(coachStockPrompt(code))}</pre></details>
