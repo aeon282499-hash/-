@@ -148,8 +148,7 @@ function coachOutHtml() {
   if (COACH.err) return `<div class="note" style="color:var(--dn)">⚠️ ${esc(COACH.err)}</div>`;
   if (!COACH.out) return "";
   return `<div class="card" style="margin:0;border-color:rgba(79,156,255,.45)"><div style="font-weight:800">🤖 Claude の解剖 <span class="muted" style="font-weight:400;font-size:12px">${esc(COACH.usage || "")}</span></div>
-    <pre style="white-space:pre-wrap;font-size:14px;line-height:1.7;margin:6px 0 0">${esc(COACH.out)}</pre>
-    <div class="note" style="margin-top:6px">AIの断言をそのまま判断にしない。数字の時点と反対シナリオを自分で確認。</div></div>`;
+    <pre style="white-space:pre-wrap;font-size:14px;line-height:1.7;margin:6px 0 0">${esc(COACH.out)}</pre></div>`;
 }
 // ── 🏆 最強スクリーニング（人格の6か条をアプリの数字で機械的に当てる・2026-10-19 本人「きみが銘柄最強を選定して提案するんだよ スクリーニングして」）──
 // 母集団 = 🐵ランキング50本 ＋ 順張り系シグナル（強買い集め/買い集め/加速/昇格）の点灯銘柄。反転系（押し目/反転）は母集団に入れない（順張りだけ）。
@@ -218,8 +217,9 @@ function coachScreenHtml() {
       <b style="font-size:15px">${i + 1}</b><a href="#/detail/${esc(r.code)}"><b>${esc(r.name)}</b></a><span class="muted" style="font-size:12px">${esc(r.code)}</span>
       <span>${yen(r.price)}</span>${pctTag(r.r1)}<span class="chip up">${x.sc}点</span>
       <span class="muted" style="font-size:12px">${esc(x.why.join("・"))}</span>
+      <span style="font-size:12px;flex-basis:100%">損切 <b>${yen(Math.round(r.price * 0.97))}</b>（−3%）${r.ma5_dev != null ? ` ・ 5日線 <b>${yen(Math.round(r.price / (1 + r.ma5_dev / 100)))}</b>` : ""} ・ 利確 <b>${yen(Math.round(r.price * 1.05))}</b>（+5%）・ 寄り ${yen(Math.round(r.price * 1.03))} 超は見送り</span>
       <button class="btn" style="margin-left:auto" onclick="event.preventDefault();coachPick('${esc(r.code)}');var e=document.getElementById('coach-stock');if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth'})">解剖</button></div>`; };
-  return `<div class="note">母集団 ${n}本 → 負け筋を除外 ${ng.length}本 → 残り ${ok.length}本の上位。勝率は約半分（初動ブレイク10年 +0.64%/件）。</div>
+  return `<div class="note">${n}本 → 除外 ${ng.length}本 → 残 ${ok.length}本 ・ 勝率≈50%・+0.64%/件（初動ブレイク10年）</div>
     ${top.length ? top.map(row).join("") : `<div class="empty">今日は全部が負け筋。見送り。</div>`}
     <div class="chips" style="margin-top:8px"><button class="btn" onclick="event.preventDefault();coachCopyScreen(this)">📋 候補ごとコピー</button>
       ${hasKey ? `<button class="btn" onclick="event.preventDefault();coachAsk('screen')" ${COACH.busy ? "disabled" : ""}>🤖 Claude に1本選ばせる</button>` : ""}</div>
@@ -228,7 +228,7 @@ function coachScreenHtml() {
 }
 function coachStockHtml() {
   const code = COACH.code.trim();
-  if (!code) return `<div class="note">🏆の「解剖」を押すか、コードを入れる。</div>`;
+  if (!code) return `<div class="note">🏆の「解剖」か、コード入力。</div>`;
   const f = coachFacts(code);
   if (!f) return `<div class="note">${esc(code)} はこのアプリのデータに無い（ランキング・検索の対象外か、まだ読み込み中）。</div>`;
   const r = f.r, hasKey = !!coachKey();
@@ -254,7 +254,6 @@ function viewCoach(h) {
   if (typeof loadSearch === "function" && typeof SEARCH !== "undefined" && !SEARCH) setTimeout(() => { loadSearch().then(() => { const el = document.getElementById("coach-stock"); if (el) el.innerHTML = coachStockHtml(); }); }, 0);
   const key = coachKey();
   return `<h2>🧠 AI調教</h2>
-    ${whenBar("🧠", "買う前に", "🏆候補 → 解剖 → 言い訳は即答。発注はしない。")}
     <h2 style="font-size:15px">🏆 最強候補（${esc(DATA.data_date || "")} 終値・機械の篩い）</h2>
     <div class="card" id="coach-screen">${coachScreenHtml()}</div>
     <h2 style="font-size:15px">🔪 解剖</h2>
@@ -266,7 +265,7 @@ function viewCoach(h) {
     </div>
     <div class="card" id="coach-stock">${coachStockHtml()}</div>
     <h2 style="font-size:15px">🎭 人格（AIの個人設定に貼る）</h2>
-    <div class="card"><div class="chips"><button class="btn" onclick="event.preventDefault();coachCopyPersona(this)">📋 人格をコピー</button><span class="note">貼る先: ChatGPT カスタム指示／Gemini 保存した情報／Claude プロジェクト指示</span></div>
+    <div class="card"><div class="chips"><button class="btn" onclick="event.preventDefault();coachCopyPersona(this)">📋 人格をコピー</button><span class="note">ChatGPT カスタム指示／Gemini 保存した情報／Claude プロジェクト指示</span></div>
       <details class="note" style="margin-top:6px"><summary style="cursor:pointer">全文を見る</summary><pre style="white-space:pre-wrap;font-size:12px;line-height:1.7;margin:6px 0 0">${esc(COACH_PERSONA)}</pre></details>
       ${vnote("", "元ネタ: AI惣菜『AI調教術』（2026-07-18）。数字は終値スナップショット。負け筋の数字: 反発買い＝26年全形マイナス・デイトレ＝17ヶ月−62.8%・初動ブレイク当日+20%＝−1.5%/件・出来高10倍＝−0.7%/件・初動ブレイク10年 +0.64%/件 PF1.17・勝率約半分。篩いの点数は機械的な並べ替えで、勝率を上げる証明はない。", "出典と数字")}</div>
     <h2 style="font-size:15px">🔑 Claude に直接聞く（任意）</h2>
@@ -275,7 +274,7 @@ function viewCoach(h) {
         <input id="coach-key" type="password" value="${esc(key)}" class="calc-in" style="font-size:13px;flex:1" placeholder="sk-ant-…" autocomplete="off">
         <button class="btn" onclick="event.preventDefault();coachSetKey(document.getElementById('coach-key').value)">${key ? "更新" : "保存"}</button>
         ${key ? `<button class="btn" onclick="event.preventDefault();coachSetKey('')">消す</button>` : ""}</div>
-      <div class="note" style="margin-top:6px">鍵はこの端末のブラウザだけに保存。Anthropic へ直接（1回 数円〜十数円）。${key ? ` 🔑 保存済み（${esc(key.slice(0, 10))}…）` : ""}</div>
+      <div class="note" style="margin-top:6px">この端末だけに保存・Anthropic へ直接・1回 数円〜十数円${key ? ` ・ 🔑 ${esc(key.slice(0, 10))}…` : ""}</div>
     </div>
     <p class="disc">${esc(DATA.disclaimer || "")}</p>`;
 }
