@@ -1889,6 +1889,56 @@
       "close": 4186.0,
       "pnl": 1.38,
       "win": true
+    },
+    {
+      "date": "2026-10-19",
+      "ticker": "6370.T",
+      "name": "栗田工業",
+      "direction": "BUY",
+      "open": 7300.0,
+      "close": 7407.0,
+      "pnl": 1.47,
+      "win": true
+    },
+    {
+      "date": "2026-10-19",
+      "ticker": "6383.T",
+      "name": "ダイフク",
+      "direction": "BUY",
+      "open": 5329.0,
+      "close": 5434.0,
+      "pnl": 1.97,
+      "win": true
+    },
+    {
+      "date": "2026-10-19",
+      "ticker": "3289.T",
+      "name": "東急不動産ホールディングス",
+      "direction": "BUY",
+      "open": 1210.5,
+      "close": 1212.5,
+      "pnl": 0.17,
+      "win": true
+    },
+    {
+      "date": "2026-10-19",
+      "ticker": "6471.T",
+      "name": "日本精工",
+      "direction": "BUY",
+      "open": 1031.5,
+      "close": 1033.5,
+      "pnl": 0.19,
+      "win": true
+    },
+    {
+      "date": "2026-10-19",
+      "ticker": "3387.T",
+      "name": "クリエイト・レストランツ・ホールディングス",
+      "direction": "BUY",
+      "open": 749.0,
+      "close": 787.0,
+      "pnl": 5.07,
+      "win": true
     }
   ]
 }
