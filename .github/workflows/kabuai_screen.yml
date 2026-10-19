@@ -1,4 +1,4 @@
-name: 銘柄選別だけ通知（screen-only）
+name: 銘柄選別だけ通知（screen-only・⛔定期配信停止 2026-10-20）
 
 # 「銘柄選別だけ」の Discord 通知。売買の判断・自動発注は一切しない（候補リストを出すだけ）。
 #   08:30 JST ① 今日の候補（押し目買い用・5日−5%以上）＋ ② ショート候補（参考・5日+5%以上）
@@ -24,9 +24,11 @@ on:
         description: "true=Discordに送らずログに表示だけ"
         type: boolean
         default: false
-  schedule:
-    - cron: '30 23 * * 0-4'   # UTC 23:30 = JST 翌08:30 平日 → ①②
-    - cron: '35 0 * * 1-5'    # UTC 00:35 = JST 09:35 平日 → ③
+  # ⛔ 2026-10-20 本人「これ配信いらない 儲からない」で定期配信を停止（60日再生で押し目ルールは−0.04%/件 PF0.94＝絞って儲かる証拠なし）。
+  #    コードと手動実行(workflow_dispatch)は残置。再開するなら下の2行のコメントを外す。
+  # schedule:
+  #   - cron: '30 23 * * 0-4'   # UTC 23:30 = JST 翌08:30 平日 → ①②
+  #   - cron: '35 0 * * 1-5'    # UTC 00:35 = JST 09:35 平日 → ③
 
 concurrency:
   group: kabuai-screen-${{ github.event_name }}-${{ github.event.schedule || inputs.mode }}
