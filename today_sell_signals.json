@@ -1,11 +1,4 @@
 {
-  "date": "2026-10-19",
-  "signals": [
-    {
-      "ticker": "4403.T",
-      "name": "日油",
-      "direction": "SELL",
-      "prev_close": 2832.5
-    }
-  ]
+  "date": "2026-10-20",
+  "signals": []
 }

@@ -1823,7 +1823,7 @@
       "basis_date": "2026-10-16",
       "prev_close": 2660.0,
       "limit_price": 2660.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 12.76,
       "short": {
         "mark": "○",
@@ -1838,7 +1838,15 @@
       "atr_pct": 13.6,
       "vol_ratio": 1.7,
       "range_pct": 15.2,
-      "mcap_oku": 150
+      "mcap_oku": 150,
+      "entry_session": "2026-10-19",
+      "entry_open": 2560.0,
+      "entry_close": 2494.0,
+      "entry_fill": 2660.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 6.241,
+      "pnl_yen": 49800,
+      "win": true
     },
     {
       "ticker": "4493.T",
@@ -1848,7 +1856,7 @@
       "basis_date": "2026-10-16",
       "prev_close": 3810.0,
       "limit_price": 3810.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 21.14,
       "short": {
         "mark": "○",
@@ -1863,11 +1871,44 @@
       "atr_pct": 10.48,
       "vol_ratio": 1.8,
       "range_pct": 14.4,
-      "mcap_oku": 318
+      "mcap_oku": 318,
+      "entry_session": "2026-10-19",
+      "entry_open": 3670.0,
+      "entry_close": 3340.0,
+      "entry_fill": 3810.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 12.336,
+      "pnl_yen": 47000,
+      "win": true
+    },
+    {
+      "ticker": "4288.T",
+      "name": "アズジェント",
+      "direction": "SELL",
+      "signal_date": "2026-10-20",
+      "basis_date": "2026-10-19",
+      "prev_close": 722.0,
+      "limit_price": 722.0,
+      "status": "pending",
+      "daily_gain": 16.08,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 1300,
+      "entry_mode": "limit_day",
+      "dev25": 40.9,
+      "atr_pct": 12.05,
+      "vol_ratio": 0.4,
+      "range_pct": 13.0,
+      "mcap_oku": 24
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-19",
+  "last_report_date": "2026-10-20",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W42"
 }
