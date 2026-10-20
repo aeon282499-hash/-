@@ -1939,6 +1939,16 @@
       "close": 787.0,
       "pnl": 5.07,
       "win": true
+    },
+    {
+      "date": "2026-10-20",
+      "ticker": "8174.T",
+      "name": "日本瓦斯",
+      "direction": "BUY",
+      "open": 933.3,
+      "close": 937.5,
+      "pnl": 0.45,
+      "win": true
     }
   ]
 }
