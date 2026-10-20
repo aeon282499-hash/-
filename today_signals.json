@@ -1,12 +1,19 @@
 {
-  "date": "2026-10-20",
+  "date": "2026-10-21",
   "signals": [
     {
-      "ticker": "8174.T",
-      "name": "日本瓦斯",
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
       "direction": "BUY",
-      "prev_close": 933.8,
-      "limit_price": 943
+      "prev_close": 1802.0,
+      "limit_price": 1820
+    },
+    {
+      "ticker": "2379.T",
+      "name": "ディップ",
+      "direction": "BUY",
+      "prev_close": 1521.0,
+      "limit_price": 1536
     }
   ]
 }

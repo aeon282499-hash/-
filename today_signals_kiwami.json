@@ -1,18 +1,31 @@
 {
-  "date": "2026-10-20",
+  "date": "2026-10-21",
   "signals": [
     {
-      "ticker": "8174.T",
-      "name": "日本瓦斯",
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
       "direction": "BUY",
-      "prev_close": 933.8,
-      "limit_price": 943,
-      "days_cover": 0.04789695262239122,
-      "rsi": 44.4,
-      "deviation": -3.64,
-      "vol_ratio": 3.81,
-      "range_ratio": 0.48,
-      "turnover": 3967123200.0
+      "prev_close": 1802.0,
+      "limit_price": 1820,
+      "days_cover": 0.12444964647602041,
+      "rsi": 39.2,
+      "deviation": -2.16,
+      "vol_ratio": 0.75,
+      "range_ratio": 1.53,
+      "turnover": 2229660000.0
+    },
+    {
+      "ticker": "2379.T",
+      "name": "ディップ",
+      "direction": "BUY",
+      "prev_close": 1521.0,
+      "limit_price": 1536,
+      "days_cover": 0.527332628596722,
+      "rsi": 15.13,
+      "deviation": -13.82,
+      "vol_ratio": 4.02,
+      "range_ratio": 1.01,
+      "turnover": 2361629600.0
     }
   ]
 }

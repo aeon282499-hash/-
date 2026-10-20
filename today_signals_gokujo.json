@@ -1,4 +1,20 @@
 {
-  "date": "2026-10-20",
-  "signals": []
+  "date": "2026-10-21",
+  "signals": [
+    {
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
+      "direction": "BUY",
+      "prev_close": 1802.0,
+      "limit_price": 1820,
+      "days_cover": 0.12444964647602041,
+      "vt5": 0.851,
+      "updn_vol": 0.821,
+      "rsi": 39.2,
+      "deviation": -2.16,
+      "vol_ratio": 0.75,
+      "range_ratio": 1.53,
+      "turnover": 2229660000.0
+    }
+  ]
 }
