@@ -2753,5 +2753,97 @@
       "rsi": 72.55,
       "price": 2857.5
     }
+  },
+  "2026-10-20": {
+    "main:BUY:8253.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:6370.T": {
+      "decision": "HOLD",
+      "rsi": 34.29,
+      "price": 7257.0
+    },
+    "main:BUY:6383.T": {
+      "decision": "HOLD",
+      "rsi": 36.73,
+      "price": 5369.0
+    },
+    "main:BUY:3289.T": {
+      "decision": "HOLD",
+      "rsi": 39.24,
+      "price": 1200.5
+    },
+    "main:BUY:6471.T": {
+      "decision": "HOLD",
+      "rsi": 35.04,
+      "price": 1018.0
+    },
+    "main:BUY:8174.T": {
+      "decision": "HOLD",
+      "rsi": 44.02,
+      "price": 932.0
+    },
+    "main:SELL:4403.T": {
+      "decision": "HOLD",
+      "rsi": 67.33,
+      "price": 2822.0
+    },
+    "kiwami:BUY:8253.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:6370.T": {
+      "decision": "HOLD",
+      "rsi": 33.98,
+      "price": 7243.0
+    },
+    "kiwami:BUY:6383.T": {
+      "decision": "HOLD",
+      "rsi": 36.67,
+      "price": 5367.0
+    },
+    "kiwami_mid:BUY:8253.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:3289.T": {
+      "decision": "HOLD",
+      "rsi": 39.12,
+      "price": 1200.0
+    },
+    "kiwami_mid:BUY:6471.T": {
+      "decision": "HOLD",
+      "rsi": 34.79,
+      "price": 1016.5
+    },
+    "kiwami_small:BUY:3289.T": {
+      "decision": "HOLD",
+      "rsi": 39.12,
+      "price": 1200.0
+    },
+    "kiwami_small:BUY:6471.T": {
+      "decision": "HOLD",
+      "rsi": 34.79,
+      "price": 1016.5
+    },
+    "kiwami_small:BUY:8174.T": {
+      "decision": "HOLD",
+      "rsi": 44.05,
+      "price": 932.0999755859375
+    },
+    "kiwami_gokujo:BUY:6370.T": {
+      "decision": "HOLD",
+      "rsi": 33.98,
+      "price": 7243.0
+    },
+    "kiwami:SELL:4403.T": {
+      "decision": "HOLD",
+      "rsi": 67.39,
+      "price": 2822.5
+    }
   }
 }
