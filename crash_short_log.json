@@ -451,5 +451,35 @@
   "exec_open": 5270.0,
   "exec_close": 4940.0,
   "gap_pct": 3.94
+ },
+ {
+  "ticker": "4382.T",
+  "code": "4382",
+  "name": "ＨＥＲＯＺ",
+  "d0": "2026-10-19",
+  "close": 1470.0,
+  "r1": -16.19,
+  "volx": 4.46,
+  "runup": 109.8,
+  "tov_oku": 25.5,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
+ },
+ {
+  "ticker": "4498.T",
+  "code": "4498",
+  "name": "サイバートラスト",
+  "d0": "2026-10-19",
+  "close": 1784.0,
+  "r1": -7.18,
+  "volx": 4.83,
+  "runup": 65.3,
+  "tov_oku": 73.1,
+  "ma5_up": true,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
