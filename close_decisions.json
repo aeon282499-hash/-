@@ -2845,5 +2845,102 @@
       "rsi": 67.39,
       "price": 2822.5
     }
+  },
+  "2026-10-21": {
+    "main:BUY:6370.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:6383.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:3289.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:6471.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:8174.T": {
+      "decision": "HOLD",
+      "rsi": 42.63,
+      "price": 925.9000244140625
+    },
+    "main:BUY:4732.T": {
+      "decision": "HOLD",
+      "rsi": 40.97,
+      "price": 1807.5
+    },
+    "main:BUY:2379.T": {
+      "decision": "HOLD",
+      "rsi": 13.18,
+      "price": 1468.0
+    },
+    "main:SELL:4403.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:6370.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:6383.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:4732.T": {
+      "decision": "HOLD",
+      "rsi": 40.4,
+      "price": 1805.5
+    },
+    "kiwami_mid:BUY:3289.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:6471.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:4732.T": {
+      "decision": "HOLD",
+      "rsi": 40.4,
+      "price": 1805.5
+    },
+    "kiwami_small:BUY:3289.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:6471.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:8174.T": {
+      "decision": "HOLD",
+      "rsi": 42.41,
+      "price": 925.0
+    },
+    "kiwami_gokujo:BUY:6370.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:SELL:4403.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
