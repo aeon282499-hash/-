@@ -1913,10 +1913,60 @@
       "pnl_pct": 15.374,
       "pnl_yen": 144300,
       "win": true
+    },
+    {
+      "ticker": "4382.T",
+      "name": "ＨＥＲＯＺ",
+      "direction": "SELL",
+      "signal_date": "2026-10-22",
+      "basis_date": "2026-10-21",
+      "prev_close": 1631.0,
+      "limit_price": 1631.0,
+      "status": "pending",
+      "daily_gain": 17.76,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 600,
+      "entry_mode": "limit_day",
+      "dev25": 54.4,
+      "atr_pct": 13.18,
+      "vol_ratio": 4.8,
+      "range_pct": 16.7,
+      "mcap_oku": 247
+    },
+    {
+      "ticker": "4498.T",
+      "name": "サイバートラスト",
+      "direction": "SELL",
+      "signal_date": "2026-10-22",
+      "basis_date": "2026-10-21",
+      "prev_close": 2060.0,
+      "limit_price": 2060.0,
+      "status": "pending",
+      "daily_gain": 24.1,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 2,
+      "shares": 200,
+      "entry_mode": "limit_day",
+      "dev25": 51.2,
+      "atr_pct": 12.48,
+      "vol_ratio": 2.3,
+      "range_pct": 12.3,
+      "mcap_oku": 274
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-21",
+  "last_report_date": "2026-10-22",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W42"
 }
