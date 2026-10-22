@@ -1922,7 +1922,7 @@
       "basis_date": "2026-10-21",
       "prev_close": 1631.0,
       "limit_price": 1631.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 17.76,
       "short": {
         "mark": "○",
@@ -1937,7 +1937,15 @@
       "atr_pct": 13.18,
       "vol_ratio": 4.8,
       "range_pct": 16.7,
-      "mcap_oku": 247
+      "mcap_oku": 247,
+      "entry_session": "2026-10-22",
+      "entry_open": 1831.0,
+      "entry_close": 1640.0,
+      "entry_fill": 1831.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 10.431,
+      "pnl_yen": 114600,
+      "win": true
     },
     {
       "ticker": "4498.T",
@@ -1947,7 +1955,7 @@
       "basis_date": "2026-10-21",
       "prev_close": 2060.0,
       "limit_price": 2060.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 24.1,
       "short": {
         "mark": "○",
@@ -1962,11 +1970,69 @@
       "atr_pct": 12.48,
       "vol_ratio": 2.3,
       "range_pct": 12.3,
-      "mcap_oku": 274
+      "mcap_oku": 274,
+      "entry_session": "2026-10-22",
+      "entry_open": 2550.0,
+      "entry_close": 2560.0,
+      "entry_fill": 2550.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": -0.392,
+      "pnl_yen": -2000,
+      "win": false
+    },
+    {
+      "ticker": "153A.T",
+      "name": "カウリス",
+      "direction": "SELL",
+      "signal_date": "2026-10-23",
+      "basis_date": "2026-10-22",
+      "prev_close": 2807.0,
+      "limit_price": 2807.0,
+      "status": "pending",
+      "daily_gain": 21.25,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 1,
+      "shares": 300,
+      "entry_mode": "limit_day",
+      "dev25": 35.1,
+      "atr_pct": 15.52,
+      "vol_ratio": 1.4,
+      "range_pct": 8.4,
+      "mcap_oku": 147
+    },
+    {
+      "ticker": "4493.T",
+      "name": "サイバーセキュリティクラウド",
+      "direction": "SELL",
+      "signal_date": "2026-10-23",
+      "basis_date": "2026-10-22",
+      "prev_close": 3865.0,
+      "limit_price": 3865.0,
+      "status": "pending",
+      "daily_gain": 22.12,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": true,
+      "rank": 2,
+      "shares": 100,
+      "entry_mode": "limit_day",
+      "dev25": 45.9,
+      "atr_pct": 13.47,
+      "vol_ratio": 0.9,
+      "range_pct": 5.6,
+      "mcap_oku": 320
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-22",
+  "last_report_date": "2026-10-23",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W42"
 }
