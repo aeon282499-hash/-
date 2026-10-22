@@ -92,6 +92,7 @@ function viewMomentum() {
   const segs = mk.segments ? Object.values(mk.segments).filter(s => s && s.available).map(s => `<span class="chip">${esc(String(s.label || "").split("市場")[0])} ${s.score}<b>[${esc(s.grade)}]</b>${esc(s.regime || "")}</span>`).join("") : "";
   return `
     <a href="#/search" class="card hsearch">🔍 <span style="flex:1">コード・名前・事業内容（例 PHP）で検索…</span>${WATCH.length ? `<span class="tag">⭐ ${WATCH.length}</span>` : ""}</a>
+    <a href="#/news" class="card hsearch">📢 <span style="flex:1">今日の開示（上方修正・TOB・自社株買いの数字）</span></a>
     <div id="poscoach">${posCoach()}</div>
     ${WATCH.length ? `<div class="card" id="watchsum"><span class="muted">⭐ ウォッチ ${WATCH.length}件を確認中…</span></div>` : ""}
     ${mk.available ? `<div class="card"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b>地合い（EOD）</b><span class="muted" style="font-size:13.5px">${esc(mk.label || "")}</span></div>

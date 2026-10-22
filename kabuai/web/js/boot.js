@@ -9,6 +9,7 @@ route("#/detail/", "data", h => viewDetail(decodeURIComponent(h.split("/")[2])))
 route("#/plan", "plan", viewPlan);
 route("#/sell", "data", viewSell);
 route("#/momentum", "momentum", viewMomentum);   // v8.2: 🐵ランキングは独立タブ（本人「あれ一番欲しい」）
+route("#/news", "shodo", viewNews);   // v8.6: 📢開示（開示 PDF の数字・2026-10-22 本人「毎日自動で読んでチンパンに出して」）
 route("#/explore/", "shodo", h => viewExploreList(decodeURIComponent(h.split("/")[2])));
 route("#/explore", "shodo", viewExplore);   // v8: 🚩初動（探検）は独立タブ
 route("#/calc", "calc", viewCalc);

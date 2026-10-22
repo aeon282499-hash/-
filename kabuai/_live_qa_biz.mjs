@@ -11,7 +11,7 @@ const bizJson = k => { try { return JSON.parse(fs.readFileSync(`biz/${k}.json`, 
 
 const srcs = [...html.matchAll(/<script src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
 const code = srcs.map(s => fs.readFileSync("web/" + s, "utf8")).join("\n;\n");
-if (!html.includes("v=8.5.0")) { console.log("NG index.html の ?v= が 8.5.0 ではない"); process.exit(1); }
+if (!html.includes("v=8.6.0")) { console.log("NG index.html の ?v= が 8.6.0 ではない"); process.exit(1); }
 
 const ctxProxy = new Proxy({}, { get: () => () => {}, set: () => true });
 const store = {};
@@ -58,8 +58,8 @@ const codesOf = hv => [...hv.matchAll(/href="#\/detail\/([0-9A-Z]{4})"/g)].map(m
 
 console.log("── 0) 起動 ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("VERSION 8.5.0", ev("CFG.VERSION") === "8.5.0", ev("CFG.VERSION"));
-check("ROUTES 15本（変えていない）", ev("ROUTES.length") === 15, `${ev("ROUTES.length")}本`);
+check("VERSION 8.6.0", ev("CFG.VERSION") === "8.6.0", ev("CFG.VERSION"));
+check("ROUTES 16本（v8.6 で #/news）", ev("ROUTES.length") === 16, `${ev("ROUTES.length")}本`);
 
 console.log("── 1) 🔍銘柄検索の画面 ──");
 let hv = go("#/search");

@@ -12,3 +12,5 @@ _biz_cache.json
 _biz_cache.tmp
 _biz_text_pc.log
 _biz_full_run.log
+_brisk_*.json
+_brisk_*.log

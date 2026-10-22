@@ -498,6 +498,12 @@ def build_ir(data: dict, name_map: dict, data_date: str, sec_of: dict | None = N
     except Exception as e:
         print(f"  [ir] 開示検索はスキップ（非致命）: {e}")
         search_meta = {"error": str(e)[:200]}
+    # 📢開示（v8.6・2026-10-22 本人「これ毎日自動で読んでチンパンに出して」）: 当日＋前営業日の数字で語れる開示を PDF から抜く → data/ir_digest.json。非致命。
+    try:
+        import ir_digest
+        ir_digest.build_digest(rows_all, data)
+    except Exception as e:
+        print(f"  [ir] 📢開示はスキップ（非致命）: {e}")
     rows_win = [r for r in rows_all if r["date"] == today_key or (r["date"] in wkeys and r["final"]["label"] != "中立")]
     for r in rows_win:
         r["title"] = r["title"][:140]

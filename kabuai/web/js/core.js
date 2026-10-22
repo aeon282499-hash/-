@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "8.5.0",
+  VERSION: "8.6.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
@@ -84,7 +84,7 @@ function vnote(one, detail, label = "検証の数字") {
   return `<div class="vnote"><b>${one}</b>${detail ? `<details><summary>${esc(label)}</summary><div class="vbody">${detail}</div></details>` : ""}</div>`;
 }
 function flowSubNav(active) {
-  const t = [["shodo", "#/explore", "🚩 初動"], ["hot", "#/flow/hot", "🔥 人気テーマ"]];   // v8.4.1: 💴資金・連動は切替から外した（本人「この資金連動もいらない」2026-10-19・#/flow は直リンクで生存）
+  const t = [["shodo", "#/explore", "🚩 初動"], ["news", "#/news", "📢 開示"], ["hot", "#/flow/hot", "🔥 人気テーマ"]];   // v8.6: 📢開示   // v8.4.1: 💴資金・連動は切替から外した（本人「この資金連動もいらない」2026-10-19・#/flow は直リンクで生存）
   return `<div class="seg">${t.map(([k, h, l]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</div>`;
 }
 function dataSubNav(active) {
