@@ -504,8 +504,12 @@
   "tov_oku": 26.8,
   "ma5_up": true,
   "loanable": "○",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 0.0,
+  "result_yen": 0,
+  "exec_date": "2026-10-21",
+  "exec_open": 950.0,
+  "exec_close": 950.0,
+  "gap_pct": 18.75
  },
  {
   "ticker": "3909.T",
@@ -519,8 +523,12 @@
   "tov_oku": 9.8,
   "ma5_up": true,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 0.0,
+  "result_yen": 0,
+  "exec_date": "2026-10-21",
+  "exec_open": 725.0,
+  "exec_close": 725.0,
+  "gap_pct": 16.0
  },
  {
   "ticker": "4240.T",
@@ -534,8 +542,12 @@
   "tov_oku": 6.2,
   "ma5_up": true,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 0.851,
+  "result_yen": 2553,
+  "exec_date": "2026-10-21",
+  "exec_open": 705.0,
+  "exec_close": 699.0,
+  "gap_pct": -2.08
  },
  {
   "ticker": "7352.T",
@@ -549,7 +561,11 @@
   "tov_oku": 7.1,
   "ma5_up": true,
   "loanable": "×",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 10.643,
+  "result_yen": 31929,
+  "exec_date": "2026-10-21",
+  "exec_open": 498.0,
+  "exec_close": 445.0,
+  "gap_pct": 3.97
  }
 ]
