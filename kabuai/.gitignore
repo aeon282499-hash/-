@@ -7,3 +7,8 @@ __pycache__/
 data/
 # 🔍開示検索の本文キャッシュ（Actions では actions/cache で持ち回り）
 ir_text.json
+# 🔍事業内容検索の取得キャッシュ・ログ（biz_text_pc.py・PCだけ）
+_biz_cache.json
+_biz_cache.tmp
+_biz_text_pc.log
+_biz_full_run.log

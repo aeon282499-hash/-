@@ -157,16 +157,70 @@ function searchResults(q) {
   const score = r => (r.code === q ? 1000 : r.code.startsWith(q) ? 500 : 0) + (isCand(r) ? 100 : 0);
   hits.sort((a, b) => score(b) - score(a));
   const shown = hits.slice(0, 60);
-  if (!shown.length) return `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。</div>`;
+  const biz = bizNorm(q).length >= 2 ? (bizEnsure(), bizResults(q)) : "";   // v8.5: 2文字以上なら事業内容（有報）も照合
+  if (!shown.length) return (biz || `<div class="card muted">「${esc(q)}」に一致する銘柄はありません。</div>`);
   const more = hits.length > shown.length ? `<div class="note" style="margin:2px 2px 8px">上位${shown.length}件を表示（${hits.length}件一致）</div>` : `<div class="note" style="margin:2px 2px 8px">${shown.length}件一致</div>`;
-  return more + `<div class="cardgrid">${shown.map(searchCard).join("")}</div>`;
+  return more + `<div class="cardgrid">${shown.map(searchCard).join("")}</div>` + biz;
 }
-function onSearchInput(v) { SEARCH_Q = v; const el = document.getElementById("searchres"); if (el) el.innerHTML = searchResults(v); }
+
+// ── 📄 事業内容で探す（v8.5・2026-10-22 本人「PHP銘柄さがせていないのに腹がたってる」）──
+// kabuai/biz/<コード先頭1文字>.json（biz_text_pc.py が EDINET の有報から「事業の内容」2,000字＋「研究開発活動」600字を貯めたもの・年1回の文書なので月1更新）。
+// 株探の人気テーマにも TDnet の開示にも出ない語（PHP・WordPress・KUSANAGI…）は、ここにしか書いていない。検索した時だけ10分割を順に読む（約22MB・sw.js が2回目以降はキャッシュ）。
+let BIZ_IDX = null;          // biz/index.json（{updated, n, n_text, shards:[{k,n,kb}]}）・false＝無い
+const BIZ_ROWS = {};         // k → rows（h＝照合用に正規化した本文）
+const BIZ_PENDING = {};      // 読み込み中の k
+const bizNorm = s => String(s == null ? "" : s).normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+function bizTerms(q) {        // 空白区切り＝AND。ir.js の表記ゆれ辞書（irTerms）があれば使う
+  if (typeof irTerms === "function") return irTerms(q);
+  return String(q || "").split(/[\s　,、]+/).map(bizNorm).filter(Boolean).map(t => [t]);
+}
+function bizRefresh() { const el = document.getElementById("searchres"); if (el) el.innerHTML = searchResults(SEARCH_Q); }
+async function bizLoad(k) {
+  if (BIZ_ROWS[k] || BIZ_PENDING[k]) return;
+  BIZ_PENDING[k] = 1;
+  const j = await fetchFirst([`../biz/${k}.json`, `biz/${k}.json`]);
+  delete BIZ_PENDING[k];
+  BIZ_ROWS[k] = (j && Array.isArray(j.rows)) ? j.rows.map(r => ({ code: r.code, name: r.name, fy: r.fy, doc: r.doc, h: bizNorm((r.t || "") + " ■ " + (r.r || "")) })) : [];
+  bizRefresh();
+}
+function bizEnsure() {
+  if (BIZ_IDX == null) {
+    BIZ_IDX = false;
+    fetchFirst(["../biz/index.json", "biz/index.json"]).then(j => {
+      BIZ_IDX = (j && Array.isArray(j.shards)) ? j : false;
+      if (BIZ_IDX) BIZ_IDX.shards.filter(s => s.n > 0).forEach(s => bizLoad(s.k));
+      bizRefresh();
+    });
+  } else if (BIZ_IDX) BIZ_IDX.shards.filter(s => s.n > 0).forEach(s => bizLoad(s.k));
+}
+function bizSnippet(h, terms) {
+  let best = -1, len = 0;
+  for (const vs of terms) for (const v of vs) { const i = h.indexOf(v); if (i >= 0 && (best < 0 || i < best)) { best = i; len = v.length; } }
+  if (best < 0) return "";
+  const a = Math.max(0, best - 45), b = Math.min(h.length, best + len + 75);
+  return `${a > 0 ? "…" : ""}${esc(h.slice(a, best))}<mark>${esc(h.slice(best, best + len))}</mark>${esc(h.slice(best + len, b))}${b < h.length ? "…" : ""}`;
+}
+function bizResults(q) {
+  const terms = bizTerms(q); if (!terms.length) return "";
+  const byCode = {}; (SEARCH || []).forEach(s => { byCode[s.code] = s; });
+  const hits = [];
+  for (const k in BIZ_ROWS) for (const r of BIZ_ROWS[k]) if (terms.every(vs => vs.some(v => r.h.includes(v)))) hits.push({ r, s: byCode[r.code] || null });
+  hits.sort((a, b) => (b.s ? Number(b.s.r1) || 0 : -999) - (a.s ? Number(a.s.r1) || 0 : -999));   // 今日動いた順・EOD索引に無い（上場廃止など）は最後
+  const nSh = BIZ_IDX && BIZ_IDX.shards ? BIZ_IDX.shards.filter(s => s.n > 0).length : 0, loading = Object.keys(BIZ_PENDING).length;
+  const sub = BIZ_IDX === false ? "索引なし（PC の biz_text_pc.py が置くと出る）" : loading ? `読み込み中 ${nSh - loading}/${nSh}` : BIZ_IDX ? `有報 ${Number(BIZ_IDX.n_text || 0).toLocaleString()}社・${esc(String(BIZ_IDX.updated || "").slice(0, 10))}` : "";
+  const head = `<div class="hh" style="margin-top:14px">📄 事業内容に「${esc(q)}」 ${hits.length}社 <span class="sub">${sub}</span></div>`;
+  const rows = hits.slice(0, 80).map(({ r, s }) => `<div class="irrow">
+      <div class="irhead"><a href="#/detail/${esc(r.code)}"><b>${esc(s ? s.name : r.name)}</b></a> <small>${esc(r.code)}</small> ${s ? `<span class="num">${yen(s.price)} ${pctTag(s.r1)}</span>` : `<small class="muted">EOD索引に無い</small>`}${r.fy ? ` <small class="muted">有報 ${esc(r.fy)}</small>` : ""}</div>
+      <div class="note irsnip">${bizSnippet(r.h, terms)}</div></div>`).join("");
+  const more = hits.length > 80 ? `<div class="note">…ほか ${hits.length - 80}社（語を足して絞る）</div>` : "";
+  return head + (rows ? `<div class="card tight">${rows}</div>` : `<div class="card"><div class="empty">${loading ? "読み込み中…" : BIZ_IDX === false ? "索引がありません" : "該当なし"}</div></div>`) + more;
+}
+function onSearchInput(v) { SEARCH_Q = v; const el = document.getElementById("searchres"); if (el) el.innerHTML = searchResults(v); }   // 事業内容の照合（4,230社×2,600字の includes）は数十msで足りるので同期のまま
 function viewSearch() {
   if (!SEARCH) loadSearch().then(() => { const el = document.getElementById("searchres"); if (el) el.innerHTML = searchResults(SEARCH_Q); });
   setTimeout(() => { const i = document.getElementById("searchinput"); if (i && !SEARCH_Q) i.focus(); }, 0);
   return `<h2>🔍 銘柄検索 <span class="sub">EODシグナル・終値ベース</span></h2>
-    <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="コード（例 7203）か銘柄名で検索" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
+    <input id="searchinput" class="searchbox" type="search" inputmode="text" autocomplete="off" placeholder="コード・銘柄名・事業内容の言葉（例 PHP）" value="${esc(SEARCH_Q)}" oninput="onSearchInput(this.value)">
     <div class="note" style="margin:8px 2px 12px">✅＝過去検証で勝てた「買いの型」が出ている銘柄。<b style="color:#ffd93d">☆</b>でウォッチ保存。</div>
     <div id="searchres">${searchResults(SEARCH_Q)}</div><p class="disc">${esc(DATA.disclaimer)}</p>`;
 }

@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "8.4.2",
+  VERSION: "8.5.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
