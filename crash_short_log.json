@@ -567,5 +567,20 @@
   "exec_open": 498.0,
   "exec_close": 445.0,
   "gap_pct": 3.97
+ },
+ {
+  "ticker": "2326.T",
+  "code": "2326",
+  "name": "デジタルアーツ",
+  "d0": "2026-10-22",
+  "close": 5800.0,
+  "r1": -8.08,
+  "volx": 3.58,
+  "runup": 31.2,
+  "tov_oku": 19.7,
+  "ma5_up": false,
+  "loanable": "○",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
