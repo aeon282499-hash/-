@@ -1988,7 +1988,7 @@
       "basis_date": "2026-10-22",
       "prev_close": 2807.0,
       "limit_price": 2807.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 21.25,
       "short": {
         "mark": "○",
@@ -2003,7 +2003,15 @@
       "atr_pct": 15.52,
       "vol_ratio": 1.4,
       "range_pct": 8.4,
-      "mcap_oku": 147
+      "mcap_oku": 147,
+      "skip_reason": "指値¥2,807に届かず（高値¥2,729）",
+      "entry_session": "2026-10-23",
+      "entry_open": 2622.0,
+      "entry_close": 2600.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
     },
     {
       "ticker": "4493.T",
@@ -2013,7 +2021,7 @@
       "basis_date": "2026-10-22",
       "prev_close": 3865.0,
       "limit_price": 3865.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 22.12,
       "short": {
         "mark": "○",
@@ -2028,11 +2036,44 @@
       "atr_pct": 13.47,
       "vol_ratio": 0.9,
       "range_pct": 5.6,
-      "mcap_oku": 320
+      "mcap_oku": 320,
+      "skip_reason": "指値¥3,865に届かず（高値¥3,690）",
+      "entry_session": "2026-10-23",
+      "entry_open": 3585.0,
+      "entry_close": 3450.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
+    },
+    {
+      "ticker": "4475.T",
+      "name": "ＨＥＮＮＧＥ",
+      "direction": "SELL",
+      "signal_date": "2026-10-26",
+      "basis_date": "2026-10-23",
+      "prev_close": 2470.0,
+      "limit_price": 2470.0,
+      "status": "pending",
+      "daily_gain": 9.0,
+      "short": {
+        "mark": "○",
+        "iss": "2",
+        "note": "貸借銘柄＝制度信用で空売り可。ただし増担保・日々公表・逆日歩は当日板で要確認。"
+      },
+      "jsf_stop": false,
+      "rank": 1,
+      "shares": 400,
+      "entry_mode": "limit_day",
+      "dev25": 32.6,
+      "atr_pct": 7.07,
+      "vol_ratio": 3.6,
+      "range_pct": 7.7,
+      "mcap_oku": 730
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-23",
+  "last_report_date": "2026-10-26",
   "last_monthly_report": "2026-09",
-  "last_weekly_report": "2026-W42"
+  "last_weekly_report": "2026-W43"
 }
