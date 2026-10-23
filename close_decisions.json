@@ -2974,5 +2974,27 @@
       "rsi": null,
       "price": null
     }
+  },
+  "2026-10-23": {
+    "main:BUY:4732.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:4732.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:4732.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:SELL:4403.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
