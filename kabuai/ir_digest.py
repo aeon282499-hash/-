@@ -198,6 +198,10 @@ def parse_revision(text: str) -> dict | None:
         n = next((x for x in nows if x > h), None)
         if n is None or n - h > 400:
             continue
+        # 配当予想の表（「円銭」「―」の行）は業績の表ではない。直前の文章に「営業利益、経常利益…」とあると列を拾ってしまう（2961 日本調理機 2026-10-22: 配当45→75円を営業利益0.5億→0.8億と誤読）
+        row = t[h:n]
+        if re.search(r"円\s*銭|配当", row) and not re.search(r"百万円|千円", row):
+            continue
         # 見出し（この表の直前 260字）から列の並び
         seg_head = t[max(0, h - 260):h]
         cols = _columns(seg_head)
