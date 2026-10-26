@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-23",
+ "last_signal_date": "2026-10-26",
  "positions": [
   {
    "ticker": "6521.T",
@@ -694,8 +694,11 @@
    "shares": 200,
    "rsi": 28.4,
    "runup5": -13.5,
-   "status": "pending",
-   "prev_close": 1889.0
+   "status": "extended",
+   "prev_close": 1889.0,
+   "entry": 1889.0,
+   "gap_pct": 13.55,
+   "ext_exit_date": "2026-10-30"
   }
  ],
  "last_reminder_date": "2026-10-26"
