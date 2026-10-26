@@ -1,4 +1,26 @@
 {
-  "date": "2026-10-26",
-  "signals": []
+  "date": "2026-10-27",
+  "signals": [
+    {
+      "ticker": "9434.T",
+      "name": "ソフトバンク",
+      "direction": "BUY",
+      "prev_close": 237.4,
+      "limit_price": 239
+    },
+    {
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
+      "direction": "BUY",
+      "prev_close": 2870.0,
+      "limit_price": 2898
+    },
+    {
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "prev_close": 2824.5,
+      "limit_price": 2852
+    }
+  ]
 }

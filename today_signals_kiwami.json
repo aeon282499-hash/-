@@ -1,4 +1,57 @@
 {
-  "date": "2026-10-26",
-  "signals": []
+  "date": "2026-10-27",
+  "signals": [
+    {
+      "ticker": "9434.T",
+      "name": "ソフトバンク",
+      "direction": "BUY",
+      "prev_close": 237.4,
+      "limit_price": 239,
+      "days_cover": 0.27746677931142644,
+      "rsi": 39.86,
+      "deviation": -2.38,
+      "vol_ratio": 1.31,
+      "range_ratio": 3.17,
+      "turnover": 25554495680.0
+    },
+    {
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
+      "direction": "BUY",
+      "prev_close": 2870.0,
+      "limit_price": 2898,
+      "days_cover": 0.11556489809614474,
+      "rsi": 40.81,
+      "deviation": -2.27,
+      "vol_ratio": 1.36,
+      "range_ratio": 2.53,
+      "turnover": 35021567900.0
+    },
+    {
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "prev_close": 2824.5,
+      "limit_price": 2852,
+      "days_cover": 0.11642232486006274,
+      "rsi": 38.84,
+      "deviation": -3.61,
+      "vol_ratio": 1.16,
+      "range_ratio": 1.65,
+      "turnover": 6328209250.0
+    },
+    {
+      "ticker": "4042.T",
+      "name": "東ソー",
+      "direction": "BUY",
+      "prev_close": 2562.0,
+      "limit_price": 2587,
+      "days_cover": 0.822910468861739,
+      "rsi": 44.28,
+      "deviation": -1.77,
+      "vol_ratio": 1.25,
+      "range_ratio": 1.71,
+      "turnover": 3839497200.0
+    }
+  ]
 }
