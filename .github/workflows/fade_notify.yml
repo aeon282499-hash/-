@@ -1,0 +1,76 @@
+name: 売りフェード（友達版）候補通知
+
+# 友達の「売りフェード戦略」の銘柄選定だけを Discord に通知する（発注機能なし・kabuai/fade_notify.py）。
+#   19:00 JST  翌営業日の候補（ルールA 1本＋参考 2〜5位）
+#   15:40 JST  当日の寄値→引値 の紙採点（売ったかどうかに関係なく毎日貯める）
+# 通知先は Secrets の DISCORD_WEBHOOK_FADE_URL（URL はコード/ログに出さない）。未設定なら標準出力のみ。
+# 台帳 kabuai/fade_notify_ledger.json はこのワークフローがコミットする。
+# ※ GitHub の schedule は「既定ブランチ(main)」のワークフローしか走らない＝feature/fade-notify のままでは
+#    定時配信は動かず、手動実行（workflow_dispatch --ref feature/fade-notify）か PC のタスクで回す。
+# ※ GitHub cron は数十分遅延することがある（確実な定刻が要るなら cron-job.org→Worker 経路を併用）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "evening=翌営業日の候補 / score=当日の採点 / auto=JST時刻で自動（17時前=score）"
+        type: choice
+        options: [auto, evening, score]
+        default: auto
+      date:
+        description: "日付 YYYY-MM-DD（空=今日）。evening は基準日、score は取引日"
+        required: false
+        default: ""
+      dry_run:
+        description: "true=Discordに送らずログに表示だけ（台帳も書かない）"
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 10 * * 1-5'    # UTC 10:00 = JST 19:00 平日 → evening
+    - cron: '40 6 * * 1-5'    # UTC 06:40 = JST 15:40 平日 → score
+
+concurrency:
+  group: fade-notify
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      DISCORD_WEBHOOK_FADE_URL: ${{ secrets.DISCORD_WEBHOOK_FADE_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        run: pip install pandas numpy requests python-dotenv jpholiday
+
+      - name: 候補の選定 → Discord
+        run: |
+          ARGS="--mode ${{ inputs.mode || 'auto' }}"
+          if [ -n "${{ inputs.date }}" ]; then ARGS="$ARGS --date ${{ inputs.date }}"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -X utf8 kabuai/fade_notify.py $ARGS
+
+      - name: 台帳をコミット
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kabuai/fade_notify_ledger.json || true
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(fade_notify): ledger [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          echo "push failed"; exit 1
