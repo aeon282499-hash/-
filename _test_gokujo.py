@@ -121,7 +121,7 @@ e2 = KC.build_embeds([{"ticker": "2222.T", "name": "枯れA", "reason_type": "RS
 check("既定(極み)のタイトルは従来どおり⚡極み", e2[0]["title"].startswith("⚡【極み"))
 
 # ── ⑧ 勝ち乗せ停止（2026-09-21 本玉300万にしたので、乗せると1銘柄600万＝買い枠300万の倍になるため）──
-check("極上 1枠×150万(縮小中・9/30に余力55万以上なら300万へ)・乗せなし(ADDON_FRAC=0.0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 1 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 0.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
+check("極上 1枠×150万(10/28本人決定で150万続行)・乗せなし(ADDON_FRAC=0.0)・DAY1CUT維持", SE.GOKUJO_MAX_SLOTS == 1 and SE.GOKUJO_SIZE == 1_500_000 and SE.GOKUJO_ADDON_FRAC == 0.0 and SE.GOKUJO_DAY1_CUT_PCT == 1.0)
 check("kiwami_close も同じ乗せ設定を参照", KC._GOKUJO_ADDON_FRAC == 0.0)
 e3 = KC.build_embeds([], [{"ticker": "2222.T", "name": "枯れA", "rsi_now": 40.0, "current_price": 2100.0, "entry_open": 2010.0, "today_hold": 1}], TODAY, op, brand="極上")
 check("乗せ停止中は初日+4.5%でも『同額を追加』を出さない", not any("同額を追加" in (x.get("description") or "") for x in e3))
