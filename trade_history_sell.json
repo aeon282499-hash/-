@@ -139,6 +139,16 @@
       "close": 2862.0,
       "pnl": -0.21,
       "win": false
+    },
+    {
+      "date": "2026-10-27",
+      "ticker": "9020.T",
+      "name": "東日本旅客鉄道",
+      "direction": "SELL",
+      "open": 3671.0,
+      "close": 3609.0,
+      "pnl": 1.69,
+      "win": true
     }
   ]
 }

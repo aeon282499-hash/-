@@ -1969,6 +1969,36 @@
       "close": 1462.0,
       "pnl": -4.51,
       "win": false
+    },
+    {
+      "date": "2026-10-27",
+      "ticker": "9434.T",
+      "name": "ソフトバンク",
+      "direction": "BUY",
+      "open": 235.7,
+      "close": 233.3,
+      "pnl": -1.02,
+      "win": false
+    },
+    {
+      "date": "2026-10-27",
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
+      "direction": "BUY",
+      "open": 2866.5,
+      "close": 2850.5,
+      "pnl": -0.56,
+      "win": false
+    },
+    {
+      "date": "2026-10-27",
+      "ticker": "7912.T",
+      "name": "大日本印刷",
+      "direction": "BUY",
+      "open": 2836.0,
+      "close": 2859.0,
+      "pnl": 0.81,
+      "win": true
     }
   ]
 }
