@@ -1,11 +1,4 @@
 {
-  "date": "2026-10-27",
-  "signals": [
-    {
-      "ticker": "9020.T",
-      "name": "東日本旅客鉄道",
-      "direction": "SELL",
-      "prev_close": 3736.0
-    }
-  ]
+  "date": "2026-10-28",
+  "signals": []
 }

@@ -1,57 +1,31 @@
 {
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "signals": [
     {
-      "ticker": "9434.T",
-      "name": "ソフトバンク",
+      "ticker": "5076.T",
+      "name": "インフロニア・ホールディングス",
       "direction": "BUY",
-      "prev_close": 237.4,
-      "limit_price": 239,
-      "days_cover": 0.27746677931142644,
-      "rsi": 39.86,
-      "deviation": -2.38,
-      "vol_ratio": 1.31,
-      "range_ratio": 3.17,
-      "turnover": 25554495680.0
+      "prev_close": 2352.5,
+      "limit_price": 2376,
+      "days_cover": 0.8883711165345948,
+      "rsi": 42.22,
+      "deviation": -5.17,
+      "vol_ratio": 2.25,
+      "range_ratio": 1.88,
+      "turnover": 19345574600.0
     },
     {
-      "ticker": "9433.T",
-      "name": "ＫＤＤＩ",
+      "ticker": "4676.T",
+      "name": "フジ・メディア・ホールディングス",
       "direction": "BUY",
-      "prev_close": 2870.0,
-      "limit_price": 2898,
-      "days_cover": 0.11556489809614474,
-      "rsi": 40.81,
-      "deviation": -2.27,
-      "vol_ratio": 1.36,
-      "range_ratio": 2.53,
-      "turnover": 35021567900.0
-    },
-    {
-      "ticker": "7912.T",
-      "name": "大日本印刷",
-      "direction": "BUY",
-      "prev_close": 2824.5,
-      "limit_price": 2852,
-      "days_cover": 0.11642232486006274,
-      "rsi": 38.84,
-      "deviation": -3.61,
-      "vol_ratio": 1.16,
-      "range_ratio": 1.65,
-      "turnover": 6328209250.0
-    },
-    {
-      "ticker": "4042.T",
-      "name": "東ソー",
-      "direction": "BUY",
-      "prev_close": 2562.0,
-      "limit_price": 2587,
-      "days_cover": 0.822910468861739,
-      "rsi": 44.28,
-      "deviation": -1.77,
-      "vol_ratio": 1.25,
-      "range_ratio": 1.71,
-      "turnover": 3839497200.0
+      "prev_close": 3970.0,
+      "limit_price": 4005,
+      "days_cover": 0.40085604097885946,
+      "rsi": 42.2,
+      "deviation": -1.78,
+      "vol_ratio": 1.28,
+      "range_ratio": 2.02,
+      "turnover": 3725450200.0
     }
   ]
 }

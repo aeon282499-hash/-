@@ -1,26 +1,12 @@
 {
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "signals": [
     {
-      "ticker": "9434.T",
-      "name": "ソフトバンク",
+      "ticker": "4676.T",
+      "name": "フジ・メディア・ホールディングス",
       "direction": "BUY",
-      "prev_close": 237.4,
-      "limit_price": 239
-    },
-    {
-      "ticker": "9433.T",
-      "name": "ＫＤＤＩ",
-      "direction": "BUY",
-      "prev_close": 2870.0,
-      "limit_price": 2898
-    },
-    {
-      "ticker": "7912.T",
-      "name": "大日本印刷",
-      "direction": "BUY",
-      "prev_close": 2824.5,
-      "limit_price": 2852
+      "prev_close": 3970.0,
+      "limit_price": 4005
     }
   ]
 }
