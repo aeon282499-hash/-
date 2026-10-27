@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-26",
+ "last_signal_date": "2026-10-27",
  "positions": [
   {
    "ticker": "6521.T",
@@ -699,6 +699,17 @@
    "entry": 1889.0,
    "gap_pct": 13.55,
    "ext_exit_date": "2026-10-30"
+  },
+  {
+   "ticker": "9697.T",
+   "name": "カプコン",
+   "type": "第２四半期",
+   "date": "2026-10-27",
+   "signal_price": 4348.0,
+   "shares": 100,
+   "rsi": 45.8,
+   "runup5": -5.2,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-26"
