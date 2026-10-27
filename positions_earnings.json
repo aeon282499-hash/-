@@ -709,8 +709,9 @@
    "shares": 100,
    "rsi": 45.8,
    "runup5": -5.2,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 4380.0
   }
  ],
- "last_reminder_date": "2026-10-26"
+ "last_reminder_date": "2026-10-28"
 }
