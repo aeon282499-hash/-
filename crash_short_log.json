@@ -599,8 +599,12 @@
   "tov_oku": 9.9,
   "ma5_up": true,
   "loanable": "○",
-  "result_pct": null,
-  "result_yen": null
+  "result_pct": 1.242,
+  "result_yen": 3726,
+  "exec_date": "2026-10-26",
+  "exec_open": 4830.0,
+  "exec_close": 4770.0,
+  "gap_pct": 1.47
  },
  {
   "ticker": "4395.T",
@@ -614,6 +618,25 @@
   "tov_oku": 5.2,
   "ma5_up": false,
   "loanable": "×",
+  "result_pct": 2.21,
+  "result_yen": 6630,
+  "exec_date": "2026-10-26",
+  "exec_open": 905.0,
+  "exec_close": 885.0,
+  "gap_pct": 3.08
+ },
+ {
+  "ticker": "3788.T",
+  "code": "3788",
+  "name": "ＧＭＯグローバルサイン・ホールディングス",
+  "d0": "2026-10-26",
+  "close": 2427.0,
+  "r1": -6.94,
+  "volx": 3.03,
+  "runup": 36.6,
+  "tov_oku": 5.2,
+  "ma5_up": true,
+  "loanable": "○",
   "result_pct": null,
   "result_yen": null
  }
