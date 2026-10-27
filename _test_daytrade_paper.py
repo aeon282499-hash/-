@@ -294,7 +294,7 @@ def test_alert_map_exclusion():
     # 1位の9999が売り禁 → 除外されず1番のまま・🚫バッジ+jsf_stop=True・GO維持
     am = {"9999": {"jsf_stop": True}}
     banned = []
-    picks = dp.daily_top_fades(data, today, iss, alert_map=am, excluded_out=banned)
+    picks = dp.daily_top_fades(data, today, iss, alert_map=am, excluded_out=banned, n=2)
     check("売り禁でも1番のまま表示", picks[0]["ticker"] == "9999.T" and picks[0]["rank"] == 1)
     check("🚫売り禁バッジ", "🚫売り禁" in picks[0]["reg_note"] and "ハイカラ" in picks[0]["reg_note"])
     check("jsf_stopフラグ付与", picks[0]["jsf_stop"] is True)
@@ -309,7 +309,7 @@ def test_alert_map_exclusion():
 
     # 注意喚起/増担保は⚠️注記のみ
     am2 = {"9999": {"jsf_warn": True}, "6666": {"tse_reg": True}}
-    picks2 = dp.daily_top_fades(data, today, iss, alert_map=am2)
+    picks2 = dp.daily_top_fades(data, today, iss, alert_map=am2, n=2)
     check("注意喚起の⚠️注記", "注意喚起" in picks2[0]["reg_note"])
     check("増担保の⚠️注記", "増担保" in picks2[1]["reg_note"])
     # 上限2なので3番目は返らない。規制なしのreg_note空はn=4指定で確認する
@@ -317,7 +317,7 @@ def test_alert_map_exclusion():
     check("規制なしはreg_note空", picks2b[2]["reg_note"] == "")
 
     # alert_map None → 従来と同一（上限2）
-    picks3 = dp.daily_top_fades(data, today, iss)
+    picks3 = dp.daily_top_fades(data, today, iss, n=2)
     check("alert_map無し=従来通り", picks3[0]["ticker"] == "9999.T" and len(picks3) == 2)
 
 
@@ -332,12 +332,13 @@ def test_daily_top_fades():
     today = date(2026, 7, 15)
     iss = {"9999": "2", "6666": "2", "7777": "2", "8888": "2"}
 
-    picks = dp.daily_top_fades(data, today, iss)
-    # 2026-07-28: 上限8→2。エッジは1番に集中し3番以降はPF0.99＝撃つと損のため表示ごと落とした
-    check("上限2に絞る", len(picks) == 2)
+    # 2026-10-28 本人「②はやめた」→ 既定は①だけ。n=2 を渡せば従来どおり2本(②を戻す時用)
+    check("既定は①だけ", len(dp.daily_top_fades(data, today, iss)) == 1)
+    check("PAPER_MAX_PICKSは1", dp.PAPER_MAX_PICKS == 1)
+    picks = dp.daily_top_fades(data, today, iss, n=2)
+    check("n=2なら2本", len(picks) == 2)
     check("1番にrankが付く", picks[0]["rank"] == 1)
     check("2番にrankが付く", picks[1]["rank"] == 2)
-    check("PAPER_MAX_PICKSは2", dp.PAPER_MAX_PICKS == 2)
     # 2026-07-28: 出来高が20日平均の6倍以上=本物の材料で翌日も買われる（帯別PF0.81）→候補外
     check("出来高6倍以上は候補から除外",
           dp.daily_top_fades({"9999.T": _flat_then(21, vol_x=8.0)}, today, {"9999": "2"}) == [])
@@ -384,7 +385,7 @@ def test_daily_top_fades():
         dp.FADE_PX_MIN = 0
     # 条件を満たす玉は必ずNO-GO玉より前に来る（画面の1番＝BTの1番）
     _mix = dp.daily_top_fades({"9999.T": _flat_then(21, rng_pct=0.5),   # ATR不足=撃たない
-                               "6666.T": _flat_then(9)}, today, {"9999": "2", "6666": "2"})
+                               "6666.T": _flat_then(9)}, today, {"9999": "2", "6666": "2"}, n=2)
     check("撃てる玉がNO-GO玉より前", _mix[0]["ticker"] == "6666.T" and _mix[0]["verdict"] == "GO")
     check("後ろのNO-GO玉も理由付きで見える", _mix[1]["verdict"] == "NOGO" and _mix[1]["nogo_reason"])
     # 2026-07-31: GO閾値 +6% → +7%（低位株を入れて再検証・PF1.43→1.52・両期間改善）
@@ -461,7 +462,10 @@ def test_daily_top_fades():
           len(dp.daily_top_fades({"3333.T": _flat_then(20, base=5500)}, today, {"3333": "2"})) == 1)
     # 2026-08-18 100万へ復帰（入金で現金余力50万＝8/15の約束ライン40万を超過。
     # 70万は8/15の一時措置だった。友達用FRIENDS_SIZEは50万で独立(2026-08-18移設)）
-    check("CAPITAL_PER_TRADEは100万(2026-08-18復帰)", dp.CAPITAL_PER_TRADE == 1_000_000)
+    # 2026-10-28 本人「①だけ・とりあえず70万」
+    check("CAPITAL_PER_TRADEは70万(2026-10-28)", dp.CAPITAL_PER_TRADE == 700_000)
+    check("70万境界: 終値7,000円超は除外",
+          dp.daily_top_fades({"3333.T": _flat_then(20, base=6000)}, today, {"3333": "2"}) == [])
 
     # 借りやすさグレード: ratio_mapを渡すとborrowが付く
     pr = dp.daily_top_fades({"9999.T": _flat_then(21)}, today, {"9999": "2"}, ratio_map={"9999": 45.0})
@@ -541,6 +545,39 @@ def test_fetch_failed_is_not_miokuri():
 
 
 def test_premium_pershare_line():
+    """②あり時代(①100万/②50万・2本)の文面を固定する。2026-10-28〜は①70万だけだが、
+    ②を戻した時の経路として残す＝このテストの間だけ当時の定数に戻す。"""
+    saved = (dp.PAPER_MAX_PICKS, dict(dp.CAPITAL_BY_RANK))
+    dp.PAPER_MAX_PICKS = 2
+    dp.CAPITAL_BY_RANK.update({1: 1_000_000, 2: 500_000})
+    try:
+        _premium_pershare_line_body()
+    finally:
+        dp.PAPER_MAX_PICKS = saved[0]
+        dp.CAPITAL_BY_RANK.clear()
+        dp.CAPITAL_BY_RANK.update(saved[1])
+
+
+def test_rank1_only_70():
+    """2026-10-28 本人「②はやめた・①だけ・とりあえず70万」: 配信は①1本・70万の株数・②の文言なし。"""
+    import io
+    import contextlib
+    import json as _json
+    stats = dp.cumulative_stats({"positions": [], "expired": []})
+    picks = [{"ticker": "6522.T", "name": "テスト①", "prev_close": 2165, "min_entry_price": 2165,
+              "verdict": "GO", "rank": 1, "jsf_stop": False, "short": {"mark": "○", "iss": "2", "note": ""},
+              "reg_note": ""}]
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        dp.send_report([], [], picks, stats, date(2026, 10, 29), dry=True)
+    e = _json.loads(buf.getvalue())["embeds"][0]
+    d = e["description"]
+    check("見出しは70万円・①だけ", "🎯 70万円で" in d and "②" not in d)
+    check("株数は70万基準(2165円→300株)", "300株" in d)
+    check("footerに②が出ない", "②" not in e["footer"]["text"])
+
+
+def _premium_pershare_line_body():
     """2026-08-15: 売り禁玉だけに出すプレミアム料の円/株判断行（アスタリスク8円/株が発端）。
     SBI画面の円/株とそのまま見比べられること・貸借○の玉には出ないことを確認する。"""
     import io
@@ -680,10 +717,10 @@ def test_monthly_era_capital():
     with contextlib.redirect_stdout(buf):
         dp.send_monthly(b, "2026-08", dry=True)
     d = _json.loads(buf.getvalue())["embeds"][0]["description"]
-    mr8 = 30000 / dp.CAPITAL_PER_TRADE * 100     # 8月は現行定数が分母（サイズ変更に追従）
+    mr8 = 30000 / 1_000_000 * 100     # 8月は100万が分母（2026-10-28〜定数が70万になったので固定値）
     ann = -3.0 + mr8
     check("7月-1.5万は50万分母で月利-3.0%", "`2026-07`" in d and "月利-3.0%" in d)
-    check("8月+3.0万は現行定数分母", f"月利+{mr8:.1f}%" in d)
+    check("8月+3.0万は100万分母", f"月利+{mr8:.1f}%" in d)
     check("年間%は月利の和", f"合計: {'+' if ann >= 0 else ''}{ann:.1f}%" in d)
 
 
@@ -709,7 +746,7 @@ def test_monthly_combo_september():
         dp.send_monthly(b, "2026-09", dry=True)
     e = _json.loads(buf.getvalue())["embeds"][0]
     d = e["description"]
-    combo_cap = dp.CAPITAL_BY_RANK[1] + dp.CAPITAL_BY_RANK[2]
+    combo_cap = 1_500_000             # 9〜10月は①100万+②50万（2026-10-28〜①70万のみ）
     mr9 = (30000 - 10000) / combo_cap * 100
     check("9月分母は①+②の150万", combo_cap == 1_500_000
           and f"月利+{mr9:.1f}%" in d)
@@ -798,7 +835,7 @@ def test_mcap_map():
     iss = {"9999": "2", "6666": "2"}
     mm = {"9999": 1500, "6666": 250}
     check("FADE_MCAP_MAX_OKU=1000（2026-09-19 本人採用: 時価総額≥1000億は撃たない）", dp.FADE_MCAP_MAX_OKU == 1000 and dp.FADE_MCAP_BIG_OKU == 1000)
-    p2 = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+    p2 = dp.daily_top_fades(data, today, iss, mcap_map=mm, n=2)
     check("時価総額(億)が候補に付く", p2[0]["mcap_oku"] == 250 and p2[1]["mcap_oku"] == 1500)
     check("既定: 大型はNO-GO・小型が#1 GOに繰り上がる",
           p2[0]["ticker"] == "6666.T" and p2[0]["verdict"] == "GO" and p2[0]["rank"] == 1 and p2[0]["big_cap"] is False
@@ -808,7 +845,7 @@ def test_mcap_map():
     old = dp.FADE_MCAP_MAX_OKU
     dp.FADE_MCAP_MAX_OKU = None
     try:
-        picks = dp.daily_top_fades(data, today, iss, mcap_map=mm)
+        picks = dp.daily_top_fades(data, today, iss, mcap_map=mm, n=2)
         check("None(表示のみ)に戻せば大型もGOのまま・🏢フラグだけ付く",
               picks[0]["ticker"] == "9999.T" and picks[0]["verdict"] == "GO" and picks[0]["big_cap"] is True and picks[1]["big_cap"] is False)
         book = base_book([])
@@ -839,7 +876,7 @@ def run_all():
                test_record_and_dedup, test_cumulative_stats,
                test_daily_top_fades, test_alert_map_exclusion,
                test_rank_within_go_and_raw_gain, test_fetch_failed_is_not_miokuri,
-               test_premium_pershare_line,
+               test_premium_pershare_line, test_rank1_only_70,
                test_common_stock_code_guard, test_borrow_grade,
                test_monthly_stats, test_monthly_era_capital,
                test_monthly_combo_september,

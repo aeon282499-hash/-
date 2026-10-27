@@ -49,10 +49,10 @@ _orig_fetch = screener.fetch_tse_universe
 screener.fetch_tse_universe = lambda: (_ for _ in ()).throw(RuntimeError("test"))  # フェイルオープン経路
 try:
     today = date(2026, 8, 17)
-    own = [p["ticker"] for p in DP.daily_top_fades(data, today, iss)]
+    own = [p["ticker"] for p in DP.daily_top_fades(data, today, iss, n=2)]
     frd = [p["ticker"] for p in DP.daily_top_fades(data, today, iss,
                                                    tov_min=DP.FRIENDS_TOV_MIN,
-                                                   capital=DP.FRIENDS_SIZE)]
+                                                   capital=DP.FRIENDS_SIZE, n=2)]
 finally:
     screener.fetch_tse_universe = _orig_fetch
 ok("本人(70万)は6,000円もOK", "6001.T" in own and "2001.T" in own)

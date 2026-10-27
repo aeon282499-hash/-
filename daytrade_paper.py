@@ -54,7 +54,9 @@ DAY_SIGNALS_FILE = "day_signals.json"
 #   700_000 へ一時縮小し、40万回復で 1_000_000 へ戻す（8/15と同じ復帰ライン方式）。
 #   歴代ワースト月は2022-11 -45.5万 / 2025-11 -40.1万＝11月に集中。極み側の復帰ラインは
 #   現金120万→KIWAMI_SIZE=150万（shadow_exit.py参照）。
-CAPITAL_PER_TRADE = 1_000_000
+# ★2026-10-28 本人「②はやめた・①だけ・とりあえず70万」→ ①70万・②は撃たない(PAPER_MAX_PICKS=1)。
+#   値がさカットも連動して株価7,000円超は除外。友達ミラー・①版ミラーも同じ株数になる。
+CAPITAL_PER_TRADE = 700_000
 # ★ランク傾斜（2026-08-28 本人決定「100/50で行こう」・初回=8/31月曜分）: ①100万 / ②50万。
 # 根拠=_bt_fade_rank1_200.py＋傾斜グリッド11通り(10年グロス): 100/50=10年+1,513万・年+138万(資金150万・92%)
 # ・PF1.53・最悪日-32万・最悪月-39万・-40万超月0回・DD-96万＝最もマイルド。現行100/100(年+154万・最悪日-51万
@@ -553,7 +555,8 @@ FADE_MIN_GAP_UP_PCT = 0.0
 # 運用ルール: **1番と2番の両方を撃つ。3番以降は撃たない。**
 # （2026-07-28までは「撃つのは1番だけ・2番は代替」と配信していたが、上位1本の数字だけを見た
 #   誤りだった。2番を足すと年+15.8万増えて勝ち年11/11は変わらない＝2本が正しい。）
-PAPER_MAX_PICKS = 2
+# 2026-10-28 本人「②はやめた」→ 1（①だけ配信・記帳）。②を戻すなら 2 に。
+PAPER_MAX_PICKS = 1
 # ── 時価総額（2026-09-19 本人「新データで銘柄選定を」→ J-Quants /equities/valuation・10年 2017-26 の層別）────────
 # 急騰前の時価総額で候補を分けると 10年で単調: <300億 +1.1%/件 → 300〜700億 +0.47 → 700〜1000億 +0.11 →
 # 1000〜3000億 -0.12 → >3000億 -0.15（17-21/22-26の両半期で同じ向き・勝率は61%→49%）。
@@ -1036,6 +1039,8 @@ def cumulative_stats(book: dict) -> dict:
 def _FADE_EXEC_LABEL() -> str:
     if not FADE_LIMIT_RANKS:
         return "寄り成行"
+    if PAPER_MAX_PICKS == 1:
+        return f"①前終+{FADE_LIMIT_UP_PCT:g}%指値" if fade_uses_day_limit(1) else "①寄成"
     if fade_uses_day_limit(1) and fade_uses_day_limit(2):
         return f"①②前終+{FADE_LIMIT_UP_PCT:g}%指値"
     return f"①前終+{FADE_LIMIT_UP_PCT:g}%指値/②寄成"
@@ -1065,10 +1070,11 @@ def _build_report_payload(just_closed, buy_fires, picks, stats, today, fetch_fai
 
     # ── シグナル本体（スイング _build_buy_embed と同じ組み立て）──
     if go_picks:
-        if rank1_only and fade_uses_day_limit(1):
+        one_only = rank1_only or PAPER_MAX_PICKS == 1
+        if one_only and fade_uses_day_limit(1):
             head = (f"🎯 {CAPITAL_BY_RANK[1] // 10000}万円で**前日終値+{FADE_LIMIT_UP_PCT:g}%の指値・執行条件は当日中**で信用売り"
                     f"（寄りがそれ以上なら寄り値で約定／届かなければ見送り）")
-        elif rank1_only:
+        elif one_only:
             head = f"🎯 **9:00 寄り成行（信用売り）**で発注・{CAPITAL_BY_RANK[1] // 10000}万円"
         elif fade_uses_day_limit(1) and fade_uses_day_limit(2):
             head = (f"🎯 ①{CAPITAL_BY_RANK[1] // 10000}万円・②{CAPITAL_BY_RANK[2] // 10000}万円とも"
@@ -1355,14 +1361,16 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
 
     def _cap_of(month: str) -> int:
         # 月利%の分母＝その月の拘束資金（台帳の記帳サイズと一致させる）:
-        # 〜2026-07=50万 / 2026-08=100万 / 2026-09〜=①100万+②50万の150万。
+        # 〜2026-07=50万 / 2026-08=100万 / 2026-09〜10=①100万+②50万の150万 / 2026-11〜=①のみ(現行定数)。
         # 8月はサイズ変更(8/5に100万・8/15に70万・8/18に100万復帰・8/31に②50万)を
-        # 月中で跨ぐため月利%は概算（円は正確）。
+        # 月中で跨ぐため月利%は概算（円は正確）。10月も10/29〜①70万のみで概算。
         if month < "2026-08":
             return 500_000
         if month < COMBO_START:
-            return CAPITAL_PER_TRADE
-        return CAPITAL_BY_RANK[1] + CAPITAL_BY_RANK[2]
+            return 1_000_000
+        if month < "2026-11":
+            return 1_500_000
+        return CAPITAL_PER_TRADE
 
     L = []
     for m in sorted(by_m):
@@ -1399,9 +1407,9 @@ def send_monthly(book: dict, ym: str, dry: bool = False) -> bool:
         "title": f"📉 {year}年 月別・年間損益（デイトレ売りフェード）",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値"
+        "footer": {"text": f"9月〜=①100万+②50万(資金150万)・10/29〜①{CAPITAL_PER_TRADE // 10000}万のみ・寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値"
                            f"（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜・"
-                           f"月利%分母:〜7月50万/8月100万/9月〜150万）｜"
+                           f"月利%分母:〜7月50万/8月100万/9〜10月150万/11月〜{CAPITAL_PER_TRADE // 10000}万）｜"
                            f"通算{cum['n']}件 {cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
@@ -1536,7 +1544,7 @@ def send_weekly(book: dict, wk: str, dry: bool = False) -> bool:
         "title": f"📅【週次レポート】デイトレ売りフェード｜{mon[5:].replace('-', '/')}–{fri[5:].replace('-', '/')}",
         "description": "\n".join(L),
         "color": color,
-        "footer": {"text": f"寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜）｜通算{cum['n']}件 "
+        "footer": {"text": f"寄成→引成(9/25〜①②は前終+1%・10/1〜は前終+{FADE_LIMIT_UP_PCT:g}%当日中指値・同じ銘柄は{FADE_REPEAT_DAYS}日で{FADE_REPEAT_CAP}回まで)・紙の理論値（実弾=①のみ〜8/21・①+②各100万 8/24〜8/28・①100万/②50万 8/31〜・①{CAPITAL_PER_TRADE // 10000}万のみ 10/29〜）｜通算{cum['n']}件 "
                            f"{cum['yen']:+,.0f}円 PF{_fmt_pf(cum['pf'])}"},
     }]}
     if dry:
