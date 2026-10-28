@@ -627,7 +627,51 @@ def _loan_lines(lp: dict | None) -> list[str]:
             f"　50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　制度信用○{warn}"]
 
 
+TOP3_LIMIT_PCT = 0.03
+
+
+def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
+    """毎日の3本（2026-10-29 本人「とにかく毎日儲かる順に3つ」）: 候補(終値100円以上・代金3億以上・前日比+8%以上)を
+    前日比の大きい順に3本 → 前日終値+3%の当日中指値で空売り→引成・各50万。貸借/売り禁/決算は表示だけ(除外しない)。
+    検証: J-Q 5年 2,344本 PF2.07 +3,638万 DD52万(1位2.37/2位2.09/3位1.69)・立花20年 26/26年プラス・各時代1〜3位ともPF1.46以上。"""
+    c = cand.reset_index() if "Code" not in cand.columns else cand
+    c = c[c["C"].map(lambda p: np.ceil(p * (1 + TOP3_LIMIT_PCT) / _tick(p)) * _tick(p) * 100 <= SIZE_YEN)]   # 50万で100株買える銘柄だけ(20年: PF1.93・26/26年)
+    c = c.sort_values(["ret1", "Code"], ascending=[False, True]).head(3)
+    names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
+    rows = []
+    for i, r in enumerate(c.itertuples(), 1):
+        c4 = code4(r.Code); al = alert.get(c4) or {}; jt = jsf_list.get(c4, "")
+        rows.append(dict(rank=i, code=c4, name=str(names.get(str(r.Code), ""))[:12], close=float(r.C), ret1=float(r.ret1),
+                         seido="○" if iss.get(c4) == "2" else ("×" if iss.get(c4) else "?"),
+                         jsf_stop=bool(al.get("jsf_stop")) or "停止" in jt, jsf_warn=bool(al.get("jsf_warn")) or "注意喚起" in jt,
+                         earn=bool(earn is not None and str(r.Code) in earn)))
+    return dict(rows=rows, n_cand=int(len(cand)))
+
+
 def own_payload(plan: dict) -> dict:
+    """本人ch: 毎日の3本だけ（前日比の大きい順・+3%指値・各50万）。"""
+    td = datetime.fromisoformat(plan["trade_day"])
+    tp = plan.get("top3") or {"rows": []}
+    lines = []
+    for x in tp["rows"]:
+        t = _tick(x["close"]); lim = float(np.ceil(x["close"] * (1 + TOP3_LIMIT_PCT) / t) * t)
+        sh = int(SIZE_YEN / lim // 100 * 100)
+        tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
+        if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
+        elif x["jsf_warn"]: tags.append("⚠️注意喚起")
+        if x["earn"]: tags.append("📄決算がらみ")
+        lines.append(f"{x['rank']}位 `{x['code']}` {x['name']}　前日終値 ¥{x['close']:,.0f}（{x['ret1']*100:+.1f}%）\n"
+                     f"　🔴 当日中指値 ¥{lim:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
+                     f"　50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + "　" + "・".join(tags))
+    if not lines:
+        lines.append("候補なし（前日比+8%以上・代金3億以上が無い）")
+    else:
+        lines.append(f"\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万・最大{len(tp['rows']) * 50}万")
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比の大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
+                        "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]}
+
+
+def _own_payload_friend_new1(plan: dict) -> dict:   # 旧: 友達版1〜3位＋新①（10/29 毎日の3本に置き換え・数字の比較用に残す）
     """全体1〜3位のうち 前日比+17%以上 を1本50万で（除外に当たる順位は見送りと表示・繰り上げない）＋ 貸借版の1本。"""
     td = datetime.fromisoformat(plan["trade_day"])
     lines, n_go = [], 0
@@ -821,6 +865,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     jsf_list = fetch_jsf_list()
     plan = build_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list)
     plan["new1"] = new1_plan(cand, master, iss, alert, jsf_list)
+    plan["top3"] = top3_plan(cand, master, iss, alert, jsf_list, earn)
     payload = plan_payload(plan)
     sent = post_discord(payload, dry_run)
     plan["sent"] = bool(sent)
