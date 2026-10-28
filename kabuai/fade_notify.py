@@ -627,15 +627,13 @@ def _loan_lines(lp: dict | None) -> list[str]:
             f"　50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　制度信用○{warn}"]
 
 
-TOP3_LIMIT_PCT = 0.07       # 2026-10-29 本人「DD減らしたい・負けれるのは30万」: +3%→+7%
+TOP3_LIMIT_PCT = 0.03
 TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
-TOP3_N = 2                   # 3本→2本（20年では3本目がDDを押し上げる）
-TOP3_SIZE = 200_000          # 1本20万。+12%・+7%・2本で 5年DD13万/最悪月−5万・20年DD19万/最悪月−8万
-TOP3_MAX_100SH = 400_000     # 20万で100株買えない銘柄は 100株で40万円までなら100株だけ
+TOP3_MAX_100SH = 1_000_000   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
 
 
 def top3_shares(lim: float) -> int:
-    sh = int(TOP3_SIZE / lim // 100 * 100)
+    sh = int(SIZE_YEN / lim // 100 * 100)
     return sh if sh >= 100 else (100 if lim * 100 <= TOP3_MAX_100SH else 0)
 
 
@@ -647,7 +645,7 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
     # 100株で100万円以下の銘柄だけ（2026-10-29 本人「50万超〜100万は100株のみOK」・20年: PF1.96・DD70万・マイナス月15/309）
     c = c[c["ret1"] >= TOP3_RET_MIN]
     c = c[c["C"].map(lambda p: np.ceil(p * (1 + TOP3_LIMIT_PCT) / _tick(p)) * _tick(p) * 100 <= TOP3_MAX_100SH)]
-    c = c.sort_values(["ret1", "Code"], ascending=[False, True]).head(TOP3_N)
+    c = c.sort_values(["ret1", "Code"], ascending=[False, True]).head(3)
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     rows = []
     for i, r in enumerate(c.itertuples(), 1):
@@ -660,14 +658,14 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
 
 
 def own_payload(plan: dict) -> dict:
-    """本人ch: 毎日のTOP3_N本だけ（前日比の大きい順・+TOP3_LIMIT_PCT指値・各TOP3_SIZE）。"""
+    """本人ch: 毎日の3本だけ（前日比の大きい順・+3%指値・各50万）。"""
     td = datetime.fromisoformat(plan["trade_day"])
     tp = plan.get("top3") or {"rows": []}
     lines = []
     for x in tp["rows"]:
         t = _tick(x["close"]); lim = float(np.ceil(x["close"] * (1 + TOP3_LIMIT_PCT) / t) * t)
         sh = top3_shares(lim)
-        size_txt = f"{TOP3_SIZE/1e4:.0f}万: {sh:,}株" if sh * lim <= TOP3_SIZE else f"{sh:,}株だけ（建玉 約{sh * lim / 1e4:.0f}万）"
+        size_txt = f"50万: {sh:,}株" if sh * lim <= SIZE_YEN else f"{sh:,}株だけ（建玉 約{sh * lim / 1e4:.0f}万）"
         tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
         if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
         elif x["jsf_warn"]: tags.append("⚠️注意喚起")
@@ -678,8 +676,8 @@ def own_payload(plan: dict) -> dict:
     if not lines:
         lines.append(f"候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
     else:
-        lines.append(f"\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本{TOP3_SIZE/1e4:.0f}万（100株で{TOP3_SIZE/1e4:.0f}万超の銘柄は100株だけ・最大{TOP3_MAX_100SH/1e4:.0f}万）")
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の{TOP3_N}本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
+        lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万（100株で50万超の銘柄は100株だけ・最大100万）")
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
                         "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]}
 
 
