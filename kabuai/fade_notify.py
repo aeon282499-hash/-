@@ -553,21 +553,38 @@ def _tick(p: float) -> float:
     return 1.0 if p <= 3000 else 5.0 if p <= 5000 else 10.0 if p <= 30000 else 50.0 if p <= 50000 else 100.0
 
 
+OWN_RANKS = 3   # 2026-10-29 本人「1〜3位にして」（20年: 1〜3位 PF2.14・4位からは負け年あり）
+
+
 def own_payload(plan: dict) -> dict:
+    """全体1〜3位のうち 前日比+17%以上 を1本50万で（除外に当たる順位は見送りと表示・繰り上げない）。"""
     td = datetime.fromisoformat(plan["trade_day"])
-    a = plan["rule_a"]
-    if not a:
-        body = f"なし（{plan['rule_a_why']}）→ 18:50 の①だけ"
-    else:
-        lim = float(np.ceil(a["close"] * (1 + OWN_LIMIT_PCT) / _tick(a["close"])) * _tick(a["close"]))
+    lines, n_go = [], 0
+    for x in sorted(plan["rows"], key=lambda r: r["rank_all"]):
+        if x["rank_all"] > OWN_RANKS:
+            break
+        if not x["strong"]:
+            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日比{x['ret1']*100:+.1f}%（+17%未満）→ 見送り")
+            continue
+        if x["reasons"]:
+            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　見送り（{'・'.join(x['reasons'])}）")
+            continue
+        lim = float(np.ceil(x["close"] * (1 + OWN_LIMIT_PCT) / _tick(x["close"])) * _tick(x["close"]))
         sh = int(SIZE_YEN / lim // 100 * 100)
-        seido = {"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[a["seido"]]
-        reg = "🚫日証金 申込停止" if a["jsf_stop"] else ("⚠️日証金 注意喚起" if a["jsf_warn"] else "")
-        body = (f"`{a['code']}` {a['name']}　前日終値 ¥{a['close']:,.0f}\n"
-                f"🔴 当日中指値 ¥{lim:,.0f}（+{OWN_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
-                f"50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　{seido}" + (f"　{reg}" if reg else ""))
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 友達版①（指値+{OWN_LIMIT_PCT*100:.0f}%）", "description": body,
-                        "color": 0xFF8787 if a else 0x868E96}]}
+        seido = {"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]
+        warn = "　⚠️日証金 注意喚起" if x["jsf_warn"] else ""
+        lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日終値 ¥{x['close']:,.0f}\n"
+                     f"　🔴 当日中指値 ¥{lim:,.0f}（+{OWN_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
+                     f"　50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　{seido}{warn}")
+        n_go += 1
+    if not lines:
+        lines.append("候補なし")
+    if n_go:
+        lines.append(f"\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万・最大{n_go * 50}万")
+    else:
+        lines.append("→ 撃つ玉なし")
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 友達版 1〜{OWN_RANKS}位（指値+{OWN_LIMIT_PCT*100:.0f}%）{n_go}本",
+                        "description": "\n".join(lines), "color": 0xFF8787 if n_go else 0x868E96}]}
 
 
 def post_own(plan: dict, dry_run: bool) -> bool:
