@@ -247,6 +247,38 @@ def _prev_trading_row_date(df: pd.DataFrame, entry_date_str: str) -> str | None:
 KIWAMI_SIG_FILE = "today_signals_kiwami.json"   # 買残回転1.2で選定した極み専用シグナル（2026-08-02）
 
 
+def short_sale_flags(ticker: str, entry_date_str: str) -> dict:
+    """極上の記録専用（売買には使わない・2026-10-28 本人「記録して」）: 大口空売り残高報告(0.5%以上)が
+    シグナル日の直近5日/7日(暦日)に「増えた」報告を含むか。10年BT(_gk1028/t_short.py)では該当玉を外すと
+    10年+19〜43万だが、2026年と9〜10月の実配信では逆＝数か月記録して判定する。
+    定義はBTと同じ: 公表日(DiscDate) が [シグナル日-N日, シグナル日) かつ ShrtPosToSO > PrevRptRatio。
+    取れなければ {}（台帳・配信は止めない）。"""
+    try:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo
+        from screener import _jquants_get, _jquants_id_token
+        ent = pd.Timestamp(entry_date_str)
+        run_d = pd.Timestamp(_dt.now(ZoneInfo("Asia/Tokyo")).date())
+        sigd = run_d if run_d < ent else ent - pd.tseries.offsets.BDay(1)    # 前夜配信=実行日がシグナル日
+        j = _jquants_get("/markets/short-sale-report", _jquants_id_token(), {"code": str(ticker)[:4]})
+        k = [x for x in j if x != "pagination_key"]
+        df = pd.DataFrame(j[k[0]]) if k else pd.DataFrame()
+        out = {"ss_sigdate": sigd.strftime("%Y-%m-%d")}
+        if df.empty:
+            out.update(ss_inc5=False, ss_inc7=False, ss_n7=0)
+            return out
+        dd = pd.to_datetime(df["DiscDate"])
+        up = pd.to_numeric(df["ShrtPosToSO"], errors="coerce") - pd.to_numeric(df["PrevRptRatio"], errors="coerce").fillna(0)
+        for n in (5, 7):
+            w = (dd < sigd) & (dd >= sigd - pd.Timedelta(days=n))
+            out[f"ss_inc{n}"] = bool((up[w] > 0).any())
+        out["ss_n7"] = int(((dd < sigd) & (dd >= sigd - pd.Timedelta(days=7))).sum())
+        return out
+    except Exception as e:  # noqa: BLE001
+        print(f"[shadow] 空売り報告の記録スキップ {ticker}: {e}")
+        return {}
+
+
 def record_signals(key: str, today: date, all_data: dict) -> int:
     """本番が今朝採用したBUYシグナルを影台帳に取り込む（同一(ticker,signal_date)は再登録しない）。"""
     sig_file = TIER_FILES[key][0]
@@ -318,6 +350,7 @@ def record_signals(key: str, today: date, all_data: dict) -> int:
             "pnl_pct":     None,
             "exit_type":   None,
             "exit_date":   None,
+            **(short_sale_flags(tk, sig_date) if key == GOKUJO_KEY else {}),
         })
         added += 1
     if added:
