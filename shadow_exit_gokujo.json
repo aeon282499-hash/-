@@ -175,11 +175,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 235.7,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -0.976,
+    "exit_type": "DAY1CUT",
+    "exit_date": "2026-10-28",
     "day1_cut_pending": true
   }
 ]

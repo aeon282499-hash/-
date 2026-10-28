@@ -1,31 +1,4 @@
 {
-  "date": "2026-10-28",
-  "signals": [
-    {
-      "ticker": "5076.T",
-      "name": "インフロニア・ホールディングス",
-      "direction": "BUY",
-      "prev_close": 2352.5,
-      "limit_price": 2376,
-      "days_cover": 0.8883711165345948,
-      "rsi": 42.22,
-      "deviation": -5.17,
-      "vol_ratio": 2.25,
-      "range_ratio": 1.88,
-      "turnover": 19345574600.0
-    },
-    {
-      "ticker": "4676.T",
-      "name": "フジ・メディア・ホールディングス",
-      "direction": "BUY",
-      "prev_close": 3970.0,
-      "limit_price": 4005,
-      "days_cover": 0.40085604097885946,
-      "rsi": 42.2,
-      "deviation": -1.78,
-      "vol_ratio": 1.28,
-      "range_ratio": 2.02,
-      "turnover": 3725450200.0
-    }
-  ]
+  "date": "2026-10-29",
+  "signals": []
 }

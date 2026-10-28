@@ -2153,7 +2153,7 @@
       "basis_date": "2026-10-27",
       "prev_close": 1703.0,
       "limit_price": 1703.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 21.38,
       "short": {
         "mark": "○",
@@ -2168,7 +2168,15 @@
       "atr_pct": 11.96,
       "vol_ratio": 1.0,
       "range_pct": 7.1,
-      "mcap_oku": 108
+      "mcap_oku": 108,
+      "entry_session": "2026-10-28",
+      "entry_open": 1503.0,
+      "entry_close": 1389.0,
+      "entry_fill": 1703.0,
+      "exit_type": "CLOSE",
+      "pnl_pct": 18.438,
+      "pnl_yen": 157000,
+      "win": true
     },
     {
       "ticker": "4498.T",
@@ -2178,7 +2186,7 @@
       "basis_date": "2026-10-27",
       "prev_close": 2947.0,
       "limit_price": 2947.0,
-      "status": "pending",
+      "status": "closed",
       "daily_gain": 14.67,
       "short": {
         "mark": "○",
@@ -2193,11 +2201,19 @@
       "atr_pct": 13.66,
       "vol_ratio": 2.3,
       "range_pct": 22.3,
-      "mcap_oku": 424
+      "mcap_oku": 424,
+      "skip_reason": "指値¥2,947に届かず（高値¥2,789）",
+      "entry_session": "2026-10-28",
+      "entry_open": 2747.0,
+      "entry_close": 2447.0,
+      "exit_type": "SKIP",
+      "pnl_pct": 0.0,
+      "pnl_yen": 0,
+      "win": false
     }
   ],
   "expired": [],
-  "last_report_date": "2026-10-28",
+  "last_report_date": "2026-10-29",
   "last_monthly_report": "2026-09",
   "last_weekly_report": "2026-W43"
 }

@@ -1,12 +1,4 @@
 {
-  "date": "2026-10-28",
-  "signals": [
-    {
-      "ticker": "4676.T",
-      "name": "フジ・メディア・ホールディングス",
-      "direction": "BUY",
-      "prev_close": 3970.0,
-      "limit_price": 4005
-    }
-  ]
+  "date": "2026-10-29",
+  "signals": []
 }
