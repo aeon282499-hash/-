@@ -541,6 +541,54 @@ def plan_payload(plan: dict) -> dict:
     return {"embeds": [{"title": title, "description": desc[:4000], "color": 0xFF8787 if plan["rule_a"] else 0x868E96}]}
 
 
+# ───────────────────────── 本人ch 向け 1行（2026-10-29 本人「やって」） ─────────────────────────
+# 20年(2001〜2026)の検証で 友達の①は 寄成 PF1.92 より 前日終値+2%の当日中指値 PF2.21 のほうが良かった
+# （寄りで約定48%・日中に届いて約定30%・届かず22%。日中は1ティック抜けで約定とする厳しめでも PF2.19）。
+# 本人の売りフェードch(既定 DISCORD_WEBHOOK_DAY_URL)へ、銘柄と値段だけ送る。友達chの文面は変えない。
+OWN_LIMIT_PCT = 0.02
+OWN_WEBHOOK_ENV = os.getenv("FADE_NOTIFY_OWN_ENV", "DISCORD_WEBHOOK_DAY_URL")
+
+
+def _tick(p: float) -> float:
+    return 1.0 if p <= 3000 else 5.0 if p <= 5000 else 10.0 if p <= 30000 else 50.0 if p <= 50000 else 100.0
+
+
+def own_payload(plan: dict) -> dict:
+    td = datetime.fromisoformat(plan["trade_day"])
+    a = plan["rule_a"]
+    if not a:
+        body = f"なし（{plan['rule_a_why']}）→ 18:50 の①だけ"
+    else:
+        lim = float(np.ceil(a["close"] * (1 + OWN_LIMIT_PCT) / _tick(a["close"])) * _tick(a["close"]))
+        sh = int(SIZE_YEN / lim // 100 * 100)
+        seido = {"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[a["seido"]]
+        reg = "🚫日証金 申込停止" if a["jsf_stop"] else ("⚠️日証金 注意喚起" if a["jsf_warn"] else "")
+        body = (f"`{a['code']}` {a['name']}　前日終値 ¥{a['close']:,.0f}\n"
+                f"🔴 当日中指値 ¥{lim:,.0f}（+{OWN_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
+                f"50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　{seido}" + (f"　{reg}" if reg else ""))
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 友達版①（指値+{OWN_LIMIT_PCT*100:.0f}%）", "description": body,
+                        "color": 0xFF8787 if a else 0x868E96}]}
+
+
+def post_own(plan: dict, dry_run: bool) -> bool:
+    hook = os.getenv(OWN_WEBHOOK_ENV, "").strip()
+    payload = own_payload(plan)
+    if dry_run or not hook:
+        print(f"---- 本人ch（{OWN_WEBHOOK_ENV}・dry-run / 未設定なら送らない）----")
+        for e in payload["embeds"]:
+            print(f"## {e['title']}\n{e['description']}\n")
+        return False
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(hook, data=body, headers={"Content-Type": "application/json", "User-Agent": "kabuai-fade-notify/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            log(f"本人ch 送信OK status={r.status}")
+            return True
+    except Exception as e:  # noqa: BLE001  URL はログに出さない
+        log(f"本人ch 送信失敗: {type(e).__name__}")
+        return False
+
+
 # ───────────────────────── 採点（score） ─────────────────────────
 def fetch_day_bars_for(codes5: list[str], d: date) -> dict:
     """取引日 d の {code5: (O, C, H)}。pkl が指定されていればそこから、無ければ API の日付一括。"""
@@ -681,6 +729,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     payload = plan_payload(plan)
     sent = post_discord(payload, dry_run)
     plan["sent"] = bool(sent)
+    plan["own_sent"] = post_own(plan, dry_run)
     if not dry_run:
         led["plans"][trade_day.isoformat()] = plan
         save_ledger(led)
