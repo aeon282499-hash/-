@@ -564,7 +564,7 @@ def own_payload(plan: dict) -> dict:
         if x["rank_all"] > OWN_RANKS:
             break
         if not x["strong"]:
-            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日比{x['ret1']*100:+.1f}%（+17%未満）→ 見送り")
+            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日比{x['ret1']*100:+.2f}%（+17%未満）→ 見送り")
             continue
         if x["reasons"]:
             lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　見送り（{'・'.join(x['reasons'])}）")
