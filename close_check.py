@@ -27,6 +27,8 @@ import jpholiday
 import pandas as pd
 from dotenv import load_dotenv
 
+import split_guard
+
 load_dotenv()
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
@@ -267,6 +269,16 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
         except Exception as e:
             print(f"  [yfinance] {ticker} 失敗: {e}")
 
+        # ── 保有中の分割/併合（2026-10-28 日本ハム）: 調整済み日足が分割を反映していれば建値をそろえる。
+        #    分割当日で日足がまだ未調整なら、建値から±40%超のザラ場値は約定・処分の判定に使わず要確認に回す。
+        if pos.get("status") != "pending" and entry_open:
+            entry_open = split_guard.adjusted_entry(historical_data.get(ticker), pos["entry_date"], entry_open)
+        if split_guard.suspect_split(entry_open, current_price, day_high, day_low):
+            print(f"  [分割?] {ticker} 建値{entry_open:,.1f}円に対し値段が±40%超 → 判定せず要確認")
+            _checked(note=(f"値段が建値から±40%超（分割・併合の可能性）→ 自動判定を止めました・口座で要確認"),
+                     price=current_price, hold=today_hold)
+            continue
+
         # ── 最優先: ザラ場OCO(+5%/-3%)約定チェック ──
         # 当日高安がTP/STOPに触れていれば証券会社のOCOで既に決済済み＝
         # 「処分対象」でも「保有継続」でもない。その旨だけ通知して以降の判定はしない。
@@ -393,6 +405,8 @@ def _final_fills(positions: list[dict], direction: str, bars: dict,
             if not entry:
                 continue
         entry = float(entry)
+        if split_guard.suspect_split(entry, o, h, l):
+            continue                          # 分割/併合の当日（建値と当日足の基準がずれている）＝約定と断定しない（2026-10-28）
         if direction == "BUY":                # STOP -3% / TP +5%（_oco_fill・帳簿リプレイと同一水準）
             stop_lv, tp_lv = entry * 0.97, entry * 1.05
             hit_stop, hit_tp = l <= stop_lv, h >= tp_lv

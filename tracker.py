@@ -29,6 +29,7 @@ from datetime import date, timedelta
 
 from screener import batch_download_jquants, _jquants_id_token, calc_rsi, RSI_WARMUP_CAL_DAYS
 import close_decisions
+import split_guard
 
 POSITIONS_FILE      = "positions.json"
 SELL_POSITIONS_FILE = "positions_sell.json"
@@ -178,6 +179,8 @@ def update_positions(positions: list[dict], today: date,
         if not entry_open or entry_open <= 0:
             updated.append(pos)
             continue
+        # 保有中の分割/併合: 日足は調整済み・帳簿の建値は生の値段 → 建値を今の基準にそろえて判定（2026-10-28 日本ハム）
+        entry_open = split_guard.adjusted_entry(df, entry_date_str, entry_open)
 
         direction   = pos["direction"]
         stop_price  = (entry_open * (1 - STOP_LOSS   / 100) if direction == "BUY"

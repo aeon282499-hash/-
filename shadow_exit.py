@@ -35,6 +35,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 
 import close_decisions
+import split_guard
 
 # ── 検証で確定したパラメータ（BT: _bt_atr_exit_kt.py の最終形）───────────────
 ATR_MULT      = 2.0     # 損切り幅 = ATR% × これ
@@ -540,6 +541,8 @@ def advance(rows: list[dict], today: date, all_data: dict, scope: str = "kiwami"
         eo = pos["entry_open"]
         if not eo or eo <= 0:
             continue
+        # 保有中の分割/併合: 日足は調整済み・台帳の建値は生の値段 → 建値を今の基準にそろえて判定（損益率は不変・2026-10-28 日本ハム）
+        eo = split_guard.adjusted_entry(df, entry_date_str, eo)
         stop_price = eo * (1 - pos["stop_pct"] / 100)
         tp_price   = eo * (1 + TAKE_PROFIT / 100)
 
