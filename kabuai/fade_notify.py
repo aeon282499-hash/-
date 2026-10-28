@@ -628,6 +628,7 @@ def _loan_lines(lp: dict | None) -> list[str]:
 
 
 TOP3_LIMIT_PCT = 0.03
+TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
 TOP3_MAX_100SH = 1_000_000   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
 
 
@@ -637,11 +638,12 @@ def top3_shares(lim: float) -> int:
 
 
 def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
-    """毎日の3本（2026-10-29 本人「とにかく毎日儲かる順に3つ」）: 候補(終値100円以上・代金3億以上・前日比+8%以上)を
+    """毎日の3本（2026-10-29 本人「とにかく毎日儲かる順に3つ」）: 候補(終値100円以上・代金3億以上・前日比+12%以上)を
     前日比の大きい順に3本 → 前日終値+3%の当日中指値で空売り→引成・各50万。貸借/売り禁/決算は表示だけ(除外しない)。
     検証: J-Q 5年 2,344本 PF2.07 +3,638万 DD52万(1位2.37/2位2.09/3位1.69)・立花20年 26/26年プラス・各時代1〜3位ともPF1.46以上。"""
     c = cand.reset_index() if "Code" not in cand.columns else cand
     # 100株で100万円以下の銘柄だけ（2026-10-29 本人「50万超〜100万は100株のみOK」・20年: PF1.96・DD70万・マイナス月15/309）
+    c = c[c["ret1"] >= TOP3_RET_MIN]
     c = c[c["C"].map(lambda p: np.ceil(p * (1 + TOP3_LIMIT_PCT) / _tick(p)) * _tick(p) * 100 <= TOP3_MAX_100SH)]
     c = c.sort_values(["ret1", "Code"], ascending=[False, True]).head(3)
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
@@ -672,10 +674,10 @@ def own_payload(plan: dict) -> dict:
                      f"　🔴 当日中指値 ¥{lim:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
                      f"　{size_txt}　" + "・".join(tags))
     if not lines:
-        lines.append("候補なし（前日比+8%以上・代金3億以上が無い）")
+        lines.append(f"候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
     else:
         lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万（100株で50万超の銘柄は100株だけ・最大100万）")
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比の大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
                         "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]}
 
 
