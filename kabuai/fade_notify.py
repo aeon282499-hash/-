@@ -546,7 +546,7 @@ def plan_payload(plan: dict) -> dict:
 # （寄りで約定48%・日中に届いて約定30%・届かず22%。日中は1ティック抜けで約定とする厳しめでも PF2.19）。
 # 本人の売りフェードch(既定 DISCORD_WEBHOOK_DAY_URL)へ、銘柄と値段だけ送る。友達chの文面は変えない。
 OWN_LIMIT_PCT = 0.02
-OWN_WEBHOOK_ENV = os.getenv("FADE_NOTIFY_OWN_ENV", "DISCORD_WEBHOOK_DAY_URL")
+OWN_WEBHOOK_ENV = os.getenv("FADE_NOTIFY_OWN_ENV", "DISCORD_WEBHOOK_OWN_FADE_URL")   # 10/29 本人提示の新ch（旧 DAY_URL は .env 側が404）
 
 
 def _tick(p: float) -> float:
