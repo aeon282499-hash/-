@@ -207,6 +207,8 @@ def collect_targets(open_positions: list[dict], direction: str, today: date,
             "ticker": ticker, "name": name, "today_hold": hold,
             "rsi_now": rsi, "current_price": price, "note": note,
             "warn": warn,
+            # 2026-10-28: 建値を渡していなかったため極上の「1日目-1%割れ→⛔明朝寄成で処分」が一度も出なかった（ソフトバンク10/27）
+            "entry_open": entry_open,
         })
 
     for pos in open_positions:

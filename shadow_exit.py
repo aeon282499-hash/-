@@ -1117,6 +1117,18 @@ def send_discord(today: date, key: str = "main") -> bool:
                 f"{label}｜**{r['name']}** {mark}\n"
                 f"　本番 {lv:+.2f}%（{lp.get('exit_type')}） → 影 {sv:+.2f}%（{r['exit_type']}）"
                 f" 差 **{(sv - lv) / 100 * size / 10_000:+.2f}万**")
+    # ②' 極上: 1日目の公式引けが建値-1%以下（day1_cut_pending）の保有玉 → 明朝 寄成で売り（2026-10-28 本人「翌日成売りしろって配信して」）
+    if key == GOKUJO_KEY:
+        cut = [r for r in load_ledger(key) if r.get("status") == "open" and r.get("day1_cut_pending")]
+        if cut:
+            cl = []
+            for r in cut:
+                tk = str(r["ticker"]).replace(".T", "")
+                eo = r.get("entry_open") or 0
+                cl.append(f"⛔ **{r.get('name', tk)}** ({tk}) 建値{eo:,.1f}円・1日目の引けが建値-{GOKUJO_DAY1_CUT_PCT:.0f}%以下"
+                          f" → **明朝 寄成で売り**（OCOは取消）")
+            embeds.append({"title": f"⛔【極上 明朝の売り】{today.strftime('%m/%d')} 寄成",
+                           "description": "\n".join(cl), "color": _COLOR_LOSE})
     if settled:
         embeds.append({
             "title": "📕 極上の決済" if key == GOKUJO_KEY else "📕 極みの決済（紙の再現・通常版の帳簿とは別)",
