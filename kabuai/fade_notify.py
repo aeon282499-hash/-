@@ -473,7 +473,7 @@ def build_plan(asof: date, trade_day: date, cand: pd.DataFrame, master: pd.DataF
     if top is None:
         rule_a_why = "候補なし"
     elif not top["strong"]:
-        rule_a_why = f"1位 {top['code']} は前日比{top['ret1']*100:+.1f}%（+17%未満）"
+        rule_a_why = f"1位 {top['code']} は前日比{top['ret1']*100:+.2f}%（+17%未満）"
     elif top["reasons"]:
         rule_a_why = f"1位 {top['code']} は除外（{'・'.join(top['reasons'])}）"
     else:
@@ -556,8 +556,38 @@ def _tick(p: float) -> float:
 OWN_RANKS = 3   # 2026-10-29 本人「1〜3位にして」（20年: 1〜3位 PF2.14・4位からは負け年あり）
 
 
+def loan_plan(asof, trade_day, cand, master, earn, iss, alert, jsf_list) -> dict | None:
+    """貸借版（2026-10-29 本人「貸借版も通知して」）: 候補を貸借銘柄(IssType=2)だけにして、その中で4指標の順位を付け直す。
+    1位 かつ +17%以上 かつ 除外なし → 前日終値+2%の当日中指値。J-Q 5年(貸借だけ): 468本 PF1.97 +638万@50万
+    （今の①の再現 632本 PF1.80 +548万 より上・売り禁でない日 +263万 vs +189万）。"""
+    if not iss or cand.empty:
+        return None
+    c = cand.reset_index() if "Code" not in cand.columns else cand
+    sub = c[c["Code"].map(lambda x: iss.get(code4(x)) == "2")].drop(columns=["score", "rank_all"], errors="ignore")
+    if sub.empty:
+        return dict(rule_a=None, rule_a_why="貸借の候補なし", top=None)
+    p = build_plan(asof, trade_day, score_rank(sub), master, earn, iss, alert, jsf_list)
+    top = next((x for x in p["rows"] if x["rank_all"] == 1), None)
+    return dict(rule_a=p["rule_a"], rule_a_why=p["rule_a_why"].replace("1位", "貸借1位"), top=top, n_cand=int(len(sub)))
+
+
+def _loan_lines(lp: dict | None) -> list[str]:
+    if lp is None:
+        return ["【貸借版】貸借区分が取れず判定できません"]
+    a = lp["rule_a"]
+    if not a:
+        return [f"【貸借版】なし（{lp['rule_a_why']}）"]
+    lim = float(np.ceil(a["close"] * (1 + OWN_LIMIT_PCT) / _tick(a["close"])) * _tick(a["close"]))
+    sh = int(SIZE_YEN / lim // 100 * 100)
+    warn = "　⚠️日証金 注意喚起" if a["jsf_warn"] else ""
+    return ["【貸借版】制度信用で売れる銘柄の中の1位",
+            f"`{a['code']}` {a['name']}　前日終値 ¥{a['close']:,.0f}\n"
+            f"　🔴 当日中指値 ¥{lim:,.0f}（+{OWN_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
+            f"　50万: {sh:,}株" + ("（100株で50万超）" if sh == 0 else "") + f"　制度信用○{warn}"]
+
+
 def own_payload(plan: dict) -> dict:
-    """全体1〜3位のうち 前日比+17%以上 を1本50万で（除外に当たる順位は見送りと表示・繰り上げない）。"""
+    """全体1〜3位のうち 前日比+17%以上 を1本50万で（除外に当たる順位は見送りと表示・繰り上げない）＋ 貸借版の1本。"""
     td = datetime.fromisoformat(plan["trade_day"])
     lines, n_go = [], 0
     for x in sorted(plan["rows"], key=lambda r: r["rank_all"]):
@@ -579,12 +609,23 @@ def own_payload(plan: dict) -> dict:
         n_go += 1
     if not lines:
         lines.append("候補なし")
-    if n_go:
-        lines.append(f"\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万・最大{n_go * 50}万")
-    else:
+    if not n_go:
         lines.append("→ 撃つ玉なし")
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 友達版 1〜{OWN_RANKS}位（指値+{OWN_LIMIT_PCT*100:.0f}%）{n_go}本",
-                        "description": "\n".join(lines), "color": 0xFF8787 if n_go else 0x868E96}]}
+    # 貸借版（上の1〜3位と同じ銘柄なら重ねて撃たない）
+    lp = plan.get("loan")
+    go = {x["code"] for x in plan["rows"] if x["rank_all"] <= OWN_RANKS and x["strong"] and not x["reasons"]}
+    n_loan = 0
+    lines.append("")
+    if lp and lp.get("rule_a") and lp["rule_a"]["code"] in go:
+        lines.append(f"【貸借版】`{lp['rule_a']['code']}` {lp['rule_a']['name']}（上と同じ銘柄・重ねない）")
+    else:
+        lines += _loan_lines(lp)
+        n_loan = int(bool(lp and lp.get("rule_a")))
+    n_all = n_go + n_loan
+    if n_all:
+        lines.append(f"\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万・最大{n_all * 50}万")
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 友達版 1〜{OWN_RANKS}位 {n_go}本＋貸借版 {n_loan}本（指値+{OWN_LIMIT_PCT*100:.0f}%）",
+                        "description": "\n".join(lines), "color": 0xFF8787 if n_all else 0x868E96}]}
 
 
 def post_own(plan: dict, dry_run: bool) -> bool:
@@ -743,6 +784,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     alert = fetch_alert_map()
     jsf_list = fetch_jsf_list()
     plan = build_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list)
+    plan["loan"] = loan_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list)
     payload = plan_payload(plan)
     sent = post_discord(payload, dry_run)
     plan["sent"] = bool(sent)
