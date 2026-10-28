@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28 08:16:13",
+  "generated_at": "2026-10-28 11:23:43",
   "date": "2026-10-28",
   "tier_summary": {
     "S": 0,
@@ -11,10 +11,10 @@
     "AMAT": 2.15,
     "AMD": 5.45,
     "AMZN": 1.61,
-    "ASML": 2.81,
+    "ASML": 2.94,
     "AVGO": 4.0,
     "CRWD": 2.36,
-    "GEV": 4.67,
+    "GEV": 4.73,
     "GOOGL": 1.19,
     "IONQ": 7.12,
     "KLAC": 2.98,
@@ -163,7 +163,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": 3.58
+      "us_tailwind": 3.59
     },
     {
       "theme": "医療機器_ヘルスケア",
@@ -348,7 +348,7 @@
         "ASML"
       ],
       "policy": "経済安保・先端半導体の国内検査体制",
-      "us_tailwind": 2.44
+      "us_tailwind": 2.48
     },
     {
       "theme": "半導体_ロジック_メモリ",
@@ -535,7 +535,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": 2.4
+      "us_tailwind": 2.42
     },
     {
       "theme": "証券_取引所",
@@ -1077,7 +1077,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.58,
+      "us_tailwind": 3.59,
       "score": 53.7,
       "tier": "B",
       "init_stars": 3,
@@ -1855,7 +1855,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.58,
+      "us_tailwind": 3.59,
       "score": 47.7,
       "tier": "B",
       "init_stars": 3,
@@ -2281,7 +2281,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.44,
+      "us_tailwind": 2.48,
       "score": 44.6,
       "tier": "C",
       "init_stars": 2,
@@ -2438,7 +2438,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.58,
+      "us_tailwind": 3.59,
       "score": 42.7,
       "tier": "C",
       "init_stars": 3,
@@ -2483,7 +2483,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.4,
+      "us_tailwind": 2.42,
       "score": 42.0,
       "tier": "C",
       "init_stars": 2,
@@ -2746,7 +2746,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.44,
+      "us_tailwind": 2.48,
       "score": 39.6,
       "tier": "C",
       "init_stars": 2,
@@ -3054,7 +3054,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.44,
+      "us_tailwind": 2.48,
       "score": 36.6,
       "tier": "C",
       "init_stars": 1,
@@ -3169,7 +3169,7 @@
         "NVDA",
         "ASML"
       ],
-      "us_tailwind": 2.44,
+      "us_tailwind": 2.48,
       "score": 34.6,
       "tier": "C",
       "init_stars": 2,
@@ -4186,7 +4186,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.4,
+      "us_tailwind": 2.42,
       "score": 30.0,
       "tier": "C",
       "init_stars": 1,
@@ -4231,7 +4231,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.4,
+      "us_tailwind": 2.42,
       "score": 30.0,
       "tier": "C",
       "init_stars": 1,
@@ -4276,7 +4276,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": 2.4,
+      "us_tailwind": 2.42,
       "score": 30.0,
       "tier": "C",
       "init_stars": 1,
@@ -5081,7 +5081,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 3.58,
+      "us_tailwind": 3.59,
       "score": 21.7,
       "tier": "C",
       "init_stars": 2,
