@@ -705,10 +705,8 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
         log(f"当日日足の取得失敗: {e}")
         bars = {}
     if not bars:
-        msg = f"🚨 {day:%m/%d} の日足がまだ無い（J-Quants 未公開か取得失敗）。採点は次回"
-        log(msg)
-        if not dry_run:
-            post_discord({"content": msg}, dry_run)
+        # 15:40 は J-Quants の当日日足がまだ無いのが普通。通知はせず、19:00 の evening の頭（catch_up）で採点する
+        log(f"{day:%m/%d} の日足がまだ無い → 19:00 の evening でまとめて採点")
         return 1
     score = build_score(plan, bars)
     if not dry_run:
@@ -722,6 +720,16 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
     return 0
 
 
+def catch_up(day: date, dry_run: bool) -> None:
+    """取引日が day 以前で、まだ採点を送っていない計画をまとめて採点する（2026-10-29: 15:40 は日足が未公開で毎回空振りしていた）。"""
+    led = load_ledger()
+    todo = [d for d, p in sorted(led["plans"].items())
+            if d <= day.isoformat() and not (led["scores"].get(d) or {}).get("sent")]
+    for d in todo:
+        log(f"未採点の {d} を採点")
+        run_score(date.fromisoformat(d), dry_run, force=False)
+
+
 def main() -> int:
     try:
         from dotenv import load_dotenv
@@ -729,7 +737,7 @@ def main() -> int:
     except Exception:  # noqa: BLE001
         pass
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["evening", "score", "auto"], default="auto")
+    ap.add_argument("--mode", choices=["evening", "score", "auto", "catchup"], default="auto")
     ap.add_argument("--date", help="evening: 基準日 D（既定=JST今日） / score: 取引日（既定=JST今日）")
     ap.add_argument("--dry-run", action="store_true", help="Discord に送らず表示だけ・台帳も書かない")
     ap.add_argument("--force", action="store_true", help="休場日ガード・送信済みガードを無視")
@@ -741,7 +749,11 @@ def main() -> int:
         mode = "score" if now.hour < 17 else "evening"
     log(f"mode={mode} date={day} dry_run={a.dry_run}")
     if mode == "evening":
+        catch_up(day, a.dry_run)          # 今日の取引日の分と、取りこぼした日の採点を先に
         return run_evening(day, a.dry_run, a.force)
+    if mode == "catchup":
+        catch_up(day, a.dry_run)
+        return 0
     return run_score(day, a.dry_run, a.force)
 
 
