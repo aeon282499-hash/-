@@ -15,7 +15,7 @@
 参考:   全体 2〜5 位（ルールAの 1 本が売れないときの予備）
 
 通知（Discord・環境変数 DISCORD_WEBHOOK_FADE_URL。URL はコード/ログに出さない）:
-  evening（毎営業日 19:00）: 翌営業日の候補（コード/銘柄名/市場/終値/前日比/売買代金/順位/スコア/翌日の値幅上限/
+  evening（毎営業日 18:45・2026-10-29 本人「18:45にかならず」）: 翌営業日の候補（コード/銘柄名/市場/終値/前日比/売買代金/順位/スコア/翌日の値幅上限/
                              制度信用で売れるか(貸借銘柄か)/日証金の規制）＋執行の一文
   score  （翌営業日 15:40）: 候補の 寄値→引値 の紙の損益（% と 50 万円換算の円）。売ったかどうかに関係なく毎日貯める
 
@@ -256,7 +256,7 @@ EARN_TITLE_RE = re.compile(r"決算短信|業績予想|配当予想|業績.{0,6}
 
 def _tdnet_earn_codes(asof: date, prev: date) -> set[str] | None:
     """TDnet の一覧（表題）から決算系の開示を拾う。D 当日全部 ＋ D−1 の 15 時以降。{code5}。取れなければ None。
-    /fins/summary の当日分が 19 時にまだ無い日の保険（fade_rank_bt.py の定義は fins/summary）。"""
+    /fins/summary の当日分が 18:45にまだ無い日の保険（fade_rank_bt.py の定義は fins/summary）。"""
     try:
         sys.path.insert(0, str(HERE))
         from ir_builder import fetch_tdnet_day
@@ -922,8 +922,8 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
         log(f"当日日足の取得失敗: {e}")
         bars = {}
     if not bars:
-        # 15:40 は J-Quants の当日日足がまだ無いのが普通。通知はせず、19:00 の evening の頭（catch_up）で採点する
-        log(f"{day:%m/%d} の日足がまだ無い → 19:00 の evening でまとめて採点")
+        # 15:40 は J-Quants の当日日足がまだ無いのが普通。通知はせず、18:45 の evening の頭（catch_up）で採点する
+        log(f"{day:%m/%d} の日足がまだ無い → 18:45 の evening でまとめて採点")
         return 1
     score = build_score(plan, bars)
     if not dry_run:
