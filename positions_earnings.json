@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-28",
+ "last_signal_date": "2026-10-29",
  "positions": [
   {
    "ticker": "6521.T",
@@ -717,6 +717,39 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -9.98,
    "pnl_yen": -43700
+  },
+  {
+   "ticker": "2175.T",
+   "name": "エス・エム・エス",
+   "type": "第２四半期",
+   "date": "2026-10-29",
+   "signal_price": 2521.0,
+   "shares": 100,
+   "rsi": 37.9,
+   "runup5": -3.9,
+   "status": "pending"
+  },
+  {
+   "ticker": "6702.T",
+   "name": "富士通",
+   "type": "第２四半期",
+   "date": "2026-10-29",
+   "signal_price": 4310.0,
+   "shares": 100,
+   "rsi": 53.9,
+   "runup5": -5.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "4661.T",
+   "name": "オリエンタルランド",
+   "type": "第２四半期",
+   "date": "2026-10-29",
+   "signal_price": 3157.0,
+   "shares": 100,
+   "rsi": 55.0,
+   "runup5": -3.8,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-28"

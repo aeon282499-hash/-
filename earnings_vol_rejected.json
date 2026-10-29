@@ -787,5 +787,95 @@
    "runup5": -4.5,
    "price": 2560.5
   }
+ ],
+ "2026-10-29": [
+  {
+   "ticker": "3092.T",
+   "name": "ＺＯＺＯ",
+   "vol": 1.4,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 49.0,
+   "runup5": -4.6,
+   "price": 1172.5
+  },
+  {
+   "ticker": "3116.T",
+   "name": "トヨタ紡織",
+   "vol": 1.78,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 26.5,
+   "runup5": -4.0,
+   "price": 2014.5
+  },
+  {
+   "ticker": "4528.T",
+   "name": "小野薬品工業",
+   "vol": 0.78,
+   "why": "vol",
+   "last_time": "12:00",
+   "bucket": "場中",
+   "rsi": 31.3,
+   "runup5": -13.8,
+   "price": 2169.0
+  },
+  {
+   "ticker": "6436.T",
+   "name": "アマノ",
+   "vol": 1.83,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 30.5,
+   "runup5": -11.6,
+   "price": 3638.0
+  },
+  {
+   "ticker": "7259.T",
+   "name": "アイシン",
+   "vol": 1.82,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 29.8,
+   "runup5": -4.3,
+   "price": 2050.0
+  },
+  {
+   "ticker": "7282.T",
+   "name": "豊田合成",
+   "vol": 2.45,
+   "why": "announced",
+   "last_time": "13:25",
+   "bucket": "場中",
+   "rsi": 30.3,
+   "runup5": -3.9,
+   "price": 951.9000244140625
+  },
+  {
+   "ticker": "9436.T",
+   "name": "沖縄セルラー電話",
+   "vol": 1.43,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 16.0,
+   "runup5": -4.1,
+   "price": 3260.0
+  },
+  {
+   "ticker": "9744.T",
+   "name": "メイテックグループホールディングス",
+   "vol": 1.09,
+   "why": "vol",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 34.5,
+   "runup5": -6.3,
+   "price": 3203.0
+  }
  ]
 }
