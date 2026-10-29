@@ -643,5 +643,20 @@
   "exec_open": 2443.0,
   "exec_close": 2469.0,
   "gap_pct": 0.66
+ },
+ {
+  "ticker": "4073.T",
+  "code": "4073",
+  "name": "ジィ・シィ企画",
+  "d0": "2026-10-28",
+  "close": 789.0,
+  "r1": -23.4,
+  "volx": 2.49,
+  "runup": 50.8,
+  "tov_oku": 6.0,
+  "ma5_up": true,
+  "loanable": "×",
+  "result_pct": null,
+  "result_yen": null
  }
 ]
