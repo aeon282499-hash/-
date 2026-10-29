@@ -34,6 +34,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 2026-10-29 本人「PCが落ちてても18:45に届けたい」: この夜ラン（Worker 18:05 起動）の相乗りで
+  # fade_notify.yml（今日の3本＋友達の3本）を起動する。送るのは向こうで 18:45 JST・送信済みガードあり。
+  kick_fade_notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: fade_notify.yml を起動
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run fade_notify.yml --repo "${{ github.repository }}" --ref main -f mode=evening
+
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 120
