@@ -964,6 +964,12 @@ def main() -> int:
     mode = a.mode
     if mode == "auto":
         mode = "score" if now.hour < 17 else "evening"
+    if mode == "evening" and not a.date and now.hour < 17:
+        # 18:45 に PC が落ちていて、翌朝などに起動後の取りこぼし実行になった時: 今日の日足はまだ無いので前の営業日を基準日にする
+        day = now.date() - timedelta(days=1)
+        while not is_trading_day(day):
+            day -= timedelta(days=1)
+        log(f"17時前の evening → 取りこぼし分として基準日を {day} に")
     log(f"mode={mode} date={day} dry_run={a.dry_run}")
     if mode == "evening":
         catch_up(day, a.dry_run)          # 今日の取引日の分と、取りこぼした日の採点を先に
