@@ -727,7 +727,8 @@
    "shares": 100,
    "rsi": 37.9,
    "runup5": -3.9,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 2509.0
   },
   {
    "ticker": "6702.T",
@@ -738,7 +739,8 @@
    "shares": 100,
    "rsi": 53.9,
    "runup5": -5.8,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 4322.0
   },
   {
    "ticker": "4661.T",
@@ -749,8 +751,9 @@
    "shares": 100,
    "rsi": 55.0,
    "runup5": -3.8,
-   "status": "pending"
+   "status": "pending",
+   "prev_close": 3170.0
   }
  ],
- "last_reminder_date": "2026-10-28"
+ "last_reminder_date": "2026-10-30"
 }
