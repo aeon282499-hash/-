@@ -1,0 +1,94 @@
+name: 売りフェード（今日の3本＋友達の3本）通知
+
+# 友達の「売りフェード戦略」の1〜3位（友達ch）と、今日の3本（本人ch）を Discord に通知する（発注機能なし・kabuai/fade_notify.py）。
+#   本線: cron-job.org → Worker → schedule_evening.yml（18:05 JST）→ このワークフローを dispatch
+#         → 計算を済ませて 18:45 JST に送信（FADE_NOTIFY_HOLD_UNTIL）。未採点日の答え合わせも同じ回で送る。
+#   保険: GitHub cron 18:30 JST（数十分遅れることがある）。
+#   19:05 JST を過ぎて始まった回は送らない＝PC タスク（19:10・GitHub の台帳を見て未送信なら送る）に任せる（二重送信の防止）。
+# 通知先は Secrets の DISCORD_WEBHOOK_FADE_URL（友達ch）/ DISCORD_WEBHOOK_OWN_FADE_URL（本人ch）。URL はコード/ログに出さない。
+# 台帳 kabuai/fade_notify_ledger.json はこのワークフローがコミットする（送信済みガードもこれを見る）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "evening=翌営業日の計画 / catchup=未採点日の答え合わせだけ / auto=JST時刻で自動"
+        type: choice
+        options: [auto, evening, catchup]
+        default: auto
+      date:
+        description: "日付 YYYY-MM-DD（空=今日）。evening は基準日"
+        required: false
+        default: ""
+      dry_run:
+        description: "true=Discordに送らずログに表示だけ（台帳も書かない）"
+        type: boolean
+        default: false
+      late_ok:
+        description: "true=19:05 JST 以降でも送る（手動の再送用）"
+        type: boolean
+        default: false
+  schedule:
+    - cron: '30 9 * * 1-5'    # UTC 09:30 = JST 18:30 平日（保険）
+
+concurrency:
+  group: fade-notify
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      DISCORD_WEBHOOK_FADE_URL: ${{ secrets.DISCORD_WEBHOOK_FADE_URL }}
+      DISCORD_WEBHOOK_OWN_FADE_URL: ${{ secrets.DISCORD_WEBHOOK_OWN_FADE_URL }}
+      FADE_NOTIFY_HOLD_UNTIL: "18:45"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: 遅すぎる回は送らない（PC の予備に任せる）
+        id: gate
+        run: |
+          NOW=$(TZ=Asia/Tokyo date +%H%M)
+          if [ "$NOW" -gt "1905" ] && [ "${{ inputs.late_ok }}" != "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "現在 $NOW JST → 19:05 を過ぎたので送らない"; echo "go=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.go == '1'
+
+      - uses: actions/setup-python@v6
+        if: steps.gate.outputs.go == '1'
+        with:
+          python-version: '3.11'
+
+      - name: パッケージインストール
+        if: steps.gate.outputs.go == '1'
+        run: pip install pandas numpy requests python-dotenv jpholiday
+
+      - name: 計画の作成 → 18:45 に Discord
+        if: steps.gate.outputs.go == '1'
+        run: |
+          ARGS="--mode ${{ inputs.mode || 'evening' }}"
+          if [ -n "${{ inputs.date }}" ]; then ARGS="$ARGS --date ${{ inputs.date }}"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -X utf8 kabuai/fade_notify.py $ARGS
+
+      - name: 台帳をコミット
+        if: ${{ steps.gate.outputs.go == '1' && inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add kabuai/fade_notify_ledger.json || true
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(fade_notify): ledger [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            echo "push retry $i"; sleep 5
+          done
+          echo "push failed"; exit 1
