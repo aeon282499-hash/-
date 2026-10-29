@@ -669,8 +669,52 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
     return dict(rows=rows, n_cand=int(len(cand)))
 
 
+# 遊び1本（2026-10-30 本人「遊びがある日は遊び1本配信たのむね」）: 3本の外の代金1〜3億・前日比+12%以上の1位に +12%指値だけ・25万。
+#  検証(uwick_bt/fade5y/RESULTS_play12_strict.md・1tick抜け): 5年 338本 PF2.48 +285万 DD10万・20年 PF2.77 DD21万・前後半とも2.5前後。
+#  2位以下は5年 PF1.45/1.07 で弱い＝1位だけ（繰り上げなし）。100株で50万超の銘柄は見送り
+ASOBI_VA = (1e8, 3e8)
+ASOBI_LIMIT_PCT = 0.12
+ASOBI_SIZE = 250_000
+
+
+def asobi_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss, alert, jsf_list, earn) -> dict | None:
+    b = bars if universe is None else bars[bars["Code"].isin(universe)]
+    b = b[b["Code"].map(is_common)]
+    f = add_features(b)
+    d = f[(f["Date"] == pd.Timestamp(asof)) & (f["C"] >= PRICE_MIN) & (f["Va"] >= ASOBI_VA[0]) & (f["Va"] < ASOBI_VA[1])
+          & (f["ret1"] >= TOP3_RET_MIN)].sort_values(["ret1", "Code"], ascending=[False, True])
+    if d.empty:
+        return None
+    r = d.iloc[0]
+    c5, c4 = str(r["Code"]), code4(r["Code"])
+    lim = float(np.ceil(r["C"] * (1 + ASOBI_LIMIT_PCT) / _tick(r["C"])) * _tick(r["C"]))
+    sh = int(ASOBI_SIZE / lim // 100 * 100) or (100 if lim * 100 <= 2 * ASOBI_SIZE else 0)
+    names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
+    al = alert.get(c4) or {}; jt = jsf_list.get(c4, "")
+    return dict(code=c4, name=str(names.get(c5, ""))[:12], close=float(r["C"]), ret1=float(r["ret1"]), va=float(r["Va"]),
+                lim=lim, shares=sh, n=int(len(d)), seido="○" if iss.get(c4) == "2" else ("×" if iss.get(c4) else "?"),
+                jsf_stop=bool(al.get("jsf_stop")) or "停止" in jt, jsf_warn=bool(al.get("jsf_warn")) or "注意喚起" in jt,
+                earn=bool(earn is not None and c5 in earn))
+
+
+def asobi_embed(a: dict) -> dict:
+    tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[a["seido"]]]
+    if a["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
+    elif a["jsf_warn"]: tags.append("⚠️注意喚起")
+    if a["earn"]: tags.append("📄決算がらみ")
+    head = f"`{a['code']}` {a['name']}　前日終値 ¥{a['close']:,.0f}（{a['ret1']*100:+.1f}%・代金{a['va']/1e8:.1f}億）\n"
+    if a["shares"]:
+        body = (f"　🔴 当日中指値 ¥{a['lim']:,.0f}（+{ASOBI_LIMIT_PCT*100:.0f}%）{a['shares']:,}株で空売り → 引成で買戻し\n"
+                f"　建玉 約{a['shares'] * a['lim'] / 1e4:.0f}万　" + "・".join(tags))
+    else:
+        body = "　見送り（100株で50万超）"
+    return {"title": f"🎲 遊び1本（代金1〜3億・+{TOP3_RET_MIN*100:.0f}%以上の1位・指値+{ASOBI_LIMIT_PCT*100:.0f}%だけ）",
+            "description": head + body + "\n\n-# 寄りがS高張り付きなら取消。届かなければその日はなし。損切りなし",
+            "color": 0xFFD43B}
+
+
 def own_payload(plan: dict) -> dict:
-    """本人ch: 毎日の3本だけ（前日比の大きい順・+3%指値・各50万）。"""
+    """本人ch: 毎日の3本（前日比の大きい順・+3%指値・各50万）＋ 遊び1本がある日はその1本。"""
     td = datetime.fromisoformat(plan["trade_day"])
     tp = plan.get("top3") or {"rows": []}
     lines = []
@@ -695,8 +739,11 @@ def own_payload(plan: dict) -> dict:
     else:
         lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。約定しなかった段は引けで消える。"
                      "1本50万（2段に分けられない銘柄は+3%一発・100株で50万超は100株だけ・最大100万）")
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%/+{TOP3_LADDER_PCT2*100:.0f}%）",
-                        "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]}
+    embeds = [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%/+{TOP3_LADDER_PCT2*100:.0f}%）",
+               "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]
+    if plan.get("asobi"):
+        embeds.append(asobi_embed(plan["asobi"]))
+    return {"embeds": embeds}
 
 
 def _own_payload_friend_new1(plan: dict) -> dict:   # 旧: 友達版1〜3位＋新①（10/29 毎日の3本に置き換え・数字の比較用に残す）
@@ -894,6 +941,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     plan = build_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list)
     plan["new1"] = new1_plan(cand, master, iss, alert, jsf_list)
     plan["top3"] = top3_plan(cand, master, iss, alert, jsf_list, earn)
+    plan["asobi"] = asobi_plan(bars, day, universe, master, iss, alert, jsf_list, earn)
     payload = plan_payload(plan)
     hold = os.getenv("FADE_NOTIFY_HOLD_UNTIL", "").strip()   # クラウド: 計算は先に済ませ、送るのは定刻（例 18:45 JST）
     if hold and not dry_run:
