@@ -630,11 +630,22 @@ def _loan_lines(lp: dict | None) -> list[str]:
 TOP3_LIMIT_PCT = 0.03
 TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
 TOP3_MAX_100SH = 1_000_000   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
+# 2段指値（2026-10-29 本人「OK」）: +3%で25万＋+8%で25万。どちらかの段で100株買えない銘柄は+3%で50万一発。
+#  検証(fade5y/ladder_bt.py): 5年 +3,563万/DD53万 → +3,155万/DD40万・20年 +1億2,816万/DD59万 → +1億1,359万/DD43万
+TOP3_LADDER_PCT2 = 0.08
 
 
 def top3_shares(lim: float) -> int:
     sh = int(SIZE_YEN / lim // 100 * 100)
     return sh if sh >= 100 else (100 if lim * 100 <= TOP3_MAX_100SH else 0)
+
+
+def top3_ladder(close: float) -> list:
+    """[(指値, 株数), ...] 2段に分けられれば2つ、無理なら+3%一発の1つ。"""
+    t = _tick(close); l1 = float(np.ceil(close * (1 + TOP3_LIMIT_PCT) / t) * t)
+    l2 = float(np.ceil(close * (1 + TOP3_LADDER_PCT2) / t) * t)
+    h1, h2 = int(SIZE_YEN / 2 / l1 // 100 * 100), int(SIZE_YEN / 2 / l2 // 100 * 100)
+    return [(l1, h1), (l2, h2)] if h1 >= 100 and h2 >= 100 else [(l1, top3_shares(l1))]
 
 
 def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
@@ -663,21 +674,27 @@ def own_payload(plan: dict) -> dict:
     tp = plan.get("top3") or {"rows": []}
     lines = []
     for x in tp["rows"]:
-        t = _tick(x["close"]); lim = float(np.ceil(x["close"] * (1 + TOP3_LIMIT_PCT) / t) * t)
-        sh = top3_shares(lim)
-        size_txt = f"50万: {sh:,}株" if sh * lim <= SIZE_YEN else f"{sh:,}株だけ（建玉 約{sh * lim / 1e4:.0f}万）"
-        tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
+        lad = top3_ladder(x["close"])
+        if len(lad) == 2:
+            order_txt = (f"　🔴 当日中指値 ¥{lad[0][0]:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）{lad[0][1]:,}株"
+                         f" ＋ ¥{lad[1][0]:,.0f}（+{TOP3_LADDER_PCT2*100:.0f}%）{lad[1][1]:,}株で空売り → 引成で買戻し\n")
+            size_txt = "25万＋25万"
+        else:
+            lim, sh = lad[0]
+            order_txt = f"　🔴 当日中指値 ¥{lim:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）{sh:,}株で空売り → 引成で買戻し（分けられない値段なので一発）\n"
+            size_txt = f"建玉 約{sh * lim / 1e4:.0f}万"
+        tags =[{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
         if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
         elif x["jsf_warn"]: tags.append("⚠️注意喚起")
         if x["earn"]: tags.append("📄決算がらみ")
         lines.append(f"{x['rank']}位 `{x['code']}` {x['name']}　前日終値 ¥{x['close']:,.0f}（{x['ret1']*100:+.1f}%）\n"
-                     f"　🔴 当日中指値 ¥{lim:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）で空売り → 引成で買戻し\n"
-                     f"　{size_txt}　" + "・".join(tags))
+                     + order_txt + f"　{size_txt}　" + "・".join(tags))
     if not lines:
         lines.append(f"候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
     else:
-        lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。1本50万（100株で50万超の銘柄は100株だけ・最大100万）")
-    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%）",
+        lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。約定しなかった段は引けで消える。"
+                     "1本50万（2段に分けられない銘柄は+3%一発・100株で50万超は100株だけ・最大100万）")
+    return {"embeds": [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%/+{TOP3_LADDER_PCT2*100:.0f}%）",
                         "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]}
 
 
