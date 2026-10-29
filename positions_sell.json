@@ -232,11 +232,11 @@
     "prev_close": 3736.0,
     "limit_price": null,
     "entry_open": 3671.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 4.032,
     "unrealized_pnl": 4.604,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "MAXHOLD",
+    "exit_date": "2026-10-29"
   }
 ]

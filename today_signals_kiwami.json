@@ -1,4 +1,70 @@
 {
-  "date": "2026-10-29",
-  "signals": []
+  "date": "2026-10-30",
+  "signals": [
+    {
+      "ticker": "3038.T",
+      "name": "神戸物産",
+      "direction": "BUY",
+      "prev_close": 2852.5,
+      "limit_price": 2881,
+      "days_cover": 0.4100701627186022,
+      "rsi": 38.03,
+      "deviation": -3.84,
+      "vol_ratio": 2.31,
+      "range_ratio": 1.16,
+      "turnover": 15132029300.0
+    },
+    {
+      "ticker": "5076.T",
+      "name": "インフロニア・ホールディングス",
+      "direction": "BUY",
+      "prev_close": 2350.0,
+      "limit_price": 2373,
+      "days_cover": 0.6582154970222958,
+      "rsi": 43.54,
+      "deviation": -3.53,
+      "vol_ratio": 3.14,
+      "range_ratio": 1.58,
+      "turnover": 32083763400.0
+    },
+    {
+      "ticker": "3861.T",
+      "name": "王子ホールディングス",
+      "direction": "BUY",
+      "prev_close": 809.1,
+      "limit_price": 817,
+      "days_cover": 0.3296316536060296,
+      "rsi": 33.0,
+      "deviation": -3.32,
+      "vol_ratio": 1.37,
+      "range_ratio": 1.52,
+      "turnover": 4352681500.0
+    },
+    {
+      "ticker": "3291.T",
+      "name": "飯田グループホールディングス",
+      "direction": "BUY",
+      "prev_close": 2069.0,
+      "limit_price": 2089,
+      "days_cover": 0.20551505063415978,
+      "rsi": 34.93,
+      "deviation": -3.76,
+      "vol_ratio": 1.64,
+      "range_ratio": 1.58,
+      "turnover": 2110709800.0
+    },
+    {
+      "ticker": "8079.T",
+      "name": "正栄食品工業",
+      "direction": "BUY",
+      "prev_close": 4105.0,
+      "limit_price": 4145,
+      "days_cover": 0.3265318992375467,
+      "rsi": 28.35,
+      "deviation": -4.77,
+      "vol_ratio": 5.45,
+      "range_ratio": 1.82,
+      "turnover": 2120998000.0
+    }
+  ]
 }
