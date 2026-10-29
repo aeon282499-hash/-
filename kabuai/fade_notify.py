@@ -895,6 +895,14 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     plan["new1"] = new1_plan(cand, master, iss, alert, jsf_list)
     plan["top3"] = top3_plan(cand, master, iss, alert, jsf_list, earn)
     payload = plan_payload(plan)
+    hold = os.getenv("FADE_NOTIFY_HOLD_UNTIL", "").strip()   # クラウド: 計算は先に済ませ、送るのは定刻（例 18:45 JST）
+    if hold and not dry_run:
+        hh, mm = map(int, hold.split(":"))
+        now = datetime.now(JST)
+        at = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if now < at:
+            log(f"{hold} まで待ってから送信")
+            time.sleep((at - now).total_seconds())
     sent = post_discord(payload, dry_run)
     plan["sent"] = bool(sent)
     plan["own_sent"] = post_own(plan, dry_run)
