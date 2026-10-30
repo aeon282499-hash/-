@@ -1999,6 +1999,36 @@
       "close": 2859.0,
       "pnl": 0.81,
       "win": true
+    },
+    {
+      "date": "2026-10-30",
+      "ticker": "5076.T",
+      "name": "インフロニア・ホールディングス",
+      "direction": "BUY",
+      "open": 2326.5,
+      "close": 2299.0,
+      "pnl": -1.18,
+      "win": false
+    },
+    {
+      "date": "2026-10-30",
+      "ticker": "3861.T",
+      "name": "王子ホールディングス",
+      "direction": "BUY",
+      "open": 810.0,
+      "close": 817.8,
+      "pnl": 0.96,
+      "win": true
+    },
+    {
+      "date": "2026-10-30",
+      "ticker": "8079.T",
+      "name": "正栄食品工業",
+      "direction": "BUY",
+      "open": 4125.0,
+      "close": 4125.0,
+      "pnl": 0.0,
+      "win": false
     }
   ]
 }
