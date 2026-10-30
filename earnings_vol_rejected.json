@@ -877,5 +877,62 @@
    "runup5": -6.3,
    "price": 3203.0
   }
+ ],
+ "2026-10-30": [
+  {
+   "ticker": "1942.T",
+   "name": "関電工",
+   "vol": 1.21,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 28.8,
+   "runup5": -9.0,
+   "price": 4628.0
+  },
+  {
+   "ticker": "6135.T",
+   "name": "牧野フライス製作所",
+   "vol": 1.54,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 36.0,
+   "runup5": -4.6,
+   "price": 2930.0
+  },
+  {
+   "ticker": "6503.T",
+   "name": "三菱電機",
+   "vol": 1.42,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 32.9,
+   "runup5": -3.4,
+   "price": 4606.0
+  },
+  {
+   "ticker": "6752.T",
+   "name": "パナソニック　ホールディングス",
+   "vol": 1.92,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 29.6,
+   "runup5": -3.0,
+   "price": 3521.0
+  },
+  {
+   "ticker": "8616.T",
+   "name": "東海東京フィナンシャル・ホールディングス",
+   "vol": 0.67,
+   "why": "vol",
+   "last_time": "15:15",
+   "bucket": "場中",
+   "rsi": 27.4,
+   "runup5": -5.1,
+   "price": 788.0
+  }
  ]
 }

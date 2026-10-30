@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-29",
+ "last_signal_date": "2026-10-30",
  "positions": [
   {
    "ticker": "6521.T",
@@ -727,8 +727,14 @@
    "shares": 100,
    "rsi": 37.9,
    "runup5": -3.9,
-   "status": "pending",
-   "prev_close": 2509.0
+   "status": "closed",
+   "prev_close": 2509.0,
+   "entry": 2509.0,
+   "exit_date": "2026-10-30",
+   "exit": 2618.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 4.34,
+   "pnl_yen": 10900
   },
   {
    "ticker": "6702.T",
@@ -739,8 +745,14 @@
    "shares": 100,
    "rsi": 53.9,
    "runup5": -5.8,
-   "status": "pending",
-   "prev_close": 4322.0
+   "status": "closed",
+   "prev_close": 4322.0,
+   "entry": 4322.0,
+   "exit_date": "2026-10-30",
+   "exit": 3787.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -12.38,
+   "pnl_yen": -53500
   },
   {
    "ticker": "4661.T",
@@ -751,8 +763,33 @@
    "shares": 100,
    "rsi": 55.0,
    "runup5": -3.8,
-   "status": "pending",
-   "prev_close": 3170.0
+   "status": "extended",
+   "prev_close": 3170.0,
+   "entry": 3170.0,
+   "gap_pct": 8.83,
+   "ext_exit_date": "2026-11-06"
+  },
+  {
+   "ticker": "6632.T",
+   "name": "ＪＶＣケンウッド",
+   "type": "第２四半期",
+   "date": "2026-10-30",
+   "signal_price": 887.0,
+   "shares": 500,
+   "rsi": 26.8,
+   "runup5": -4.9,
+   "status": "pending"
+  },
+  {
+   "ticker": "2121.T",
+   "name": "ＭＩＸＩ",
+   "type": "第２四半期",
+   "date": "2026-10-30",
+   "signal_price": 3810.0,
+   "shares": 100,
+   "rsi": 48.2,
+   "runup5": -3.3,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-30"
