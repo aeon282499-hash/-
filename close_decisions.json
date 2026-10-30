@@ -3188,5 +3188,37 @@
       "rsi": null,
       "price": null
     }
+  },
+  "2026-10-30": {
+    "main:BUY:5076.T": {
+      "decision": "HOLD",
+      "rsi": 39.16,
+      "price": 2285.0
+    },
+    "main:BUY:8079.T": {
+      "decision": "HOLD",
+      "rsi": 32.83,
+      "price": 4135.0
+    },
+    "kiwami:BUY:5076.T": {
+      "decision": "HOLD",
+      "rsi": 39.31,
+      "price": 2287.5
+    },
+    "kiwami_mid:BUY:5076.T": {
+      "decision": "HOLD",
+      "rsi": 39.31,
+      "price": 2287.5
+    },
+    "kiwami_small:BUY:5076.T": {
+      "decision": "HOLD",
+      "rsi": 39.31,
+      "price": 2287.5
+    },
+    "kiwami:SELL:9020.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
