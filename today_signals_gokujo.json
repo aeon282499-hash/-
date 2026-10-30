@@ -1,4 +1,20 @@
 {
-  "date": "2026-10-30",
-  "signals": []
+  "date": "2026-11-02",
+  "signals": [
+    {
+      "ticker": "9468.T",
+      "name": "ＫＡＤＯＫＡＷＡ",
+      "direction": "BUY",
+      "prev_close": 3653.0,
+      "limit_price": 3685,
+      "days_cover": 0.24456708294845167,
+      "vt5": 0.977,
+      "updn_vol": 0.907,
+      "rsi": 44.36,
+      "deviation": -2.05,
+      "vol_ratio": 2.09,
+      "range_ratio": 0.79,
+      "turnover": 2706964400.0
+    }
+  ]
 }

@@ -181,5 +181,27 @@
     "exit_type": "DAY1CUT",
     "exit_date": "2026-10-28",
     "day1_cut_pending": true
+  },
+  {
+    "signal_date": "2026-11-02",
+    "entry_date": "2026-11-02",
+    "ticker": "9468.T",
+    "name": "ＫＡＤＯＫＡＷＡ",
+    "size": 1500000,
+    "prev_close": 3653.0,
+    "limit_price": 3685,
+    "atr_pct": 2.546,
+    "stop_pct": 3.0,
+    "live_stop": 3.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null,
+    "ss_sigdate": "2026-10-30",
+    "ss_inc5": false,
+    "ss_inc7": false,
+    "ss_n7": 4
   }
 ]

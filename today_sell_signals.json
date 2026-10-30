@@ -1,4 +1,35 @@
 {
-  "date": "2026-10-30",
-  "signals": []
+  "date": "2026-11-02",
+  "signals": [
+    {
+      "ticker": "9022.T",
+      "name": "東海旅客鉄道",
+      "direction": "SELL",
+      "prev_close": 3951.0
+    },
+    {
+      "ticker": "9202.T",
+      "name": "ＡＮＡホールディングス",
+      "direction": "SELL",
+      "prev_close": 3043.0
+    },
+    {
+      "ticker": "4023.T",
+      "name": "クレハ",
+      "direction": "SELL",
+      "prev_close": 4195.0
+    },
+    {
+      "ticker": "2004.T",
+      "name": "昭和産業",
+      "direction": "SELL",
+      "prev_close": 4120.0
+    },
+    {
+      "ticker": "2002.T",
+      "name": "日清製粉グループ本社",
+      "direction": "SELL",
+      "prev_close": 2236.0
+    }
+  ]
 }

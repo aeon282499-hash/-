@@ -1,40 +1,40 @@
 {
-  "date": "2026-10-30",
+  "date": "2026-11-02",
   "signals": [
     {
-      "ticker": "3038.T",
-      "name": "神戸物産",
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
       "direction": "BUY",
-      "prev_close": 2852.5,
-      "limit_price": 2881
+      "prev_close": 2836.5,
+      "limit_price": 2864
     },
     {
-      "ticker": "5076.T",
-      "name": "インフロニア・ホールディングス",
+      "ticker": "7545.T",
+      "name": "西松屋チェーン",
       "direction": "BUY",
-      "prev_close": 2350.0,
-      "limit_price": 2373
+      "prev_close": 1870.0,
+      "limit_price": 1888
     },
     {
-      "ticker": "3861.T",
-      "name": "王子ホールディングス",
+      "ticker": "9744.T",
+      "name": "メイテックグループホールディングス",
       "direction": "BUY",
-      "prev_close": 809.1,
-      "limit_price": 817
+      "prev_close": 3195.0,
+      "limit_price": 3225
     },
     {
-      "ticker": "3291.T",
-      "name": "飯田グループホールディングス",
+      "ticker": "6471.T",
+      "name": "日本精工",
       "direction": "BUY",
-      "prev_close": 2069.0,
-      "limit_price": 2089
+      "prev_close": 1002.5,
+      "limit_price": 1012
     },
     {
-      "ticker": "8079.T",
-      "name": "正栄食品工業",
+      "ticker": "9468.T",
+      "name": "ＫＡＤＯＫＡＷＡ",
       "direction": "BUY",
-      "prev_close": 4105.0,
-      "limit_price": 4145
+      "prev_close": 3653.0,
+      "limit_price": 3685
     }
   ]
 }
