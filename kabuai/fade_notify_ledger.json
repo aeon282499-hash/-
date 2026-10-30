@@ -676,6 +676,229 @@
     "n_cand": 5
    },
    "own_sent": true
+  },
+  "2026-11-02": {
+   "asof": "2026-10-30",
+   "trade_day": "2026-11-02",
+   "made": "2026-10-30 18:09",
+   "n_cand": 14,
+   "rule_a": null,
+   "rule_a_why": "1位 4410 は除外（決算起因）",
+   "rows": [
+    {
+     "code": "4410",
+     "code5": "44100",
+     "name": "ハリマ化成グループ",
+     "mkt": "プライム",
+     "close": 1355.0,
+     "ret1": 0.28436018957345977,
+     "va": 2090820100.0,
+     "rank_all": 1,
+     "score": 3.93,
+     "ul1": 1655.0,
+     "strong": true,
+     "vol20": 0.0669,
+     "dev25": 0.2226,
+     "rng": 0.2844,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "4347",
+     "code5": "43470",
+     "name": "ブロードメディア",
+     "mkt": "スタンダード",
+     "close": 2489.0,
+     "ret1": 0.23401090728805163,
+     "va": 4382282400.0,
+     "rank_all": 2,
+     "score": 2.86,
+     "ul1": 2989.0,
+     "strong": true,
+     "vol20": 0.0589,
+     "dev25": 0.2937,
+     "rng": 0.003,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "ブロードメディア 申込停止 新規売り",
+     "reasons": [
+      "決算起因",
+      "日証金停止"
+     ]
+    },
+    {
+     "code": "6445",
+     "code5": "64450",
+     "name": "ジャノメ",
+     "mkt": "プライム",
+     "close": 1506.0,
+     "ret1": 0.1839622641509433,
+     "va": 589993900.0,
+     "rank_all": 3,
+     "score": 2.86,
+     "ul1": 1906.0,
+     "strong": true,
+     "vol20": 0.0436,
+     "dev25": 0.1265,
+     "rng": 0.2036,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "6574",
+     "code5": "65740",
+     "name": "コンヴァノ",
+     "mkt": "グロース",
+     "close": 1281.0,
+     "ret1": 0.14375000000000004,
+     "va": 2592780200.0,
+     "rank_all": 4,
+     "score": 2.79,
+     "ul1": 1581.0,
+     "strong": false,
+     "vol20": 0.0655,
+     "dev25": 0.0892,
+     "rng": 0.242,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "9551",
+     "code5": "95510",
+     "name": "メタウォーター",
+     "mkt": "プライム",
+     "close": 3700.0,
+     "ret1": 0.2333333333333334,
+     "va": 1451696500.0,
+     "rank_all": 5,
+     "score": 2.64,
+     "ul1": 4400.0,
+     "strong": true,
+     "vol20": 0.0553,
+     "dev25": 0.1924,
+     "rng": 0.0267,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4410",
+      "name": "ハリマ化成グループ",
+      "close": 1355.0,
+      "ret1": 0.28436018957345977,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "4347",
+      "name": "ブロードメディア",
+      "close": 2489.0,
+      "ret1": 0.23401090728805163,
+      "jsf_stop": true,
+      "jsf_warn": false
+     },
+     {
+      "rank": 3,
+      "code": "9551",
+      "name": "メタウォーター",
+      "close": 3700.0,
+      "ret1": 0.2333333333333334,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 4
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4410",
+      "name": "ハリマ化成グループ",
+      "close": 1355.0,
+      "ret1": 0.28436018957345977,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 2,
+      "code": "4347",
+      "name": "ブロードメディア",
+      "close": 2489.0,
+      "ret1": 0.23401090728805163,
+      "seido": "○",
+      "jsf_stop": true,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "9551",
+      "name": "メタウォーター",
+      "close": 3700.0,
+      "ret1": 0.2333333333333334,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 14
+   },
+   "asobi": {
+    "code": "6029",
+    "name": "アトラグループ",
+    "close": 229.0,
+    "ret1": 0.2513661202185793,
+    "va": 211030600.0,
+    "lim": 257.0,
+    "shares": 900,
+    "n": 1,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": false
+   },
+   "own_sent": true
   }
  },
  "scores": {
@@ -948,6 +1171,98 @@
      "pinned": false,
      "ret": 0.016057585825027684,
      "pnl": 8029,
+     "status": "採点"
+    }
+   ],
+   "sent": true
+  },
+  "2026-10-30": {
+   "trade_day": "2026-10-30",
+   "asof": "2026-10-29",
+   "made": "2026-10-30 18:05",
+   "items": [
+    {
+     "code": "3779",
+     "name": "ジェイ・エスコムホールデ",
+     "rank_all": 1,
+     "rule_a": true,
+     "reasons": [],
+     "seido": "×",
+     "jsf_stop": false,
+     "open": 165.0,
+     "close": 114.0,
+     "high": 166.0,
+     "pinned": false,
+     "ret": 0.3090909090909091,
+     "pnl": 154545,
+     "status": "採点"
+    },
+    {
+     "code": "5341",
+     "name": "ＡＳＡＨＩ　ＥＩＴＯホー",
+     "rank_all": 2,
+     "rule_a": false,
+     "reasons": [
+      "日証金停止"
+     ],
+     "seido": "○",
+     "jsf_stop": true,
+     "open": 229.0,
+     "close": 229.0,
+     "high": 229.0,
+     "pinned": true,
+     "ret": 0.0,
+     "pnl": 0,
+     "status": "張り付き見送り"
+    },
+    {
+     "code": "593A",
+     "name": "ティアフォー",
+     "rank_all": 3,
+     "rule_a": false,
+     "reasons": [],
+     "seido": "×",
+     "jsf_stop": false,
+     "open": 2314.0,
+     "close": 2403.0,
+     "high": 2684.0,
+     "pinned": false,
+     "ret": -0.038461538461538464,
+     "pnl": -19231,
+     "status": "採点"
+    },
+    {
+     "code": "4840",
+     "name": "トライアイズ",
+     "rank_all": 4,
+     "rule_a": false,
+     "reasons": [],
+     "seido": "×",
+     "jsf_stop": false,
+     "open": 1050.0,
+     "close": 941.0,
+     "high": 1091.0,
+     "pinned": false,
+     "ret": 0.10380952380952381,
+     "pnl": 51905,
+     "status": "採点"
+    },
+    {
+     "code": "3843",
+     "name": "フリービット",
+     "rank_all": 5,
+     "rule_a": false,
+     "reasons": [
+      "決算起因"
+     ],
+     "seido": "○",
+     "jsf_stop": false,
+     "open": 1959.0,
+     "close": 2013.0,
+     "high": 2043.0,
+     "pinned": false,
+     "ret": -0.027565084226646247,
+     "pnl": -13783,
      "status": "採点"
     }
    ],
