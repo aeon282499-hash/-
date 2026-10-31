@@ -426,6 +426,7 @@ def candidates_for_day(bars: pd.DataFrame, asof, universe: set[str] | None) -> p
         b = b[b["Code"].isin(universe)]
     b = b[b["Code"].map(is_common)]
     f = add_features(b)
+    f = f.assign(nbars=f.groupby("Code")["C"].transform("size"))
     last = f[f["Date"] == pd.Timestamp(asof)]
     cand = last[(last["C"] >= PRICE_MIN) & (last["Va"] >= VA_MIN) & (last["ret1"] >= RET_MIN)].copy()
     cand = score_rank(cand)
@@ -553,6 +554,15 @@ def _tick(p: float) -> float:
     return 1.0 if p <= 3000 else 5.0 if p <= 5000 else 10.0 if p <= 30000 else 50.0 if p <= 50000 else 100.0
 
 
+def _lim(close: float, pct: float) -> float:
+    """前日終値+pct% を『指値の水準の呼値』で切り上げ（2026-10-31 監査: 終値の呼値で丸めると 2,950→3,039円 のような出せない値段になる）。"""
+    t = _tick(close); L = float(np.ceil(close * (1 + pct) / t) * t)
+    t2 = _tick(L)
+    if t2 != t:
+        L = float(np.ceil(close * (1 + pct) / t2) * t2)
+    return L
+
+
 OWN_RANKS = 3   # 2026-10-29 本人「1〜3位にして」（20年: 1〜3位 PF2.14・4位からは負け年あり）
 
 
@@ -629,7 +639,8 @@ def _loan_lines(lp: dict | None) -> list[str]:
 
 TOP3_LIMIT_PCT = 0.03
 TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
-TOP3_MAX_100SH = 1_000_000   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
+TOP3_MAX_100SH = 1_000_000
+TOP3_MIN_BARS = 20           # 2026-10-31: 45営業日の窓に20本未満＝上場直後は撃てないので外す（遊びも同じ）   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
 # 2段指値（2026-10-29 本人「OK」→同日「+12%にしよ」）: +3%で25万＋+12%で25万。どちらかの段で100株買えない銘柄は+3%で50万一発。
 #  検証(fade5y/ladder_bt.py): 5年 +3,563万/DD53万 → +3,155万/DD40万・20年 +1億2,816万/DD59万 → +1億1,359万/DD43万
 #  2段目は高いほどDD↓・儲け微減の一本調子(fade5y/ladder_k2.py): +12%=5年 +3,100万/DD36万/最悪月-7万・20年 +1億845万/DD39万。+15%はS高(約+14%)を超える値段がある
@@ -643,8 +654,8 @@ def top3_shares(lim: float) -> int:
 
 def top3_ladder(close: float) -> list:
     """[(指値, 株数), ...] 2段に分けられれば2つ、無理なら+3%一発の1つ。"""
-    t = _tick(close); l1 = float(np.ceil(close * (1 + TOP3_LIMIT_PCT) / t) * t)
-    l2 = float(np.ceil(close * (1 + TOP3_LADDER_PCT2) / t) * t)
+    l1 = _lim(close, TOP3_LIMIT_PCT)
+    l2 = _lim(close, TOP3_LADDER_PCT2)
     h1, h2 = int(SIZE_YEN / 2 / l1 // 100 * 100), int(SIZE_YEN / 2 / l2 // 100 * 100)
     return [(l1, h1), (l2, h2)] if h1 >= 100 and h2 >= 100 else [(l1, top3_shares(l1))]
 
@@ -656,7 +667,10 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
     c = cand.reset_index() if "Code" not in cand.columns else cand
     # 100株で100万円以下の銘柄だけ（2026-10-29 本人「50万超〜100万は100株のみOK」・20年: PF1.96・DD70万・マイナス月15/309）
     c = c[c["ret1"] >= TOP3_RET_MIN]
-    c = c[c["C"].map(lambda p: np.ceil(p * (1 + TOP3_LIMIT_PCT) / _tick(p)) * _tick(p) * 100 <= TOP3_MAX_100SH)]
+    c = c[c["C"].map(lambda p: _lim(p, TOP3_LIMIT_PCT) * 100 <= TOP3_MAX_100SH)]
+    # 上場20営業日未満は外す（2026-10-31 監査: 新規上場は貸借選定前で一般信用の在庫も無い＝撃てない。5年BTで125本・合計の4%）
+    if "nbars" in c.columns:
+        c = c[c["nbars"] >= TOP3_MIN_BARS]
     c = c.sort_values(["ret1", "Code"], ascending=[False, True]).head(3)
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     rows = []
@@ -681,13 +695,14 @@ def asobi_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
     b = bars if universe is None else bars[bars["Code"].isin(universe)]
     b = b[b["Code"].map(is_common)]
     f = add_features(b)
+    f = f.assign(nbars=f.groupby("Code")["C"].transform("size"))
     d = f[(f["Date"] == pd.Timestamp(asof)) & (f["C"] >= PRICE_MIN) & (f["Va"] >= ASOBI_VA[0]) & (f["Va"] < ASOBI_VA[1])
-          & (f["ret1"] >= TOP3_RET_MIN)].sort_values(["ret1", "Code"], ascending=[False, True])
+          & (f["ret1"] >= TOP3_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS)].sort_values(["ret1", "Code"], ascending=[False, True])
     if d.empty:
         return None
     r = d.iloc[0]
     c5, c4 = str(r["Code"]), code4(r["Code"])
-    lim = float(np.ceil(r["C"] * (1 + ASOBI_LIMIT_PCT) / _tick(r["C"])) * _tick(r["C"]))
+    lim = _lim(float(r["C"]), ASOBI_LIMIT_PCT)
     sh = int(ASOBI_SIZE / lim // 100 * 100) or (100 if lim * 100 <= 2 * ASOBI_SIZE else 0)
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     al = alert.get(c4) or {}; jt = jsf_list.get(c4, "")
@@ -842,6 +857,96 @@ def build_score(plan: dict, bars: dict) -> dict:
     return dict(trade_day=plan["trade_day"], asof=plan["asof"], made=datetime.now(JST).strftime("%Y-%m-%d %H:%M"), items=items, sent=False)
 
 
+def _own_fill(o: float, h: float, L: float):
+    """BTと同じ約定判定（厳しめ）: 寄り≥指値なら寄り値・高値が指値を1ティック以上抜けたら指値・それ以外は不成立。"""
+    if o >= L:
+        return o
+    return L if h >= L + _tick(L) else None
+
+
+def build_own_score(plan: dict, bars: dict) -> dict:
+    """本人ch（今日の3本＋遊び）の答え合わせ。料・滑りなし・引け値で買い戻し。引けS高の日は印（比例配分で引成が付かない可能性）。"""
+    items = []
+    tp = (plan.get("top3") or {}).get("rows", [])
+    legs = [(x, top3_ladder(x["close"]), "3本") for x in tp]
+    if plan.get("asobi") and plan["asobi"].get("shares"):
+        a = plan["asobi"]; legs.append((a, [(a["lim"], a["shares"])], "遊び"))
+    for x, lad, kind in legs:
+        c5 = x["code"] + "0"; oc = bars.get(c5)
+        rec = dict(kind=kind, code=x["code"], name=x["name"], close_prev=x["close"], legs=[])
+        if not oc:
+            rec.update(status="日足なし", yen=None); items.append(rec); continue
+        o, c, h = oc; ul = x["close"] + band(x["close"])
+        if o >= ul - 1e-9:
+            rec.update(status="寄りS高張り付き→取消", open=o, close=c, yen=0); items.append(rec); continue
+        yen = 0.0; got = False
+        for L, sh in lad:
+            sell = _own_fill(o, h, L)
+            if sell is None:
+                rec["legs"].append(dict(lim=L, shares=sh, sell=None)); continue
+            got = True; yen += (sell - c) * sh
+            rec["legs"].append(dict(lim=L, shares=sh, sell=sell, pct=(sell - c) / sell * 100))
+        rec.update(status="約定" if got else "届かず", open=o, close=c, high=h, yen=round(yen) if got else 0,
+                   sclose=bool(c >= ul - 1e-9))
+        items.append(rec)
+    return dict(trade_day=plan["trade_day"], items=items)
+
+
+def own_score_payload(own: dict, ledger: dict) -> dict:
+    td = datetime.fromisoformat(own["trade_day"])
+    lines = []
+    for it in own["items"]:
+        mark = "🎲" if it["kind"] == "遊び" else "🩳"
+        head = f"{mark} `{it['code']}` {it['name']}"
+        if it["status"] in ("日足なし", "寄りS高張り付き→取消", "届かず"):
+            extra = ""
+            if it.get("open") is not None:
+                extra = f"　寄 {it['open']:,.0f} / 引 {it['close']:,.0f}"
+            if it["status"] == "届かず" and it.get("high") is not None:
+                lims = "・".join(f"{l['lim']:,.0f}" for l in it["legs"])
+                extra += f" / 高 {it['high']:,.0f}（指値 {lims}）"
+            lines.append(f"{head}: {it['status']}{extra}"); continue
+        parts = [f"{l['sell']:,.0f}円×{l['shares']:,}株" for l in it["legs"] if l["sell"] is not None]
+        miss = [f"{l['lim']:,.0f}円は届かず" for l in it["legs"] if l["sell"] is None]
+        flag = "　⚠️引けS高（引成が付かなかった可能性・付かなければ翌朝寄りで買い戻し）" if it.get("sclose") else ""
+        tail = f"（{'・'.join(miss)}）" if miss else ""
+        lines.append(f"{head}: {' ＋ '.join(parts)} で売り → 引 {it['close']:,.0f}　**{it['yen']:+,}円**{tail}{flag}")
+    if not lines:
+        lines.append("対象なし")
+    tot = {"3本": [], "遊び": []}
+    for d, sc in sorted(ledger.get("scores", {}).items()):
+        for it in (sc.get("own") or {}).get("items", []):
+            if it.get("status") == "約定" and it.get("yen") is not None:
+                tot.setdefault(it["kind"], []).append(it["yen"])
+    for k, v in tot.items():
+        if v:
+            arr = np.array(v, dtype=float); w = arr[arr > 0].sum(); l = -arr[arr < 0].sum()
+            pf = (w / l) if l > 0 else float("inf")
+            lines.append(f"-# 通算 {k}: {len(arr)}本 勝ち{int((arr > 0).sum())} 合計 {arr.sum():+,.0f}円 PF {pf:.2f}")
+    lines.append("-# 紙の答え合わせ（料・滑りなし・引け値で買い戻し・高値が指値を1ティック抜けた時だけ約定扱い）。実際の約定とは別。")
+    return {"embeds": [{"title": f"📝 {td:%m/%d(%a)} 今日の3本＋遊び 答え合わせ", "description": chr(10).join(lines)[:4000], "color": 0x4DABF7}]}
+
+
+def _post_hook(env: str, payload: dict, dry_run: bool, tag: str) -> bool:
+    hook = os.getenv(env, "").strip()
+    if dry_run or not hook:
+        print(f"---- {tag}（{env}・dry-run / 未設定なら送らない）----")
+        for e in payload["embeds"]:
+            print(f"## {e['title']}")
+            print(e["description"])
+            print()
+        return False
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(hook, data=body, headers={"Content-Type": "application/json", "User-Agent": "kabuai-fade-notify/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            log(f"{tag} 送信OK status={r.status}")
+            return True
+    except Exception as e:  # noqa: BLE001
+        log(f"{tag} 送信失敗: {type(e).__name__}")
+        return False
+
+
 def score_payload(score: dict, ledger: dict) -> dict:
     td = datetime.fromisoformat(score["trade_day"])
     lines = [f"寄値→引値 の紙採点（空売り・50万円換算・料/滑りなし・売ったかどうかは問わない）", ""]
@@ -972,6 +1077,9 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
         log(f"{day} の採点は送信済み → skip")
         return 0
     codes5 = [x["code5"] for x in plan["rows"]]
+    codes5 += [x["code"] + "0" for x in (plan.get("top3") or {}).get("rows", [])]
+    if plan.get("asobi"):
+        codes5.append(plan["asobi"]["code"] + "0")
     try:
         bars = fetch_day_bars_for(codes5, day)
     except Exception as e:  # noqa: BLE001
@@ -982,11 +1090,16 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
         log(f"{day:%m/%d} の日足がまだ無い → 18:45 の evening でまとめて採点")
         return 1
     score = build_score(plan, bars)
+    if plan.get("top3") or plan.get("asobi"):
+        score["own"] = build_own_score(plan, bars)    # 本人ch（今日の3本＋遊び）の答え合わせ（2026-10-31）
     if not dry_run:
         led["scores"][day.isoformat()] = score      # 通算に今日を含めてから本文を作る
-    payload = score_payload(score, led if not dry_run else {**led, "scores": {**led.get("scores", {}), day.isoformat(): score}})
+    led_view = led if not dry_run else {**led, "scores": {**led.get("scores", {}), day.isoformat(): score}}
+    payload = score_payload(score, led_view)
     sent = post_discord(payload, dry_run)
     score["sent"] = bool(sent)
+    if score.get("own"):
+        score["own"]["sent"] = _post_hook(OWN_WEBHOOK_ENV, own_score_payload(score["own"], led_view), dry_run, "本人ch答え合わせ")
     if not dry_run:
         led["scores"][day.isoformat()] = score
         save_ledger(led)
