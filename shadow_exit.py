@@ -917,9 +917,16 @@ _COLOR_BUY, _COLOR_WIN, _COLOR_LOSE, _COLOR_INFO = 0x9B59B6, 0x2ECC71, 0xE74C3C,
 # Secret DISCORD_WEBHOOK_SWING_SELL_URLS（カンマ区切り）へ送る。旧SHADOW_SELL_URLのwebhookは削除済み(10015)。
 # 中/小の売り・極み買いは止めたまま。Secret未設定なら従来どおり送らない。
 SWING_SELL_ENV = "DISCORD_WEBHOOK_SWING_SELL_URLS"
+# 2026-10-31 本人「売りスイングは廃止・売りフェードと極上だけでええやろ」→ 売りスイング(大)の配信も停止。
+# True なら swing_sell_urls() が空を返す＝shadow_exit(前夜・週次)/kiwami_close(15時) の送信が全部止まり、
+# 極み廃止(KIWAMI_DELIVERY_OFF)と同じ「送らない・失敗扱いにしない」経路へ落ちる。台帳 kiwami_sell.json の記帳は続く。
+# 26年BT +121万(100万×3枠・年4.7万)のうち+70万が2022年以降・入口48通り/出口500セルで現行超えなし＝伸びしろなし。
+SWING_SELL_DELIVERY_OFF = True
 
 
 def swing_sell_urls() -> list[str]:
+    if SWING_SELL_DELIVERY_OFF:
+        return []
     return [u.strip() for u in os.getenv(SWING_SELL_ENV, "").split(",") if u.strip()]
 
 
