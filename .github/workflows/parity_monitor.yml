@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   parity:
+    if: false   # 2026-10-31 決算持ち越しの配信停止に合わせて月次監視も停止
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

@@ -480,8 +480,16 @@ def save_positions(store: dict, path: str) -> None:
         json.dump(store, f, ensure_ascii=False, indent=1)
 
 
+# 2026-10-31 本人「決算持ち越しはいらない・負けだから」→ Discord配信(15:06本配信・朝リマインダー)を停止。
+# 帳簿 positions_earnings*.json の記帳は継続(紙)。戻すなら False。紙台帳7〜10月: 40件 +22.3万(8月+50.6万・他3か月は負け)。
+EARNINGS_DELIVERY_OFF = True
+
+
 def send_discord(embeds: list[dict], webhook: str, label: str,
                  dry: bool = False) -> None:
+    if EARNINGS_DELIVERY_OFF and not dry:
+        print(f"[off-{label}] 決算持ち越しの配信は停止中(2026-10-31)・帳簿のみ")
+        return
     if dry:
         print(f"[dry-{label}] Discord送信スキップ:")
         print(json.dumps(embeds, ensure_ascii=False, indent=1)[:1500])

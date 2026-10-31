@@ -57,6 +57,7 @@ jobs:
   # ── 決算持ち越し: 朝の売り忘れ防止リマインダー（2026-07-10・独立ジョブ＝本番配信は無傷） ──
   # 昨日大引けで買った建玉を「今日の寄り成行で売る」確認を各階層チャンネルへ。建玉ゼロなら無送信。
   earnings-reminder:
+    if: false   # 2026-10-31 決算持ち越しの配信停止（main_earnings_hold.EARNINGS_DELIVERY_OFF と同時）
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
@@ -205,6 +206,8 @@ jobs:
 
       - name: 決算持ち越し 朝の予備リスト配信（非公式・15:06本配信の先読み）
         # 2026-08-06 本人依頼。昨日終値ベースの圏内リスト＋15:06時点の空き枠見込み
+        # 2026-10-31 本人「いらない」で停止（コードは残置）
+        if: false
         continue-on-error: true
         run: python main_earnings_preview.py
 
