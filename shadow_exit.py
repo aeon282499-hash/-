@@ -1110,11 +1110,23 @@ def send_discord(today: date, key: str = "main") -> bool:
         lines = [
             f"🎯 **寄指（寄付限定指値）**で発注・1件{size//10000}万円",
             "　 各銘柄の指値↓を指定。寄りがそれ以下なら寄り値で約定／超えたら失効＝その日は見送り",
-            f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
-            f"📅 処分期限 **{exit_str}**",
-            waku,
-            "─" * 24,
         ]
+        if key == GOKUJO_KEY:
+            # 2026-10-31 本人「出口の表をちゃんと配信に入れて・1%割ったら次の日成売り処分も」＝出口5つを毎晩そのまま出す
+            lines += [
+                "**出口（建値＝寄りで買った値段）**",
+                f"🛑 損切　建値×0.97（-{LIVE_STOP:.0f}%）に触れたら → ザラ場で即（OCOの逆指値）",
+                f"✅ 利確　建値×1.05（+{TAKE_PROFIT:.0f}%）に触れたら → ザラ場で即（OCOの指値）",
+                f"⛔ 初日　1日目の引けが建値-{GOKUJO_DAY1_CUT_PCT:.0f}%以下 → **翌朝 寄成で処分**（3日待たない・夜に⛔で知らせる）",
+                "📈 RSI　終値RSIが50以上に戻ったら → 14:55に知らせる → その日の大引け成行",
+                f"📅 満期　{MAX_HOLD}営業日目（**{exit_str}**）の大引け成行",
+            ]
+        else:
+            lines += [
+                f"🛑 損切 寄値×0.97 (-{LIVE_STOP:.0f}%)  ✅ 利確 寄値×1.05 (+{TAKE_PROFIT:.0f}%)",
+                f"📅 処分期限 **{exit_str}**",
+            ]
+        lines += [waku, "─" * 24]
         for i, s in enumerate(extras, 1):
             tk = str(s["ticker"]).replace(".T", "")
             pc = s.get("prev_close", 0) or 0
