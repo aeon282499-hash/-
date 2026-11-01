@@ -1,0 +1,90 @@
+{
+ "2026-11-02": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4410",
+    "name": "ハリマ化成グループ",
+    "close": 1355.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "4347",
+    "name": "ブロードメディア",
+    "close": 2489.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "9551",
+    "name": "メタウォーター",
+    "close": 3700.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "6029",
+    "name": "アトラグループ",
+    "close": 229.0,
+    "lim": 257.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/2",
+     "stale": false,
+     "fee_pct": 0.44,
+     "day_ok": true,
+     "max_sh": 270000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-01T09:09:40+09:00",
+  "sent": true
+ }
+}
