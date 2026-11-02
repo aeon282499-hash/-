@@ -899,6 +899,239 @@
     "earn": false
    },
    "own_sent": true
+  },
+  "2026-11-04": {
+   "asof": "2026-11-02",
+   "trade_day": "2026-11-04",
+   "made": "2026-11-02 18:09",
+   "n_cand": 18,
+   "rule_a": {
+    "code": "2345",
+    "code5": "23450",
+    "name": "ＨＯＤＬ１",
+    "mkt": "スタンダード",
+    "close": 112.0,
+    "ret1": 0.36585365853658547,
+    "va": 376519900.0,
+    "rank_all": 1,
+    "score": 3.89,
+    "ul1": 162.0,
+    "strong": true,
+    "vol20": 0.1363,
+    "dev25": 0.2803,
+    "rng": 0.3902,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": []
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "2345",
+     "code5": "23450",
+     "name": "ＨＯＤＬ１",
+     "mkt": "スタンダード",
+     "close": 112.0,
+     "ret1": 0.36585365853658547,
+     "va": 376519900.0,
+     "rank_all": 1,
+     "score": 3.89,
+     "ul1": 162.0,
+     "strong": true,
+     "vol20": 0.1363,
+     "dev25": 0.2803,
+     "rng": 0.3902,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6557",
+     "code5": "65570",
+     "name": "ＡＩＡＩグループ",
+     "mkt": "グロース",
+     "close": 905.0,
+     "ret1": 0.19867549668874163,
+     "va": 997282800.0,
+     "rank_all": 2,
+     "score": 3.33,
+     "ul1": 1055.0,
+     "strong": true,
+     "vol20": 0.058,
+     "dev25": 0.3633,
+     "rng": 0.098,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "2531",
+     "code5": "25310",
+     "name": "宝ホールディングス",
+     "mkt": "プライム",
+     "close": 3129.0,
+     "ret1": 0.11273115220483643,
+     "va": 5299944600.0,
+     "rank_all": 3,
+     "score": 2.72,
+     "ul1": 3829.0,
+     "strong": false,
+     "vol20": 0.0502,
+     "dev25": 0.1491,
+     "rng": 0.1565,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "宝ホールディングス 申込停止 新規売り・現引き",
+     "reasons": [
+      "日証金停止"
+     ]
+    },
+    {
+     "code": "3542",
+     "code5": "35420",
+     "name": "ベガコーポレーション",
+     "mkt": "グロース",
+     "close": 1770.0,
+     "ret1": 0.15309446254071668,
+     "va": 416009900.0,
+     "rank_all": 4,
+     "score": 2.72,
+     "ul1": 2170.0,
+     "strong": false,
+     "vol20": 0.0482,
+     "dev25": 0.1387,
+     "rng": 0.1205,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "9658",
+     "code5": "96580",
+     "name": "ビジネスブレイン太田昭和",
+     "mkt": "プライム",
+     "close": 1506.0,
+     "ret1": 0.1461187214611872,
+     "va": 2519040600.0,
+     "rank_all": 5,
+     "score": 2.72,
+     "ul1": 1906.0,
+     "strong": false,
+     "vol20": 0.0378,
+     "dev25": 0.232,
+     "rng": 0.1979,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "7537",
+      "name": "丸文",
+      "close": 2180.0,
+      "ret1": 0.2247191011235956,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "6196",
+      "name": "ストライクグループ",
+      "close": 1713.0,
+      "ret1": 0.2123142250530785,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 2
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "2345",
+      "name": "ＨＯＤＬ１",
+      "close": 112.0,
+      "ret1": 0.36585365853658547,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "7537",
+      "name": "丸文",
+      "close": 2180.0,
+      "ret1": 0.2247191011235956,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "6196",
+      "name": "ストライクグループ",
+      "close": 1713.0,
+      "ret1": 0.2123142250530785,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 18
+   },
+   "asobi": {
+    "code": "6262",
+    "name": "ＰＥＧＡＳＵＳ",
+    "close": 673.0,
+    "ret1": 0.17452006980802803,
+    "va": 108824100.0,
+    "lim": 754.0,
+    "shares": 300,
+    "n": 1,
+    "seido": "○",
+    "jsf_stop": true,
+    "jsf_warn": false,
+    "earn": true
+   },
+   "own_sent": true
   }
  },
  "scores": {
@@ -1267,6 +1500,191 @@
     }
    ],
    "sent": true
+  },
+  "2026-11-02": {
+   "trade_day": "2026-11-02",
+   "asof": "2026-10-30",
+   "made": "2026-11-02 18:05",
+   "items": [
+    {
+     "code": "4410",
+     "name": "ハリマ化成グループ",
+     "rank_all": 1,
+     "rule_a": false,
+     "reasons": [
+      "決算起因"
+     ],
+     "seido": "○",
+     "jsf_stop": false,
+     "open": 1355.0,
+     "close": 1319.0,
+     "high": 1405.0,
+     "pinned": false,
+     "ret": 0.026568265682656828,
+     "pnl": 13284,
+     "status": "採点"
+    },
+    {
+     "code": "4347",
+     "name": "ブロードメディア",
+     "rank_all": 2,
+     "rule_a": false,
+     "reasons": [
+      "決算起因",
+      "日証金停止"
+     ],
+     "seido": "○",
+     "jsf_stop": true,
+     "open": 2489.0,
+     "close": 2489.0,
+     "high": 2490.0,
+     "pinned": false,
+     "ret": 0.0,
+     "pnl": 0,
+     "status": "採点"
+    },
+    {
+     "code": "6445",
+     "name": "ジャノメ",
+     "rank_all": 3,
+     "rule_a": false,
+     "reasons": [
+      "決算起因"
+     ],
+     "seido": "○",
+     "jsf_stop": false,
+     "open": 1499.0,
+     "close": 1475.0,
+     "high": 1510.0,
+     "pinned": false,
+     "ret": 0.016010673782521682,
+     "pnl": 8005,
+     "status": "採点"
+    },
+    {
+     "code": "6574",
+     "name": "コンヴァノ",
+     "rank_all": 4,
+     "rule_a": false,
+     "reasons": [],
+     "seido": "×",
+     "jsf_stop": false,
+     "open": 1217.0,
+     "close": 1212.0,
+     "high": 1282.0,
+     "pinned": false,
+     "ret": 0.004108463434675432,
+     "pnl": 2054,
+     "status": "採点"
+    },
+    {
+     "code": "9551",
+     "name": "メタウォーター",
+     "rank_all": 5,
+     "rule_a": false,
+     "reasons": [
+      "決算起因"
+     ],
+     "seido": "○",
+     "jsf_stop": false,
+     "open": 3750.0,
+     "close": 3655.0,
+     "high": 3795.0,
+     "pinned": false,
+     "ret": 0.025333333333333333,
+     "pnl": 12667,
+     "status": "採点"
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-02",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4410",
+      "name": "ハリマ化成グループ",
+      "close_prev": 1355.0,
+      "legs": [
+       {
+        "lim": 1396.0,
+        "shares": 100,
+        "sell": 1396.0,
+        "pct": 5.515759312320917
+       },
+       {
+        "lim": 1518.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 1355.0,
+      "close": 1319.0,
+      "high": 1405.0,
+      "yen": 7700,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "4347",
+      "name": "ブロードメディア",
+      "close_prev": 2489.0,
+      "legs": [
+       {
+        "lim": 2564.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 2489.0,
+      "close": 2489.0,
+      "high": 2490.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "9551",
+      "name": "メタウォーター",
+      "close_prev": 3700.0,
+      "legs": [
+       {
+        "lim": 3815.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 3750.0,
+      "close": 3655.0,
+      "high": 3795.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "6029",
+      "name": "アトラグループ",
+      "close_prev": 229.0,
+      "legs": [
+       {
+        "lim": 257.0,
+        "shares": 900,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 205.0,
+      "close": 195.0,
+      "high": 233.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
   }
  }
 }

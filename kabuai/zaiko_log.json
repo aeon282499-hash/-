@@ -86,5 +86,93 @@
   ],
   "made": "2026-11-01T18:05:56+09:00",
   "sent": true
+ },
+ "2026-11-04": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "2345",
+    "name": "ＨＯＤＬ１",
+    "close": 112.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": false,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7537",
+    "name": "丸文",
+    "close": 2180.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "6196",
+    "name": "ストライクグループ",
+    "close": 1713.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "6262",
+    "name": "ＰＥＧＡＳＵＳ",
+    "close": 673.0,
+    "lim": 754.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/4",
+     "stale": false,
+     "fee_pct": 0.15,
+     "day_ok": true,
+     "max_sh": 100000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-02T18:45:01+09:00",
+  "sent": true
  }
 }
