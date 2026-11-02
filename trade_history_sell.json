@@ -149,6 +149,56 @@
       "close": 3609.0,
       "pnl": 1.69,
       "win": true
+    },
+    {
+      "date": "2026-11-02",
+      "ticker": "9022.T",
+      "name": "東海旅客鉄道",
+      "direction": "SELL",
+      "open": 3951.0,
+      "close": 3975.0,
+      "pnl": -0.61,
+      "win": false
+    },
+    {
+      "date": "2026-11-02",
+      "ticker": "9202.T",
+      "name": "ＡＮＡホールディングス",
+      "direction": "SELL",
+      "open": 3043.0,
+      "close": 3075.0,
+      "pnl": -1.05,
+      "win": false
+    },
+    {
+      "date": "2026-11-02",
+      "ticker": "4023.T",
+      "name": "クレハ",
+      "direction": "SELL",
+      "open": 4160.0,
+      "close": 4210.0,
+      "pnl": -1.2,
+      "win": false
+    },
+    {
+      "date": "2026-11-02",
+      "ticker": "2004.T",
+      "name": "昭和産業",
+      "direction": "SELL",
+      "open": 4120.0,
+      "close": 4095.0,
+      "pnl": 0.61,
+      "win": true
+    },
+    {
+      "date": "2026-11-02",
+      "ticker": "2002.T",
+      "name": "日清製粉グループ本社",
+      "direction": "SELL",
+      "open": 2250.0,
+      "close": 2251.5,
+      "pnl": -0.07,
+      "win": false
     }
   ]
 }
