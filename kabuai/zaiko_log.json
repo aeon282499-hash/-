@@ -104,8 +104,8 @@
      "daytrade": false,
      "choki": false
     },
-    "sbi": null,
-    "rakuten": null,
+    "sbi": "×",
+    "rakuten": "○",
     "kabucom_bid": null
    },
    {
@@ -123,7 +123,7 @@
      "daytrade": true,
      "choki": false
     },
-    "sbi": null,
+    "sbi": "○制度",
     "rakuten": null,
     "kabucom_bid": null
    },
@@ -142,7 +142,7 @@
      "daytrade": true,
      "choki": true
     },
-    "sbi": null,
+    "sbi": "○制度",
     "rakuten": null,
     "kabucom_bid": null
    },
@@ -167,12 +167,12 @@
      "daytrade": true,
      "choki": false
     },
-    "sbi": null,
-    "rakuten": null,
+    "sbi": "×",
+    "rakuten": "×",
     "kabucom_bid": null
    }
   ],
-  "made": "2026-11-02T18:45:01+09:00",
-  "sent": true
+  "made": "2026-11-02T19:34:52+09:00",
+  "sent": false
  }
 }
