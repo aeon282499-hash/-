@@ -11,8 +11,9 @@
 除外: 決算起因（D 当日の開示、または D−1 の 15 時以降の開示＝J-Quants /fins/summary）
       日証金の申込停止（J-Quants /markets/margin-alert RestrictedByJSF）。注意喚起(PrecautionByJSF)は表示のみ
       ※ fade_rank_bt.py は順位を付けた後に除外行を落とす＝1位が除外なら「ルールAなし」（2位を繰り上げない）
-ルールA: 全体 1 位 かつ 前日比 +17% 以上 の 1 本（除外に当たらない）
-参考:   全体 2〜5 位（ルールAの 1 本が売れないときの予備）
+1〜3位: 全体 1〜3 位のそれぞれ 前日比 +17% 以上・除外に当たらない・100株で50万以内 → 各50万（繰り上げない）
+        2026-11-02 本人「1位から3位を50万打つから2段階でくれ」: 寄成をやめて 前日終値+3%に25万＋+12%に25万の当日中指値（今日の3本と同じ）
+        （旧: ルールA＝1位 かつ +17%以上 の1本・寄成。台帳の古い plan もこの形で読める）
 
 通知（Discord・環境変数 DISCORD_WEBHOOK_FADE_URL。URL はコード/ログに出さない）:
   evening（毎営業日 18:45・2026-10-29 本人「18:45にかならず」）: 翌営業日の候補（コード/銘柄名/市場/終値/前日比/売買代金/順位/スコア/翌日の値幅上限/
@@ -71,10 +72,16 @@ TOP_SHOW = 5
 EXCLUDE_JSF_WARN = os.getenv("FADE_NOTIFY_EXCLUDE_JSF_WARN", "1") not in ("0", "false", "False")
 LOOKBACK = int(os.getenv("FADE_NOTIFY_LOOKBACK", "45"))
 
-RULE_LINE = ("翌朝、寄り成行で空売り → 約定したら即、引け成行で返済予約。損切り・利確なし。"
-             "1本50万円まで。8:58の気配がストップ高張り付きなら見送り")
-BT_LINE = ("検証(2017-01〜2026-08・9.6年・fade_rank_bt.py): ルールA 1,549件 勝率67% 平均+3.62% PF2.14(料0.3%) 年+240万@50万"
-           "／寄成全量約定・滑りなし・現存銘柄のみ・在庫/売建規制は未反映＝実際はこれより悪い")
+RULE_LINE = ("前日終値+3%に25万＋+12%に25万の当日中指値で空売り → 約定した分は引け成行で買い戻し。損切り・利確なし。"
+             "届かなかった段は引けで消える。寄りがS高張り付き（寄値＝値幅上限）なら取消。"
+             "1本50万（2段に分けられない値段は+3%に50万一発）。+17%未満・決算起因・日証金停止は見送り（繰り上げない）")
+# 検証: uwick_bt/fade5y 友達の1〜3位(各+17%以上・決算/売り禁/寄りS高/100株50万超は見送り) 寄成50万 vs 2段指値（2026-11-02）
+#  5年: 寄成 1,803本 PF1.83 +2,295万 DD49万 最悪月-39万 → 2段 1,342本 PF2.46 +2,169万 DD31万 最悪月-8万
+#  前半〜2023 PF1.97→2.58・後半2024〜 1.76→2.41・2026 1.80→2.29・順位別 1位2.06→2.66 2位1.76→2.31 3位1.50→2.28
+BT_LINE = ("検証(J-Quants 2021-11〜2026-10・上場廃止込み・滑り0.1%・料なし): 1〜3位 2段指値 1,342本 勝率68% PF2.46 "
+           "+2,169万 最大DD31万 最悪月-8万（同じ銘柄を寄成なら PF1.83 +2,295万 DD49万 最悪月-39万）"
+           "／在庫・売建規制は未反映＝実際はこれより悪い")
+FRIEND_RANKS = 3
 
 
 def log(msg: str) -> None:
@@ -508,6 +515,25 @@ def _fmt_row(x: dict, head: str) -> str:
             f"　{seido}　{reg_s}{ex}")
 
 
+def friend_picks(plan: dict) -> list[dict]:
+    """全体1〜3位それぞれの 撃つ/見送り（理由）。台帳の古い plan（rule_a 形式）からも同じ判定ができるよう rows から出す。"""
+    out = []
+    for x in sorted((r for r in plan["rows"] if r["rank_all"] <= FRIEND_RANKS), key=lambda r: r["rank_all"]):
+        why = ("+17%未満" if not x["strong"] else "・".join(x["reasons"]) if x["reasons"]
+               else "100株で50万超" if x["close"] * 100 > SIZE_YEN else "")
+        out.append(dict(x, skip=why))
+    return out
+
+
+def _ladder_txt(close: float) -> str:
+    lad = top3_ladder(close)
+    if len(lad) == 2:
+        return (f"　🔴 当日中指値 ¥{lad[0][0]:,.0f}（+3%）{lad[0][1]:,}株 ＋ ¥{lad[1][0]:,.0f}（+12%）{lad[1][1]:,}株で空売り"
+                " → 引成で買戻し　25万＋25万")
+    lim, sh = lad[0]
+    return f"　🔴 当日中指値 ¥{lim:,.0f}（+3%）{sh:,}株で空売り → 引成で買戻し（分けられない値段なので一発・建玉 約{sh * lim / 1e4:.0f}万）"
+
+
 def plan_payload(plan: dict) -> dict:
     td = datetime.fromisoformat(plan["trade_day"])
     asof = datetime.fromisoformat(plan["asof"])
@@ -519,27 +545,23 @@ def plan_payload(plan: dict) -> dict:
     if not plan["alert_checked"]:
         lines.append("⚠️ 規制銘柄情報が取れず「日証金の規制」は未確認")
     lines.append("")
-    if plan["rule_a"]:
-        lines.append("**【ルールA】全体1位 かつ 前日比+17%以上 の1本**")
-        lines.append(_fmt_row(plan["rule_a"], "🩳"))
-    else:
-        lines.append(f"**【ルールA】該当なし**（{plan['rule_a_why']}）")
-        top = next((x for x in plan["rows"] if x["rank_all"] == 1), None)
-        if top:
-            lines.append(_fmt_row(top, "1位"))
-    others = [x for x in plan["rows"] if 2 <= x["rank_all"] <= TOP_SHOW]
-    if others:
-        lines.append("")
-        lines.append("**【参考】全体2〜5位（ルールAの1本が売れないときの予備）**")
-        for x in others:
-            lines.append(_fmt_row(x, f"{x['rank_all']}位"))
+    picks = friend_picks(plan)
+    n_go = sum(1 for x in picks if not x["skip"])
+    lines.append(f"**【1〜3位】各50万・2段指値（撃つのは {n_go}本）**")
+    for x in picks:
+        if x["skip"]:
+            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日比 {x['ret1']*100:+.1f}%　→ 見送り（{x['skip']}）")
+        else:
+            lines.append(_fmt_row(x, f"🩳 {x['rank_all']}位") + "\n" + _ladder_txt(x["close"]))
+    if not picks:
+        lines.append("候補なし")
     lines.append("")
     lines.append(f"📌 {RULE_LINE}")
     lines.append(f"-# {BT_LINE}")
     lines.append("-# 銘柄の選定だけ。発注はしない。投資判断は自己責任。")
-    title = f"🩳 {td:%m/%d(%a)} 売りフェード（友達版）候補" + ("" if plan["rule_a"] else "・ルールAなし")
+    title = f"🩳 {td:%m/%d(%a)} 売りフェード（友達版）1〜3位" + ("" if n_go else "・撃つ銘柄なし")
     desc = "\n".join(lines)
-    return {"embeds": [{"title": title, "description": desc[:4000], "color": 0xFF8787 if plan["rule_a"] else 0x868E96}]}
+    return {"embeds": [{"title": title, "description": desc[:4000], "color": 0xFF8787 if n_go else 0x868E96}]}
 
 
 # ───────────────────────── 本人ch 向け 1行（2026-10-29 本人「やって」） ─────────────────────────
@@ -839,20 +861,26 @@ def fetch_day_bars_for(codes5: list[str], d: date) -> dict:
 
 
 def build_score(plan: dict, bars: dict) -> dict:
+    """友達ch の答え合わせ: 1〜3位を 2段指値（今日の3本と同じ約定判定）で。見送りの順位は 寄→引 を参考に出すだけ。"""
     items = []
-    for x in plan["rows"]:
+    for x in friend_picks(plan):
         oc = bars.get(x["code5"])
-        rec = dict(code=x["code"], name=x["name"], rank_all=x["rank_all"], rule_a=bool(plan["rule_a"] and plan["rule_a"]["code"] == x["code"]),
-                   reasons=x["reasons"], seido=x["seido"], jsf_stop=x["jsf_stop"])
+        rec = dict(f3=True, code=x["code"], name=x["name"], rank_all=x["rank_all"], skip=x["skip"], legs=[])
         if not oc:
-            rec.update(status="日足なし", open=None, close=None, ret=None, pnl=None)
-        else:
-            o, c, h = oc
-            pinned = o >= x["ul1"] - 1e-9
-            ret = (o - c) / o if o else None
-            rec.update(open=o, close=c, high=h, pinned=pinned, ret=ret,
-                       pnl=None if ret is None else round(SIZE_YEN * ret),
-                       status="張り付き見送り" if pinned else "採点")
+            rec.update(status="日足なし", yen=None); items.append(rec); continue
+        o, c, h = oc
+        rec.update(open=o, close=c, high=h)
+        if x["skip"]:
+            rec.update(status="見送り", yen=None); items.append(rec); continue
+        if o >= x["ul1"] - 1e-9:
+            rec.update(status="寄りS高張り付き→取消", yen=0); items.append(rec); continue
+        yen = 0.0; got = False
+        for L, sh in top3_ladder(x["close"]):
+            sell = _own_fill(o, h, L)
+            rec["legs"].append(dict(lim=L, shares=sh, sell=sell))
+            if sell is not None:
+                got = True; yen += (sell - c) * sh
+        rec.update(status="約定" if got else "届かず", yen=round(yen) if got else 0, sclose=bool(c >= x["ul1"] - 1e-9))
         items.append(rec)
     return dict(trade_day=plan["trade_day"], asof=plan["asof"], made=datetime.now(JST).strftime("%Y-%m-%d %H:%M"), items=items, sent=False)
 
@@ -949,31 +977,34 @@ def _post_hook(env: str, payload: dict, dry_run: bool, tag: str) -> bool:
 
 def score_payload(score: dict, ledger: dict) -> dict:
     td = datetime.fromisoformat(score["trade_day"])
-    lines = [f"寄値→引値 の紙採点（空売り・50万円換算・料/滑りなし・売ったかどうかは問わない）", ""]
+    lines = []
     for it in score["items"]:
-        head = "🩳ルールA" if it["rule_a"] else f"{it['rank_all']}位"
-        if it.get("ret") is None:
-            lines.append(f"{head} `{it['code']}` {it['name']}: {it['status']}")
-            continue
-        flag = " ⛔張り付き(寄値=上限)＝見送り扱い" if it.get("pinned") else ""
-        ex = f"（除外: {'・'.join(it['reasons'])}）" if it["reasons"] else ""
-        lines.append(f"{head} `{it['code']}` {it['name']}{ex}: 寄 {it['open']:,.0f} → 引 {it['close']:,.0f}　"
-                     f"**{it['ret']*100:+.2f}%**　{it['pnl']:+,}円{flag}")
-    # 通算（ルールA・張り付きを除く）
-    a = []
-    for d, s in sorted(ledger.get("scores", {}).items()):
-        for it in s.get("items", []):
-            if it.get("rule_a") and it.get("ret") is not None and not it.get("pinned") and not it.get("reasons"):
-                a.append(it["ret"])
-    if a:
-        arr = np.array(a)
-        w = arr[arr > 0].sum()
-        l = -arr[arr < 0].sum()
+        head = f"{it['rank_all']}位 `{it['code']}` {it['name']}"
+        oc = f"寄 {it['open']:,.0f} / 引 {it['close']:,.0f}" if it.get("open") is not None else ""
+        if it["status"] == "日足なし":
+            lines.append(f"{head}: 日足なし")
+        elif it["status"] == "見送り":
+            lines.append(f"{head}: 見送り（{it['skip']}）　{oc}")
+        elif it["status"] in ("寄りS高張り付き→取消", "届かず"):
+            lims = "・".join(f"{l['lim']:,.0f}" for l in it["legs"])
+            lines.append(f"🩳 {head}: {it['status']}　{oc} / 高 {it['high']:,.0f}" + (f"（指値 {lims}）" if lims else ""))
+        else:
+            parts = [f"{l['sell']:,.0f}円×{l['shares']:,}株" for l in it["legs"] if l["sell"] is not None]
+            miss = [f"{l['lim']:,.0f}円は届かず" for l in it["legs"] if l["sell"] is None]
+            flag = "　⚠️引けS高（引成が付かなかった可能性）" if it.get("sclose") else ""
+            lines.append(f"🩳 {head}: {' ＋ '.join(parts)} で売り → 引 {it['close']:,.0f}　**{it['yen']:+,}円**"
+                         + (f"（{'・'.join(miss)}）" if miss else "") + flag)
+    if not lines:
+        lines.append("対象なし")
+    # 通算（2段指値の形になってから＝f3 の約定分だけ）
+    v = [it["yen"] for s in ledger.get("scores", {}).values() for it in s.get("items", [])
+         if it.get("f3") and it.get("status") == "約定" and it.get("yen") is not None]
+    if v:
+        arr = np.array(v, dtype=float); w = arr[arr > 0].sum(); l = -arr[arr < 0].sum()
         pf = (w / l) if l > 0 else float("inf")
-        lines += ["", f"通算（ルールA・張り付き除く）{len(arr)}本: 勝率 {(arr > 0).mean()*100:.0f}%　平均 {arr.mean()*100:+.2f}%　"
-                      f"合計 {int(SIZE_YEN*arr.sum()):+,}円　PF {pf:.2f}"]
-    lines.append("-# 紙の採点。実際の約定・プレミアム料・在庫は反映していない。")
-    return {"embeds": [{"title": f"📝 {td:%m/%d(%a)} 売りフェード（友達版）採点", "description": "\n".join(lines)[:4000], "color": 0x4DABF7}]}
+        lines += ["", f"通算（1〜3位・2段指値）{len(arr)}本: 勝ち{int((arr > 0).sum())}　合計 {arr.sum():+,.0f}円　PF {pf:.2f}"]
+    lines.append("-# 紙の答え合わせ（料・滑りなし・引け値で買い戻し・高値が指値を1ティック抜けた時だけ約定扱い）。実際の約定・在庫は反映していない。")
+    return {"embeds": [{"title": f"📝 {td:%m/%d(%a)} 売りフェード（友達版）答え合わせ", "description": "\n".join(lines)[:4000], "color": 0x4DABF7}]}
 
 
 # ───────────────────────── Discord / 台帳 ─────────────────────────
