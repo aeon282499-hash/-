@@ -79,14 +79,6 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           python -X utf8 kabuai/fade_notify.py $ARGS
 
-      - name: 空売り在庫の記録（松井・カブコムの公開一覧 → 本人ch・kabuai/zaiko_log.json）
-        if: ${{ steps.gate.outputs.go == '1' && inputs.mode != 'catchup' }}
-        run: |
-          ZARGS=""
-          if [ -n "${{ inputs.date }}" ]; then ZARGS="--date ${{ inputs.date }}"; fi
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ZARGS="$ZARGS --dry-run"; fi
-          python -X utf8 kabuai/zaiko_log.py $ZARGS || echo "在庫の記録に失敗（配信は済んでいるので続行）"
-
       - name: 台帳をコミット
         if: ${{ steps.gate.outputs.go == '1' && inputs.dry_run != true }}
         run: |
