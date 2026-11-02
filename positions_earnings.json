@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-10-30",
+ "last_signal_date": "2026-11-02",
  "positions": [
   {
    "ticker": "6521.T",
@@ -694,11 +694,16 @@
    "shares": 200,
    "rsi": 28.4,
    "runup5": -13.5,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 1889.0,
    "entry": 1889.0,
    "gap_pct": 13.55,
-   "ext_exit_date": "2026-10-30"
+   "ext_exit_date": "2026-10-30",
+   "exit_date": "2026-10-30",
+   "exit": 2028.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 7.36,
+   "pnl_yen": 27800
   },
   {
    "ticker": "9697.T",
@@ -778,7 +783,13 @@
    "shares": 500,
    "rsi": 26.8,
    "runup5": -4.9,
-   "status": "pending"
+   "status": "closed",
+   "entry": 885.0,
+   "exit_date": "2026-11-02",
+   "exit": 870.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.69,
+   "pnl_yen": -7500
   },
   {
    "ticker": "2121.T",
@@ -789,6 +800,23 @@
    "shares": 100,
    "rsi": 48.2,
    "runup5": -3.3,
+   "status": "closed",
+   "entry": 3800.0,
+   "exit_date": "2026-11-02",
+   "exit": 3940.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 3.68,
+   "pnl_yen": 14000
+  },
+  {
+   "ticker": "2327.T",
+   "name": "日鉄ソリューションズ",
+   "type": "第２四半期",
+   "date": "2026-11-02",
+   "signal_price": 4100.0,
+   "shares": 100,
+   "rsi": 53.5,
+   "runup5": -3.2,
    "status": "pending"
   }
  ],

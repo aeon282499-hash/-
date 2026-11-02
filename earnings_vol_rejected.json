@@ -934,5 +934,51 @@
    "runup5": -5.1,
    "price": 788.0
   }
+ ],
+ "2026-11-02": [
+  {
+   "ticker": "3132.T",
+   "name": "マクニカホールディングス",
+   "vol": 3.49,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 37.4,
+   "runup5": -9.5,
+   "price": 3784.0
+  },
+  {
+   "ticker": "4005.T",
+   "name": "住友化学",
+   "vol": 2.0,
+   "why": "announced",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 28.4,
+   "runup5": -10.5,
+   "price": 513.0999755859375
+  },
+  {
+   "ticker": "8053.T",
+   "name": "住友商事",
+   "vol": 0.95,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 38.6,
+   "runup5": -3.9,
+   "price": 1664.5
+  },
+  {
+   "ticker": "9044.T",
+   "name": "ＮＡＮＫＡＩ",
+   "vol": 0.65,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 45.3,
+   "runup5": -4.1,
+   "price": 2993.5
+  }
  ]
 }
