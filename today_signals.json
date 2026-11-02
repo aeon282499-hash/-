@@ -1,40 +1,19 @@
 {
-  "date": "2026-11-02",
+  "date": "2026-11-04",
   "signals": [
     {
-      "ticker": "9433.T",
-      "name": "ＫＤＤＩ",
+      "ticker": "7259.T",
+      "name": "アイシン",
       "direction": "BUY",
-      "prev_close": 2836.5,
-      "limit_price": 2864
+      "prev_close": 2103.0,
+      "limit_price": 2124
     },
     {
-      "ticker": "7545.T",
-      "name": "西松屋チェーン",
+      "ticker": "1969.T",
+      "name": "高砂熱学工業",
       "direction": "BUY",
-      "prev_close": 1870.0,
-      "limit_price": 1888
-    },
-    {
-      "ticker": "9744.T",
-      "name": "メイテックグループホールディングス",
-      "direction": "BUY",
-      "prev_close": 3195.0,
-      "limit_price": 3225
-    },
-    {
-      "ticker": "6471.T",
-      "name": "日本精工",
-      "direction": "BUY",
-      "prev_close": 1002.5,
-      "limit_price": 1012
-    },
-    {
-      "ticker": "9468.T",
-      "name": "ＫＡＤＯＫＡＷＡ",
-      "direction": "BUY",
-      "prev_close": 3653.0,
-      "limit_price": 3685
+      "prev_close": 3932.0,
+      "limit_price": 3970
     }
   ]
 }
