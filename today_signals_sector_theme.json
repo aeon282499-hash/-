@@ -1,39 +1,28 @@
 {
-  "date": "2026-11-02",
-  "fetched_at": "2026-11-01 23:11:21",
+  "date": "2026-11-04",
+  "fetched_at": "2026-11-03 23:11:48",
   "signals": [
     {
-      "ticker": "9744.T",
-      "name": "メイテックグループホールディングス",
-      "rsi": 34.8,
-      "deviation": -4.13,
-      "turnover_oku": 48.586412,
-      "prev_close": 3195.0,
+      "ticker": "9506.T",
+      "name": "東北電力",
+      "rsi": 42.14,
+      "deviation": -1.9,
+      "turnover_oku": 66.4054245,
+      "prev_close": 1258.0,
       "in_sector_top": false,
       "in_theme": true,
-      "sector": "サービス業"
-    },
-    {
-      "ticker": "6995.T",
-      "name": "東海理化電機製作所",
-      "rsi": 29.15,
-      "deviation": -6.69,
-      "turnover_oku": 24.3507,
-      "prev_close": 2834.0,
-      "in_sector_top": false,
-      "in_theme": true,
-      "sector": "輸送用機器"
+      "sector": "電気･ガス業"
     }
   ],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 25,
-    "earnings_skip": 13,
+    "raw_buy": 8,
+    "earnings_skip": 2,
     "sector_pass": 0,
-    "theme_pass": 2,
-    "or_pass": 2,
+    "theme_pass": 1,
+    "or_pass": 1,
     "both_pass": 0,
-    "raw_sell": 6,
+    "raw_sell": 1,
     "sell_earnings_skip": 0,
     "sell_sector_pass": 0
   }
