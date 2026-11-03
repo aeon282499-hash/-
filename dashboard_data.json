@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03 08:10:42",
+  "generated_at": "2026-11-03 13:01:49",
   "date": "2026-11-03",
   "tier_summary": {
     "S": 0,
@@ -22,7 +22,7 @@
     "META": -1.34,
     "MSFT": -2.83,
     "MU": -5.78,
-    "NRG": -1.5,
+    "NRG": -1.01,
     "NVDA": -1.26,
     "ON": -2.18,
     "PANW": -3.87,
@@ -220,7 +220,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": -1.81
+      "us_tailwind": -1.69
     },
     {
       "theme": "半導体_検査_計測",
@@ -2449,7 +2449,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -1.81,
+      "us_tailwind": -1.69,
       "score": 33.3,
       "tier": "C",
       "init_stars": 3,
@@ -2491,7 +2491,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -1.81,
+      "us_tailwind": -1.69,
       "score": 32.3,
       "tier": "C",
       "init_stars": 3,
@@ -3205,7 +3205,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -1.81,
+      "us_tailwind": -1.69,
       "score": 23.3,
       "tier": "C",
       "init_stars": 3,
