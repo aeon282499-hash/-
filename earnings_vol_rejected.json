@@ -980,5 +980,95 @@
    "runup5": -4.1,
    "price": 2993.5
   }
+ ],
+ "2026-11-04": [
+  {
+   "ticker": "1723.T",
+   "name": "日本電技",
+   "vol": 1.47,
+   "why": "vol",
+   "last_time": "16:00",
+   "bucket": "引け後",
+   "rsi": 26.9,
+   "runup5": -17.0,
+   "price": 1751.0
+  },
+  {
+   "ticker": "5857.T",
+   "name": "ＡＲＥホールディングス",
+   "vol": 1.99,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 32.8,
+   "runup5": -3.2,
+   "price": 3060.0
+  },
+  {
+   "ticker": "8001.T",
+   "name": "伊藤忠商事",
+   "vol": 1.45,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 48.3,
+   "runup5": -4.2,
+   "price": 2267.0
+  },
+  {
+   "ticker": "8002.T",
+   "name": "丸紅",
+   "vol": 1.73,
+   "why": "vol",
+   "last_time": "16:30",
+   "bucket": "引け後",
+   "rsi": 36.9,
+   "runup5": -7.3,
+   "price": 4721.0
+  },
+  {
+   "ticker": "8031.T",
+   "name": "三井物産",
+   "vol": 1.22,
+   "why": "vol",
+   "last_time": "12:00",
+   "bucket": "場中",
+   "rsi": 40.7,
+   "runup5": -5.2,
+   "price": 4840.0
+  },
+  {
+   "ticker": "9412.T",
+   "name": "スカパーＪＳＡＴ",
+   "vol": 3.08,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 33.4,
+   "runup5": -5.2,
+   "price": 1766.0
+  },
+  {
+   "ticker": "9432.T",
+   "name": "ＮＴＴ",
+   "vol": 0.56,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 33.2,
+   "runup5": -5.5,
+   "price": 164.5
+  },
+  {
+   "ticker": "8393.T",
+   "name": "宮崎銀",
+   "vol": 0.84,
+   "why": "vol",
+   "last_time": "12:20",
+   "bucket": "場中",
+   "rsi": 36.6,
+   "runup5": -3.3,
+   "price": 2325.0
+  }
  ]
 }
