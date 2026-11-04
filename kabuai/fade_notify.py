@@ -494,8 +494,9 @@ def build_plan(asof: date, trade_day: date, cand: pd.DataFrame, master: pd.DataF
     )
 
 
-def _fmt_row(x: dict, head: str) -> str:
-    seido = {"○": "制度信用○(貸借銘柄)", "×": "制度信用×(信用銘柄＝一般信用の在庫次第)", "?": "貸借区分なし"}[x["seido"]]
+def _friend_tags(x: dict) -> str:
+    """友達chの小さい字の行: 制度信用と日証金の規制。"""
+    seido = {"○": "制度信用○(貸借銘柄)", "×": "制度信用×(一般信用の在庫次第)", "?": "貸借区分なし"}[x["seido"]]
     reg = []
     if x["jsf_stop"]:
         reg.append("🚫日証金 申込停止")
@@ -507,12 +508,7 @@ def _fmt_row(x: dict, head: str) -> str:
         reg.append("日々公表")
     if x["jsf_txt"] and not (x["jsf_stop"] or x["jsf_warn"]):
         reg.append(f"日証金一覧: {x['jsf_txt']}")
-    reg_s = "・".join(reg) if reg else "日証金の規制なし"
-    ex = f"\n　除外: {'・'.join(x['reasons'])}" if x["reasons"] else ""
-    return (f"{head} `{x['code']}` {x['name']}（{x['mkt']}）\n"
-            f"　終値 {x['close']:,.0f}円　前日比 {x['ret1']*100:+.1f}%　代金 {x['va']/1e8:,.1f}億\n"
-            f"　全体 {x['rank_all']}位　スコア {x['score']:.2f}/4　翌日の値幅上限 {x['ul1']:,.0f}円\n"
-            f"　{seido}　{reg_s}{ex}")
+    return seido + "・" + ("・".join(reg) if reg else "日証金の規制なし")
 
 
 def friend_picks(plan: dict) -> list[dict]:
@@ -525,43 +521,60 @@ def friend_picks(plan: dict) -> list[dict]:
     return out
 
 
-def _ladder_txt(close: float) -> str:
-    lad = top3_ladder(close)
-    if len(lad) == 2:
-        return (f"　🔴 当日中指値 ¥{lad[0][0]:,.0f}（+3%）{lad[0][1]:,}株 ＋ ¥{lad[1][0]:,.0f}（+12%）{lad[1][1]:,}株で空売り"
-                " → 引成で買戻し　25万＋25万")
-    lim, sh = lad[0]
-    return f"　🔴 当日中指値 ¥{lim:,.0f}（+3%）{sh:,}株で空売り → 引成で買戻し（分けられない値段なので一発・建玉 約{sh * lim / 1e4:.0f}万）"
+# ───────────────────────── 配信の文面（2026-11-04 本人「いくらで売るのか見送りなのかが分かりにくい」） ─────────────────────────
+# 1行目に本数、1銘柄1行に「売り 値段×株数」か「見送り 理由」だけ。寄りで取り消すS高の値段を1行。細かい情報は下に小さく。中身のルールは変えない。
+_WD = "月火水木金土日"
+_CIRC = "①②③④⑤"
+BUYBACK_LINE = "買い戻し: 約定した分は引成。届かなかった指値は引けで消える"
+
+
+def _md(d: datetime) -> str:
+    return f"{d:%m/%d}({_WD[d.weekday()]})"
+
+
+def _order_txt(lad: list) -> str:
+    """[(指値, 株数), ...] → 『売り 800円 × 300株 ＋ 870円 × 200株』"""
+    return "売り " + " ＋ ".join(f"{lim:,.0f}円 × {sh:,}株" for lim, sh in lad)
+
+
+def _cancel_line(items: list) -> str:
+    """items: [(銘柄名, その日のS高の値段), ...]"""
+    return "取消: 寄りがS高なら出さない　" + "／".join(f"{n} {s:,.0f}円" for n, s in items)
 
 
 def plan_payload(plan: dict) -> dict:
+    """友達ch: 全体1〜3位を1行ずつ『売り 値段×株数』か『見送り 理由』。"""
     td = datetime.fromisoformat(plan["trade_day"])
     asof = datetime.fromisoformat(plan["asof"])
-    lines = [f"基準日 {asof:%m/%d} の日足・候補 {plan['n_cand']}銘柄（終値100円以上・代金3億以上・前日比+8%以上）"]
+    picks = friend_picks(plan)
+    go = [x for x in picks if not x["skip"]]
+    lines = []
     if not plan["earn_checked"]:
-        lines.append("⚠️ 決算開示が取れず「決算起因」の除外は未確認")
+        lines.append("⚠️ 決算開示が取れず「決算起因」の見送りは未確認")
     if not plan["iss_checked"]:
         lines.append("⚠️ 貸借区分が取れず「制度信用で売れるか」は未確認")
     if not plan["alert_checked"]:
         lines.append("⚠️ 規制銘柄情報が取れず「日証金の規制」は未確認")
-    lines.append("")
-    picks = friend_picks(plan)
-    n_go = sum(1 for x in picks if not x["skip"])
-    lines.append(f"**【1〜3位】各50万・2段指値（撃つのは {n_go}本）**")
     for x in picks:
-        if x["skip"]:
-            lines.append(f"{x['rank_all']}位 `{x['code']}` {x['name']}　前日比 {x['ret1']*100:+.1f}%　→ 見送り（{x['skip']}）")
-        else:
-            lines.append(_fmt_row(x, f"🩳 {x['rank_all']}位") + "\n" + _ladder_txt(x["close"]))
+        head = f"{x['rank_all']}位 `{x['code']}` {x['name']}"
+        lines.append(f"{head}　見送り　{x['skip']}" if x["skip"] else f"{head}　{_order_txt(top3_ladder(x['close']))}")
     if not picks:
         lines.append("候補なし")
+    if go:
+        lines.append(_cancel_line([(x["name"], x["ul1"]) for x in go]))
+        lines.append(BUYBACK_LINE)
     lines.append("")
-    lines.append(f"📌 {RULE_LINE}")
+    for x in go:
+        lines.append(f"-# {x['name']}　前日比 {x['ret1']*100:+.1f}%・代金 {x['va']/1e8:,.1f}億・スコア {x['score']:.2f}/4・{_friend_tags(x)}")
+    sk = [x for x in picks if x["skip"]]
+    if sk:
+        lines.append("-# 見送りの前日比: " + "／".join(f"{x['name']} {x['ret1']*100:+.1f}%" for x in sk))
+    lines.append(f"-# 基準日 {asof:%m/%d} の日足・候補 {plan['n_cand']}銘柄（終値100円以上・代金3億以上・前日比+8%以上）")
+    lines.append(f"-# 📌 {RULE_LINE}")
     lines.append(f"-# {BT_LINE}")
     lines.append("-# 銘柄の選定だけ。発注はしない。投資判断は自己責任。")
-    title = f"🩳 {td:%m/%d(%a)} 売りフェード（友達版）1〜3位" + ("" if n_go else "・撃つ銘柄なし")
-    desc = "\n".join(lines)
-    return {"embeds": [{"title": title, "description": desc[:4000], "color": 0xFF8787 if n_go else 0x868E96}]}
+    title = f"🩳 {_md(td)} 友達版　" + (f"注文 {len(go)}本" if go else ("候補なし" if not picks else "今日は全部見送り"))
+    return {"embeds": [{"title": title, "description": "\n".join(lines)[:4000], "color": 0xFF8787 if go else 0x868E96}]}
 
 
 # ───────────────────────── 本人ch 向け 1行（2026-10-29 本人「やって」） ─────────────────────────
@@ -734,53 +747,48 @@ def asobi_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
                 earn=bool(earn is not None and c5 in earn))
 
 
-def asobi_embed(a: dict) -> dict:
-    tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[a["seido"]]]
-    if a["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
-    elif a["jsf_warn"]: tags.append("⚠️注意喚起")
-    if a["earn"]: tags.append("📄決算がらみ")
-    head = f"`{a['code']}` {a['name']}　前日終値 ¥{a['close']:,.0f}（{a['ret1']*100:+.1f}%・代金{a['va']/1e8:.1f}億）\n"
-    if a["shares"]:
-        body = (f"　🔴 当日中指値 ¥{a['lim']:,.0f}（+{ASOBI_LIMIT_PCT*100:.0f}%）{a['shares']:,}株で空売り → 引成で買戻し\n"
-                f"　建玉 約{a['shares'] * a['lim'] / 1e4:.0f}万　" + "・".join(tags))
-    else:
-        body = "　見送り（100株で50万超）"
-    return {"title": f"🎲 遊び1本（代金1〜3億・+{TOP3_RET_MIN*100:.0f}%以上の1位・指値+{ASOBI_LIMIT_PCT*100:.0f}%だけ）",
-            "description": head + body + "\n\n-# 寄りがS高張り付きなら取消。届かなければその日はなし。損切りなし",
-            "color": 0xFFD43B}
+def _own_tags(x: dict) -> str:
+    tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
+    if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
+    elif x["jsf_warn"]: tags.append("⚠️注意喚起")
+    if x["earn"]: tags.append("📄決算がらみ")
+    return "・".join(tags)
 
 
 def own_payload(plan: dict) -> dict:
-    """本人ch: 毎日の3本（前日比の大きい順・+3%指値・各50万）＋ 遊び1本がある日はその1本。"""
+    """本人ch: 今日の3本（前日比+12%以上を大きい順・2段指値・各50万）＋ 遊び1本を1つの embed に。1銘柄1行で『売り 値段×株数』だけ。"""
     td = datetime.fromisoformat(plan["trade_day"])
-    tp = plan.get("top3") or {"rows": []}
-    lines = []
-    for x in tp["rows"]:
-        lad = top3_ladder(x["close"])
-        if len(lad) == 2:
-            order_txt = (f"　🔴 当日中指値 ¥{lad[0][0]:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）{lad[0][1]:,}株"
-                         f" ＋ ¥{lad[1][0]:,.0f}（+{TOP3_LADDER_PCT2*100:.0f}%）{lad[1][1]:,}株で空売り → 引成で買戻し\n")
-            size_txt = "25万＋25万"
-        else:
-            lim, sh = lad[0]
-            order_txt = f"　🔴 当日中指値 ¥{lim:,.0f}（+{TOP3_LIMIT_PCT*100:.0f}%）{sh:,}株で空売り → 引成で買戻し（分けられない値段なので一発）\n"
-            size_txt = f"建玉 約{sh * lim / 1e4:.0f}万"
-        tags =[{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
-        if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
-        elif x["jsf_warn"]: tags.append("⚠️注意喚起")
-        if x["earn"]: tags.append("📄決算がらみ")
-        lines.append(f"{x['rank']}位 `{x['code']}` {x['name']}　前日終値 ¥{x['close']:,.0f}（{x['ret1']*100:+.1f}%）\n"
-                     + order_txt + f"　{size_txt}　" + "・".join(tags))
-    if not lines:
-        lines.append(f"候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
+    rows = (plan.get("top3") or {"rows": []})["rows"]
+    a = plan.get("asobi")
+    friend_go = {x["code"] for x in friend_picks(plan) if not x["skip"]} if plan.get("rows") else set()
+    lines, cancel, notes = [], [], []
+    for i, x in enumerate(rows):
+        same = "　※友達chと同じ銘柄" if x["code"] in friend_go else ""
+        lines.append(f"{_CIRC[i]} `{x['code']}` {x['name']}　{_order_txt(top3_ladder(x['close']))}{same}")
+        cancel.append((x["name"], x["close"] + band(x["close"])))
+        notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・{_own_tags(x)}")
+    if not rows:
+        lines.append(f"今日の3本　候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
+    n = len(rows)
+    if a and a["shares"]:
+        lines.append(f"🎲 遊び `{a['code']}` {a['name']}　売り {a['lim']:,.0f}円 × {a['shares']:,}株")
+        cancel.append((a["name"], a["close"] + band(a["close"])))
+        notes.append(f"-# {a['name']}（遊び）　前日終値 {a['close']:,.0f}円（{a['ret1']*100:+.1f}%・代金{a['va']/1e8:.1f}億）・{_own_tags(a)}")
+        n += 1
+    elif a:
+        lines.append(f"🎲 遊び `{a['code']}` {a['name']}　見送り　100株で50万超")
     else:
-        lines.append("\n-# 寄りがS高張り付き（寄値＝値幅上限）なら取消。約定しなかった段は引けで消える。"
-                     "1本50万（2段に分けられない銘柄は+3%一発・100株で50万超は100株だけ・最大100万）")
-    embeds = [{"title": f"🩳 {td:%m/%d(%a)} 今日の3本（前日比+{TOP3_RET_MIN*100:.0f}%以上を大きい順・指値+{TOP3_LIMIT_PCT*100:.0f}%/+{TOP3_LADDER_PCT2*100:.0f}%）",
-               "description": "\n".join(lines), "color": 0xFF8787 if tp["rows"] else 0x868E96}]
-    if plan.get("asobi"):
-        embeds.append(asobi_embed(plan["asobi"]))
-    return {"embeds": embeds}
+        lines.append("🎲 遊び　なし")
+    if cancel:
+        lines.append(_cancel_line(cancel))
+        lines.append(BUYBACK_LINE)
+    lines.append("")
+    lines += notes
+    lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
+                 f"（2段に分けられない値段は+{TOP3_LIMIT_PCT*100:.0f}%に一発・100株で50万超は100株だけ・最大100万）。"
+                 f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+    title = f"🩳 {_md(td)} 今日の注文 {n}本" if n else f"🩳 {_md(td)} 今日の注文なし"
+    return {"embeds": [{"title": title, "description": "\n".join(lines)[:4000], "color": 0xFF8787 if n else 0x868E96}]}
 
 
 def _own_payload_friend_new1(plan: dict) -> dict:   # 旧: 友達版1〜3位＋新①（10/29 毎日の3本に置き換え・数字の比較用に残す）
