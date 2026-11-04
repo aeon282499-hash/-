@@ -1,19 +1,4 @@
 {
-  "date": "2026-11-04",
-  "signals": [
-    {
-      "ticker": "7259.T",
-      "name": "アイシン",
-      "direction": "BUY",
-      "prev_close": 2103.0,
-      "limit_price": 2124
-    },
-    {
-      "ticker": "1969.T",
-      "name": "高砂熱学工業",
-      "direction": "BUY",
-      "prev_close": 3932.0,
-      "limit_price": 3970
-    }
-  ]
+  "date": "2026-11-05",
+  "signals": []
 }

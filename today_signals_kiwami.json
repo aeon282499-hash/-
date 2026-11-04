@@ -1,44 +1,4 @@
 {
-  "date": "2026-11-04",
-  "signals": [
-    {
-      "ticker": "7259.T",
-      "name": "アイシン",
-      "direction": "BUY",
-      "prev_close": 2103.0,
-      "limit_price": 2124,
-      "days_cover": 0.3362263267935416,
-      "rsi": 42.11,
-      "deviation": -2.65,
-      "vol_ratio": 2.21,
-      "range_ratio": 1.21,
-      "turnover": 13324018700.0
-    },
-    {
-      "ticker": "1969.T",
-      "name": "高砂熱学工業",
-      "direction": "BUY",
-      "prev_close": 3932.0,
-      "limit_price": 3970,
-      "days_cover": 0.565564716852194,
-      "rsi": 29.69,
-      "deviation": -9.19,
-      "vol_ratio": 1.33,
-      "range_ratio": 1.58,
-      "turnover": 2780827200.0
-    },
-    {
-      "ticker": "7278.T",
-      "name": "エクセディ",
-      "direction": "BUY",
-      "prev_close": 5160.0,
-      "limit_price": 5210,
-      "days_cover": 1.1177750816074976,
-      "rsi": 22.63,
-      "deviation": -8.63,
-      "vol_ratio": 4.01,
-      "range_ratio": 2.06,
-      "turnover": 4385124000.0
-    }
-  ]
+  "date": "2026-11-05",
+  "signals": []
 }

@@ -1,11 +1,11 @@
 {
-  "date": "2026-11-04",
+  "date": "2026-11-05",
   "signals": [
     {
-      "ticker": "1878.T",
-      "name": "大東建託",
+      "ticker": "9201.T",
+      "name": "日本航空",
       "direction": "SELL",
-      "prev_close": 3387.0
+      "prev_close": 3180.0
     }
   ]
 }

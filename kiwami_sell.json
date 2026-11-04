@@ -224,11 +224,11 @@
     "stop_pct": 4.0,
     "live_stop": 3.0,
     "entry_open": 3951.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -4.0,
+    "exit_type": "STOP",
+    "exit_date": "2026-11-04"
   },
   {
     "signal_date": "2026-11-02",
@@ -241,11 +241,11 @@
     "stop_pct": 4.0,
     "live_stop": 3.0,
     "entry_open": 3043.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -4.0,
+    "exit_type": "STOP",
+    "exit_date": "2026-11-04"
   },
   {
     "signal_date": "2026-11-04",
@@ -255,6 +255,23 @@
     "direction": "SELL",
     "size": 1000000,
     "prev_close": 3387.0,
+    "stop_pct": 4.0,
+    "live_stop": 3.0,
+    "entry_open": 3388.0,
+    "status": "open",
+    "hold_days": 1,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-11-05",
+    "entry_date": "2026-11-05",
+    "ticker": "9201.T",
+    "name": "日本航空",
+    "direction": "SELL",
+    "size": 1000000,
+    "prev_close": 3180.0,
     "stop_pct": 4.0,
     "live_stop": 3.0,
     "entry_open": null,
