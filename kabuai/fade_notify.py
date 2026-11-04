@@ -524,7 +524,7 @@ def friend_picks(plan: dict) -> list[dict]:
 # ───────────────────────── 配信の文面（2026-11-04 本人「いくらで売るのか見送りなのかが分かりにくい」） ─────────────────────────
 # 1行目に本数、1銘柄1行に「売り 値段×株数」か「見送り 理由」だけ。寄りで取り消すS高の値段を1行。細かい情報は下に小さく。中身のルールは変えない。
 _WD = "月火水木金土日"
-_CIRC = "①②③④⑤"
+_CIRC = "①②③④⑤⑥⑦⑧"
 BUYBACK_LINE = "買い戻し: 約定した分は引成。届かなかった指値は引けで消える"
 
 
@@ -755,21 +755,69 @@ def _own_tags(x: dict) -> str:
     return "・".join(tags)
 
 
-def own_payload(plan: dict) -> dict:
-    """本人ch: 今日の3本（前日比+12%以上を大きい順・2段指値・各50万）＋ 遊び1本を1つの embed に。1銘柄1行で『売り 値段×株数』だけ。"""
-    td = datetime.fromisoformat(plan["trade_day"])
-    rows = (plan.get("top3") or {"rows": []})["rows"]
+# 本人chの入れ方 v2（2026-11-04 本人「両方を見て同じ銘柄は1回だけ、入れ方は+3%を残す案にする形。これがいいね」）
+#  今日の3本＋友達chの1〜3位（今日の3本に無い銘柄）を、同じ銘柄は1回だけ。金額の1/3を+3%・2/3を+12%。
+#  株数は「売った日にストップ高で引けても損が7万以内」から逆算（建玉は最大75万）。+3%の段で100株に届かない値段は+12%に一発。
+#  検証(uwick_bt/fade5y・J-Q 5年・料0.3%): 年平均 中間+578万/悲観+431万・DD48/78万・最悪月-14/-48万（今の3本だけ 50万2段: +441/+314万・64/103万・-42/-72万）
+OWN_V2_FROM = "2026-11-06"        # この取引日から v2（11/05分は旧ルールで配信済み）
+OWN_LEGS = ((0.03, 1 / 3), (0.12, 2 / 3))
+OWN_RISK_YEN = 70_000
+OWN_CAP_YEN = 750_000
+
+
+def own_ladder(close: float) -> list:
+    """[(指値, 株数), ...]。ストップ高で引けたときの損が OWN_RISK_YEN 以内に収まる株数。収まらなければ []。"""
+    S = close + band(close)
+    Ls = [(_lim(close, k), w) for k, w in OWN_LEGS]
+    Ls = [(L, w) for L, w in Ls if L < S]
+    if not Ls:
+        return []
+    size = min(OWN_CAP_YEN, OWN_RISK_YEN / sum(w * (S - L) / L for L, w in Ls))
+    sh = [int(size * w / L // 100 * 100) for L, w in Ls]
+    if min(sh) >= 100:
+        return [(L, s) for (L, w), s in zip(Ls, sh)]
+    L0 = max(Ls, key=lambda t: t[1])[0]
+    s0 = int(min(OWN_CAP_YEN, OWN_RISK_YEN / ((S - L0) / L0)) / L0 // 100 * 100)
+    return [(L0, s0)] if s0 >= 100 else []
+
+
+def own_orders(plan: dict) -> list:
+    """本人chの注文の一覧（配信と答え合わせで同じものを使う）。[{x, lad, kind(3本/友達/遊び), same}]"""
+    v2 = plan["trade_day"] >= OWN_V2_FROM
+    lad = own_ladder if v2 else top3_ladder
+    top = (plan.get("top3") or {}).get("rows", [])
+    fgo = [x for x in friend_picks(plan) if not x["skip"]] if plan.get("rows") else []
+    fcodes, tcodes = {x["code"] for x in fgo}, {x["code"] for x in top}
+    out = [dict(x=x, lad=lad(x["close"]), kind="3本", same=x["code"] in fcodes) for x in top]
+    if v2:
+        out += [dict(x=x, lad=lad(x["close"]), kind="友達", same=False) for x in fgo if x["code"] not in tcodes]
     a = plan.get("asobi")
-    friend_go = {x["code"] for x in friend_picks(plan) if not x["skip"]} if plan.get("rows") else set()
+    if a and a.get("shares"):
+        out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
+    return out
+
+
+def own_payload(plan: dict) -> dict:
+    """本人ch: 今日の3本＋（v2から）友達chの銘柄＋遊び1本を1つの embed に。1銘柄1行で『売り 値段×株数』だけ。"""
+    td = datetime.fromisoformat(plan["trade_day"])
+    v2 = plan["trade_day"] >= OWN_V2_FROM
+    orders = own_orders(plan)
     lines, cancel, notes = [], [], []
-    for i, x in enumerate(rows):
-        same = "　※友達chと同じ銘柄" if x["code"] in friend_go else ""
-        lines.append(f"{_CIRC[i]} `{x['code']}` {x['name']}　{_order_txt(top3_ladder(x['close']))}{same}")
+    i = 0; n = 0
+    for o in orders:
+        x = o["x"]
+        if o["kind"] == "遊び":
+            continue
+        head = f"{_CIRC[i]} `{x['code']}` {x['name']}"; i += 1
+        if not o["lad"]:
+            lines.append(f"{head}　見送り　100株で損{OWN_RISK_YEN // 10000}万超"); continue
+        tail = "　※友達chと同じ銘柄・入れるのは1回だけ" if o["same"] else ("　※友達chの銘柄" if o["kind"] == "友達" else "")
+        lines.append(f"{head}　{_order_txt(o['lad'])}{tail}"); n += 1
         cancel.append((x["name"], x["close"] + band(x["close"])))
-        notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・{_own_tags(x)}")
-    if not rows:
-        lines.append(f"今日の3本　候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
-    n = len(rows)
+        notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・" + (_own_tags(x) if o["kind"] == "3本" else _friend_tags(x)))
+    if not (plan.get("top3") or {}).get("rows"):
+        lines.insert(0, f"今日の3本　候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
+    a = plan.get("asobi")
     if a and a["shares"]:
         lines.append(f"🎲 遊び `{a['code']}` {a['name']}　売り {a['lim']:,.0f}円 × {a['shares']:,}株")
         cancel.append((a["name"], a["close"] + band(a["close"])))
@@ -784,11 +832,17 @@ def own_payload(plan: dict) -> dict:
         lines.append(BUYBACK_LINE)
     lines.append("")
     lines += notes
-    lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
-                 f"（2段に分けられない値段は+{TOP3_LIMIT_PCT*100:.0f}%に一発・100株で50万超は100株だけ・最大100万）。"
-                 f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+    if v2:
+        lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{OWN_RISK_YEN // 10000}万以内の株数（建玉は最大{OWN_CAP_YEN // 10000}万）。"
+                     "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発）。"
+                     f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。友達chの1〜3位で今日の3本に無い銘柄も同じ入れ方で載せる。"
+                     f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+    else:
+        lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
+                     f"（2段に分けられない値段は+{TOP3_LIMIT_PCT*100:.0f}%に一発・100株で50万超は100株だけ・最大100万）。"
+                     f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
     title = f"🩳 {_md(td)} 今日の注文 {n}本" if n else f"🩳 {_md(td)} 今日の注文なし"
-    return {"embeds": [{"title": title, "description": "\n".join(lines)[:4000], "color": 0xFF8787 if n else 0x868E96}]}
+    return {"embeds": [{"title": title, "description": chr(10).join(lines)[:4000], "color": 0xFF8787 if n else 0x868E96}]}
 
 
 def _own_payload_friend_new1(plan: dict) -> dict:   # 旧: 友達版1〜3位＋新①（10/29 毎日の3本に置き換え・数字の比較用に残す）
@@ -901,13 +955,12 @@ def _own_fill(o: float, h: float, L: float):
 
 
 def build_own_score(plan: dict, bars: dict) -> dict:
-    """本人ch（今日の3本＋遊び）の答え合わせ。料・滑りなし・引け値で買い戻し。引けS高の日は印（比例配分で引成が付かない可能性）。"""
+    """本人chの答え合わせ（配信と同じ own_orders）。料・滑りなし・引け値で買い戻し。引けS高の日は印（比例配分で引成が付かない可能性）。"""
     items = []
-    tp = (plan.get("top3") or {}).get("rows", [])
-    legs = [(x, top3_ladder(x["close"]), "3本") for x in tp]
-    if plan.get("asobi") and plan["asobi"].get("shares"):
-        a = plan["asobi"]; legs.append((a, [(a["lim"], a["shares"])], "遊び"))
-    for x, lad, kind in legs:
+    for od in own_orders(plan):
+        x, lad, kind = od["x"], od["lad"], od["kind"]
+        if not lad:
+            continue
         c5 = x["code"] + "0"; oc = bars.get(c5)
         rec = dict(kind=kind, code=x["code"], name=x["name"], close_prev=x["close"], legs=[])
         if not oc:
@@ -960,7 +1013,7 @@ def own_score_payload(own: dict, ledger: dict) -> dict:
             pf = (w / l) if l > 0 else float("inf")
             lines.append(f"-# 通算 {k}: {len(arr)}本 勝ち{int((arr > 0).sum())} 合計 {arr.sum():+,.0f}円 PF {pf:.2f}")
     lines.append("-# 紙の答え合わせ（料・滑りなし・引け値で買い戻し・高値が指値を1ティック抜けた時だけ約定扱い）。実際の約定とは別。")
-    return {"embeds": [{"title": f"📝 {td:%m/%d(%a)} 今日の3本＋遊び 答え合わせ", "description": chr(10).join(lines)[:4000], "color": 0x4DABF7}]}
+    return {"embeds": [{"title": f"📝 {_md(td)} 本人ch 答え合わせ", "description": chr(10).join(lines)[:4000], "color": 0x4DABF7}]}
 
 
 def _post_hook(env: str, payload: dict, dry_run: bool, tag: str) -> bool:
@@ -1012,7 +1065,7 @@ def score_payload(score: dict, ledger: dict) -> dict:
         pf = (w / l) if l > 0 else float("inf")
         lines += ["", f"通算（1〜3位・2段指値）{len(arr)}本: 勝ち{int((arr > 0).sum())}　合計 {arr.sum():+,.0f}円　PF {pf:.2f}"]
     lines.append("-# 紙の答え合わせ（料・滑りなし・引け値で買い戻し・高値が指値を1ティック抜けた時だけ約定扱い）。実際の約定・在庫は反映していない。")
-    return {"embeds": [{"title": f"📝 {td:%m/%d(%a)} 売りフェード（友達版）答え合わせ", "description": "\n".join(lines)[:4000], "color": 0x4DABF7}]}
+    return {"embeds": [{"title": f"📝 {_md(td)} 売りフェード（友達版）答え合わせ", "description": "\n".join(lines)[:4000], "color": 0x4DABF7}]}
 
 
 # ───────────────────────── Discord / 台帳 ─────────────────────────
