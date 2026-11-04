@@ -174,5 +174,54 @@
   ],
   "made": "2026-11-04T04:29:17+09:00",
   "sent": false
+ },
+ "2026-11-05": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "6370",
+    "name": "栗田工業",
+    "close": 5347.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "4052",
+    "name": "フィーチャ",
+    "close": 776.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.7,
+     "day": "11/5",
+     "stale": false,
+     "fee_pct": 0.22,
+     "day_ok": true,
+     "max_sh": 50000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-04T18:45:01+09:00",
+  "sent": false
  }
 }

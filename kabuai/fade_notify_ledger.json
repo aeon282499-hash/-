@@ -1132,6 +1132,170 @@
     "earn": true
    },
    "own_sent": true
+  },
+  "2026-11-05": {
+   "asof": "2026-11-04",
+   "trade_day": "2026-11-05",
+   "made": "2026-11-04 18:09",
+   "n_cand": 13,
+   "rule_a": null,
+   "rule_a_why": "1位 5341 は前日比+11.93%（+17%未満）",
+   "rows": [
+    {
+     "code": "5341",
+     "code5": "53410",
+     "name": "ＡＳＡＨＩ　ＥＩＴＯホー",
+     "mkt": "スタンダード",
+     "close": 197.0,
+     "ret1": 0.11931818181818188,
+     "va": 1050569300.0,
+     "rank_all": 1,
+     "score": 3.46,
+     "ul1": 247.0,
+     "strong": false,
+     "vol20": 0.1333,
+     "dev25": 0.4071,
+     "rng": 0.1648,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "ＡＳＡＨＩ　ＥＩＴＯホールディングス 申込停止 新規売り",
+     "reasons": [
+      "日証金停止"
+     ]
+    },
+    {
+     "code": "6721",
+     "code5": "67210",
+     "name": "ウインテスト",
+     "mkt": "スタンダード",
+     "close": 146.0,
+     "ret1": 0.08955223880597019,
+     "va": 3351736400.0,
+     "rank_all": 2,
+     "score": 3.06,
+     "ul1": 196.0,
+     "strong": false,
+     "vol20": 0.1964,
+     "dev25": 0.2106,
+     "rng": 0.2687,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "593A",
+     "code5": "593A0",
+     "name": "ティアフォー",
+     "mkt": "グロース",
+     "close": 2670.0,
+     "ret1": 0.10972568578553621,
+     "va": 29109041300.0,
+     "rank_all": 3,
+     "score": 3.05,
+     "ul1": 3170.0,
+     "strong": false,
+     "vol20": 0.0622,
+     "dev25": 0.2379,
+     "rng": 0.1866,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "3647",
+     "code5": "36470",
+     "name": "アスリナ",
+     "mkt": "スタンダード",
+     "close": 131.0,
+     "ret1": 0.11016949152542366,
+     "va": 806318600.0,
+     "rank_all": 4,
+     "score": 2.37,
+     "ul1": 181.0,
+     "strong": false,
+     "vol20": 0.0261,
+     "dev25": 0.1536,
+     "rng": 0.2119,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "4052",
+     "code5": "40520",
+     "name": "フィーチャ",
+     "mkt": "グロース",
+     "close": 776.0,
+     "ret1": 0.14792899408284033,
+     "va": 759293400.0,
+     "rank_all": 5,
+     "score": 2.22,
+     "ul1": 926.0,
+     "strong": false,
+     "vol20": 0.0557,
+     "dev25": -0.088,
+     "rng": 0.1391,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "6370",
+      "name": "栗田工業",
+      "close": 5347.0,
+      "ret1": 0.1506348181622552,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "4052",
+      "name": "フィーチャ",
+      "close": 776.0,
+      "ret1": 0.14792899408284033,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     }
+    ],
+    "n_cand": 13
+   },
+   "asobi": null,
+   "own_sent": true
   }
  },
  "scores": {
@@ -1681,6 +1845,131 @@
       "high": 233.0,
       "yen": 0,
       "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-04": {
+   "trade_day": "2026-11-04",
+   "asof": "2026-11-02",
+   "made": "2026-11-04 18:05",
+   "items": [
+    {
+     "f3": true,
+     "code": "2345",
+     "name": "ＨＯＤＬ１",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [],
+     "open": 162.0,
+     "close": 118.0,
+     "high": 162.0,
+     "status": "寄りS高張り付き→取消",
+     "yen": 0
+    },
+    {
+     "f3": true,
+     "code": "6557",
+     "name": "ＡＩＡＩグループ",
+     "rank_all": 2,
+     "skip": "決算起因",
+     "legs": [],
+     "open": 905.0,
+     "close": 932.0,
+     "high": 975.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "2531",
+     "name": "宝ホールディングス",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 3199.0,
+     "close": 3310.0,
+     "high": 3545.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-04",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "2345",
+      "name": "ＨＯＤＬ１",
+      "close_prev": 112.0,
+      "legs": [],
+      "status": "寄りS高張り付き→取消",
+      "open": 162.0,
+      "close": 118.0,
+      "yen": 0
+     },
+     {
+      "kind": "3本",
+      "code": "7537",
+      "name": "丸文",
+      "close_prev": 2180.0,
+      "legs": [
+       {
+        "lim": 2246.0,
+        "shares": 100,
+        "sell": 2246.0,
+        "pct": 7.079252003561888
+       },
+       {
+        "lim": 2442.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 2200.0,
+      "close": 2087.0,
+      "high": 2280.0,
+      "yen": 15900,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "6196",
+      "name": "ストライクグループ",
+      "close_prev": 1713.0,
+      "legs": [
+       {
+        "lim": 1765.0,
+        "shares": 100,
+        "sell": 1792.0,
+        "pct": 2.5111607142857144
+       },
+       {
+        "lim": 1919.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 1792.0,
+      "close": 1747.0,
+      "high": 1824.0,
+      "yen": 4500,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "6262",
+      "name": "ＰＥＧＡＳＵＳ",
+      "close_prev": 673.0,
+      "legs": [],
+      "status": "寄りS高張り付き→取消",
+      "open": 773.0,
+      "close": 773.0,
+      "yen": 0
      }
     ],
     "sent": true
