@@ -1365,11 +1365,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 2844.0,
-    "status": "open",
-    "hold_days": 2,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 3,
+    "pnl_pct": 3.376,
+    "exit_type": "RSI",
+    "exit_date": "2026-11-05"
   },
   {
     "signal_date": "2026-11-04",
@@ -1383,10 +1383,11 @@
     "stop_pct": 3.0,
     "live_stop": 3.0,
     "entry_open": 2115.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": 5.0,
+    "exit_type": "TP",
+    "exit_date": "2026-11-05",
+    "gap_pnl_pct": null
   }
 ]

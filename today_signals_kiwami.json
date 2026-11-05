@@ -1,4 +1,31 @@
 {
-  "date": "2026-11-05",
-  "signals": []
+  "date": "2026-11-06",
+  "signals": [
+    {
+      "ticker": "4063.T",
+      "name": "信越化学工業",
+      "direction": "BUY",
+      "prev_close": 5693.0,
+      "limit_price": 5740,
+      "days_cover": 0.46547477885236554,
+      "rsi": 37.45,
+      "deviation": -4.83,
+      "vol_ratio": 1.67,
+      "range_ratio": 1.86,
+      "turnover": 61195687200.0
+    },
+    {
+      "ticker": "6305.T",
+      "name": "日立建機",
+      "direction": "BUY",
+      "prev_close": 5250.0,
+      "limit_price": 5300,
+      "days_cover": 0.3721309134431907,
+      "rsi": 43.54,
+      "deviation": -3.02,
+      "vol_ratio": 0.91,
+      "range_ratio": 1.66,
+      "turnover": 5253125000.0
+    }
+  ]
 }
