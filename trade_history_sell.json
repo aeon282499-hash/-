@@ -209,6 +209,16 @@
       "close": 3396.0,
       "pnl": -0.24,
       "win": false
+    },
+    {
+      "date": "2026-11-05",
+      "ticker": "9201.T",
+      "name": "日本航空",
+      "direction": "SELL",
+      "open": 3303.0,
+      "close": 3433.0,
+      "pnl": -3.94,
+      "win": false
     }
   ]
 }
