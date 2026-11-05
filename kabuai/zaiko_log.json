@@ -223,5 +223,68 @@
   ],
   "made": "2026-11-05T04:44:03+09:00",
   "sent": false
+ },
+ "2026-11-06": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "5857",
+    "name": "ＡＲＥホールディングス",
+    "close": 3770.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3668",
+    "name": "コロプラ",
+    "close": 458.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3401",
+    "name": "帝人",
+    "close": 1873.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-05T18:45:03+09:00",
+  "sent": false
  }
 }

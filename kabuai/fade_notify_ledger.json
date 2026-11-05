@@ -1296,6 +1296,206 @@
    },
    "asobi": null,
    "own_sent": true
+  },
+  "2026-11-06": {
+   "asof": "2026-11-05",
+   "trade_day": "2026-11-06",
+   "made": "2026-11-05 18:09",
+   "n_cand": 50,
+   "rule_a": null,
+   "rule_a_why": "1位 2345 は前日比+14.41%（+17%未満）",
+   "rows": [
+    {
+     "code": "2345",
+     "code5": "23450",
+     "name": "ＨＯＤＬ１",
+     "mkt": "スタンダード",
+     "close": 135.0,
+     "ret1": 0.14406779661016955,
+     "va": 670924100.0,
+     "rank_all": 1,
+     "score": 3.92,
+     "ul1": 185.0,
+     "strong": false,
+     "vol20": 0.1392,
+     "dev25": 0.5027,
+     "rng": 0.2797,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "4565",
+     "code5": "45650",
+     "name": "ネクセラファーマ",
+     "mkt": "プライム",
+     "close": 1729.0,
+     "ret1": 0.13749999999999996,
+     "va": 16036378800.0,
+     "rank_all": 2,
+     "score": 3.78,
+     "ul1": 2129.0,
+     "strong": false,
+     "vol20": 0.0469,
+     "dev25": 0.312,
+     "rng": 0.1243,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "3668",
+     "code5": "36680",
+     "name": "コロプラ",
+     "mkt": "プライム",
+     "close": 458.0,
+     "ret1": 0.19582245430809397,
+     "va": 1905784100.0,
+     "rank_all": 3,
+     "score": 3.58,
+     "ul1": 538.0,
+     "strong": true,
+     "vol20": 0.0467,
+     "dev25": 0.1556,
+     "rng": 0.1253,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "7203",
+     "code5": "72030",
+     "name": "トヨタ自動車",
+     "mkt": "プライム",
+     "close": 3533.0,
+     "ret1": 0.16677675033025108,
+     "va": 354842153400.0,
+     "rank_all": 4,
+     "score": 3.48,
+     "ul1": 4233.0,
+     "strong": false,
+     "vol20": 0.0382,
+     "dev25": 0.1641,
+     "rng": 0.1219,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "3401",
+     "code5": "34010",
+     "name": "帝人",
+     "mkt": "プライム",
+     "close": 1873.0,
+     "ret1": 0.16697819314641738,
+     "va": 7246890300.0,
+     "rank_all": 5,
+     "score": 3.42,
+     "ul1": 2273.0,
+     "strong": false,
+     "vol20": 0.0388,
+     "dev25": 0.1387,
+     "rng": 0.1511,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "5857",
+      "name": "ＡＲＥホールディングス",
+      "close": 3770.0,
+      "ret1": 0.228013029315961,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "3668",
+      "name": "コロプラ",
+      "close": 458.0,
+      "ret1": 0.19582245430809397,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 2
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "5857",
+      "name": "ＡＲＥホールディングス",
+      "close": 3770.0,
+      "ret1": 0.228013029315961,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 2,
+      "code": "3668",
+      "name": "コロプラ",
+      "close": 458.0,
+      "ret1": 0.19582245430809397,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "3401",
+      "name": "帝人",
+      "close": 1873.0,
+      "ret1": 0.16697819314641738,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 50
+   },
+   "asobi": null,
+   "own_sent": true
   }
  },
  "scores": {
@@ -1970,6 +2170,103 @@
       "open": 773.0,
       "close": 773.0,
       "yen": 0
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-05": {
+   "trade_day": "2026-11-05",
+   "asof": "2026-11-04",
+   "made": "2026-11-05 18:05",
+   "items": [
+    {
+     "f3": true,
+     "code": "5341",
+     "name": "ＡＳＡＨＩ　ＥＩＴＯホー",
+     "rank_all": 1,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 241.0,
+     "close": 197.0,
+     "high": 247.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "6721",
+     "name": "ウインテスト",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 144.0,
+     "close": 129.0,
+     "high": 148.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "593A",
+     "name": "ティアフォー",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 2750.0,
+     "close": 2335.0,
+     "high": 2788.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-05",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "6370",
+      "name": "栗田工業",
+      "close_prev": 5347.0,
+      "legs": [
+       {
+        "lim": 5510.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 5347.0,
+      "close": 5358.0,
+      "high": 5443.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "4052",
+      "name": "フィーチャ",
+      "close_prev": 776.0,
+      "legs": [
+       {
+        "lim": 800.0,
+        "shares": 300,
+        "sell": 841.0,
+        "pct": 20.689655172413794
+       },
+       {
+        "lim": 870.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 841.0,
+      "close": 667.0,
+      "high": 842.0,
+      "yen": 52200,
+      "sclose": false
      }
     ],
     "sent": true
