@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-04",
+ "last_signal_date": "2026-11-05",
  "positions": [
   {
    "ticker": "6521.T",
@@ -834,7 +834,13 @@
    "shares": 200,
    "rsi": 31.9,
    "runup5": -7.1,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2145.0,
+   "exit_date": "2026-11-05",
+   "exit": 1675.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -21.91,
+   "pnl_yen": -94000
   },
   {
    "ticker": "2413.T",
@@ -845,6 +851,89 @@
    "shares": 200,
    "rsi": 39.2,
    "runup5": -5.4,
+   "status": "closed",
+   "entry": 1784.5,
+   "exit_date": "2026-11-05",
+   "exit": 1780.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.25,
+   "pnl_yen": -900
+  },
+  {
+   "ticker": "6963.T",
+   "name": "ローム",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 3200.0,
+   "shares": 100,
+   "rsi": 22.1,
+   "runup5": -16.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "6724.T",
+   "name": "セイコーエプソン",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 2926.0,
+   "shares": 100,
+   "rsi": 26.7,
+   "runup5": -14.7,
+   "status": "pending"
+  },
+  {
+   "ticker": "5301.T",
+   "name": "東海カーボン",
+   "type": "第３四半期",
+   "date": "2026-11-05",
+   "signal_price": 1660.5,
+   "shares": 300,
+   "rsi": 27.4,
+   "runup5": -15.9,
+   "status": "pending"
+  },
+  {
+   "ticker": "6622.T",
+   "name": "ダイヘン",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 1972.0,
+   "shares": 200,
+   "rsi": 28.1,
+   "runup5": -17.2,
+   "status": "pending"
+  },
+  {
+   "ticker": "3110.T",
+   "name": "日東紡績",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 2319.5,
+   "shares": 200,
+   "rsi": 28.6,
+   "runup5": -23.3,
+   "status": "pending"
+  },
+  {
+   "ticker": "5384.T",
+   "name": "フジミインコーポレーテッド",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 2754.0,
+   "shares": 100,
+   "rsi": 29.2,
+   "runup5": -15.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "7731.T",
+   "name": "ニコン",
+   "type": "第２四半期",
+   "date": "2026-11-05",
+   "signal_price": 1644.0,
+   "shares": 300,
+   "rsi": 39.2,
+   "runup5": -6.4,
    "status": "pending"
   }
  ],

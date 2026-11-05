@@ -1070,5 +1070,73 @@
    "runup5": -3.3,
    "price": 2325.0
   }
+ ],
+ "2026-11-05": [
+  {
+   "ticker": "4042.T",
+   "name": "東ソー",
+   "vol": 0.89,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 34.6,
+   "runup5": -4.8,
+   "price": 2471.0
+  },
+  {
+   "ticker": "4188.T",
+   "name": "三菱ケミカルグループ",
+   "vol": 1.22,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 31.5,
+   "runup5": -11.2,
+   "price": 1051.0
+  },
+  {
+   "ticker": "5201.T",
+   "name": "ＡＧＣ",
+   "vol": 1.71,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 24.2,
+   "runup5": -9.2,
+   "price": 4973.0
+  },
+  {
+   "ticker": "6590.T",
+   "name": "芝浦メカトロニクス",
+   "vol": 4.33,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 24.6,
+   "runup5": -25.1,
+   "price": 2547.0
+  },
+  {
+   "ticker": "6703.T",
+   "name": "沖電気工業",
+   "vol": 2.3,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 40.4,
+   "runup5": -3.6,
+   "price": 2426.0
+  },
+  {
+   "ticker": "8020.T",
+   "name": "兼松",
+   "vol": 0.95,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 46.9,
+   "runup5": -4.0,
+   "price": 2273.0
+  }
  ]
 }
