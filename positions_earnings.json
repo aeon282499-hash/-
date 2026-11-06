@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-05",
+ "last_signal_date": "2026-11-06",
  "positions": [
   {
    "ticker": "6521.T",
@@ -868,7 +868,13 @@
    "shares": 100,
    "rsi": 22.1,
    "runup5": -16.4,
-   "status": "pending"
+   "status": "closed",
+   "entry": 3246.0,
+   "exit_date": "2026-11-06",
+   "exit": 2566.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -20.95,
+   "pnl_yen": -68000
   },
   {
    "ticker": "6724.T",
@@ -879,7 +885,13 @@
    "shares": 100,
    "rsi": 26.7,
    "runup5": -14.7,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2904.0,
+   "exit_date": "2026-11-06",
+   "exit": 2704.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -6.89,
+   "pnl_yen": -20000
   },
   {
    "ticker": "5301.T",
@@ -890,7 +902,13 @@
    "shares": 300,
    "rsi": 27.4,
    "runup5": -15.9,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1671.0,
+   "exit_date": "2026-11-06",
+   "exit": 1551.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -7.18,
+   "pnl_yen": -36000
   },
   {
    "ticker": "6622.T",
@@ -901,7 +919,13 @@
    "shares": 200,
    "rsi": 28.1,
    "runup5": -17.2,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2004.0,
+   "exit_date": "2026-11-06",
+   "exit": 1634.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -18.46,
+   "pnl_yen": -74000
   },
   {
    "ticker": "3110.T",
@@ -912,7 +936,13 @@
    "shares": 200,
    "rsi": 28.6,
    "runup5": -23.3,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2321.0,
+   "exit_date": "2026-11-06",
+   "exit": 1931.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -16.8,
+   "pnl_yen": -78000
   },
   {
    "ticker": "5384.T",
@@ -923,7 +953,13 @@
    "shares": 100,
    "rsi": 29.2,
    "runup5": -15.8,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2750.0,
+   "exit_date": "2026-11-06",
+   "exit": 2503.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -8.98,
+   "pnl_yen": -24700
   },
   {
    "ticker": "7731.T",
@@ -934,6 +970,89 @@
    "shares": 300,
    "rsi": 39.2,
    "runup5": -6.4,
+   "status": "closed",
+   "entry": 1651.5,
+   "exit_date": "2026-11-06",
+   "exit": 1612.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -2.36,
+   "pnl_yen": -11700
+  },
+  {
+   "ticker": "3687.T",
+   "name": "フィックスターズ",
+   "type": "本決算",
+   "date": "2026-11-06",
+   "signal_price": 1560.0,
+   "shares": 300,
+   "rsi": 19.3,
+   "runup5": -16.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "6996.T",
+   "name": "ニチコン",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 1770.0,
+   "shares": 200,
+   "rsi": 20.2,
+   "runup5": -21.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "7721.T",
+   "name": "東京計器",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 4760.0,
+   "shares": 100,
+   "rsi": 20.2,
+   "runup5": -16.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "6925.T",
+   "name": "ウシオ電機",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 2679.0,
+   "shares": 100,
+   "rsi": 20.7,
+   "runup5": -21.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "6479.T",
+   "name": "ミネベアミツミ",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 2698.0,
+   "shares": 100,
+   "rsi": 23.1,
+   "runup5": -17.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "8012.T",
+   "name": "長瀬産業",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 1071.5,
+   "shares": 400,
+   "rsi": 31.7,
+   "runup5": -16.3,
+   "status": "pending"
+  },
+  {
+   "ticker": "6315.T",
+   "name": "ＴＯＷＡ",
+   "type": "第２四半期",
+   "date": "2026-11-06",
+   "signal_price": 1761.0,
+   "shares": 200,
+   "rsi": 33.3,
+   "runup5": -20.1,
    "status": "pending"
   }
  ],

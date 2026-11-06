@@ -1138,5 +1138,172 @@
    "runup5": -4.0,
    "price": 2273.0
   }
+ ],
+ "2026-11-06": [
+  {
+   "ticker": "1332.T",
+   "name": "ニッスイ",
+   "vol": 0.95,
+   "why": "vol",
+   "last_time": "12:00",
+   "bucket": "場中",
+   "rsi": 31.5,
+   "runup5": -6.6,
+   "price": 1018.5
+  },
+  {
+   "ticker": "1515.T",
+   "name": "日鉄鉱業",
+   "vol": 0.91,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 32.2,
+   "runup5": -9.9,
+   "price": 2568.0
+  },
+  {
+   "ticker": "1951.T",
+   "name": "エクシオグループ",
+   "vol": 2.16,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 20.7,
+   "runup5": -12.5,
+   "price": 2247.0
+  },
+  {
+   "ticker": "3315.T",
+   "name": "日本コークス工業",
+   "vol": 1.05,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 23.6,
+   "runup5": -6.0,
+   "price": 79.0
+  },
+  {
+   "ticker": "5830.T",
+   "name": "いよぎんホールディングス",
+   "vol": 0.98,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 25.2,
+   "runup5": -13.0,
+   "price": 2922.0
+  },
+  {
+   "ticker": "6143.T",
+   "name": "ソディック",
+   "vol": 1.89,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 24.9,
+   "runup5": -14.7,
+   "price": 1278.0
+  },
+  {
+   "ticker": "6332.T",
+   "name": "月島ホールディングス",
+   "vol": 1.87,
+   "why": "vol",
+   "last_time": "17:00",
+   "bucket": "引け後",
+   "rsi": 26.4,
+   "runup5": -9.2,
+   "price": 2171.0
+  },
+  {
+   "ticker": "6674.T",
+   "name": "ジーエス・ユアサ　コーポレーション",
+   "vol": 2.99,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 23.3,
+   "runup5": -13.0,
+   "price": 4153.0
+  },
+  {
+   "ticker": "7011.T",
+   "name": "三菱重工業",
+   "vol": 1.15,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 17.6,
+   "runup5": -18.0,
+   "price": 2869.5
+  },
+  {
+   "ticker": "7272.T",
+   "name": "ヤマハ発動機",
+   "vol": 2.53,
+   "why": "announced",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 37.1,
+   "runup5": -4.3,
+   "price": 1659.5
+  },
+  {
+   "ticker": "8078.T",
+   "name": "阪和興業",
+   "vol": 0.98,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 31.3,
+   "runup5": -6.2,
+   "price": 1734.0
+  },
+  {
+   "ticker": "8346.T",
+   "name": "東邦銀行",
+   "vol": 0.83,
+   "why": "vol",
+   "last_time": "12:00",
+   "bucket": "場中",
+   "rsi": 27.6,
+   "runup5": -16.1,
+   "price": 827.0
+  },
+  {
+   "ticker": "8359.T",
+   "name": "八十二長野銀行",
+   "vol": 1.06,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 31.5,
+   "runup5": -8.7,
+   "price": 2250.0
+  },
+  {
+   "ticker": "8393.T",
+   "name": "宮崎銀行",
+   "vol": 0.84,
+   "why": "vol",
+   "last_time": "12:20",
+   "bucket": "場中",
+   "rsi": 29.2,
+   "runup5": -14.0,
+   "price": 2139.0
+  },
+  {
+   "ticker": "8424.T",
+   "name": "芙蓉総合リース",
+   "vol": 0.82,
+   "why": "vol",
+   "last_time": "16:00",
+   "bucket": "引け後",
+   "rsi": 36.3,
+   "runup5": -3.5,
+   "price": 4091.0
+  }
  ]
 }
