@@ -359,13 +359,13 @@
     "direction": "SELL",
     "prev_close": 5044.0,
     "limit_price": null,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
-    "pnl_pct": null,
+    "entry_open": 4857.0,
+    "status": "closed",
+    "hold_days": 1,
+    "pnl_pct": 5.0,
     "unrealized_pnl": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "TP",
+    "exit_date": "2026-11-06"
   },
   {
     "signal_date": "2026-11-06",
@@ -375,13 +375,13 @@
     "direction": "SELL",
     "prev_close": 1900.0,
     "limit_price": null,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
-    "pnl_pct": null,
+    "entry_open": 1870.0,
+    "status": "closed",
+    "hold_days": 1,
+    "pnl_pct": 2.433,
     "unrealized_pnl": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-11-06"
   },
   {
     "signal_date": "2026-11-06",
@@ -391,13 +391,13 @@
     "direction": "SELL",
     "prev_close": 3638.0,
     "limit_price": null,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
-    "pnl_pct": null,
+    "entry_open": 3604.0,
+    "status": "closed",
+    "hold_days": 1,
+    "pnl_pct": 4.023,
     "unrealized_pnl": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "RSI",
+    "exit_date": "2026-11-06"
   },
   {
     "signal_date": "2026-11-06",
@@ -407,13 +407,13 @@
     "direction": "SELL",
     "prev_close": 1557.5,
     "limit_price": null,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
-    "pnl_pct": null,
+    "entry_open": 1541.5,
+    "status": "closed",
+    "hold_days": 1,
+    "pnl_pct": 5.0,
     "unrealized_pnl": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "TP",
+    "exit_date": "2026-11-06"
   },
   {
     "signal_date": "2026-11-06",
@@ -423,11 +423,11 @@
     "direction": "SELL",
     "prev_close": 5606.0,
     "limit_price": null,
-    "entry_open": null,
-    "status": "pending",
-    "hold_days": 0,
+    "entry_open": 5328.0,
+    "status": "open",
+    "hold_days": 1,
     "pnl_pct": null,
-    "unrealized_pnl": null,
+    "unrealized_pnl": -0.676,
     "exit_type": null,
     "exit_date": null
   }

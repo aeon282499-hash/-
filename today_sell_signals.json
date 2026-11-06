@@ -1,35 +1,4 @@
 {
-  "date": "2026-11-06",
-  "signals": [
-    {
-      "ticker": "8795.T",
-      "name": "Ｔ＆Ｄホールディングス",
-      "direction": "SELL",
-      "prev_close": 5044.0
-    },
-    {
-      "ticker": "4732.T",
-      "name": "ユー・エス・エス",
-      "direction": "SELL",
-      "prev_close": 1900.0
-    },
-    {
-      "ticker": "5947.T",
-      "name": "リンナイ",
-      "direction": "SELL",
-      "prev_close": 3638.0
-    },
-    {
-      "ticker": "9143.T",
-      "name": "ＳＧホールディングス",
-      "direction": "SELL",
-      "prev_close": 1557.5
-    },
-    {
-      "ticker": "6586.T",
-      "name": "マキタ",
-      "direction": "SELL",
-      "prev_close": 5606.0
-    }
-  ]
+  "date": "2026-11-09",
+  "signals": []
 }

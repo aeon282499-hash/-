@@ -1,31 +1,70 @@
 {
-  "date": "2026-11-06",
+  "date": "2026-11-09",
   "signals": [
     {
-      "ticker": "4063.T",
-      "name": "信越化学工業",
+      "ticker": "3626.T",
+      "name": "ＴＩＳＩ",
       "direction": "BUY",
-      "prev_close": 5693.0,
-      "limit_price": 5740,
-      "days_cover": 0.46547477885236554,
-      "rsi": 37.45,
-      "deviation": -4.83,
-      "vol_ratio": 1.67,
-      "range_ratio": 1.86,
-      "turnover": 61195687200.0
+      "prev_close": 4116.0,
+      "limit_price": 4155,
+      "days_cover": 0.1099203110029673,
+      "rsi": 40.87,
+      "deviation": -3.59,
+      "vol_ratio": 2.12,
+      "range_ratio": 1.23,
+      "turnover": 7839447300.0
     },
     {
-      "ticker": "6305.T",
-      "name": "日立建機",
+      "ticker": "9503.T",
+      "name": "関西電力",
       "direction": "BUY",
-      "prev_close": 5250.0,
-      "limit_price": 5300,
-      "days_cover": 0.3721309134431907,
-      "rsi": 43.54,
-      "deviation": -3.02,
-      "vol_ratio": 0.91,
-      "range_ratio": 1.66,
-      "turnover": 5253125000.0
+      "prev_close": 2554.5,
+      "limit_price": 2580,
+      "days_cover": 0.19480482495874912,
+      "rsi": 38.67,
+      "deviation": -4.81,
+      "vol_ratio": 1.48,
+      "range_ratio": 1.58,
+      "turnover": 15738757400.0
+    },
+    {
+      "ticker": "3116.T",
+      "name": "トヨタ紡織",
+      "direction": "BUY",
+      "prev_close": 2013.0,
+      "limit_price": 2033,
+      "days_cover": 0.3100895526271735,
+      "rsi": 38.89,
+      "deviation": -4.63,
+      "vol_ratio": 1.91,
+      "range_ratio": 1.68,
+      "turnover": 2953169700.0
+    },
+    {
+      "ticker": "3407.T",
+      "name": "旭化成",
+      "direction": "BUY",
+      "prev_close": 1490.5,
+      "limit_price": 1505,
+      "days_cover": 0.2617622575175812,
+      "rsi": 32.52,
+      "deviation": -7.11,
+      "vol_ratio": 2.76,
+      "range_ratio": 2.73,
+      "turnover": 19318339300.0
+    },
+    {
+      "ticker": "3941.T",
+      "name": "レンゴー",
+      "direction": "BUY",
+      "prev_close": 1455.5,
+      "limit_price": 1470,
+      "days_cover": 0.5540778133743927,
+      "rsi": 33.95,
+      "deviation": -6.12,
+      "vol_ratio": 1.89,
+      "range_ratio": 2.23,
+      "turnover": 3393612250.0
     }
   ]
 }
