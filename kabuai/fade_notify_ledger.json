@@ -1496,6 +1496,102 @@
    },
    "asobi": null,
    "own_sent": true
+  },
+  "2026-11-09": {
+   "asof": "2026-11-06",
+   "trade_day": "2026-11-09",
+   "made": "2026-11-06 18:09",
+   "n_cand": 2,
+   "rule_a": null,
+   "rule_a_why": "1位 4475 は除外（決算起因）",
+   "rows": [
+    {
+     "code": "4475",
+     "code5": "44750",
+     "name": "ＨＥＮＮＧＥ",
+     "mkt": "プライム",
+     "close": 2211.0,
+     "ret1": 0.22087244616234125,
+     "va": 4471080300.0,
+     "rank_all": 1,
+     "score": 3.5,
+     "ul1": 2711.0,
+     "strong": true,
+     "vol20": 0.0777,
+     "dev25": 0.1079,
+     "rng": 0.1403,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "4635",
+     "code5": "46350",
+     "name": "東京インキ",
+     "mkt": "スタンダード",
+     "close": 2076.0,
+     "ret1": 0.08181344450234507,
+     "va": 893547900.0,
+     "rank_all": 2,
+     "score": 2.5,
+     "ul1": 2576.0,
+     "strong": false,
+     "vol20": 0.0326,
+     "dev25": 0.0518,
+     "rng": 0.1694,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4475",
+      "name": "ＨＥＮＮＧＥ",
+      "close": 2211.0,
+      "ret1": 0.22087244616234125,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 1
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4475",
+      "name": "ＨＥＮＮＧＥ",
+      "close": 2211.0,
+      "ret1": 0.22087244616234125,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 2
+   },
+   "asobi": null,
+   "own_sent": true
   }
  },
  "scores": {
@@ -2266,6 +2362,126 @@
       "close": 667.0,
       "high": 842.0,
       "yen": 52200,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-06": {
+   "trade_day": "2026-11-06",
+   "asof": "2026-11-05",
+   "made": "2026-11-06 18:05",
+   "items": [
+    {
+     "f3": true,
+     "code": "2345",
+     "name": "ＨＯＤＬ１",
+     "rank_all": 1,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 113.0,
+     "close": 118.0,
+     "high": 134.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "4565",
+     "name": "ネクセラファーマ",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1611.0,
+     "close": 1587.0,
+     "high": 1683.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "3668",
+     "name": "コロプラ",
+     "rank_all": 3,
+     "skip": "決算起因",
+     "legs": [],
+     "open": 434.0,
+     "close": 413.0,
+     "high": 445.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-06",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "5857",
+      "name": "ＡＲＥホールディングス",
+      "close_prev": 3770.0,
+      "legs": [
+       {
+        "lim": 4225.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 3545.0,
+      "close": 3580.0,
+      "high": 3720.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "3668",
+      "name": "コロプラ",
+      "close_prev": 458.0,
+      "legs": [
+       {
+        "lim": 472.0,
+        "shares": 500,
+        "sell": null
+       },
+       {
+        "lim": 513.0,
+        "shares": 900,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 434.0,
+      "close": 413.0,
+      "high": 445.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "3401",
+      "name": "帝人",
+      "close_prev": 1873.0,
+      "legs": [
+       {
+        "lim": 1930.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2098.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1772.5,
+      "close": 1690.5,
+      "high": 1815.5,
+      "yen": 0,
       "sclose": false
      }
     ],

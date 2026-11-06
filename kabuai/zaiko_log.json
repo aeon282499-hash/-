@@ -286,5 +286,30 @@
   ],
   "made": "2026-11-06T04:55:56+09:00",
   "sent": false
+ },
+ "2026-11-09": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4475",
+    "name": "ＨＥＮＮＧＥ",
+    "close": 2211.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-06T18:45:03+09:00",
+  "sent": false
  }
 }
