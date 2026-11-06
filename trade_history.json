@@ -2079,6 +2079,26 @@
       "close": 2111.0,
       "pnl": -0.19,
       "win": false
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "4063.T",
+      "name": "信越化学工業",
+      "direction": "BUY",
+      "open": 5304.0,
+      "close": 5312.0,
+      "pnl": 0.15,
+      "win": true
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "6305.T",
+      "name": "日立建機",
+      "direction": "BUY",
+      "open": 4880.0,
+      "close": 4827.0,
+      "pnl": -1.09,
+      "win": false
     }
   ]
 }

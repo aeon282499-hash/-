@@ -219,6 +219,56 @@
       "close": 3433.0,
       "pnl": -3.94,
       "win": false
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "8795.T",
+      "name": "Ｔ＆Ｄホールディングス",
+      "direction": "SELL",
+      "open": 4857.0,
+      "close": 4602.0,
+      "pnl": 5.25,
+      "win": true
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "4732.T",
+      "name": "ユー・エス・エス",
+      "direction": "SELL",
+      "open": 1870.0,
+      "close": 1824.5,
+      "pnl": 2.43,
+      "win": true
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "5947.T",
+      "name": "リンナイ",
+      "direction": "SELL",
+      "open": 3604.0,
+      "close": 3459.0,
+      "pnl": 4.02,
+      "win": true
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "9143.T",
+      "name": "ＳＧホールディングス",
+      "direction": "SELL",
+      "open": 1541.5,
+      "close": 1469.5,
+      "pnl": 4.67,
+      "win": true
+    },
+    {
+      "date": "2026-11-06",
+      "ticker": "6586.T",
+      "name": "マキタ",
+      "direction": "SELL",
+      "open": 5328.0,
+      "close": 5364.0,
+      "pnl": -0.68,
+      "win": false
     }
   ]
 }
