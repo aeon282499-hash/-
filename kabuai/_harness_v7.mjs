@@ -59,7 +59,7 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 15, `${ev("ROUTES.length")}本`);
+check("ROUTES登録", ev("ROUTES.length") === 16, `${ev("ROUTES.length")}本`);   // v8.5 #/search・v8.6 #/news で16本（ナビから外した画面も直リンクで生存）
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
@@ -256,7 +256,7 @@ for (const c of codes) {
 hv = go("#/about"); check("使い方 v8.4.1", clean(hv) && hv.includes("v8.4.1") && hv.includes("空売り") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは6本（ランキング/空売り/初動/作戦/電卓/AI調教）v8.4", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 6 && html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && html.includes('id="nav-shodo"') && html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+check("ナビは3本（ランキング/電卓/AI調教）v8.7", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 3 && !html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && !html.includes('id="nav-shodo"') && !html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
 hv = go("#/short"); check("🩳空売り v8.4: 描画（データ有＝一覧・無＝空メッセージ）", clean(hv) && hv.includes("🩳 空売り") && ((hv.includes("gchip") && hv.includes("空売り残高が多い")) || hv.includes("付いていません")));
 hv = go("#/"); check("🐵ランキング v8.4: 売残ゲージと🔥カードは出さない", clean(hv) && !hv.includes("shortsum") && !hv.includes("smeter") && !hv.includes("売残多い順"));
 hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
