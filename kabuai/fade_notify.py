@@ -793,15 +793,20 @@ def _own_tags(x: dict) -> str:
 # 本人chの入れ方 v2（2026-11-04 本人「両方を見て同じ銘柄は1回だけ、入れ方は+3%を残す案にする形。これがいいね」）
 #  今日の3本＋友達chの1〜3位（今日の3本に無い銘柄）を、同じ銘柄は1回だけ。金額の1/3を+3%・2/3を+12%。
 #  株数は「売った日にストップ高で引けても損が7万以内」から逆算（建玉は最大75万）。+3%の段で100株に届かない値段は+12%に一発。
+#  11/10〜 その一発が100株になる値段（AREの3,770円など）は100株ずつ2段（本人 11/7「AREのような銘柄は100株＋100株でいいよ」）。
+#   このときだけS高引けの損は7万を超えることがある。一発が200株以上の値段（HENNGE 2,211円など）は今のまま一発＝測ると一発のほうが儲かる。
 #  検証(uwick_bt/fade5y・J-Q 5年・料0.3%): 年平均 中間+578万/悲観+431万・DD48/78万・最悪月-14/-48万（今の3本だけ 50万2段: +441/+314万・64/103万・-42/-72万）
+#   100株ずつ2段を入れると(scratchpad two100b.py) 年平均 中間+598万/悲観+443万・DD 70/96万・最悪月 -30/-49万・S高引けの損の最大 7.0→12.3万
 OWN_V2_FROM = "2026-11-06"        # この取引日から v2（11/05分は旧ルールで配信済み）
+OWN_ARE100_FROM = "2026-11-10"    # この取引日から「一発100株の値段は100株ずつ2段」（11/09分までは一発で配信済み＝答え合わせも配信どおり）
 OWN_LEGS = ((0.03, 1 / 3), (0.12, 2 / 3))
 OWN_RISK_YEN = 70_000
 OWN_CAP_YEN = 750_000
 
 
-def own_ladder(close: float, legs=OWN_LEGS) -> list:
-    """[(指値, 株数), ...]。ストップ高で引けたときの損が OWN_RISK_YEN 以内に収まる株数。収まらなければ []。legs はおまけ2桁が差し替える。"""
+def own_ladder(close: float, legs=OWN_LEGS, are100: bool = False) -> list:
+    """[(指値, 株数), ...]。ストップ高で引けたときの損が OWN_RISK_YEN 以内に収まる株数。収まらなければ []。legs はおまけ2桁が差し替える。
+    are100=True: +12%に一発が100株になる値段は+3%にも100株（100株ずつ2段）。このときだけ損は OWN_RISK_YEN を超えることがある。"""
     S = close + band(close)
     Ls = [(_lim(close, k), w) for k, w in legs]
     Ls = [(L, w) for L, w in Ls if L < S]
@@ -813,13 +818,16 @@ def own_ladder(close: float, legs=OWN_LEGS) -> list:
         return [(L, s) for (L, w), s in zip(Ls, sh)]
     L0 = max(Ls, key=lambda t: t[1])[0]
     s0 = int(min(OWN_CAP_YEN, OWN_RISK_YEN / ((S - L0) / L0)) / L0 // 100 * 100)
+    if are100 and s0 == 100 and len(Ls) > 1:
+        return [(L, 100) for L, w in Ls]
     return [(L0, s0)] if s0 >= 100 else []
 
 
 def own_orders(plan: dict) -> list:
     """本人chの注文の一覧（配信と答え合わせで同じものを使う）。[{x, lad, kind(3本/友達/遊び), same}]"""
     v2 = plan["trade_day"] >= OWN_V2_FROM
-    lad = own_ladder if v2 else top3_ladder
+    are100 = plan["trade_day"] >= OWN_ARE100_FROM
+    lad = (lambda c: own_ladder(c, are100=are100)) if v2 else top3_ladder
     top = (plan.get("top3") or {}).get("rows", [])
     fgo = [x for x in friend_picks(plan) if not x["skip"]] if plan.get("rows") else []
     fcodes, tcodes = {x["code"] for x in fgo}, {x["code"] for x in top}
@@ -852,7 +860,9 @@ def own_payload(plan: dict) -> dict:
         tail = "　※友達chと同じ銘柄・入れるのは1回だけ" if o["same"] else ("　※友達chの銘柄" if o["kind"] == "友達" else "")
         lines.append(f"{head}　{_order_txt(o['lad'])}{tail}"); n += 1
         cancel.append((x["name"], x["close"] + band(x["close"])))
-        notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・" + (_own_tags(x) if o["kind"] == "3本" else _friend_tags(x)))
+        worst = sum((x["close"] + band(x["close"]) - L) * s for L, s in o["lad"])
+        over = f"・S高で引けたら損{worst / 1e4:.1f}万" if v2 and worst > OWN_RISK_YEN else ""
+        notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・" + (_own_tags(x) if o["kind"] == "3本" else _friend_tags(x)) + over)
     if not (plan.get("top3") or {}).get("rows"):
         lines.insert(0, f"今日の3本　候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
     a = plan.get("asobi")
@@ -880,7 +890,8 @@ def own_payload(plan: dict) -> dict:
     lines += notes
     if v2:
         lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{OWN_RISK_YEN // 10000}万以内の株数（建玉は最大{OWN_CAP_YEN // 10000}万）。"
-                     "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発）。"
+                     "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発" +
+                     ("。その一発が100株になる値段は100株ずつ2段で、損が7万を超えることがある）。" if plan["trade_day"] >= OWN_ARE100_FROM else "）。") +
                      f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。友達chの1〜3位で今日の3本に無い銘柄も同じ入れ方で載せる。"
                      f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
         if plan.get("keta2"):
