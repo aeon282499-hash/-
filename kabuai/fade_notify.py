@@ -747,6 +747,41 @@ def asobi_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
                 earn=bool(earn is not None and c5 in earn))
 
 
+# おまけ2桁（2026-11-07 本人「これをおまけにすればいいのでは？」・11/6 シンバイオ4582 を81円＋90円で実弾）:
+#  終値30〜99円で、ストップ高で引けて、売買代金10億以上 → 翌日 +15% と +25% に半分ずつ指値（損切りなし・引成）。
+#  株数は本人chと同じ「ストップ高で引けても損が7万以内」（建玉は最大75万）。遊び・今日の3本は終値100円以上なので重ならない。
+#  検証(scratchpad sub100c.py・J-Q 5年・料0.3%・S高引けの買い戻しは引けと翌寄りの平均/悲観は翌寄り): 23本中19回約定 勝率79%
+#  PF6.20/悲観4.46・年平均+23.7/+21.9万・年別すべてプラス・代金3億以上(33本)に広げても同じ形が最良。
+#  指値をもっと上げると約定が減って合計は減る（+30%だけ 年+14万）。年に4〜5本しか出ない＝数字はぶれる。
+KETA2_PX = (30.0, 100.0)
+KETA2_VA_MIN = 1e9
+KETA2_LEGS = ((0.15, 0.5), (0.25, 0.5))
+KETA2_MAX = 2
+
+
+def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss, alert, jsf_list, earn) -> list:
+    """2桁株のストップ高引け（代金10億以上）。[{code, name, close, ret1, va, lad, ...}]。無ければ []。"""
+    b = bars if universe is None else bars[bars["Code"].isin(universe)]
+    b = b[b["Code"].map(is_common)]
+    f = add_features(b)
+    f = f.assign(nbars=f.groupby("Code")["C"].transform("size"))
+    d = f[(f["Date"] == pd.Timestamp(asof)) & (f["C"] >= KETA2_PX[0]) & (f["C"] < KETA2_PX[1]) & (f["Va"] >= KETA2_VA_MIN)
+          & (f["ret1"] >= TOP3_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS) & f["prevC"].notna()]
+    sclose = np.array([c >= p + band(p) - 1e-9 for c, p in zip(d["C"], d["prevC"])], dtype=bool)
+    d = d[sclose].sort_values(["Va", "Code"], ascending=[False, True])
+    names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
+    out = []
+    for r in d.head(KETA2_MAX).itertuples():
+        c5, c4 = str(r.Code), code4(r.Code)
+        al = alert.get(c4) or {}; jt = jsf_list.get(c4, "")
+        out.append(dict(code=c4, name=str(names.get(c5, ""))[:12], close=float(r.C), ret1=float(r.ret1), va=float(r.Va),
+                        lad=[[L, s] for L, s in own_ladder(float(r.C), KETA2_LEGS)], n=int(len(d)),
+                        seido="○" if iss.get(c4) == "2" else ("×" if iss.get(c4) else "?"),
+                        jsf_stop=bool(al.get("jsf_stop")) or "停止" in jt, jsf_warn=bool(al.get("jsf_warn")) or "注意喚起" in jt,
+                        earn=bool(earn is not None and c5 in earn)))
+    return out
+
+
 def _own_tags(x: dict) -> str:
     tags = [{"○": "制度信用○", "×": "制度信用×（一般信用の在庫次第）", "?": "貸借区分なし"}[x["seido"]]]
     if x["jsf_stop"]: tags.append("🚫売り禁（一般信用の在庫が要る）")
@@ -765,10 +800,10 @@ OWN_RISK_YEN = 70_000
 OWN_CAP_YEN = 750_000
 
 
-def own_ladder(close: float) -> list:
-    """[(指値, 株数), ...]。ストップ高で引けたときの損が OWN_RISK_YEN 以内に収まる株数。収まらなければ []。"""
+def own_ladder(close: float, legs=OWN_LEGS) -> list:
+    """[(指値, 株数), ...]。ストップ高で引けたときの損が OWN_RISK_YEN 以内に収まる株数。収まらなければ []。legs はおまけ2桁が差し替える。"""
     S = close + band(close)
-    Ls = [(_lim(close, k), w) for k, w in OWN_LEGS]
+    Ls = [(_lim(close, k), w) for k, w in legs]
     Ls = [(L, w) for L, w in Ls if L < S]
     if not Ls:
         return []
@@ -794,6 +829,9 @@ def own_orders(plan: dict) -> list:
     a = plan.get("asobi")
     if a and a.get("shares"):
         out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
+    for k in plan.get("keta2") or []:
+        if k.get("lad"):
+            out.append(dict(x=k, lad=[(L, s) for L, s in k["lad"]], kind="2桁", same=False))
     return out
 
 
@@ -806,7 +844,7 @@ def own_payload(plan: dict) -> dict:
     i = 0; n = 0
     for o in orders:
         x = o["x"]
-        if o["kind"] == "遊び":
+        if o["kind"] in ("遊び", "2桁"):
             continue
         head = f"{_CIRC[i]} `{x['code']}` {x['name']}"; i += 1
         if not o["lad"]:
@@ -827,6 +865,14 @@ def own_payload(plan: dict) -> dict:
         lines.append(f"🎲 遊び `{a['code']}` {a['name']}　見送り　100株で50万超")
     else:
         lines.append("🎲 遊び　なし")
+    for k in plan.get("keta2") or []:      # おまけ2桁（出た日だけ1行）
+        if k.get("lad"):
+            lines.append(f"🎲 2桁 `{k['code']}` {k['name']}　{_order_txt(k['lad'])}")
+            cancel.append((k["name"], k["close"] + band(k["close"])))
+            notes.append(f"-# {k['name']}（2桁）　前日終値 {k['close']:,.0f}円（{k['ret1']*100:+.1f}%・S高引け・代金{k['va']/1e8:.0f}億）・{_own_tags(k)}")
+            n += 1
+        else:
+            lines.append(f"🎲 2桁 `{k['code']}` {k['name']}　見送り　100株で損{OWN_RISK_YEN // 10000}万超")
     if cancel:
         lines.append(_cancel_line(cancel))
         lines.append(BUYBACK_LINE)
@@ -837,6 +883,9 @@ def own_payload(plan: dict) -> dict:
                      "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発）。"
                      f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。友達chの1〜3位で今日の3本に無い銘柄も同じ入れ方で載せる。"
                      f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+        if plan.get("keta2"):
+            lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
+                         f"+{KETA2_LEGS[0][0]*100:.0f}%と+{KETA2_LEGS[1][0]*100:.0f}%に半分ずつ。株数の決め方は上と同じ。年に4〜5本しか出ない。損切りなし")
     else:
         lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
                      f"（2段に分けられない値段は+{TOP3_LIMIT_PCT*100:.0f}%に一発・100株で50万超は100株だけ・最大100万）。"
@@ -985,7 +1034,7 @@ def own_score_payload(own: dict, ledger: dict) -> dict:
     td = datetime.fromisoformat(own["trade_day"])
     lines = []
     for it in own["items"]:
-        mark = "🎲" if it["kind"] == "遊び" else "🩳"
+        mark = "🎲" if it["kind"] in ("遊び", "2桁") else "🩳"
         head = f"{mark} `{it['code']}` {it['name']}"
         if it["status"] in ("日足なし", "寄りS高張り付き→取消", "届かず"):
             extra = ""
@@ -1139,6 +1188,11 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     plan["new1"] = new1_plan(cand, master, iss, alert, jsf_list)
     plan["top3"] = top3_plan(cand, master, iss, alert, jsf_list, earn)
     plan["asobi"] = asobi_plan(bars, day, universe, master, iss, alert, jsf_list, earn)
+    try:
+        plan["keta2"] = keta2_plan(bars, day, universe, master, iss, alert, jsf_list, earn)
+    except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
+        log(f"おまけ2桁の計算失敗（本線は続行）: {type(e).__name__}: {e}")
+        plan["keta2"] = []
     payload = plan_payload(plan)
     hold = os.getenv("FADE_NOTIFY_HOLD_UNTIL", "").strip()   # クラウド: 計算は先に済ませ、送るのは定刻（例 18:45 JST）
     if hold and not dry_run:
@@ -1172,6 +1226,7 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
     codes5 += [x["code"] + "0" for x in (plan.get("top3") or {}).get("rows", [])]
     if plan.get("asobi"):
         codes5.append(plan["asobi"]["code"] + "0")
+    codes5 += [k["code"] + "0" for k in plan.get("keta2") or []]
     try:
         bars = fetch_day_bars_for(codes5, day)
     except Exception as e:  # noqa: BLE001
@@ -1182,7 +1237,7 @@ def run_score(day: date, dry_run: bool, force: bool) -> int:
         log(f"{day:%m/%d} の日足がまだ無い → 18:45 の evening でまとめて採点")
         return 1
     score = build_score(plan, bars)
-    if plan.get("top3") or plan.get("asobi"):
+    if plan.get("top3") or plan.get("asobi") or plan.get("keta2"):
         score["own"] = build_own_score(plan, bars)    # 本人ch（今日の3本＋遊び）の答え合わせ（2026-10-31）
     if not dry_run:
         led["scores"][day.isoformat()] = score      # 通算に今日を含めてから本文を作る
