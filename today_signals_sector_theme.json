@@ -1,17 +1,29 @@
 {
-  "date": "2026-11-06",
-  "fetched_at": "2026-11-05 23:11:42",
-  "signals": [],
+  "date": "2026-11-09",
+  "fetched_at": "2026-11-08 23:10:51",
+  "signals": [
+    {
+      "ticker": "9503.T",
+      "name": "関西電力",
+      "rsi": 38.67,
+      "deviation": -4.81,
+      "turnover_oku": 157.387574,
+      "prev_close": 2554.5,
+      "in_sector_top": false,
+      "in_theme": true,
+      "sector": "電気･ガス業"
+    }
+  ],
   "sell_signals": [],
   "diag": {
-    "raw_buy": 12,
-    "earnings_skip": 8,
+    "raw_buy": 11,
+    "earnings_skip": 4,
     "sector_pass": 0,
-    "theme_pass": 0,
-    "or_pass": 0,
+    "theme_pass": 1,
+    "or_pass": 1,
     "both_pass": 0,
-    "raw_sell": 10,
-    "sell_earnings_skip": 5,
+    "raw_sell": 0,
+    "sell_earnings_skip": 0,
     "sell_sector_pass": 0
   }
 }
