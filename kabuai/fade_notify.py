@@ -94,10 +94,23 @@ FRIEND_RANKS = 3
 FRIEND_V2_FROM = "2026-11-10"
 FRIEND_RANKS_V2 = 5
 FRIEND_LEGS_V2 = ((0.07, 2 / 3), (0.12, 1 / 3))
+# 11/11分から（本人 11/9「+12%の段が100株に届かない この場合は100株ずつ打つからそうして」）: 2段に分けて100株に届かない段も100株は入れる。
+#  検証(scratchpad friend_each_1109・1〜5位・5,000円以下・料0.3%・中間/悲観): 形が変わる玉 5年187本/年
+#   5年 1年あたり +529/+415万 → +569/+446万・PF1.97→2.02・減った幅 59/91→60/89万・最悪月 -36/-67→-40/-75万・建玉 最大54→110万
+#   20年 +306/+249万 → +327/+266万・減った幅 60/97→65/108万・最悪月 -37/-70→-49/-92万・負けた年 0/26 のまま
+FRIEND_EACH_FROM = "2026-11-11"
 RULE_LINE_V2 = ("前日終値+7%に約33万＋+12%に約17万の当日中指値で空売り → 約定した分は引け成行で買い戻し。損切り・利確なし。"
                 "届かなかった段は引けで消える。寄りがS高張り付き（寄値＝値幅上限）なら取消。"
                 "1本50万（2段に分けられない値段は+7%に50万一発）。1〜5位のうち+17%未満・100株で50万超は見送り（繰り上げない）。"
                 "決算起因・日証金の停止や注意喚起は見送りにしない（売れるかは在庫しだい）")
+RULE_LINE_V2B = ("前日終値+7%に約33万＋+12%に約17万の当日中指値で空売り → 約定した分は引け成行で買い戻し。損切り・利確なし。"
+                 "届かなかった段は引けで消える。寄りがS高張り付き（寄値＝値幅上限）なら取消。"
+                 "1本50万（100株に届かない段も100株は入れるので、高い銘柄は50万を超える）。1〜5位のうち+17%未満・100株で50万超は見送り（繰り上げない）。"
+                 "決算起因・日証金の停止や注意喚起は見送りにしない（売れるかは在庫しだい）")
+BT_LINE_V2B = ("検証(J-Quants 2021-11〜2026-10・上場廃止込み・料0.3%・滑り0.1%・全部売れた場合): 1〜5位 3,007本 約定57% "
+               "1年あたり+569万 PF2.02 最大DD60万（S高引けを翌朝に買い戻すと+446万）"
+               "／立花20年(2001〜2026/9・現存銘柄): 1年あたり+327万・負けた年0/26"
+               "／在庫・売建規制は未反映＝実際はこれより悪い")
 BT_LINE_V2 = ("検証(J-Quants 2021-11〜2026-10・上場廃止込み・料0.3%・滑り0.1%・全部売れた場合): 1〜5位 3,007本 約定57% "
               "1年あたり+529万 PF1.97 最大DD59万（S高引けを翌朝に買い戻すと+415万）"
               "／立花20年(2001〜2026/9・現存銘柄): 1年あたり+306万・負けた年0/26"
@@ -596,8 +609,9 @@ def plan_payload(plan: dict) -> dict:
         lines.append("-# 見送りの前日比: " + "／".join(f"{x['name']} {x['ret1']*100:+.1f}%" for x in sk))
     lines.append(f"-# 基準日 {asof:%m/%d} の日足・候補 {plan['n_cand']}銘柄（終値100円以上・代金3億以上・前日比+8%以上）")
     v2 = plan["trade_day"] >= FRIEND_V2_FROM
-    lines.append(f"-# 📌 {RULE_LINE_V2 if v2 else RULE_LINE}")
-    lines.append(f"-# {BT_LINE_V2 if v2 else BT_LINE}")
+    v2b = plan["trade_day"] >= FRIEND_EACH_FROM
+    lines.append(f"-# 📌 {RULE_LINE_V2B if v2b else RULE_LINE_V2 if v2 else RULE_LINE}")
+    lines.append(f"-# {BT_LINE_V2B if v2b else BT_LINE_V2 if v2 else BT_LINE}")
     lines.append("-# 銘柄の選定だけ。発注はしない。投資判断は自己責任。")
     title = f"🩳 {_md(td)} 友達版　" + (f"注文 {len(go)}本" if go else ("候補なし" if not picks else "今日は全部見送り"))
     return {"embeds": [{"title": title, "description": "\n".join(lines)[:4000], "color": 0xFF8787 if go else 0x868E96}]}
@@ -725,7 +739,8 @@ def top3_ladder(close: float) -> list:
 
 def friend_ladder(close: float, trade_day: str) -> list:
     """友達chの [(指値, 株数), ...]。v2（11/10分から）= 1本50万を +7%に2/3・+12%に1/3、
-    どちらかの段が100株に届かない値段は +7%に50万一発（50万で100株に届かなければ100株・100万まで）。それより前は top3_ladder。"""
+    どちらかの段が100株に届かない値段は 11/10分だけ +7%に50万一発（50万で100株に届かなければ100株・100万まで）、
+    11/11分からは 各段100株は必ず（FRIEND_EACH_FROM）。それより前は top3_ladder。"""
     if trade_day < FRIEND_V2_FROM:
         return top3_ladder(close)
     S = close + band(close)
@@ -736,6 +751,8 @@ def friend_ladder(close: float, trade_day: str) -> list:
     sh = [int(SIZE_YEN * w / L // 100 * 100) for L, w in Ls]
     if min(sh) >= 100:
         return [(L, s) for (L, w), s in zip(Ls, sh)]
+    if trade_day >= FRIEND_EACH_FROM:   # 11/11分から: 100株に届かない段も100株は入れる
+        return [(L, max(100, s)) for (L, w), s in zip(Ls, sh)]
     L0 = Ls[0][0]; s0 = top3_shares(L0)
     return [(L0, s0)] if s0 else []
 
