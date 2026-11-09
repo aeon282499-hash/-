@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""今日の3本＋遊びの「空売り在庫」を毎晩記録する（2026-11-01 本人「松井とSBIの在庫も今日から記録しといて」）。
+"""本人chの注文（今日の3本・友達だけ・遊び・2桁）の「空売り在庫」を毎晩記録する（2026-11-01 本人「松井とSBIの在庫も今日から記録しといて」・11/9から友達と2桁も）。
 
 ログインなしで取れるもの（毎営業日夕方更新）:
   松井  一日信用 プレミアム空売り: premium.csv（在庫 0=×/1=△/2=〇/3=☆・空売り料 円/株/日・約定日）
@@ -84,6 +84,22 @@ def load_sources() -> dict:
 
 
 def plan_legs(plan: dict) -> list[dict]:
+    """本人chの注文を全部（今日の3本・友達だけ・遊び・2桁）。2026-11-09 本人「在庫とれそうか確認できない？」で友達と2桁も記録に足した。
+    fade_notify.own_orders が読めない時は今までどおり今日の3本＋遊びだけ。"""
+    try:
+        if str(HERE) not in sys.path:
+            sys.path.insert(0, str(HERE))
+        import fade_notify as fn
+        out = []
+        for o in fn.own_orders(plan):
+            x = o["x"]
+            d = dict(kind=o["kind"], code=x["code"], name=x.get("name", ""), close=x.get("close"), seido=x.get("seido"), jsf_stop=x.get("jsf_stop"))
+            if o["kind"] == "遊び":
+                d["lim"] = x.get("lim")
+            out.append(d)
+        return out
+    except Exception as e:  # noqa: BLE001
+        log(f"本人chの注文一覧が読めない→今日の3本と遊びだけ記録: {type(e).__name__}")
     legs = []
     for x in (plan.get("top3") or {}).get("rows", []):
         legs.append(dict(kind="3本", code=x["code"], name=x["name"], close=x.get("close"), seido=x.get("seido"), jsf_stop=x.get("jsf_stop")))
@@ -150,7 +166,7 @@ def payload(trade_day: str, recs: list[dict]) -> dict:
     td = date.fromisoformat(trade_day)
     lines = []
     for r in recs:
-        mark = "🎲" if r["kind"] == "遊び" else "🩳"
+        mark = "🎲" if r["kind"] in ("遊び", "2桁") else "🩳"
         man = "・".join(f"{b.upper() if b != 'kabucom_bid' else '入札'} {r[b]}" for b in BROKERS_MANUAL if r.get(b))
         tag = ("制度○" if r.get("seido") == "○" else "非貸借") + ("・売り禁" if r.get("jsf_stop") else "")
         lines.append(f"{mark} `{r['code']}` {r['name']}（{tag}）: {matsui_text(r.get('matsui', {}))} / {kabucom_text(r.get('kabucom'))}" + (f" / {man}" if man else ""))
@@ -211,7 +227,7 @@ def main() -> int:
     td = plan["trade_day"]
     legs = plan_legs(plan)
     if not legs:
-        log(f"{td} 今日の3本・遊びとも対象なし"); return 0
+        log(f"{td} 本人chの注文なし"); return 0
     book = load_json(LOG)
     old = {r["code"]: r for r in (book.get(td) or {}).get("items", [])}
     if a.set:
