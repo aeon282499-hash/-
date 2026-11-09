@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-06",
+ "last_signal_date": "2026-11-09",
  "positions": [
   {
    "ticker": "6521.T",
@@ -768,11 +768,16 @@
    "shares": 100,
    "rsi": 55.0,
    "runup5": -3.8,
-   "status": "extended",
+   "status": "closed",
    "prev_close": 3170.0,
    "entry": 3170.0,
    "gap_pct": 8.83,
-   "ext_exit_date": "2026-11-06"
+   "ext_exit_date": "2026-11-06",
+   "exit_date": "2026-11-06",
+   "exit": 3529.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 11.32,
+   "pnl_yen": 35900
   },
   {
    "ticker": "6632.T",
@@ -987,7 +992,13 @@
    "shares": 300,
    "rsi": 19.3,
    "runup5": -16.4,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1555.0,
+   "exit_date": "2026-11-09",
+   "exit": 1531.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.54,
+   "pnl_yen": -7200
   },
   {
    "ticker": "6996.T",
@@ -998,7 +1009,10 @@
    "shares": 200,
    "rsi": 20.2,
    "runup5": -21.8,
-   "status": "pending"
+   "status": "extended",
+   "entry": 1764.0,
+   "gap_pct": 9.07,
+   "ext_exit_date": "2026-11-13"
   },
   {
    "ticker": "7721.T",
@@ -1009,7 +1023,13 @@
    "shares": 100,
    "rsi": 20.2,
    "runup5": -16.0,
-   "status": "pending"
+   "status": "closed",
+   "entry": 4750.0,
+   "exit_date": "2026-11-09",
+   "exit": 4890.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 2.95,
+   "pnl_yen": 14000
   },
   {
    "ticker": "6925.T",
@@ -1020,7 +1040,13 @@
    "shares": 100,
    "rsi": 20.7,
    "runup5": -21.0,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2684.5,
+   "exit_date": "2026-11-09",
+   "exit": 2734.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 1.86,
+   "pnl_yen": 5000
   },
   {
    "ticker": "6479.T",
@@ -1031,7 +1057,13 @@
    "shares": 100,
    "rsi": 23.1,
    "runup5": -17.4,
-   "status": "pending"
+   "status": "closed",
+   "entry": 2715.0,
+   "exit_date": "2026-11-09",
+   "exit": 2733.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.66,
+   "pnl_yen": 1800
   },
   {
    "ticker": "8012.T",
@@ -1042,7 +1074,13 @@
    "shares": 400,
    "rsi": 31.7,
    "runup5": -16.3,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1070.0,
+   "exit_date": "2026-11-09",
+   "exit": 1107.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 3.5,
+   "pnl_yen": 15000
   },
   {
    "ticker": "6315.T",
@@ -1053,6 +1091,75 @@
    "shares": 200,
    "rsi": 33.3,
    "runup5": -20.1,
+   "status": "extended",
+   "entry": 1785.0,
+   "gap_pct": 12.04,
+   "ext_exit_date": "2026-11-13"
+  },
+  {
+   "ticker": "6448.T",
+   "name": "ブラザー工業",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 4181.0,
+   "shares": 100,
+   "rsi": 26.5,
+   "runup5": -9.6,
+   "status": "pending"
+  },
+  {
+   "ticker": "2802.T",
+   "name": "味の素",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 4406.0,
+   "shares": 100,
+   "rsi": 28.3,
+   "runup5": -13.9,
+   "status": "pending"
+  },
+  {
+   "ticker": "6779.T",
+   "name": "日本電波工業",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 2061.0,
+   "shares": 200,
+   "rsi": 29.4,
+   "runup5": -16.8,
+   "status": "pending"
+  },
+  {
+   "ticker": "5016.T",
+   "name": "ＪＸ金属",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 2541.0,
+   "shares": 100,
+   "rsi": 29.6,
+   "runup5": -14.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "5463.T",
+   "name": "丸一鋼管",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 1562.5,
+   "shares": 300,
+   "rsi": 32.0,
+   "runup5": -8.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "7014.T",
+   "name": "名村造船所",
+   "type": "第２四半期",
+   "date": "2026-11-09",
+   "signal_price": 3835.0,
+   "shares": 100,
+   "rsi": 32.8,
+   "runup5": -3.5,
    "status": "pending"
   }
  ],

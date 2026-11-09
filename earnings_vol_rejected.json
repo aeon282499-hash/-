@@ -1305,5 +1305,172 @@
    "runup5": -3.5,
    "price": 4091.0
   }
+ ],
+ "2026-11-09": [
+  {
+   "ticker": "1417.T",
+   "name": "ミライト・ワン",
+   "vol": 2.16,
+   "why": "announced",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 22.5,
+   "runup5": -7.2,
+   "price": 3052.0
+  },
+  {
+   "ticker": "2784.T",
+   "name": "アルフレッサ　ホールディングス",
+   "vol": 1.09,
+   "why": "vol",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 39.8,
+   "runup5": -8.7,
+   "price": 2254.0
+  },
+  {
+   "ticker": "3101.T",
+   "name": "東洋紡",
+   "vol": 0.44,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 33.7,
+   "runup5": -6.4,
+   "price": 1443.0
+  },
+  {
+   "ticker": "4061.T",
+   "name": "デンカ",
+   "vol": 1.13,
+   "why": "vol",
+   "last_time": "11:00",
+   "bucket": "場中",
+   "rsi": 41.5,
+   "runup5": -4.5,
+   "price": 2916.5
+  },
+  {
+   "ticker": "4114.T",
+   "name": "日本触媒",
+   "vol": 0.78,
+   "why": "vol",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 26.4,
+   "runup5": -8.7,
+   "price": 2341.0
+  },
+  {
+   "ticker": "5801.T",
+   "name": "古河電気工業",
+   "vol": 3.46,
+   "why": "announced",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 20.5,
+   "runup5": -28.0,
+   "price": 2020.0
+  },
+  {
+   "ticker": "6525.T",
+   "name": "ＫＯＫＵＳＡＩ　ＥＬＥＣＴＲＩＣ",
+   "vol": 5.87,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 22.1,
+   "runup5": -28.6,
+   "price": 4943.0
+  },
+  {
+   "ticker": "7380.T",
+   "name": "十六フィナンシャルグループ",
+   "vol": 0.67,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 32.1,
+   "runup5": -12.4,
+   "price": 2123.0
+  },
+  {
+   "ticker": "7966.T",
+   "name": "リンテック",
+   "vol": 1.02,
+   "why": "vol",
+   "last_time": "16:00",
+   "bucket": "引け後",
+   "rsi": 38.6,
+   "runup5": -7.9,
+   "price": 4725.0
+  },
+  {
+   "ticker": "8334.T",
+   "name": "群馬銀行",
+   "vol": 1.4,
+   "why": "vol",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 39.2,
+   "runup5": -4.7,
+   "price": 2483.0
+  },
+  {
+   "ticker": "8370.T",
+   "name": "紀陽銀行",
+   "vol": 1.2,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 37.5,
+   "runup5": -5.4,
+   "price": 1495.0
+  },
+  {
+   "ticker": "8377.T",
+   "name": "ほくほくフィナンシャルグループ",
+   "vol": 1.28,
+   "why": "vol",
+   "last_time": "15:15",
+   "bucket": "場中",
+   "rsi": 41.4,
+   "runup5": -4.3,
+   "price": 717.2000122070312
+  },
+  {
+   "ticker": "8392.T",
+   "name": "大分銀行",
+   "vol": 1.26,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 40.1,
+   "runup5": -9.9,
+   "price": 2602.0
+  },
+  {
+   "ticker": "8439.T",
+   "name": "東京センチュリー",
+   "vol": 1.33,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 40.4,
+   "runup5": -3.2,
+   "price": 2458.5
+  },
+  {
+   "ticker": "8541.T",
+   "name": "愛媛銀行",
+   "vol": 0.73,
+   "why": "vol",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 39.1,
+   "runup5": -15.7,
+   "price": 3115.0
+  }
  ]
 }
