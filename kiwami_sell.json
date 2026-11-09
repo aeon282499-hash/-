@@ -276,7 +276,7 @@
     "live_stop": 3.0,
     "entry_open": 3303.0,
     "status": "open",
-    "hold_days": 2,
+    "hold_days": 3,
     "pnl_pct": null,
     "exit_type": null,
     "exit_date": null
@@ -314,5 +314,39 @@
     "pnl_pct": 2.433,
     "exit_type": "RSI",
     "exit_date": "2026-11-06"
+  },
+  {
+    "signal_date": "2026-11-10",
+    "entry_date": "2026-11-10",
+    "ticker": "4452.T",
+    "name": "花王",
+    "direction": "SELL",
+    "size": 1000000,
+    "prev_close": 3929.0,
+    "stop_pct": 4.0,
+    "live_stop": 3.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null
+  },
+  {
+    "signal_date": "2026-11-10",
+    "entry_date": "2026-11-10",
+    "ticker": "9009.T",
+    "name": "京成電鉄",
+    "direction": "SELL",
+    "size": 1000000,
+    "prev_close": 1471.0,
+    "stop_pct": 4.0,
+    "live_stop": 3.0,
+    "entry_open": null,
+    "status": "pending",
+    "hold_days": 0,
+    "pnl_pct": null,
+    "exit_type": null,
+    "exit_date": null
   }
 ]

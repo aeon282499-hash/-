@@ -1,40 +1,40 @@
 {
-  "date": "2026-11-09",
+  "date": "2026-11-10",
   "signals": [
     {
-      "ticker": "3626.T",
-      "name": "ＴＩＳＩ",
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
       "direction": "BUY",
-      "prev_close": 4116.0,
-      "limit_price": 4155
-    },
-    {
-      "ticker": "9503.T",
-      "name": "関西電力",
-      "direction": "BUY",
-      "prev_close": 2554.5,
-      "limit_price": 2580
-    },
-    {
-      "ticker": "3116.T",
-      "name": "トヨタ紡織",
-      "direction": "BUY",
-      "prev_close": 2013.0,
-      "limit_price": 2033
+      "prev_close": 2819.0,
+      "limit_price": 2847
     },
     {
       "ticker": "3407.T",
       "name": "旭化成",
       "direction": "BUY",
-      "prev_close": 1490.5,
-      "limit_price": 1505
+      "prev_close": 1537.0,
+      "limit_price": 1552
+    },
+    {
+      "ticker": "9503.T",
+      "name": "関西電力",
+      "direction": "BUY",
+      "prev_close": 2615.5,
+      "limit_price": 2641
     },
     {
       "ticker": "3941.T",
       "name": "レンゴー",
       "direction": "BUY",
-      "prev_close": 1455.5,
-      "limit_price": 1470
+      "prev_close": 1487.5,
+      "limit_price": 1502
+    },
+    {
+      "ticker": "4626.T",
+      "name": "太陽ホールディングス",
+      "direction": "BUY",
+      "prev_close": 4596.0,
+      "limit_price": 4640
     }
   ]
 }
