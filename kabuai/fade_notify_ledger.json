@@ -1592,6 +1592,225 @@
    },
    "asobi": null,
    "own_sent": true
+  },
+  "2026-11-10": {
+   "asof": "2026-11-09",
+   "trade_day": "2026-11-10",
+   "made": "2026-11-09 18:09",
+   "n_cand": 34,
+   "rule_a": null,
+   "rule_a_why": "1位 2667 は除外（日証金停止）",
+   "rows": [
+    {
+     "code": "2667",
+     "code5": "26670",
+     "name": "イメージ　ワン",
+     "mkt": "スタンダード",
+     "close": 100.0,
+     "ret1": 0.4285714285714286,
+     "va": 617172600.0,
+     "rank_all": 1,
+     "score": 3.85,
+     "ul1": 150.0,
+     "strong": true,
+     "vol20": 0.1664,
+     "dev25": 0.1364,
+     "rng": 0.2857,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "イメージワン 申込停止 新規売り",
+     "reasons": [
+      "日証金停止"
+     ]
+    },
+    {
+     "code": "3858",
+     "code5": "38580",
+     "name": "ユビキタスＡＩ",
+     "mkt": "スタンダード",
+     "close": 463.0,
+     "ret1": 0.18414322250639392,
+     "va": 684570500.0,
+     "rank_all": 2,
+     "score": 3.22,
+     "ul1": 543.0,
+     "strong": true,
+     "vol20": 0.113,
+     "dev25": 0.0285,
+     "rng": 0.2072,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": true,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6721",
+     "code5": "67210",
+     "name": "ウインテスト",
+     "mkt": "スタンダード",
+     "close": 135.0,
+     "ret1": 0.14406779661016955,
+     "va": 1386031800.0,
+     "rank_all": 3,
+     "score": 3.11,
+     "ul1": 185.0,
+     "strong": false,
+     "vol20": 0.2,
+     "dev25": 0.0607,
+     "rng": 0.1356,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "2681",
+     "code5": "26810",
+     "name": "セカンドリテイリング",
+     "mkt": "プライム",
+     "close": 2250.0,
+     "ret1": 0.21621621621621623,
+     "va": 1424510200.0,
+     "rank_all": 4,
+     "score": 3.04,
+     "ul1": 2750.0,
+     "strong": true,
+     "vol20": 0.058,
+     "dev25": 0.0959,
+     "rng": 0.1027,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "656A",
+     "code5": "656A0",
+     "name": "Ａｌｌｇａｎｉｚｅ　Ｈｏ",
+     "mkt": "グロース",
+     "close": 1247.0,
+     "ret1": 0.1440366972477065,
+     "va": 1399594100.0,
+     "rank_all": 5,
+     "score": 3.0,
+     "ul1": 1547.0,
+     "strong": false,
+     "vol20": null,
+     "dev25": null,
+     "rng": 0.1376,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "2667",
+      "name": "イメージ　ワン",
+      "close": 100.0,
+      "ret1": 0.4285714285714286,
+      "jsf_stop": true,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "2681",
+      "name": "セカンドリテイリング",
+      "close": 2250.0,
+      "ret1": 0.21621621621621623,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 3,
+      "code": "6315",
+      "name": "ＴＯＷＡ",
+      "close": 2101.0,
+      "ret1": 0.17703081232493,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 4
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "2667",
+      "name": "イメージ　ワン",
+      "close": 100.0,
+      "ret1": 0.4285714285714286,
+      "seido": "○",
+      "jsf_stop": true,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "2681",
+      "name": "セカンドリテイリング",
+      "close": 2250.0,
+      "ret1": 0.21621621621621623,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "7760",
+      "name": "ＩＭＶ",
+      "close": 1876.0,
+      "ret1": 0.18509159823120647,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 34
+   },
+   "asobi": {
+    "code": "4994",
+    "name": "大成ラミックグループ",
+    "close": 3070.0,
+    "ret1": 0.19641465315666418,
+    "va": 222357800.0,
+    "lim": 3440.0,
+    "shares": 100,
+    "n": 3,
+    "seido": "○",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": true
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -2482,6 +2701,66 @@
       "close": 1690.5,
       "high": 1815.5,
       "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-09": {
+   "trade_day": "2026-11-09",
+   "asof": "2026-11-06",
+   "made": "2026-11-09 18:05",
+   "items": [
+    {
+     "f3": true,
+     "code": "4475",
+     "name": "ＨＥＮＮＧＥ",
+     "rank_all": 1,
+     "skip": "決算起因",
+     "legs": [],
+     "open": 2411.0,
+     "close": 2340.0,
+     "high": 2530.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "code": "4635",
+     "name": "東京インキ",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 2170.0,
+     "close": 2247.0,
+     "high": 2318.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-09",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4475",
+      "name": "ＨＥＮＮＧＥ",
+      "close_prev": 2211.0,
+      "legs": [
+       {
+        "lim": 2477.0,
+        "shares": 200,
+        "sell": 2477.0,
+        "pct": 5.530884134033105
+       }
+      ],
+      "status": "約定",
+      "open": 2411.0,
+      "close": 2340.0,
+      "high": 2530.0,
+      "yen": 27400,
       "sclose": false
      }
     ],

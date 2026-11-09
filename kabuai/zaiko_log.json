@@ -311,5 +311,122 @@
   ],
   "made": "2026-11-08T18:05:52+09:00",
   "sent": false
+ },
+ "2026-11-10": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "2667",
+    "name": "イメージ　ワン",
+    "close": 100.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 0.1,
+     "day": "11/10",
+     "stale": false,
+     "fee_pct": 0.1,
+     "day_ok": true,
+     "max_sh": 500000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "2681",
+    "name": "セカンドリテイリング",
+    "close": 2250.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7760",
+    "name": "ＩＭＶ",
+    "close": 1876.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/10",
+     "stale": false,
+     "fee_pct": 0.05,
+     "day_ok": true,
+     "max_sh": 30000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "友達",
+    "code": "3858",
+    "name": "ユビキタスＡＩ",
+    "close": 463.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/10",
+     "stale": false,
+     "fee_pct": 0.22,
+     "day_ok": true,
+     "max_sh": 150000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "4994",
+    "name": "大成ラミックグループ",
+    "close": 3070.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "lim": 3440.0,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-09T18:45:01+09:00",
+  "sent": false
  }
 }
