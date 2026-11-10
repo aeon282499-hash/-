@@ -2099,6 +2099,26 @@
       "close": 4827.0,
       "pnl": -1.09,
       "win": false
+    },
+    {
+      "date": "2026-11-10",
+      "ticker": "9433.T",
+      "name": "ＫＤＤＩ",
+      "direction": "BUY",
+      "open": 2830.0,
+      "close": 2839.0,
+      "pnl": 0.32,
+      "win": true
+    },
+    {
+      "date": "2026-11-10",
+      "ticker": "3941.T",
+      "name": "レンゴー",
+      "direction": "BUY",
+      "open": 1490.0,
+      "close": 1504.5,
+      "pnl": 0.97,
+      "win": true
     }
   ]
 }
