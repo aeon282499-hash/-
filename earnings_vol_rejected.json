@@ -1472,5 +1472,95 @@
    "runup5": -15.7,
    "price": 3115.0
   }
+ ],
+ "2026-11-10": [
+  {
+   "ticker": "2531.T",
+   "name": "宝ホールディングス",
+   "vol": 1.11,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 50.4,
+   "runup5": -8.9,
+   "price": 2849.5
+  },
+  {
+   "ticker": "3105.T",
+   "name": "日清紡ホールディングス",
+   "vol": 0.74,
+   "why": "vol",
+   "last_time": "17:30",
+   "bucket": "引け後",
+   "rsi": 28.8,
+   "runup5": -12.5,
+   "price": 1946.0
+  },
+  {
+   "ticker": "5233.T",
+   "name": "太平洋セメント",
+   "vol": 1.71,
+   "why": "vol",
+   "last_time": "14:30",
+   "bucket": "場中",
+   "rsi": 40.3,
+   "runup5": -9.3,
+   "price": 3885.0
+  },
+  {
+   "ticker": "5803.T",
+   "name": "フジクラ",
+   "vol": 5.37,
+   "why": "announced",
+   "last_time": "14:00",
+   "bucket": "場中",
+   "rsi": 25.9,
+   "runup5": -19.3,
+   "price": 3148.0
+  },
+  {
+   "ticker": "6457.T",
+   "name": "グローリー",
+   "vol": 1.44,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 45.0,
+   "runup5": -3.4,
+   "price": 4720.0
+  },
+  {
+   "ticker": "6800.T",
+   "name": "ヨコオ",
+   "vol": 1.68,
+   "why": "vol",
+   "last_time": "16:00",
+   "bucket": "引け後",
+   "rsi": 18.7,
+   "runup5": -23.6,
+   "price": 2536.0
+  },
+  {
+   "ticker": "7012.T",
+   "name": "川崎重工業",
+   "vol": 1.26,
+   "why": "vol",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 29.2,
+   "runup5": -5.7,
+   "price": 1978.5
+  },
+  {
+   "ticker": "8544.T",
+   "name": "京葉銀行",
+   "vol": 0.96,
+   "why": "vol",
+   "last_time": "13:30",
+   "bucket": "場中",
+   "rsi": 35.8,
+   "runup5": -5.1,
+   "price": 2289.0
+  }
  ]
 }
