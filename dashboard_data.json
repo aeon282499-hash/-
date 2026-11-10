@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-10 08:16:58",
+  "generated_at": "2026-11-10 13:43:38",
   "date": "2026-11-10",
   "tier_summary": {
     "S": 0,
@@ -14,7 +14,6 @@
     "ASML": 6.21,
     "AVGO": 8.78,
     "CRWD": 5.38,
-    "GEV": 7.13,
     "GOOGL": 1.18,
     "IONQ": 8.34,
     "KLAC": 9.31,
@@ -241,7 +240,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": 8.6
+      "us_tailwind": 9.09
     },
     {
       "theme": "銀行_金利上昇",
@@ -2208,7 +2207,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 8.6,
+      "us_tailwind": 9.09,
       "score": 49.4,
       "tier": "B",
       "init_stars": 3,
@@ -3453,7 +3452,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 8.6,
+      "us_tailwind": 9.09,
       "score": 28.4,
       "tier": "C",
       "init_stars": 3,
@@ -3691,7 +3690,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 8.6,
+      "us_tailwind": 9.09,
       "score": 26.4,
       "tier": "C",
       "init_stars": 3,
@@ -4185,7 +4184,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": 8.6,
+      "us_tailwind": 9.09,
       "score": 23.4,
       "tier": "C",
       "init_stars": 1,
