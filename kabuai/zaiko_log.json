@@ -428,5 +428,118 @@
   ],
   "made": "2026-11-10T07:19:56+09:00",
   "sent": false
+ },
+ "2026-11-11": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "198A",
+    "name": "ＰｏｓｔＰｒｉｍｅ",
+    "close": 136.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/11",
+     "stale": false,
+     "fee_pct": 0.74,
+     "day_ok": true,
+     "max_sh": 500000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3103",
+    "name": "ユニチカ",
+    "close": 1353.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true,
+     "max_sh": 50000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "4286",
+    "name": "ＣＬホールディングス",
+    "close": 1361.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "友達",
+    "code": "9888",
+    "name": "ＵＥＸ",
+    "close": 1509.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "△",
+     "fee": 1.0,
+     "day": "11/11",
+     "stale": false,
+     "fee_pct": 0.07,
+     "day_ok": true,
+     "max_sh": 40000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "9475",
+    "name": "昭文社ホールディングス",
+    "close": 749.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "lim": 839.0,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-10T18:45:03+09:00",
+  "sent": false
  }
 }

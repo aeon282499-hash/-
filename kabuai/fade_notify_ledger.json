@@ -1811,6 +1811,225 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-11": {
+   "asof": "2026-11-10",
+   "trade_day": "2026-11-11",
+   "made": "2026-11-10 18:09",
+   "n_cand": 88,
+   "rule_a": null,
+   "rule_a_why": "1位 3909 は前日比+16.29%（+17%未満）",
+   "rows": [
+    {
+     "code": "3909",
+     "code5": "39090",
+     "name": "ショーケース",
+     "mkt": "スタンダード",
+     "close": 714.0,
+     "ret1": 0.16286644951140072,
+     "va": 2020747300.0,
+     "rank_all": 1,
+     "score": 3.83,
+     "ul1": 864.0,
+     "strong": false,
+     "vol20": 0.1522,
+     "dev25": 0.1359,
+     "rng": 0.2264,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": true,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "9888",
+     "code5": "98880",
+     "name": "ＵＥＸ",
+     "mkt": "スタンダード",
+     "close": 1509.0,
+     "ret1": 0.2004773269689737,
+     "va": 1720716100.0,
+     "rank_all": 2,
+     "score": 3.81,
+     "ul1": 1909.0,
+     "strong": true,
+     "vol20": 0.0765,
+     "dev25": 0.1848,
+     "rng": 0.2729,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "3103",
+     "code5": "31030",
+     "name": "ユニチカ",
+     "mkt": "スタンダード",
+     "close": 1353.0,
+     "ret1": 0.28490028490028485,
+     "va": 10474808900.0,
+     "rank_all": 3,
+     "score": 3.76,
+     "ul1": 1653.0,
+     "strong": true,
+     "vol20": 0.0781,
+     "dev25": 0.0528,
+     "rng": 0.2308,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "6777",
+     "code5": "67770",
+     "name": "ｓａｎｔｅｃ　Ｈｏｌｄｉ",
+     "mkt": "スタンダード",
+     "close": 20050.0,
+     "ret1": 0.23841877702285363,
+     "va": 11644760000.0,
+     "rank_all": 4,
+     "score": 3.74,
+     "ul1": 25050.0,
+     "strong": true,
+     "vol20": 0.0953,
+     "dev25": 0.0186,
+     "rng": 0.2193,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "198A",
+     "code5": "198A0",
+     "name": "ＰｏｓｔＰｒｉｍｅ",
+     "mkt": "グロース",
+     "close": 136.0,
+     "ret1": 0.33333333333333326,
+     "va": 749476400.0,
+     "rank_all": 5,
+     "score": 3.69,
+     "ul1": 186.0,
+     "strong": true,
+     "vol20": 0.0908,
+     "dev25": -0.0561,
+     "rng": 0.4216,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "3103",
+      "name": "ユニチカ",
+      "close": 1353.0,
+      "ret1": 0.28490028490028485,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "4286",
+      "name": "ＣＬホールディングス",
+      "close": 1361.0,
+      "ret1": 0.24633699633699635,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 3,
+      "code": "4064",
+      "name": "日本カーバイド工業",
+      "close": 3890.0,
+      "ret1": 0.21943573667711602,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 3
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "198A",
+      "name": "ＰｏｓｔＰｒｉｍｅ",
+      "close": 136.0,
+      "ret1": 0.33333333333333326,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "3103",
+      "name": "ユニチカ",
+      "close": 1353.0,
+      "ret1": 0.28490028490028485,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "4286",
+      "name": "ＣＬホールディングス",
+      "close": 1361.0,
+      "ret1": 0.24633699633699635,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 88
+   },
+   "asobi": {
+    "code": "9475",
+    "name": "昭文社ホールディングス",
+    "close": 749.0,
+    "ret1": 0.14877300613496924,
+    "va": 202076500.0,
+    "lim": 839.0,
+    "shares": 200,
+    "n": 3,
+    "seido": "○",
+    "jsf_stop": true,
+    "jsf_warn": false,
+    "earn": false
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -2761,6 +2980,239 @@
       "close": 2340.0,
       "high": 2530.0,
       "yen": 27400,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-10": {
+   "trade_day": "2026-11-10",
+   "asof": "2026-11-09",
+   "made": "2026-11-10 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "2667",
+     "name": "イメージ　ワン",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 107.0,
+       "shares": 3100,
+       "sell": 125.0
+      },
+      {
+       "lim": 112.0,
+       "shares": 1400,
+       "sell": 125.0
+      }
+     ],
+     "open": 125.0,
+     "close": 90.0,
+     "high": 127.0,
+     "status": "約定",
+     "yen": 157500,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3858",
+     "name": "ユビキタスＡＩ",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 496.0,
+       "shares": 600,
+       "sell": 496.0
+      },
+      {
+       "lim": 519.0,
+       "shares": 300,
+       "sell": 519.0
+      }
+     ],
+     "open": 447.0,
+     "close": 499.0,
+     "high": 530.0,
+     "status": "約定",
+     "yen": 4200,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6721",
+     "name": "ウインテスト",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 133.0,
+     "close": 130.0,
+     "high": 145.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "2681",
+     "name": "セカンドリテイリング",
+     "rank_all": 4,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 2408.0,
+       "shares": 200,
+       "sell": null
+      }
+     ],
+     "open": 2283.0,
+     "close": 2234.0,
+     "high": 2357.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "656A",
+     "name": "Ａｌｌｇａｎｉｚｅ　Ｈｏ",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1277.0,
+     "close": 1220.0,
+     "high": 1294.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-10",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "2667",
+      "name": "イメージ　ワン",
+      "close_prev": 100.0,
+      "legs": [
+       {
+        "lim": 107.0,
+        "shares": 600,
+        "sell": 125.0,
+        "pct": 28.000000000000004
+       },
+       {
+        "lim": 115.0,
+        "shares": 1200,
+        "sell": 125.0,
+        "pct": 28.000000000000004
+       }
+      ],
+      "status": "約定",
+      "open": 125.0,
+      "close": 90.0,
+      "high": 127.0,
+      "yen": 63000,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "2681",
+      "name": "セカンドリテイリング",
+      "close_prev": 2250.0,
+      "legs": [
+       {
+        "lim": 2408.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2588.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 2283.0,
+      "close": 2234.0,
+      "high": 2357.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "7760",
+      "name": "ＩＭＶ",
+      "close_prev": 1876.0,
+      "legs": [
+       {
+        "lim": 2008.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2158.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1916.0,
+      "close": 1953.0,
+      "high": 1996.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "友達",
+      "code": "3858",
+      "name": "ユビキタスＡＩ",
+      "close_prev": 463.0,
+      "legs": [
+       {
+        "lim": 496.0,
+        "shares": 500,
+        "sell": 496.0,
+        "pct": -0.6048387096774194
+       },
+       {
+        "lim": 533.0,
+        "shares": 900,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 447.0,
+      "close": 499.0,
+      "high": 530.0,
+      "yen": -1500,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "4994",
+      "name": "大成ラミックグループ",
+      "close_prev": 3070.0,
+      "legs": [
+       {
+        "lim": 3440.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 3110.0,
+      "close": 3215.0,
+      "high": 3270.0,
+      "yen": 0,
       "sclose": false
      }
     ],
