@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-10",
+ "last_signal_date": "2026-11-11",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1204,7 +1204,13 @@
    "shares": 300,
    "rsi": 33.1,
    "runup5": -9.3,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1480.0,
+   "exit_date": "2026-11-11",
+   "exit": 1420.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -4.05,
+   "pnl_yen": -18000
   },
   {
    "ticker": "4272.T",
@@ -1215,7 +1221,13 @@
    "shares": 200,
    "rsi": 33.9,
    "runup5": -6.9,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1866.5,
+   "exit_date": "2026-11-11",
+   "exit": 1840.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.42,
+   "pnl_yen": -5300
   },
   {
    "ticker": "4047.T",
@@ -1226,7 +1238,13 @@
    "shares": 200,
    "rsi": 34.5,
    "runup5": -12.2,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1687.0,
+   "exit_date": "2026-11-11",
+   "exit": 1767.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 4.74,
+   "pnl_yen": 16000
   },
   {
    "ticker": "5706.T",
@@ -1237,7 +1255,13 @@
    "shares": 200,
    "rsi": 35.7,
    "runup5": -12.6,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1752.5,
+   "exit_date": "2026-11-11",
+   "exit": 1632.5,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -6.85,
+   "pnl_yen": -24000
   },
   {
    "ticker": "9984.T",
@@ -1248,6 +1272,56 @@
    "shares": 100,
    "rsi": 35.8,
    "runup5": -10.3,
+   "status": "closed",
+   "entry": 3872.0,
+   "exit_date": "2026-11-11",
+   "exit": 3592.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -7.23,
+   "pnl_yen": -28000
+  },
+  {
+   "ticker": "5019.T",
+   "name": "出光興産",
+   "type": "第２四半期",
+   "date": "2026-11-11",
+   "signal_price": 1300.5,
+   "shares": 300,
+   "rsi": 28.5,
+   "runup5": -9.1,
+   "status": "pending"
+  },
+  {
+   "ticker": "3107.T",
+   "name": "ダイワボウホールディングス",
+   "type": "第２四半期",
+   "date": "2026-11-11",
+   "signal_price": 3380.0,
+   "shares": 100,
+   "rsi": 35.1,
+   "runup5": -4.1,
+   "status": "pending"
+  },
+  {
+   "ticker": "3436.T",
+   "name": "ＳＵＭＣＯ",
+   "type": "第３四半期",
+   "date": "2026-11-11",
+   "signal_price": 2052.0,
+   "shares": 200,
+   "rsi": 36.3,
+   "runup5": -7.5,
+   "status": "pending"
+  },
+  {
+   "ticker": "5599.T",
+   "name": "Ｓ＆Ｊ",
+   "type": "第２四半期",
+   "date": "2026-11-11",
+   "signal_price": 1592.0,
+   "shares": 300,
+   "rsi": 47.2,
+   "runup5": -7.9,
    "status": "pending"
   }
  ],
