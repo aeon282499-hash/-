@@ -2030,6 +2030,228 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-12": {
+   "asof": "2026-11-11",
+   "trade_day": "2026-11-12",
+   "made": "2026-11-11 18:09",
+   "n_cand": 29,
+   "rule_a": null,
+   "rule_a_why": "1位 5129 は除外（日証金停止・日証金注意喚起）",
+   "rows": [
+    {
+     "code": "5129",
+     "code5": "51290",
+     "name": "ＦＩＸＥＲ",
+     "mkt": "グロース",
+     "close": 286.0,
+     "ret1": 0.38834951456310685,
+     "va": 1778929800.0,
+     "rank_all": 1,
+     "score": 4.0,
+     "ul1": 366.0,
+     "strong": true,
+     "vol20": 0.0986,
+     "dev25": 0.2011,
+     "rng": 0.3932,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": true,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "（株）ＦＩＸＥＲ 申込停止 新規売り・現引き 午後立会分より",
+     "reasons": [
+      "日証金停止",
+      "日証金注意喚起"
+     ]
+    },
+    {
+     "code": "1980",
+     "code5": "19800",
+     "name": "ダイダン",
+     "mkt": "プライム",
+     "close": 3075.0,
+     "ret1": 0.15125421190565325,
+     "va": 7021100900.0,
+     "rank_all": 2,
+     "score": 2.86,
+     "ul1": 3775.0,
+     "strong": false,
+     "vol20": 0.0549,
+     "dev25": 0.0536,
+     "rng": 0.1617,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "1960",
+     "code5": "19600",
+     "name": "サンテック",
+     "mkt": "スタンダード",
+     "close": 1846.0,
+     "ret1": 0.18713826366559494,
+     "va": 569677400.0,
+     "rank_all": 3,
+     "score": 2.62,
+     "ul1": 2246.0,
+     "strong": true,
+     "vol20": 0.0536,
+     "dev25": 0.1312,
+     "rng": 0.1125,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "6961",
+     "code5": "69610",
+     "name": "エンプラス",
+     "mkt": "プライム",
+     "close": 8590.0,
+     "ret1": 0.11558441558441568,
+     "va": 2947950000.0,
+     "rank_all": 4,
+     "score": 2.62,
+     "ul1": 10090.0,
+     "strong": false,
+     "vol20": 0.0671,
+     "dev25": -0.0783,
+     "rng": 0.1506,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6890",
+     "code5": "68900",
+     "name": "フェローテック",
+     "mkt": "スタンダード",
+     "close": 7617.0,
+     "ret1": 0.11490046838407486,
+     "va": 19596302500.0,
+     "rank_all": 5,
+     "score": 2.55,
+     "ul1": 9117.0,
+     "strong": false,
+     "vol20": 0.0723,
+     "dev25": -0.1209,
+     "rng": 0.1301,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "5129",
+      "name": "ＦＩＸＥＲ",
+      "close": 286.0,
+      "ret1": 0.38834951456310685,
+      "jsf_stop": true,
+      "jsf_warn": true
+     },
+     {
+      "rank": 2,
+      "code": "6794",
+      "name": "フォスター電機",
+      "close": 3915.0,
+      "ret1": 0.21772939346811815,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 3,
+      "code": "6418",
+      "name": "日本金銭機械",
+      "close": 1465.0,
+      "ret1": 0.17954911433172294,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 3
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "5129",
+      "name": "ＦＩＸＥＲ",
+      "close": 286.0,
+      "ret1": 0.38834951456310685,
+      "seido": "○",
+      "jsf_stop": true,
+      "jsf_warn": true,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "6794",
+      "name": "フォスター電機",
+      "close": 3915.0,
+      "ret1": 0.21772939346811815,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "1960",
+      "name": "サンテック",
+      "close": 1846.0,
+      "ret1": 0.18713826366559494,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 29
+   },
+   "asobi": {
+    "code": "1810",
+    "name": "松井建設",
+    "close": 1705.0,
+    "ret1": 0.21352313167259784,
+    "va": 151883600.0,
+    "lim": 1910.0,
+    "shares": 100,
+    "n": 2,
+    "seido": "○",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": true
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -3212,6 +3434,241 @@
       "open": 3110.0,
       "close": 3215.0,
       "high": 3270.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-11": {
+   "trade_day": "2026-11-11",
+   "asof": "2026-11-10",
+   "made": "2026-11-11 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3909",
+     "name": "ショーケース",
+     "rank_all": 1,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 759.0,
+     "close": 748.0,
+     "high": 770.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "9888",
+     "name": "ＵＥＸ",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1615.0,
+       "shares": 200,
+       "sell": null
+      },
+      {
+       "lim": 1691.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 1516.0,
+     "close": 1487.0,
+     "high": 1537.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3103",
+     "name": "ユニチカ",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1448.0,
+       "shares": 200,
+       "sell": null
+      },
+      {
+       "lim": 1516.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 1350.0,
+     "close": 1312.0,
+     "high": 1446.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6777",
+     "name": "ｓａｎｔｅｃ　Ｈｏｌｄｉ",
+     "rank_all": 4,
+     "skip": "100株で100万超",
+     "legs": [],
+     "open": 19980.0,
+     "close": 20910.0,
+     "high": 21320.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "198A",
+     "name": "ＰｏｓｔＰｒｉｍｅ",
+     "rank_all": 5,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 146.0,
+       "shares": 2200,
+       "sell": null
+      },
+      {
+       "lim": 153.0,
+       "shares": 1000,
+       "sell": null
+      }
+     ],
+     "open": 131.0,
+     "close": 121.0,
+     "high": 131.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-11",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "198A",
+      "name": "ＰｏｓｔＰｒｉｍｅ",
+      "close_prev": 136.0,
+      "legs": [
+       {
+        "lim": 146.0,
+        "shares": 1000,
+        "sell": null
+       },
+       {
+        "lim": 157.0,
+        "shares": 1900,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 131.0,
+      "close": 121.0,
+      "high": 131.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "3103",
+      "name": "ユニチカ",
+      "close_prev": 1353.0,
+      "legs": [
+       {
+        "lim": 1448.0,
+        "shares": 200,
+        "sell": null
+       },
+       {
+        "lim": 1556.0,
+        "shares": 400,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1350.0,
+      "close": 1312.0,
+      "high": 1446.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "4286",
+      "name": "ＣＬホールディングス",
+      "close_prev": 1361.0,
+      "legs": [
+       {
+        "lim": 1457.0,
+        "shares": 200,
+        "sell": null
+       },
+       {
+        "lim": 1566.0,
+        "shares": 400,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1340.0,
+      "close": 1418.0,
+      "high": 1455.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "友達",
+      "code": "9888",
+      "name": "ＵＥＸ",
+      "close_prev": 1509.0,
+      "legs": [
+       {
+        "lim": 1615.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 1736.0,
+        "shares": 300,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1516.0,
+      "close": 1487.0,
+      "high": 1537.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "9475",
+      "name": "昭文社ホールディングス",
+      "close_prev": 749.0,
+      "legs": [
+       {
+        "lim": 839.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 749.0,
+      "close": 749.0,
+      "high": 750.0,
       "yen": 0,
       "sclose": false
      }

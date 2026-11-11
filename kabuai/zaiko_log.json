@@ -541,5 +541,93 @@
   ],
   "made": "2026-11-11T04:42:34+09:00",
   "sent": false
+ },
+ "2026-11-12": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "5129",
+    "name": "ＦＩＸＥＲ",
+    "close": 286.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "6794",
+    "name": "フォスター電機",
+    "close": 3915.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "1960",
+    "name": "サンテック",
+    "close": 1846.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/12",
+     "stale": false,
+     "fee_pct": 0.05,
+     "day_ok": true,
+     "max_sh": 40000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "1810",
+    "name": "松井建設",
+    "close": 1705.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "lim": 1910.0,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-11T18:45:03+09:00",
+  "sent": false
  }
 }
