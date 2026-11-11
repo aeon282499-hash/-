@@ -441,9 +441,9 @@
     "limit_price": null,
     "entry_open": 3937.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.61,
+    "unrealized_pnl": 0.305,
     "exit_type": null,
     "exit_date": null
   },
@@ -457,9 +457,9 @@
     "limit_price": null,
     "entry_open": 1480.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": -0.574,
+    "unrealized_pnl": -0.236,
     "exit_type": null,
     "exit_date": null
   },
@@ -473,9 +473,9 @@
     "limit_price": null,
     "entry_open": 3920.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 1.173,
+    "unrealized_pnl": 1.837,
     "exit_type": null,
     "exit_date": null
   },
@@ -489,9 +489,9 @@
     "limit_price": null,
     "entry_open": 4400.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.909,
+    "unrealized_pnl": 0.682,
     "exit_type": null,
     "exit_date": null
   },
@@ -504,11 +504,11 @@
     "prev_close": 2281.0,
     "limit_price": null,
     "entry_open": 2264.0,
-    "status": "open",
-    "hold_days": 1,
-    "pnl_pct": null,
+    "status": "closed",
+    "hold_days": 2,
+    "pnl_pct": -3.0,
     "unrealized_pnl": -1.833,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "STOP",
+    "exit_date": "2026-11-11"
   }
 ]

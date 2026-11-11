@@ -1,44 +1,4 @@
 {
-  "date": "2026-11-11",
-  "signals": [
-    {
-      "ticker": "4626.T",
-      "name": "太陽ホールディングス",
-      "direction": "BUY",
-      "prev_close": 4640.0,
-      "limit_price": 4685,
-      "days_cover": 0.5844138792389487,
-      "rsi": 39.16,
-      "deviation": -1.71,
-      "vol_ratio": 1.78,
-      "range_ratio": 1.68,
-      "turnover": 4459958400.0
-    },
-    {
-      "ticker": "1951.T",
-      "name": "エクシオグループ",
-      "direction": "BUY",
-      "prev_close": 2404.5,
-      "limit_price": 2428,
-      "days_cover": 0.20436839208029228,
-      "rsi": 40.97,
-      "deviation": -4.52,
-      "vol_ratio": 2.7,
-      "range_ratio": 0.94,
-      "turnover": 3184312500.0
-    },
-    {
-      "ticker": "8424.T",
-      "name": "芙蓉総合リース",
-      "direction": "BUY",
-      "prev_close": 4015.0,
-      "limit_price": 4055,
-      "days_cover": 0.6351224290848142,
-      "rsi": 33.89,
-      "deviation": -5.39,
-      "vol_ratio": 3.92,
-      "range_ratio": 1.17,
-      "turnover": 3105927700.0
-    }
-  ]
+  "date": "2026-11-12",
+  "signals": []
 }

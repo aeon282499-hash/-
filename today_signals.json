@@ -1,26 +1,4 @@
 {
-  "date": "2026-11-11",
-  "signals": [
-    {
-      "ticker": "4626.T",
-      "name": "太陽ホールディングス",
-      "direction": "BUY",
-      "prev_close": 4640.0,
-      "limit_price": 4685
-    },
-    {
-      "ticker": "1951.T",
-      "name": "エクシオグループ",
-      "direction": "BUY",
-      "prev_close": 2404.5,
-      "limit_price": 2428
-    },
-    {
-      "ticker": "8424.T",
-      "name": "芙蓉総合リース",
-      "direction": "BUY",
-      "prev_close": 4015.0,
-      "limit_price": 4055
-    }
-  ]
+  "date": "2026-11-12",
+  "signals": []
 }
