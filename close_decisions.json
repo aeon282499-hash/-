@@ -3577,5 +3577,102 @@
       "rsi": 63.94,
       "price": 1479.0
     }
+  },
+  "2026-11-11": {
+    "main:BUY:9433.T": {
+      "decision": "HOLD",
+      "rsi": 43.07,
+      "price": 2812.0
+    },
+    "main:BUY:3941.T": {
+      "decision": "HOLD",
+      "rsi": 45.48,
+      "price": 1515.0
+    },
+    "main:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 41.38,
+      "price": 4650.0
+    },
+    "main:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 39.84,
+      "price": 2387.5
+    },
+    "main:BUY:8424.T": {
+      "decision": "HOLD",
+      "rsi": 35.85,
+      "price": 4036.0
+    },
+    "main:SELL:4452.T": {
+      "decision": "HOLD",
+      "rsi": 64.37,
+      "price": 3905.0
+    },
+    "main:SELL:9009.T": {
+      "decision": "HOLD",
+      "rsi": 63.52,
+      "price": 1481.5
+    },
+    "main:SELL:9989.T": {
+      "decision": "HOLD",
+      "rsi": 61.95,
+      "price": 3856.0
+    },
+    "main:SELL:3002.T": {
+      "decision": "HOLD",
+      "rsi": 69.38,
+      "price": 4360.0
+    },
+    "kiwami:BUY:9433.T": {
+      "decision": "HOLD",
+      "rsi": 42.85,
+      "price": 2809.5
+    },
+    "kiwami:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 42.49,
+      "price": 4656.0
+    },
+    "kiwami:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 39.84,
+      "price": 2387.5
+    },
+    "kiwami_mid:BUY:9433.T": {
+      "decision": "HOLD",
+      "rsi": 42.85,
+      "price": 2809.5
+    },
+    "kiwami_mid:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 42.49,
+      "price": 4656.0
+    },
+    "kiwami_mid:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 39.84,
+      "price": 2387.5
+    },
+    "kiwami_small:BUY:9433.T": {
+      "decision": "HOLD",
+      "rsi": 42.85,
+      "price": 2809.5
+    },
+    "kiwami_small:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 39.84,
+      "price": 2387.5
+    },
+    "kiwami:SELL:4452.T": {
+      "decision": "HOLD",
+      "rsi": 64.57,
+      "price": 3907.0
+    },
+    "kiwami:SELL:9009.T": {
+      "decision": "HOLD",
+      "rsi": 63.52,
+      "price": 1481.5
+    }
   }
 }
