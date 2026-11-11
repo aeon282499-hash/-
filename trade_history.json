@@ -2119,6 +2119,36 @@
       "close": 1504.5,
       "pnl": 0.97,
       "win": true
+    },
+    {
+      "date": "2026-11-11",
+      "ticker": "4626.T",
+      "name": "太陽ホールディングス",
+      "direction": "BUY",
+      "open": 4642.0,
+      "close": 4657.0,
+      "pnl": 0.32,
+      "win": true
+    },
+    {
+      "date": "2026-11-11",
+      "ticker": "1951.T",
+      "name": "エクシオグループ",
+      "direction": "BUY",
+      "open": 2404.5,
+      "close": 2395.5,
+      "pnl": -0.37,
+      "win": false
+    },
+    {
+      "date": "2026-11-11",
+      "ticker": "8424.T",
+      "name": "芙蓉総合リース",
+      "direction": "BUY",
+      "open": 4021.0,
+      "close": 4043.0,
+      "pnl": 0.55,
+      "win": true
     }
   ]
 }
