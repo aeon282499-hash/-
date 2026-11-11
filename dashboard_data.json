@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11 08:16:01",
+  "generated_at": "2026-11-11 11:54:47",
   "date": "2026-11-11",
   "tier_summary": {
     "S": 0,
@@ -22,11 +22,12 @@
     "META": 0.0,
     "MSFT": -2.2,
     "MU": -1.1,
+    "NRG": -0.3,
     "NVDA": -5.47,
     "ON": 0.72,
     "PANW": -1.37,
     "PLTR": -0.22,
-    "PLUG": -9.0,
+    "PLUG": -8.67,
     "QBTS": -8.63,
     "RGTI": -6.39,
     "S": -0.38,
@@ -240,7 +241,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": -3.02
+      "us_tailwind": -2.34
     },
     {
       "theme": "証券_取引所",
@@ -302,7 +303,7 @@
         "PLUG"
       ],
       "policy": "",
-      "us_tailwind": -9.0
+      "us_tailwind": -8.67
     },
     {
       "theme": "防衛",
@@ -3137,7 +3138,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -3.02,
+      "us_tailwind": -2.34,
       "score": 33.7,
       "tier": "C",
       "init_stars": 3,
@@ -3594,7 +3595,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -3.02,
+      "us_tailwind": -2.34,
       "score": 26.7,
       "tier": "C",
       "init_stars": 3,
@@ -3954,7 +3955,7 @@
         "NRG",
         "VST"
       ],
-      "us_tailwind": -3.02,
+      "us_tailwind": -2.34,
       "score": 23.7,
       "tier": "C",
       "init_stars": 3,
