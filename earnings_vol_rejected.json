@@ -1619,5 +1619,62 @@
    "runup5": -7.2,
    "price": 1564.0
   }
+ ],
+ "2026-11-12": [
+  {
+   "ticker": "2269.T",
+   "name": "明治ホールディングス",
+   "vol": 1.05,
+   "why": "vol",
+   "last_time": "15:30",
+   "bucket": "引け後",
+   "rsi": 49.9,
+   "runup5": -3.1,
+   "price": 4287.0
+  },
+  {
+   "ticker": "3040.T",
+   "name": "ソリトンシステムズ",
+   "vol": 2.5,
+   "why": "announced",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 38.5,
+   "runup5": -4.7,
+   "price": 2607.0
+  },
+  {
+   "ticker": "3197.T",
+   "name": "すかいらーくホールディングス",
+   "vol": 1.02,
+   "why": "vol",
+   "last_time": "11:30",
+   "bucket": "場中",
+   "rsi": 51.6,
+   "runup5": -6.4,
+   "price": 3560.0
+  },
+  {
+   "ticker": "8022.T",
+   "name": "美津濃",
+   "vol": 3.52,
+   "why": "announced",
+   "last_time": "13:00",
+   "bucket": "場中",
+   "rsi": 42.5,
+   "runup5": -10.4,
+   "price": 4115.0
+  },
+  {
+   "ticker": "9987.T",
+   "name": "スズケン",
+   "vol": 1.44,
+   "why": "vol",
+   "last_time": "15:00",
+   "bucket": "場中",
+   "rsi": 51.0,
+   "runup5": -6.2,
+   "price": 2821.0
+  }
  ]
 }

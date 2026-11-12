@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-11",
+ "last_signal_date": "2026-11-12",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1289,7 +1289,13 @@
    "shares": 300,
    "rsi": 28.5,
    "runup5": -9.1,
-   "status": "pending"
+   "status": "closed",
+   "entry": 1318.5,
+   "exit_date": "2026-11-12",
+   "exit": 1327.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": 0.64,
+   "pnl_yen": 2550
   },
   {
    "ticker": "3107.T",
@@ -1300,7 +1306,10 @@
    "shares": 100,
    "rsi": 35.1,
    "runup5": -4.1,
-   "status": "pending"
+   "status": "extended",
+   "entry": 3346.0,
+   "gap_pct": 8.37,
+   "ext_exit_date": "2026-11-18"
   },
   {
    "ticker": "3436.T",
@@ -1311,7 +1320,10 @@
    "shares": 200,
    "rsi": 36.3,
    "runup5": -7.5,
-   "status": "pending"
+   "status": "extended",
+   "entry": 2089.0,
+   "gap_pct": 11.97,
+   "ext_exit_date": "2026-11-18"
   },
   {
    "ticker": "5599.T",
@@ -1321,6 +1333,45 @@
    "signal_price": 1592.0,
    "shares": 300,
    "rsi": 47.2,
+   "runup5": -7.9,
+   "status": "closed",
+   "entry": 1577.0,
+   "exit_date": "2026-11-12",
+   "exit": 1559.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.14,
+   "pnl_yen": -5400
+  },
+  {
+   "ticker": "7762.T",
+   "name": "シチズン時計",
+   "type": "第２四半期",
+   "date": "2026-11-12",
+   "signal_price": 1943.5,
+   "shares": 200,
+   "rsi": 34.6,
+   "runup5": -6.4,
+   "status": "pending"
+  },
+  {
+   "ticker": "336A.T",
+   "name": "ダイナミックマッププラットフォーム",
+   "type": "第２四半期",
+   "date": "2026-11-12",
+   "signal_price": 1063.0,
+   "shares": 400,
+   "rsi": 34.7,
+   "runup5": -13.1,
+   "status": "pending"
+  },
+  {
+   "ticker": "8876.T",
+   "name": "リログループ",
+   "type": "第２四半期",
+   "date": "2026-11-12",
+   "signal_price": 2287.0,
+   "shares": 200,
+   "rsi": 37.5,
    "runup5": -7.9,
    "status": "pending"
   }
