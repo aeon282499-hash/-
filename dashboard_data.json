@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-12 08:16:37",
+  "generated_at": "2026-11-12 12:54:44",
   "date": "2026-11-12",
   "tier_summary": {
     "S": 0,
@@ -27,7 +27,7 @@
     "ON": 5.76,
     "PANW": 2.48,
     "PLTR": 2.12,
-    "PLUG": -1.09,
+    "PLUG": -0.73,
     "QBTS": 1.62,
     "RGTI": -8.56,
     "S": 1.49,
@@ -81,7 +81,7 @@
         "PLUG"
       ],
       "policy": "",
-      "us_tailwind": -1.09
+      "us_tailwind": -0.73
     },
     {
       "theme": "インバウンド_観光",
@@ -640,7 +640,7 @@
       "us_drivers": [
         "PLUG"
       ],
-      "us_tailwind": -1.09,
+      "us_tailwind": -0.73,
       "score": 85.6,
       "tier": "A",
       "init_stars": 3,
