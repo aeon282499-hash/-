@@ -1,6 +1,6 @@
 // core.js — 共通ユーティリティ・データ読込・テーマ・ルーター（v5→v7: 2026-10-13 再設計・🔥ライブを外し 🎯前夜/📋作戦/📊データ/🧮電卓 の4本）
 const CFG = {
-  VERSION: "8.7.0",
+  VERSION: "8.8.0",
   LIVE_BASE: "https://chimp-live.aeon282499.workers.dev",   // 🔥ライブ配信ハブ（Cloudflare DO）
   LIVE_POLL_MS: 30000,                                        // WebSocketが切れている時のポーリング間隔
 };
@@ -59,7 +59,7 @@ function route(prefix, nav, fn) { ROUTES.push({ prefix, nav, fn }); }
 function setNav(h) {
   const r = ROUTES.find(x => h.startsWith(x.prefix)) || ROUTES[ROUTES.length - 1];
   // v8.7（2026-11-08 本人「いるのはモメンタム・電卓・AI調教だけ」）: 🩳空売り/🚩初動/📋作戦はナビから外した（コードと直リンクは残置）
-  ["momentum", "calc", "coach"].forEach(k => {
+  ["momentum", "calc", "coach", "uslink"].forEach(k => {
     const el = document.getElementById("nav-" + k); if (el && el.classList) el.classList.toggle("on", r.nav === k);
   });
 }

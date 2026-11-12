@@ -13,6 +13,7 @@ route("#/news", "shodo", viewNews);   // v8.6: 📢開示（開示 PDF の数字
 route("#/explore/", "shodo", h => viewExploreList(decodeURIComponent(h.split("/")[2])));
 route("#/explore", "shodo", viewExplore);   // v8: 🚩初動（探検）は独立タブ
 route("#/calc", "calc", viewCalc);
+route("#/uslink", "uslink", viewUsLink);   // v8.8: 🇺🇸連動（米国連動の寄り逆張りの線・2026-11-12 本人「ナビに4本目」）
 route("#/coach", "coach", viewCoach);   // v8.3: 🧠AI調教（人格プロンプト・銘柄の解剖・言い訳チェッカー・任意でClaude直接）
 route("#/about", "arena", viewAbout);
 route("#/arena", "arena", viewArena);

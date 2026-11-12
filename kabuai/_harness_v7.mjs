@@ -8,6 +8,7 @@ const DD = process.env.KABUAI_DATA || "data";
 const DATA = JSON.parse(fs.readFileSync(DD + "/latest.json", "utf8"));
 const SIDX = JSON.parse(fs.readFileSync(DD + "/search_index.json", "utf8"));
 const EXPJ = JSON.parse(fs.readFileSync(DD + "/explorer.json", "utf8"));
+let USLJ = null; try { USLJ = await (await fetch("https://chimp-live.aeon282499.workers.dev/live.json", { headers: { "User-Agent": "Mozilla/5.0" } })).json(); } catch (e) { USLJ = null; }   // v8.8 🇺🇸連動: 本番ハブの実データ
 
 const srcs = [...html.matchAll(/<script src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
 if (!srcs.length) { console.error("FAIL: script tags not found"); process.exit(1); }
@@ -38,6 +39,7 @@ const sandbox = { document: documentShim, window: windowShim, location: location
       if (m === "refusal") return { ok: true, status: 200, json: async () => ({ stop_reason: "refusal", stop_details: { category: "policy" }, content: [] }) };
       if (m === "net") throw new TypeError("Failed to fetch");
       return { ok: true, status: 200, json: async () => ({ model: "claude-opus-5-5", stop_reason: "end_turn", content: [{ type: "text", text: "結論: 持つな。" }], usage: { input_tokens: 1234, output_tokens: 321 } }) }; }
+    if (s.includes("chimp-live")) { const m = sandbox._uslMode || "ok"; if (m === "404") return { ok: false, status: 404, json: async () => ({}) }; if (m === "net") throw new TypeError("Failed to fetch"); return { ok: true, status: 200, json: async () => (m === "lines" ? { us_link: { ...USLJ.us_link, phase: "lines", total_pl: null } } : USLJ) }; }
     if (s.includes("search_index")) return { ok: true, status: 200, json: async () => SIDX };
     if (s.includes("explorer")) return { ok: true, status: 200, json: async () => EXPJ };
     const m = s.match(/stocks\/([^./]+)\.json/);
@@ -59,7 +61,7 @@ const go = h => { locationShim.hash = h; sandbox.render(); return view(); };
 
 console.log("── 0) 起動・データ ──");
 check("DATAロード", !!ev("DATA && DATA.data_date"), ev("DATA && DATA.data_date"));
-check("ROUTES登録", ev("ROUTES.length") === 16, `${ev("ROUTES.length")}本`);   // v8.5 #/search・v8.6 #/news で16本（ナビから外した画面も直リンクで生存）
+check("ROUTES登録", ev("ROUTES.length") === 17, `${ev("ROUTES.length")}本`);   // v8.5 #/search・v8.6 #/news で16本（ナビから外した画面も直リンクで生存）
 check("datepill", $get("#datepill").textContent.includes("EOD"), $get("#datepill").textContent);
 check("v7: LIVE未定義でも起動", ev("typeof LIVE") === "undefined");
 
@@ -256,7 +258,7 @@ for (const c of codes) {
 hv = go("#/about"); check("使い方 v8.4.1", clean(hv) && hv.includes("v8.4.1") && hv.includes("空売り") && hv.includes("ランキング") && hv.includes("本命の台帳") && !hv.includes("ライブの数字の読み方"));
 
 console.log("── 5) 不在チェック・残置 ──");
-check("ナビは3本（ランキング/電卓/AI調教）v8.7", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 3 && !html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && !html.includes('id="nav-shodo"') && !html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
+check("ナビは4本（ランキング/電卓/AI調教/🇺🇸連動）v8.8", (html.match(/<nav>[\s\S]*?<\/nav>/) || [""])[0].split("<a ").length - 1 === 4 && html.includes('id="nav-uslink"') && !html.includes('id="nav-short"') && html.includes('id="nav-coach"') && html.includes('id="nav-momentum"') && !html.includes('id="nav-shodo"') && !html.includes('id="nav-plan"') && html.includes('id="nav-calc"') && !html.includes('id="nav-ir"') && !html.includes('id="nav-flow"') && !html.includes('id="nav-data"') && !html.includes('id="nav-arena"') && !html.includes('id="nav-live"'));
 hv = go("#/short"); check("🩳空売り v8.4: 描画（データ有＝一覧・無＝空メッセージ）", clean(hv) && hv.includes("🩳 空売り") && ((hv.includes("gchip") && hv.includes("空売り残高が多い")) || hv.includes("付いていません")));
 hv = go("#/"); check("🐵ランキング v8.4: 売残ゲージと🔥カードは出さない", clean(hv) && !hv.includes("shortsum") && !hv.includes("smeter") && !hv.includes("売残多い順"));
 hv = go("#/"); check("ホーム＝🐵ランキング v8.2", clean(hv) && hv.includes("EODランキング") || hv.includes("ランキング"));
@@ -290,5 +292,14 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
     sandbox._apiMode = "net"; await sandbox.coachAsk(); const e3 = $get("#coach-out").innerHTML.includes("Failed to fetch") && ev("COACH.busy") === false;
     check("AI調教: 401/拒否/通信失敗を落ちずに表示", e1 && e2 && e3); sandbox._apiMode = "ok"; sandbox.coachSetKey(""); }
   go(`#/detail/${c0}`); await sandbox.loadStockDetail(c0); check("詳細→🧠AI調教リンク", $get("#dbody").innerHTML.includes(`#/coach/${c0}`)); }
+{ console.log("── 🇺🇸連動 v8.8 ──");
+  const flush = () => new Promise(r => setTimeout(r, 30));
+  const u = USLJ && USLJ.us_link; check("🇺🇸連動: 本番ハブに us_link がある", !!u && Array.isArray(u.rows) && u.rows.length === 7, u ? `${u.date} ${u.phase}` : "なし");
+  let hv = go("#/uslink"); check("🇺🇸連動: 読み込み中", clean(hv) && hv.includes("読み込み中"));
+  await flush(); hv = go("#/uslink"); check("🇺🇸連動: 結果つきで描画（7行・合計・寄り・株数）", clean(hv) && (hv.match(/<tr>/g) || []).length === 8 && hv.includes("合計") && hv.includes("株") && hv.includes("キオクシア") && hv.includes("結果"));
+  sandbox._uslMode = "lines"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 寄り前は線と株数だけ（結果列なし）", clean(hv) && !hv.includes("結果") && !hv.includes("合計") && hv.includes("空売り") && hv.includes("買い"));
+  sandbox._uslMode = "404"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 404→まだありません", clean(hv) && hv.includes("まだありません"));
+  sandbox._uslMode = "net"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 通信失敗でも落ちない", clean(hv) && hv.includes("まだありません"));
+  sandbox._uslMode = "ok"; }
 console.log(fail ? `\n${fail} 件 NG` : "\nALL GREEN");
 process.exit(fail ? 1 : 0);
