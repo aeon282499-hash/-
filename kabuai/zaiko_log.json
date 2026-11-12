@@ -629,5 +629,141 @@
   ],
   "made": "2026-11-12T04:34:16+09:00",
   "sent": false
+ },
+ "2026-11-13": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "264A",
+    "name": "Ｓｃｈｏｏ",
+    "close": 289.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/13",
+     "stale": false,
+     "fee_pct": 0.35,
+     "day_ok": true,
+     "max_sh": 250000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "2693",
+    "name": "ＹＫＴ",
+    "close": 320.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 0.32,
+     "day": "11/13",
+     "stale": false,
+     "fee_pct": 0.1,
+     "day_ok": true,
+     "max_sh": 210000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "5142",
+    "name": "アキレス",
+    "close": 2213.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "友達",
+    "code": "6145",
+    "name": "ＮＩＴＴＯＫＵ",
+    "close": 3195.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "友達",
+    "code": "660A",
+    "name": "ＲＥＣＥＰＴＩＯＮＩＳＴ",
+    "close": 1020.0,
+    "seido": "?",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "6228",
+    "name": "ジェイ・イー・ティ",
+    "close": 651.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "lim": 730.0,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/13",
+     "stale": false,
+     "fee_pct": 0.15,
+     "day_ok": true,
+     "max_sh": 110000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-12T18:45:01+09:00",
+  "sent": false
  }
 }

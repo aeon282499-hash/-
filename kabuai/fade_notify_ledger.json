@@ -2252,6 +2252,247 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-13": {
+   "asof": "2026-11-12",
+   "trade_day": "2026-11-13",
+   "made": "2026-11-12 18:09",
+   "n_cand": 22,
+   "rule_a": {
+    "code": "264A",
+    "code5": "264A0",
+    "name": "Ｓｃｈｏｏ",
+    "mkt": "グロース",
+    "close": 289.0,
+    "ret1": 0.3827751196172249,
+    "va": 721199900.0,
+    "rank_all": 1,
+    "score": 3.9,
+    "ul1": 369.0,
+    "strong": true,
+    "vol20": 0.119,
+    "dev25": 0.209,
+    "rng": 0.3876,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": []
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "264A",
+     "code5": "264A0",
+     "name": "Ｓｃｈｏｏ",
+     "mkt": "グロース",
+     "close": 289.0,
+     "ret1": 0.3827751196172249,
+     "va": 721199900.0,
+     "rank_all": 1,
+     "score": 3.9,
+     "ul1": 369.0,
+     "strong": true,
+     "vol20": 0.119,
+     "dev25": 0.209,
+     "rng": 0.3876,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "2693",
+     "code5": "26930",
+     "name": "ＹＫＴ",
+     "mkt": "スタンダード",
+     "close": 320.0,
+     "ret1": 0.285140562248996,
+     "va": 501777500.0,
+     "rank_all": 2,
+     "score": 3.67,
+     "ul1": 400.0,
+     "strong": true,
+     "vol20": 0.0698,
+     "dev25": 0.2066,
+     "rng": 0.3092,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "5142",
+     "code5": "51420",
+     "name": "アキレス",
+     "mkt": "プライム",
+     "close": 2213.0,
+     "ret1": 0.22062879205736352,
+     "va": 1898103300.0,
+     "rank_all": 3,
+     "score": 3.44,
+     "ul1": 2713.0,
+     "strong": true,
+     "vol20": 0.0636,
+     "dev25": 0.1927,
+     "rng": 0.2195,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "6145",
+     "code5": "61450",
+     "name": "ＮＩＴＴＯＫＵ",
+     "mkt": "スタンダード",
+     "close": 3195.0,
+     "ret1": 0.1855287569573283,
+     "va": 305290400.0,
+     "rank_all": 4,
+     "score": 3.06,
+     "ul1": 3895.0,
+     "strong": true,
+     "vol20": 0.0502,
+     "dev25": 0.1833,
+     "rng": 0.21,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "660A",
+     "code5": "660A0",
+     "name": "ＲＥＣＥＰＴＩＯＮＩＳＴ",
+     "mkt": "グロース",
+     "close": 1020.0,
+     "ret1": 0.17241379310344818,
+     "va": 1814671400.0,
+     "rank_all": 5,
+     "score": 3.0,
+     "ul1": 1320.0,
+     "strong": true,
+     "vol20": null,
+     "dev25": null,
+     "rng": 0.1402,
+     "seido": "?",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "5142",
+      "name": "アキレス",
+      "close": 2213.0,
+      "ret1": 0.22062879205736352,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "4027",
+      "name": "テイカ",
+      "close": 2662.0,
+      "ret1": 0.21386228910168725,
+      "jsf_stop": false,
+      "jsf_warn": false
+     },
+     {
+      "rank": 3,
+      "code": "6145",
+      "name": "ＮＩＴＴＯＫＵ",
+      "close": 3195.0,
+      "ret1": 0.1855287569573283,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 3
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "264A",
+      "name": "Ｓｃｈｏｏ",
+      "close": 289.0,
+      "ret1": 0.3827751196172249,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "2693",
+      "name": "ＹＫＴ",
+      "close": 320.0,
+      "ret1": 0.285140562248996,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "5142",
+      "name": "アキレス",
+      "close": 2213.0,
+      "ret1": 0.22062879205736352,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 22
+   },
+   "asobi": {
+    "code": "6228",
+    "name": "ジェイ・イー・ティ",
+    "close": 651.0,
+    "ret1": 0.18148820326678772,
+    "va": 123013800.0,
+    "lim": 730.0,
+    "shares": 300,
+    "n": 2,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": true
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -3669,6 +3910,202 @@
       "open": 749.0,
       "close": 749.0,
       "high": 750.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-12": {
+   "trade_day": "2026-11-12",
+   "asof": "2026-11-11",
+   "made": "2026-11-12 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "5129",
+     "name": "ＦＩＸＥＲ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 307.0,
+       "shares": 1000,
+       "sell": 307.0
+      },
+      {
+       "lim": 321.0,
+       "shares": 500,
+       "sell": 321.0
+      }
+     ],
+     "open": 302.0,
+     "close": 273.0,
+     "high": 346.0,
+     "status": "約定",
+     "yen": 58000,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "1980",
+     "name": "ダイダン",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 3105.0,
+     "close": 3165.0,
+     "high": 3260.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "1960",
+     "name": "サンテック",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1976.0,
+       "shares": 100,
+       "sell": null
+      },
+      {
+       "lim": 2068.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 1845.0,
+     "close": 1858.0,
+     "high": 1870.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6961",
+     "name": "エンプラス",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 8490.0,
+     "close": 8540.0,
+     "high": 8770.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6890",
+     "name": "フェローテック",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 7620.0,
+     "close": 7241.0,
+     "high": 7640.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-12",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "5129",
+      "name": "ＦＩＸＥＲ",
+      "close_prev": 286.0,
+      "legs": [
+       {
+        "lim": 307.0,
+        "shares": 700,
+        "sell": 307.0,
+        "pct": 11.074918566775244
+       },
+       {
+        "lim": 329.0,
+        "shares": 1400,
+        "sell": 329.0,
+        "pct": 17.02127659574468
+       }
+      ],
+      "status": "約定",
+      "open": 302.0,
+      "close": 273.0,
+      "high": 346.0,
+      "yen": 102200,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "6794",
+      "name": "フォスター電機",
+      "close_prev": 3915.0,
+      "legs": [
+       {
+        "lim": 4505.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 4125.0,
+      "close": 4430.0,
+      "high": 4445.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "1960",
+      "name": "サンテック",
+      "close_prev": 1846.0,
+      "legs": [
+       {
+        "lim": 1976.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2123.0,
+        "shares": 300,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1845.0,
+      "close": 1858.0,
+      "high": 1870.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "1810",
+      "name": "松井建設",
+      "close_prev": 1705.0,
+      "legs": [
+       {
+        "lim": 1910.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1710.0,
+      "close": 1753.0,
+      "high": 1809.0,
       "yen": 0,
       "sclose": false
      }
