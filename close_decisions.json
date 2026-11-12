@@ -3674,5 +3674,102 @@
       "rsi": 63.52,
       "price": 1481.5
     }
+  },
+  "2026-11-12": {
+    "main:BUY:9433.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:3941.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 46.08,
+      "price": 4676.0
+    },
+    "main:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 43.99,
+      "price": 2429.0
+    },
+    "main:BUY:8424.T": {
+      "decision": "HOLD",
+      "rsi": 42.81,
+      "price": 4123.0
+    },
+    "main:SELL:4452.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:SELL:9009.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:SELL:9989.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "main:SELL:3002.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:9433.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 46.08,
+      "price": 4676.0
+    },
+    "kiwami:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 44.29,
+      "price": 2432.0
+    },
+    "kiwami_mid:BUY:9433.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_mid:BUY:4626.T": {
+      "decision": "HOLD",
+      "rsi": 46.08,
+      "price": 4676.0
+    },
+    "kiwami_mid:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 44.29,
+      "price": 2432.0
+    },
+    "kiwami_small:BUY:9433.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_small:BUY:1951.T": {
+      "decision": "HOLD",
+      "rsi": 44.29,
+      "price": 2432.0
+    },
+    "kiwami:SELL:4452.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:SELL:9009.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
