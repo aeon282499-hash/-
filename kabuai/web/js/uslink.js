@@ -1,7 +1,7 @@
 // uslink.js — 🇺🇸連動（v8.8・2026-11-12 本人「これをモメンタムチンパンアプリ追加するか」）
 // 米国連動の寄り逆張り: 前夜の米国株(GLW/MU・時間外込み)から寄りを予想し、行きすぎの線に寄付指値。約定したら引成＋寄り値から5%の逆指値。
 // データ: PC(us_link_publish.py)が 平日8:40〜8:58 3分おき＋9:25/11:35/15:45 に chimp-live ハブの live.json の "us_link" キーへ配信。
-// 画面は数字の行だけ（feedback_kabuai_numbers_only）。v8.9: 下に順張り（紙）の段（USL.paper）。
+// 画面は数字の行だけ（feedback_kabuai_numbers_only）。v8.9: 下に順張り（紙）の段（USL.paper）。v8.9.1: 損切り%は配信値（USL.stop・11/13〜2%・1銘柄70万）。
 let USL = null, USL_PENDING = false, USL_AT = 0;
 function uslEnsure(force) {
   if (USL_PENDING) return;
@@ -40,7 +40,7 @@ function viewUsLink() {
   return head(sub) + total + `<div class="card tight"><table class="tbl calc-tbl num">
     <thead><tr><th>銘柄</th><th>空売り</th><th>買い</th>${pre ? "" : "<th>結果</th>"}</tr></thead>
     <tbody>${USL.rows.map(r => uslRow(r, pre)).join("")}</tbody></table></div>
-    <p class="disc">寄付指値 ・ 約定したら引成＋寄り値から5%の逆指値 ・ 1銘柄${Math.round((USL.budget || 1e6) / 1e4)}万円</p>` + uslPaper(pre);
+    <p class="disc">寄付指値 ・ 約定したら引成＋寄り値から${USL.stop || 5}%の逆指値 ・ 1銘柄${Math.round((USL.budget || 1e6) / 1e4)}万円</p>` + uslPaper(pre);
 }
 // 順張り(紙・v8.9 2026-11-13 本人「両方やって」): 寄りが上の線以上→買い・下の線以下→空売り。発注しない記録だけ
 function uslPaper(pre) {
