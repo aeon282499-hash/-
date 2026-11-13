@@ -2493,6 +2493,202 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-16": {
+   "asof": "2026-11-13",
+   "trade_day": "2026-11-16",
+   "made": "2026-11-13 18:09",
+   "n_cand": 23,
+   "rule_a": null,
+   "rule_a_why": "1位 336A は除外（決算起因）",
+   "rows": [
+    {
+     "code": "336A",
+     "code5": "336A0",
+     "name": "ダイナミックマッププラッ",
+     "mkt": "グロース",
+     "close": 1320.0,
+     "ret1": 0.21883656509695282,
+     "va": 4908418400.0,
+     "rank_all": 1,
+     "score": 3.23,
+     "ul1": 1620.0,
+     "strong": true,
+     "vol20": 0.0714,
+     "dev25": 0.0282,
+     "rng": 0.1856,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "6072",
+     "code5": "60720",
+     "name": "ＥＲＴＨ　Ｇｒｏｕｐ",
+     "mkt": "スタンダード",
+     "close": 1231.0,
+     "ret1": 0.11402714932126701,
+     "va": 2979496500.0,
+     "rank_all": 2,
+     "score": 3.21,
+     "ul1": 1531.0,
+     "strong": false,
+     "vol20": 0.0707,
+     "dev25": 0.1613,
+     "rng": 0.1403,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": true,
+     "jsf_txt": "（株）ＥＲＴＨ　Ｇｒｏｕｐ 申込停止 新規売り・現引き",
+     "reasons": [
+      "決算起因",
+      "日証金停止"
+     ]
+    },
+    {
+     "code": "4234",
+     "code5": "42340",
+     "name": "サンエー化研",
+     "mkt": "スタンダード",
+     "close": 1141.0,
+     "ret1": 0.15136226034308775,
+     "va": 300179800.0,
+     "rank_all": 3,
+     "score": 2.92,
+     "ul1": 1441.0,
+     "strong": false,
+     "vol20": 0.0439,
+     "dev25": 0.1447,
+     "rng": 0.1554,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "4588",
+     "code5": "45880",
+     "name": "オンコリスバイオファーマ",
+     "mkt": "グロース",
+     "close": 8410.0,
+     "ret1": 0.0964797913950457,
+     "va": 17564221000.0,
+     "rank_all": 4,
+     "score": 2.81,
+     "ul1": 9910.0,
+     "strong": false,
+     "vol20": 0.0594,
+     "dev25": 0.2594,
+     "rng": 0.1147,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6145",
+     "code5": "61450",
+     "name": "ＮＩＴＴＯＫＵ",
+     "mkt": "スタンダード",
+     "close": 3465.0,
+     "ret1": 0.08450704225352124,
+     "va": 4834820400.0,
+     "rank_all": 5,
+     "score": 2.81,
+     "ul1": 4165.0,
+     "strong": false,
+     "vol20": 0.0513,
+     "dev25": 0.2718,
+     "rng": 0.252,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "336A",
+      "name": "ダイナミックマッププラッ",
+      "close": 1320.0,
+      "ret1": 0.21883656509695282,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 2,
+      "code": "7235",
+      "name": "東京ラヂエーター製造",
+      "close": 1789.0,
+      "ret1": 0.19266666666666676,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "7717",
+      "name": "ブイ・テクノロジー",
+      "close": 5160.0,
+      "ret1": 0.15695067264573992,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 23
+   },
+   "asobi": {
+    "code": "7522",
+    "name": "ワタミ",
+    "close": 1008.0,
+    "ret1": 0.1748251748251748,
+    "va": 177609600.0,
+    "lim": 1129.0,
+    "shares": 200,
+    "n": 6,
+    "seido": "○",
+    "jsf_stop": true,
+    "jsf_warn": false,
+    "earn": false
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -4108,6 +4304,277 @@
       "high": 1809.0,
       "yen": 0,
       "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-13": {
+   "trade_day": "2026-11-13",
+   "asof": "2026-11-12",
+   "made": "2026-11-13 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "264A",
+     "name": "Ｓｃｈｏｏ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 310.0,
+       "shares": 1000,
+       "sell": null
+      },
+      {
+       "lim": 324.0,
+       "shares": 500,
+       "sell": null
+      }
+     ],
+     "open": 281.0,
+     "close": 238.0,
+     "high": 281.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "2693",
+     "name": "ＹＫＴ",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 343.0,
+       "shares": 900,
+       "sell": null
+      },
+      {
+       "lim": 359.0,
+       "shares": 400,
+       "sell": null
+      }
+     ],
+     "open": 280.0,
+     "close": 280.0,
+     "high": 285.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "5142",
+     "name": "アキレス",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 2368.0,
+       "shares": 100,
+       "sell": null
+      },
+      {
+       "lim": 2479.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 2013.0,
+     "close": 2023.0,
+     "high": 2108.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6145",
+     "name": "ＮＩＴＴＯＫＵ",
+     "rank_all": 4,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 3420.0,
+       "shares": 100,
+       "sell": 3420.0
+      },
+      {
+       "lim": 3580.0,
+       "shares": 100,
+       "sell": 3580.0
+      }
+     ],
+     "open": 3125.0,
+     "close": 3465.0,
+     "high": 3700.0,
+     "status": "約定",
+     "yen": 7000,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "660A",
+     "name": "ＲＥＣＥＰＴＩＯＮＩＳＴ",
+     "rank_all": 5,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1092.0,
+       "shares": 300,
+       "sell": null
+      },
+      {
+       "lim": 1143.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 1050.0,
+     "close": 871.0,
+     "high": 1088.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-13",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "264A",
+      "name": "Ｓｃｈｏｏ",
+      "close_prev": 289.0,
+      "legs": [
+       {
+        "lim": 310.0,
+        "shares": 700,
+        "sell": null
+       },
+       {
+        "lim": 333.0,
+        "shares": 1400,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 281.0,
+      "close": 238.0,
+      "high": 281.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "2693",
+      "name": "ＹＫＴ",
+      "close_prev": 320.0,
+      "legs": [
+       {
+        "lim": 343.0,
+        "shares": 800,
+        "sell": null
+       },
+       {
+        "lim": 368.0,
+        "shares": 1500,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 280.0,
+      "close": 280.0,
+      "high": 285.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "5142",
+      "name": "アキレス",
+      "close_prev": 2213.0,
+      "legs": [
+       {
+        "lim": 2368.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2545.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 2013.0,
+      "close": 2023.0,
+      "high": 2108.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "友達",
+      "code": "6145",
+      "name": "ＮＩＴＴＯＫＵ",
+      "close_prev": 3195.0,
+      "legs": [
+       {
+        "lim": 3675.0,
+        "shares": 200,
+        "sell": 3675.0,
+        "pct": 5.714285714285714
+       }
+      ],
+      "status": "約定",
+      "open": 3125.0,
+      "close": 3465.0,
+      "high": 3700.0,
+      "yen": 42000,
+      "sclose": false
+     },
+     {
+      "kind": "友達",
+      "code": "660A",
+      "name": "ＲＥＣＥＰＴＩＯＮＩＳＴ",
+      "close_prev": 1020.0,
+      "legs": [
+       {
+        "lim": 1092.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 1173.0,
+        "shares": 300,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1050.0,
+      "close": 871.0,
+      "high": 1088.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "6228",
+      "name": "ジェイ・イー・ティ",
+      "close_prev": 651.0,
+      "legs": [],
+      "status": "寄りS高張り付き→取消",
+      "open": 751.0,
+      "close": 751.0,
+      "yen": 0
      }
     ],
     "sent": true

@@ -765,5 +765,98 @@
   ],
   "made": "2026-11-13T04:52:59+09:00",
   "sent": false
+ },
+ "2026-11-16": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "336A",
+    "name": "ダイナミックマッププラッ",
+    "close": 1320.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.8,
+     "day": "11/16",
+     "stale": false,
+     "fee_pct": 0.14,
+     "day_ok": true,
+     "max_sh": 50000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7235",
+    "name": "東京ラヂエーター製造",
+    "close": 1789.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/16",
+     "stale": false,
+     "fee_pct": 0.06,
+     "day_ok": true,
+     "max_sh": 40000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7717",
+    "name": "ブイ・テクノロジー",
+    "close": 5160.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "7522",
+    "name": "ワタミ",
+    "close": 1008.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "lim": 1129.0,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-13T18:45:05+09:00",
+  "sent": false
  }
 }
