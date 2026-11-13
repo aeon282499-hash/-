@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-12",
+ "last_signal_date": "2026-11-13",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1351,7 +1351,10 @@
    "shares": 200,
    "rsi": 34.6,
    "runup5": -6.4,
-   "status": "pending"
+   "status": "extended",
+   "entry": 1997.0,
+   "gap_pct": 10.22,
+   "ext_exit_date": "2026-11-19"
   },
   {
    "ticker": "336A.T",
@@ -1362,7 +1365,10 @@
    "shares": 400,
    "rsi": 34.7,
    "runup5": -13.1,
-   "status": "pending"
+   "status": "extended",
+   "entry": 1083.0,
+   "gap_pct": 13.85,
+   "ext_exit_date": "2026-11-19"
   },
   {
    "ticker": "8876.T",
@@ -1373,6 +1379,23 @@
    "shares": 200,
    "rsi": 37.5,
    "runup5": -7.9,
+   "status": "closed",
+   "entry": 2312.0,
+   "exit_date": "2026-11-13",
+   "exit": 2293.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -0.82,
+   "pnl_yen": -3800
+  },
+  {
+   "ticker": "3350.T",
+   "name": "メタプラネット",
+   "type": "第３四半期",
+   "date": "2026-11-13",
+   "signal_price": 219.0,
+   "shares": 2200,
+   "rsi": 35.8,
+   "runup5": -7.6,
    "status": "pending"
   }
  ],
