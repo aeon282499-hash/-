@@ -39,7 +39,7 @@ const sandbox = { document: documentShim, window: windowShim, location: location
       if (m === "refusal") return { ok: true, status: 200, json: async () => ({ stop_reason: "refusal", stop_details: { category: "policy" }, content: [] }) };
       if (m === "net") throw new TypeError("Failed to fetch");
       return { ok: true, status: 200, json: async () => ({ model: "claude-opus-5-5", stop_reason: "end_turn", content: [{ type: "text", text: "結論: 持つな。" }], usage: { input_tokens: 1234, output_tokens: 321 } }) }; }
-    if (s.includes("chimp-live")) { const m = sandbox._uslMode || "ok"; if (m === "404") return { ok: false, status: 404, json: async () => ({}) }; if (m === "net") throw new TypeError("Failed to fetch"); return { ok: true, status: 200, json: async () => (m === "lines" ? { us_link: { ...USLJ.us_link, phase: "lines", total_pl: null } } : USLJ) }; }
+    if (s.includes("chimp-live")) { const m = sandbox._uslMode || "ok"; if (m === "404") return { ok: false, status: 404, json: async () => ({}) }; if (m === "net") throw new TypeError("Failed to fetch"); return { ok: true, status: 200, json: async () => (m === "lines" ? { us_link: { ...USLJ.us_link, phase: "lines", total_pl: null } } : USLJ.us_link.phase === "lines" ? { us_link: { ...USLJ.us_link, phase: "open", total_pl: 0, paper_total: 0 } } : USLJ) }; }
     if (s.includes("search_index")) return { ok: true, status: 200, json: async () => SIDX };
     if (s.includes("explorer")) return { ok: true, status: 200, json: async () => EXPJ };
     const m = s.match(/stocks\/([^./]+)\.json/);
@@ -292,11 +292,13 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
     sandbox._apiMode = "net"; await sandbox.coachAsk(); const e3 = $get("#coach-out").innerHTML.includes("Failed to fetch") && ev("COACH.busy") === false;
     check("AI調教: 401/拒否/通信失敗を落ちずに表示", e1 && e2 && e3); sandbox._apiMode = "ok"; sandbox.coachSetKey(""); }
   go(`#/detail/${c0}`); await sandbox.loadStockDetail(c0); check("詳細→🧠AI調教リンク", $get("#dbody").innerHTML.includes(`#/coach/${c0}`)); }
-{ console.log("── 🇺🇸連動 v8.8 ──");
+{ console.log("── 🇺🇸連動 v8.9 ──");
   const flush = () => new Promise(r => setTimeout(r, 30));
-  const u = USLJ && USLJ.us_link; check("🇺🇸連動: 本番ハブに us_link がある", !!u && Array.isArray(u.rows) && u.rows.length === 7, u ? `${u.date} ${u.phase}` : "なし");
+  const u = USLJ && USLJ.us_link; check("🇺🇸連動: 本番ハブに us_link がある", !!u && Array.isArray(u.rows) && u.rows.length >= 7, u ? `${u.date} ${u.phase}` : "なし");
   let hv = go("#/uslink"); check("🇺🇸連動: 読み込み中", clean(hv) && hv.includes("読み込み中"));
-  await flush(); hv = go("#/uslink"); check("🇺🇸連動: 結果つきで描画（7行・合計・寄り・株数）", clean(hv) && (hv.match(/<tr>/g) || []).length === 8 && hv.includes("合計") && hv.includes("株") && hv.includes("キオクシア") && hv.includes("結果"));
+  await flush(); hv = go("#/uslink"); const np = (u && Array.isArray(u.paper)) ? u.paper.length : 0;
+  check("🇺🇸連動: 結果つきで描画（全行・合計・寄り・株数）", clean(hv) && (hv.match(/<tr>/g) || []).length === u.rows.length + 1 + (np ? np + 1 : 0) && hv.includes("合計") && hv.includes("株") && hv.includes("キオクシア") && hv.includes("結果"));
+  check("🇺🇸連動 v8.9: 順張り（紙）の段", np ? (hv.includes("順張り（紙）") && hv.includes("上で買い") && hv.includes("レーザーテック")) : !hv.includes("順張り（紙）"), `paper ${np}行`);
   sandbox._uslMode = "lines"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 寄り前は線と株数だけ（結果列なし）", clean(hv) && !hv.includes("結果") && !hv.includes("合計") && hv.includes("空売り") && hv.includes("買い"));
   sandbox._uslMode = "404"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 404→まだありません", clean(hv) && hv.includes("まだありません"));
   sandbox._uslMode = "net"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 通信失敗でも落ちない", clean(hv) && hv.includes("まだありません"));
