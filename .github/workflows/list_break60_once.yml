@@ -1,0 +1,32 @@
+# 一回限り: 直近3営業日の初動ブレイク（買い・売り鏡像）をログに出す（2026-11-15）。作業ブランチへのpushでだけ動く。
+name: 初動ブレイク一覧（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/list_break60_recent.py
+      - .github/workflows/list_break60_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      KABUAI_DATA_SOURCE: jquants_api
+      KABUAI_API_LOOKBACK: "300"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 一覧
+        working-directory: kabuai
+        run: python list_break60_recent.py 3
