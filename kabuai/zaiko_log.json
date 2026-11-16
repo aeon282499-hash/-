@@ -858,5 +858,117 @@
   ],
   "made": "2026-11-15T18:05:47+09:00",
   "sent": false
+ },
+ "2026-11-17": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "7522",
+    "name": "ワタミ",
+    "close": 1283.0,
+    "seido": "○",
+    "jsf_stop": true,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "6317",
+    "name": "北川鉄工所",
+    "close": 2785.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": true
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "6776",
+    "name": "天昇電気工業",
+    "close": 338.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/17",
+     "stale": false,
+     "fee_pct": 0.3,
+     "day_ok": true,
+     "max_sh": 190000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "友達",
+    "code": "150A",
+    "name": "ＪＳＨ",
+    "close": 841.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/17",
+     "stale": false,
+     "fee_pct": 0.12,
+     "day_ok": true,
+     "max_sh": 90000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "6538",
+    "name": "ディスラプターズ",
+    "close": 269.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "lim": 302.0,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-16T18:45:03+09:00",
+  "sent": false
  }
 }

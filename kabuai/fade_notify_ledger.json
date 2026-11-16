@@ -2689,6 +2689,238 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-17": {
+   "asof": "2026-11-16",
+   "trade_day": "2026-11-17",
+   "made": "2026-11-16 18:09",
+   "n_cand": 27,
+   "rule_a": {
+    "code": "150A",
+    "code5": "150A0",
+    "name": "ＪＳＨ",
+    "mkt": "グロース",
+    "close": 841.0,
+    "ret1": 0.17622377622377616,
+    "va": 517136500.0,
+    "rank_all": 1,
+    "score": 3.44,
+    "ul1": 991.0,
+    "strong": true,
+    "vol20": 0.0708,
+    "dev25": 0.2594,
+    "rng": 0.1189,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": []
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "150A",
+     "code5": "150A0",
+     "name": "ＪＳＨ",
+     "mkt": "グロース",
+     "close": 841.0,
+     "ret1": 0.17622377622377616,
+     "va": 517136500.0,
+     "rank_all": 1,
+     "score": 3.44,
+     "ul1": 991.0,
+     "strong": true,
+     "vol20": 0.0708,
+     "dev25": 0.2594,
+     "rng": 0.1189,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6228",
+     "code5": "62280",
+     "name": "ジェイ・イー・ティ",
+     "mkt": "スタンダード",
+     "close": 844.0,
+     "ret1": 0.12383488681757648,
+     "va": 660937200.0,
+     "rank_all": 2,
+     "score": 3.41,
+     "ul1": 994.0,
+     "strong": false,
+     "vol20": 0.0825,
+     "dev25": 0.3929,
+     "rng": 0.1824,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6776",
+     "code5": "67760",
+     "name": "天昇電気工業",
+     "mkt": "スタンダード",
+     "close": 338.0,
+     "ret1": 0.18596491228070167,
+     "va": 328783100.0,
+     "rank_all": 3,
+     "score": 3.37,
+     "ul1": 418.0,
+     "strong": true,
+     "vol20": 0.0496,
+     "dev25": 0.1964,
+     "rng": 0.1333,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    },
+    {
+     "code": "4255",
+     "code5": "42550",
+     "name": "ＴＨＥＣＯＯ",
+     "mkt": "グロース",
+     "close": 4730.0,
+     "ret1": 0.1329341317365269,
+     "va": 1142667000.0,
+     "rank_all": 4,
+     "score": 3.33,
+     "ul1": 5430.0,
+     "strong": false,
+     "vol20": 0.0633,
+     "dev25": 0.4062,
+     "rng": 0.1437,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": []
+    },
+    {
+     "code": "6317",
+     "code5": "63170",
+     "name": "北川鉄工所",
+     "mkt": "スタンダード",
+     "close": 2785.0,
+     "ret1": 0.21881838074398252,
+     "va": 599684900.0,
+     "rank_all": 5,
+     "score": 2.93,
+     "ul1": 3285.0,
+     "strong": true,
+     "vol20": 0.0551,
+     "dev25": 0.1592,
+     "rng": 0.0779,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ]
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "7522",
+      "name": "ワタミ",
+      "close": 1283.0,
+      "ret1": 0.27281746031746024,
+      "jsf_stop": true,
+      "jsf_warn": false
+     },
+     {
+      "rank": 2,
+      "code": "6317",
+      "name": "北川鉄工所",
+      "close": 2785.0,
+      "ret1": 0.21881838074398252,
+      "jsf_stop": false,
+      "jsf_warn": false
+     }
+    ],
+    "n_loan17": 2
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "7522",
+      "name": "ワタミ",
+      "close": 1283.0,
+      "ret1": 0.27281746031746024,
+      "seido": "○",
+      "jsf_stop": true,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 2,
+      "code": "6317",
+      "name": "北川鉄工所",
+      "close": 2785.0,
+      "ret1": 0.21881838074398252,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "6776",
+      "name": "天昇電気工業",
+      "close": 338.0,
+      "ret1": 0.18596491228070167,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 27
+   },
+   "asobi": {
+    "code": "6538",
+    "name": "ディスラプターズ",
+    "close": 269.0,
+    "ret1": 0.21171171171171177,
+    "va": 290697900.0,
+    "lim": 302.0,
+    "shares": 800,
+    "n": 6,
+    "seido": "○",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": true
+   },
+   "keta2": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -4575,6 +4807,189 @@
       "open": 751.0,
       "close": 751.0,
       "yen": 0
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-16": {
+   "trade_day": "2026-11-16",
+   "asof": "2026-11-13",
+   "made": "2026-11-16 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "336A",
+     "name": "ダイナミックマッププラッ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1413.0,
+       "shares": 200,
+       "sell": null
+      },
+      {
+       "lim": 1479.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 1277.0,
+     "close": 1230.0,
+     "high": 1295.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6072",
+     "name": "ＥＲＴＨ　Ｇｒｏｕｐ",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1215.0,
+     "close": 1165.0,
+     "high": 1277.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4234",
+     "name": "サンエー化研",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1231.0,
+     "close": 1200.0,
+     "high": 1260.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4588",
+     "name": "オンコリスバイオファーマ",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 8420.0,
+     "close": 8080.0,
+     "high": 8600.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6145",
+     "name": "ＮＩＴＴＯＫＵ",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 3500.0,
+     "close": 3325.0,
+     "high": 3670.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-16",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "336A",
+      "name": "ダイナミックマッププラッ",
+      "close_prev": 1320.0,
+      "legs": [
+       {
+        "lim": 1413.0,
+        "shares": 200,
+        "sell": null
+       },
+       {
+        "lim": 1518.0,
+        "shares": 400,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1277.0,
+      "close": 1230.0,
+      "high": 1295.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "7235",
+      "name": "東京ラヂエーター製造",
+      "close_prev": 1789.0,
+      "legs": [
+       {
+        "lim": 1915.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 2058.0,
+        "shares": 300,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1791.0,
+      "close": 1778.0,
+      "high": 1828.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "7717",
+      "name": "ブイ・テクノロジー",
+      "close_prev": 5160.0,
+      "legs": [
+       {
+        "lim": 5940.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 5190.0,
+      "close": 4495.0,
+      "high": 5290.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "7522",
+      "name": "ワタミ",
+      "close_prev": 1008.0,
+      "legs": [
+       {
+        "lim": 1129.0,
+        "shares": 200,
+        "sell": 1281.0,
+        "pct": -0.156128024980484
+       }
+      ],
+      "status": "約定",
+      "open": 1281.0,
+      "close": 1283.0,
+      "high": 1284.0,
+      "yen": -400,
+      "sclose": false
      }
     ],
     "sent": true
