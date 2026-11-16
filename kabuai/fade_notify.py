@@ -46,6 +46,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -299,20 +300,69 @@ def load_bars(asof: date) -> pd.DataFrame:
 
 
 EARN_TITLE_RE = re.compile(r"決算短信|業績予想|配当予想|業績.{0,6}修正|予想.{0,6}修正")
+_TDNET_CACHE: dict = {}
+
+
+def _tdnet_rows(d: date) -> list[dict] | None:
+    """TDnet の1日分（表題の一覧）。同じ日は1回だけ取りに行く。取れなければ None。"""
+    k = d.isoformat()
+    if k not in _TDNET_CACHE:
+        try:
+            sys.path.insert(0, str(HERE))
+            from ir_builder import fetch_tdnet_day
+        except Exception as e:  # noqa: BLE001
+            log(f"TDnet モジュール読込失敗: {e}")
+            return None
+        _TDNET_CACHE[k] = fetch_tdnet_day(d.strftime("%Y%m%d"))
+    return _TDNET_CACHE[k]
+
+
+# TOB/MBO（2026-11-17 本人「TOBやMBOは除外して 負けるから」）: 買付価格に張り付く・上の値段の対抗TOBや引き上げで踏まれる。
+#  D を含む直近 TOB_LOOKBACK 営業日の TDnet 表題に買収系の語があれば、全部の配信から外す
+#  （2日続けてS高で買付価格に寄せる銘柄もあるので D と D−1 だけでなく少し遡る。表題に「公開買付」等が無い一部報道は拾えない）。
+#  拾うのは「買われる側」だけ。買う側・自社株TOB・子会社が別の会社を買う話は外さない
+#  （10/24〜11/16 の照合: ブロードメディア・昭文社・ワタミ＝買われる側／トヨタ(自社株TOB)・フェローテック(買う側)・フォスター電機(子会社の買付)・BBS(持分法会社)＝外さない）。
+TOB_WORD_RE = re.compile(r"公開買付|公開買い付け|TOB")
+TOB_SURE_RE = re.compile(r"MBO|マネジメント・?バイアウト|株式売渡請求|スクイーズ|当社の完全子会社化|当社を完全子会社")
+TOB_TARGET_RE = re.compile(r"当社(?:の)?(?:普通)?株|当社が発行|意見表明|賛同|応募(?:の)?推奨")
+TOB_LOOKBACK = 5
+
+
+def is_tob_target(title: str, c4: str) -> bool:
+    """TDnet の表題が「この銘柄が買われる側の TOB/MBO」か。"""
+    t = unicodedata.normalize("NFKC", title or "")
+    if TOB_SURE_RE.search(t):
+        return True
+    if not TOB_WORD_RE.search(t):
+        return False
+    if TOB_TARGET_RE.search(t):
+        return True
+    return c4 in re.findall(r"証券コード[:：]?\s*([0-9A-Z]{4})", t)
+
+
+def fetch_tob_codes(asof: date) -> set[str] | None:
+    """TOB/MBO がらみの {code5}（D と その前 TOB_LOOKBACK−1 営業日の TDnet 表題・時刻は問わない）。D の分が取れなければ None。"""
+    s: set[str] = set()
+    d = asof
+    for i in range(TOB_LOOKBACK):
+        rows = _tdnet_rows(d)
+        if rows is None:
+            if i == 0:
+                log("TOB/MBO の判定: TDnet が取れず未確認")
+                return None
+        else:
+            s |= {str(r.get("code5", "")) for r in rows if is_tob_target(r.get("title", ""), str(r.get("code5", ""))[:4])}
+        d = prev_trading_day(d)
+    log(f"TOB/MBO の開示（直近{TOB_LOOKBACK}営業日）: {len(s)}銘柄")
+    return s
 
 
 def _tdnet_earn_codes(asof: date, prev: date) -> set[str] | None:
     """TDnet の一覧（表題）から決算系の開示を拾う。D 当日全部 ＋ D−1 の 15 時以降。{code5}。取れなければ None。
     /fins/summary の当日分が 18:45にまだ無い日の保険（fade_rank_bt.py の定義は fins/summary）。"""
-    try:
-        sys.path.insert(0, str(HERE))
-        from ir_builder import fetch_tdnet_day
-    except Exception as e:  # noqa: BLE001
-        log(f"TDnet モジュール読込失敗: {e}")
-        return None
     s: set[str] = set()
     for d, after15 in ((asof, False), (prev, True)):
-        rows = fetch_tdnet_day(d.strftime("%Y%m%d"))
+        rows = _tdnet_rows(d)
         if rows is None:
             return None
         for r in rows:
@@ -484,7 +534,8 @@ def candidates_for_day(bars: pd.DataFrame, asof, universe: set[str] | None) -> p
 
 # ───────────────────────── 計画（evening） ─────────────────────────
 def build_plan(asof: date, trade_day: date, cand: pd.DataFrame, master: pd.DataFrame,
-               earn: set[str] | None, iss: dict, alert: dict, jsf_list: dict) -> dict:
+               earn: set[str] | None, iss: dict, alert: dict, jsf_list: dict, tob: set[str] | None = None) -> dict:
+    tob = tob or set()
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     mkts = dict(zip(master["Code"], master["MktNm"])) if not master.empty else {}
     rows = []
@@ -494,6 +545,8 @@ def build_plan(asof: date, trade_day: date, cand: pd.DataFrame, master: pd.DataF
         c4 = code4(c5)
         al = alert.get(c4) or {}
         reasons = []
+        if c5 in tob:
+            reasons.append("TOB/MBO")
         if earn is not None and (c5 in earn):
             reasons.append("決算起因")
         if al.get("jsf_stop"):
@@ -513,7 +566,7 @@ def build_plan(asof: date, trade_day: date, cand: pd.DataFrame, master: pd.DataF
             rng=None if pd.isna(r["rng"]) else round(float(r["rng"]), 4),
             seido="○" if it == "2" else ("×" if it else "?"),
             jsf_stop=bool(al.get("jsf_stop")), jsf_warn=bool(al.get("jsf_warn")), tse_reg=bool(al.get("tse_reg")),
-            daily_pub=bool(al.get("daily_pub")), jsf_txt=jsf_txt[:40], reasons=reasons,
+            daily_pub=bool(al.get("daily_pub")), jsf_txt=jsf_txt[:40], reasons=reasons, tob=c5 in tob,
         ))
     rule_a = None
     rule_a_why = ""
@@ -564,6 +617,8 @@ def friend_picks(plan: dict) -> list[dict]:
         else:
             why = ("+17%未満" if not x["strong"] else "・".join(x["reasons"]) if x["reasons"]
                    else "100株で50万超" if x["close"] * 100 > SIZE_YEN else "")
+        if x.get("tob"):   # 2026-11-17〜 TOB/MBO は順位・前日比に関係なく見送り（繰り上げない）
+            why = "TOB/MBO"
         out.append(dict(x, skip=why))
     return out
 
@@ -602,6 +657,8 @@ def plan_payload(plan: dict) -> dict:
         lines.append("⚠️ 貸借区分が取れず「制度信用で売れるか」は未確認")
     if not plan["alert_checked"]:
         lines.append("⚠️ 規制銘柄情報が取れず「日証金の規制」は未確認")
+    if plan.get("tob_checked") is False:
+        lines.append("⚠️ 適時開示が取れず「TOB/MBO」の見送りは未確認")
     for x in picks:
         head = f"{x['rank_all']}位 `{x['code']}` {x['name']}"
         lines.append(f"{head}　見送り　{x['skip']}" if x["skip"] else f"{head}　{_order_txt(friend_ladder(x['close'], plan['trade_day']))}")
@@ -1012,6 +1069,10 @@ def own_payload(plan: dict) -> dict:
         lines.append(BUYBACK_LINE)
     lines.append("")
     lines += notes
+    if plan.get("tob_out"):
+        lines.append("-# TOB/MBOで外した: " + "／".join(f"{x['name']} {x['ret1']*100:+.1f}%" for x in plan["tob_out"]))
+    if plan.get("tob_checked") is False:
+        lines.append("-# ⚠️ 適時開示が取れず TOB/MBO は未確認")
     if v2:
         lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{risk_y // 10000}万以内の株数（建玉は最大{cap_y // 10000}万）。"
                      + _own_rule_txt(plan["trade_day"]) +
@@ -1328,15 +1389,27 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     iss = fetch_iss_map()
     alert = fetch_alert_map()
     jsf_list = fetch_jsf_list()
-    plan = build_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list)
-    plan["new1"] = new1_plan(cand, master, iss, alert, jsf_list)
-    plan["top3"] = top3_plan(cand, master, iss, alert, jsf_list, earn)
-    plan["asobi"] = asobi_plan(bars, day, universe, master, iss, alert, jsf_list, earn)
+    tob = fetch_tob_codes(day)
+    tob_set = tob or set()
+    plan = build_plan(day, trade_day, cand, master, earn, iss, alert, jsf_list, tob_set)
+    plan["tob_checked"] = tob is not None
+    # 本人chの3本・遊び・2桁・新①は TOB/MBO を選ぶ前に外す（次の銘柄が繰り上がる）。友達chは順位はそのままで見送り。
+    cand_nt = cand[~cand["Code"].isin(tob_set)] if "Code" in cand.columns else cand
+    bars_nt = bars[~bars["Code"].isin(tob_set)]
+    plan["new1"] = new1_plan(cand_nt, master, iss, alert, jsf_list)
+    plan["top3"] = top3_plan(cand_nt, master, iss, alert, jsf_list, earn)
+    plan["asobi"] = asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
     try:
-        plan["keta2"] = keta2_plan(bars, day, universe, master, iss, alert, jsf_list, earn)
+        plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
     except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
         log(f"おまけ2桁の計算失敗（本線は続行）: {type(e).__name__}: {e}")
         plan["keta2"] = []
+    names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
+    out_rows = cand[cand["Code"].isin(tob_set)] if "Code" in cand.columns else cand.iloc[0:0]
+    plan["tob_out"] = [dict(code=code4(r.Code), name=str(names.get(str(r.Code), ""))[:12], ret1=float(r.ret1))
+                       for r in out_rows.sort_values("ret1", ascending=False).itertuples()]
+    if plan["tob_out"]:
+        log("TOB/MBO で外した: " + " ".join(f"{x['code']}({x['ret1']*100:+.1f}%)" for x in plan["tob_out"]))
     payload = plan_payload(plan)
     hold = os.getenv("FADE_NOTIFY_HOLD_UNTIL", "").strip()   # クラウド: 計算は先に済ませ、送るのは定刻（例 18:45 JST）
     if hold and not dry_run:
