@@ -1,4 +1,33 @@
 {
-  "date": "2026-11-16",
-  "signals": []
+  "date": "2026-11-17",
+  "signals": [
+    {
+      "ticker": "6465.T",
+      "name": "ホシザキ",
+      "direction": "BUY",
+      "prev_close": 5148.0,
+      "limit_price": 5190
+    },
+    {
+      "ticker": "6005.T",
+      "name": "三浦工業",
+      "direction": "BUY",
+      "prev_close": 2921.0,
+      "limit_price": 2950
+    },
+    {
+      "ticker": "9076.T",
+      "name": "セイノーホールディングス",
+      "direction": "BUY",
+      "prev_close": 2568.0,
+      "limit_price": 2593
+    },
+    {
+      "ticker": "4206.T",
+      "name": "アイカ工業",
+      "direction": "BUY",
+      "prev_close": 4024.0,
+      "limit_price": 4060
+    }
+  ]
 }
