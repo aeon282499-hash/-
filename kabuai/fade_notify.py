@@ -958,6 +958,9 @@ OWN_CAP_YEN_V4 = 1_000_000
 OWN_V5_FROM = "2026-11-18"
 OWN_RISK_YEN_V5 = 50_000
 OWN_CAP_YEN_V5 = 500_000
+# 同日 本人「見送りで」: 2段にできない値段は+15%に一発（枠に収まる株数）、それでも100株で損5万か建玉50万を超える銘柄は見送り。
+#  検証(悲観・5年): 100株は必ず 年+370万 最大DD64万 最悪日−50万 → 見送り 年+370万 最大DD61万 最悪日−24万（見送り約5%・約定47→45%）
+OWN_V5_HIGH = ""
 
 
 def _own_limits(trade_day: str) -> tuple[int, int]:
@@ -1005,7 +1008,8 @@ def own_orders(plan: dict) -> list:
     v3 = plan["trade_day"] >= OWN_V3_FROM
     v4 = plan["trade_day"] >= OWN_V4_FROM
     rk, cp = _own_limits(plan["trade_day"])
-    lad = ((lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V4_HIGH, rk, cp)) if v4
+    hi = OWN_V5_HIGH if plan["trade_day"] >= OWN_V5_FROM else OWN_V4_HIGH
+    lad = ((lambda c: own_ladder(c, OWN_LEGS_V3, hi, rk, cp)) if v4
            else (lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V3_HIGH)) if v3 else own_ladder if v2 else top3_ladder)
     top = (plan.get("top3") or {}).get("rows", [])
     fgo = [x for x in friend_picks(plan) if not x["skip"]] if plan.get("rows") else []
@@ -1027,6 +1031,10 @@ def _own_rule_txt(trade_day: str) -> str:
     if trade_day < OWN_V3_FROM:
         return "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発）。"
     a, b = (f"+{k * 100:.0f}%" for k, w in OWN_LEGS_V3)
+    if trade_day >= OWN_V5_FROM:
+        rk, cp = _own_limits(trade_day)
+        return (f"金額の3分の1を{a}、3分の2を{b}に置く（どちらかの段が100株に届かない値段は{b}に一発。"
+                f"それでも100株で損{rk // 10000}万か建玉{cp // 10000}万を超える銘柄は見送り）。")
     if trade_day >= OWN_V4_FROM:
         return (f"金額の3分の1を{a}、3分の2を{b}に置く（どちらかの段が100株に届かない値段は{b}に一発。"
                 f"100株は必ず入れるので建玉が{_own_limits(trade_day)[1] // 10000}万を超えることがある）。")
@@ -1051,7 +1059,7 @@ def own_payload(plan: dict) -> dict:
             continue
         head = f"{_CIRC[i]} `{x['code']}` {x['name']}"; i += 1
         if not o["lad"]:
-            lines.append(f"{head}　見送り　100株で損{risk_y // 10000}万超"); continue
+            lines.append(f"{head}　見送り　100株で損{risk_y // 10000}万か{cap_y // 10000}万超"); continue
         tail = "　※友達chと同じ銘柄・入れるのは1回だけ" if o["same"] else ("　※友達chの銘柄" if o["kind"] == "友達" else "")
         lines.append(f"{head}　{_order_txt(o['lad'])}{tail}"); n += 1
         cancel.append((x["name"], x["close"] + band(x["close"])))
