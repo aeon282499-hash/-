@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-13",
+ "last_signal_date": "2026-11-16",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1009,10 +1009,15 @@
    "shares": 200,
    "rsi": 20.2,
    "runup5": -21.8,
-   "status": "extended",
+   "status": "closed",
    "entry": 1764.0,
    "gap_pct": 9.07,
-   "ext_exit_date": "2026-11-13"
+   "ext_exit_date": "2026-11-13",
+   "exit_date": "2026-11-13",
+   "exit": 1910.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 8.28,
+   "pnl_yen": 29200
   },
   {
    "ticker": "7721.T",
@@ -1091,10 +1096,15 @@
    "shares": 200,
    "rsi": 33.3,
    "runup5": -20.1,
-   "status": "extended",
+   "status": "closed",
    "entry": 1785.0,
    "gap_pct": 12.04,
-   "ext_exit_date": "2026-11-13"
+   "ext_exit_date": "2026-11-13",
+   "exit_date": "2026-11-13",
+   "exit": 2207.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 23.64,
+   "pnl_yen": 84400
   },
   {
    "ticker": "6448.T",
@@ -1396,6 +1406,34 @@
    "shares": 2200,
    "rsi": 35.8,
    "runup5": -7.6,
+   "status": "closed",
+   "entry": 219.0,
+   "exit_date": "2026-11-16",
+   "exit": 205.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -6.39,
+   "pnl_yen": -30800
+  },
+  {
+   "ticker": "3905.T",
+   "name": "データセクション",
+   "type": "第２四半期",
+   "date": "2026-11-16",
+   "signal_price": 1166.0,
+   "shares": 400,
+   "rsi": 35.8,
+   "runup5": -25.0,
+   "status": "pending"
+  },
+  {
+   "ticker": "6721.T",
+   "name": "ウインテスト",
+   "type": "第３四半期",
+   "date": "2026-11-16",
+   "signal_price": 115.0,
+   "shares": 4300,
+   "rsi": 47.1,
+   "runup5": -14.8,
    "status": "pending"
   }
  ],

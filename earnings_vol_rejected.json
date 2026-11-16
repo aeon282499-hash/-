@@ -1689,5 +1689,29 @@
    "runup5": -13.9,
    "price": 4181.0
   }
+ ],
+ "2026-11-16": [
+  {
+   "ticker": "3909.T",
+   "name": "ショーケース",
+   "vol": 0.97,
+   "why": "vol",
+   "last_time": "16:00",
+   "bucket": "引け後",
+   "rsi": 47.7,
+   "runup5": -8.1,
+   "price": 564.0
+  },
+  {
+   "ticker": "5105.T",
+   "name": "ＴＯＹＯ　ＴＩＲＥ",
+   "vol": 3.17,
+   "why": "announced",
+   "last_time": "11:00",
+   "bucket": "場中",
+   "rsi": 45.8,
+   "runup5": -5.3,
+   "price": 4007.0
+  }
  ]
 }
