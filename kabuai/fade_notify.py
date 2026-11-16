@@ -891,7 +891,8 @@ KETA2_LEGS = ((0.15, 0.5), (0.25, 0.5))
 KETA2_MAX = 2
 
 
-def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss, alert, jsf_list, earn) -> list:
+def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss, alert, jsf_list, earn,
+               limits: tuple | None = None) -> list:
     """2桁株のストップ高引け（代金10億以上）。[{code, name, close, ret1, va, lad, ...}]。無ければ []。"""
     b = bars if universe is None else bars[bars["Code"].isin(universe)]
     b = b[b["Code"].map(is_common)]
@@ -907,7 +908,7 @@ def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
         c5, c4 = str(r.Code), code4(r.Code)
         al = alert.get(c4) or {}; jt = jsf_list.get(c4, "")
         out.append(dict(code=c4, name=str(names.get(c5, ""))[:12], close=float(r.C), ret1=float(r.ret1), va=float(r.Va),
-                        lad=[[L, s] for L, s in own_ladder(float(r.C), KETA2_LEGS)], n=int(len(d)),
+                        lad=[[L, s] for L, s in own_ladder(float(r.C), KETA2_LEGS, risk=(limits or (None, None))[0], cap=(limits or (None, None))[1])], n=int(len(d)),
                         seido="○" if iss.get(c4) == "2" else ("×" if iss.get(c4) else "?"),
                         jsf_stop=bool(al.get("jsf_stop")) or "停止" in jt, jsf_warn=bool(al.get("jsf_warn")) or "注意喚起" in jt,
                         earn=bool(earn is not None and c5 in earn)))
@@ -952,11 +953,23 @@ OWN_V4_FROM = "2026-11-11"
 OWN_V4_HIGH = "one"
 OWN_RISK_YEN_V4 = 100_000
 OWN_CAP_YEN_V4 = 1_000_000
+# 本人ch v5（2026-11-17 本人「おれのも50万で分配」）: 11/18分から 株数の上限を半分（S高引け損5万・建玉50万）。
+#  指値（+7%に1/3・+15%に2/3・高い銘柄は+15%に一発・100株は必ず）は v4 のまま。おまけ2桁も 5万・50万。遊びは25万のまま。
+OWN_V5_FROM = "2026-11-18"
+OWN_RISK_YEN_V5 = 50_000
+OWN_CAP_YEN_V5 = 500_000
 
 
 def _own_limits(trade_day: str) -> tuple[int, int]:
-    """本人chの株数の上限（S高引け損・建玉）。v4 から 10万・100万。"""
+    """本人chの株数の上限（S高引け損・建玉）。v4 は 10万・100万、v5 は 5万・50万。"""
+    if trade_day >= OWN_V5_FROM:
+        return OWN_RISK_YEN_V5, OWN_CAP_YEN_V5
     return (OWN_RISK_YEN_V4, OWN_CAP_YEN_V4) if trade_day >= OWN_V4_FROM else (OWN_RISK_YEN, OWN_CAP_YEN)
+
+
+def _keta2_limits(trade_day: str) -> tuple[int, int]:
+    """おまけ2桁の上限。v5 から本人chと同じ 5万・50万、それまでは 7万・75万。"""
+    return (OWN_RISK_YEN_V5, OWN_CAP_YEN_V5) if trade_day >= OWN_V5_FROM else (OWN_RISK_YEN, OWN_CAP_YEN)
 
 
 def own_ladder(close: float, legs=OWN_LEGS, high: str = "", risk: float | None = None, cap: float | None = None) -> list:
@@ -991,7 +1004,8 @@ def own_orders(plan: dict) -> list:
     v2 = plan["trade_day"] >= OWN_V2_FROM
     v3 = plan["trade_day"] >= OWN_V3_FROM
     v4 = plan["trade_day"] >= OWN_V4_FROM
-    lad = ((lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V4_HIGH, OWN_RISK_YEN_V4, OWN_CAP_YEN_V4)) if v4
+    rk, cp = _own_limits(plan["trade_day"])
+    lad = ((lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V4_HIGH, rk, cp)) if v4
            else (lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V3_HIGH)) if v3 else own_ladder if v2 else top3_ladder)
     top = (plan.get("top3") or {}).get("rows", [])
     fgo = [x for x in friend_picks(plan) if not x["skip"]] if plan.get("rows") else []
@@ -1015,7 +1029,7 @@ def _own_rule_txt(trade_day: str) -> str:
     a, b = (f"+{k * 100:.0f}%" for k, w in OWN_LEGS_V3)
     if trade_day >= OWN_V4_FROM:
         return (f"金額の3分の1を{a}、3分の2を{b}に置く（どちらかの段が100株に届かない値段は{b}に一発。"
-                f"100株は必ず入れるので建玉が{OWN_CAP_YEN_V4 // 10000}万を超えることがある）。")
+                f"100株は必ず入れるので建玉が{_own_limits(trade_day)[1] // 10000}万を超えることがある）。")
     if OWN_V3_HIGH == "each":
         return (f"金額の3分の1を{a}、3分の2を{b}に置く（100株に届かない段も100株は入れる。"
                 f"その銘柄はS高で引けると損が{OWN_RISK_YEN // 10000}万を超えることがある）。")
@@ -1063,7 +1077,7 @@ def own_payload(plan: dict) -> dict:
             notes.append(f"-# {k['name']}（2桁）　前日終値 {k['close']:,.0f}円（{k['ret1']*100:+.1f}%・S高引け・代金{k['va']/1e8:.0f}億）・{_own_tags(k)}")
             n += 1
         else:
-            lines.append(f"🎲 2桁 `{k['code']}` {k['name']}　見送り　100株で損{OWN_RISK_YEN // 10000}万超")
+            lines.append(f"🎲 2桁 `{k['code']}` {k['name']}　見送り　100株で損{_keta2_limits(plan['trade_day'])[0] // 10000}万超")
     if cancel:
         lines.append(_cancel_line(cancel))
         lines.append(BUYBACK_LINE)
@@ -1083,7 +1097,7 @@ def own_payload(plan: dict) -> dict:
             lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
                          f"+{KETA2_LEGS[0][0]*100:.0f}%と+{KETA2_LEGS[1][0]*100:.0f}%に半分ずつ。"
                          + ("株数の決め方は上と同じ。" if plan["trade_day"] < OWN_V4_FROM else
-                            f"株数はS高で引けても損{OWN_RISK_YEN // 10000}万以内（建玉は最大{OWN_CAP_YEN // 10000}万）。")
+                            f"株数はS高で引けても損{_keta2_limits(plan['trade_day'])[0] // 10000}万以内（建玉は最大{_keta2_limits(plan['trade_day'])[1] // 10000}万）。")
                          + "年に4〜5本しか出ない。損切りなし")
     else:
         lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
@@ -1400,7 +1414,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     plan["top3"] = top3_plan(cand_nt, master, iss, alert, jsf_list, earn)
     plan["asobi"] = asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
     try:
-        plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
+        plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn, _keta2_limits(trade_day.isoformat()))
     except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
         log(f"おまけ2桁の計算失敗（本線は続行）: {type(e).__name__}: {e}")
         plan["keta2"] = []
