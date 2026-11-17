@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17 08:15:49",
+  "generated_at": "2026-11-17 14:10:06",
   "date": "2026-11-17",
   "tier_summary": {
     "S": 0,
@@ -17,7 +17,7 @@
     "GEV": -4.93,
     "GOOGL": -4.07,
     "IONQ": -8.41,
-    "KLAC": -5.49,
+    "KLAC": -5.35,
     "LRCX": -6.68,
     "META": -2.38,
     "MSFT": -1.12,
@@ -513,7 +513,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": -5.61
+      "us_tailwind": -5.59
     },
     {
       "theme": "サイバーセキュリティ",
@@ -3654,7 +3654,7 @@
         "NVDA",
         "TSM"
       ],
-      "us_tailwind": -5.61,
+      "us_tailwind": -5.59,
       "score": 23.0,
       "tier": "C",
       "init_stars": 1,
