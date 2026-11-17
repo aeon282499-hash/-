@@ -2149,6 +2149,46 @@
       "close": 4043.0,
       "pnl": 0.55,
       "win": true
+    },
+    {
+      "date": "2026-11-17",
+      "ticker": "6465.T",
+      "name": "ホシザキ",
+      "direction": "BUY",
+      "open": 5145.0,
+      "close": 5230.0,
+      "pnl": 1.65,
+      "win": true
+    },
+    {
+      "date": "2026-11-17",
+      "ticker": "6005.T",
+      "name": "三浦工業",
+      "direction": "BUY",
+      "open": 2921.0,
+      "close": 2897.5,
+      "pnl": -0.8,
+      "win": false
+    },
+    {
+      "date": "2026-11-17",
+      "ticker": "9076.T",
+      "name": "セイノーホールディングス",
+      "direction": "BUY",
+      "open": 2560.5,
+      "close": 2573.5,
+      "pnl": 0.51,
+      "win": true
+    },
+    {
+      "date": "2026-11-17",
+      "ticker": "4206.T",
+      "name": "アイカ工業",
+      "direction": "BUY",
+      "open": 3999.0,
+      "close": 4021.0,
+      "pnl": 0.55,
+      "win": true
     }
   ]
 }
