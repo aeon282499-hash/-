@@ -970,5 +970,78 @@
   ],
   "made": "2026-11-17T06:59:47+09:00",
   "sent": false
+ },
+ "2026-11-18": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4888",
+    "name": "ステラファーマ",
+    "close": 432.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.7,
+     "day": "11/18",
+     "stale": false,
+     "fee_pct": 0.39,
+     "day_ok": true,
+     "max_sh": 150000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "2334",
+    "name": "イオレ",
+    "close": 505.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.0,
+     "day": "11/18",
+     "stale": false,
+     "fee_pct": 0.2,
+     "day_ok": true,
+     "max_sh": 120000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7030",
+    "name": "スプリックス",
+    "close": 1329.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-17T18:45:03+09:00",
+  "sent": false
  }
 }

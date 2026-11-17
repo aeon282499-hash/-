@@ -2921,6 +2921,212 @@
    },
    "keta2": [],
    "own_sent": true
+  },
+  "2026-11-18": {
+   "asof": "2026-11-17",
+   "trade_day": "2026-11-18",
+   "made": "2026-11-17 18:09",
+   "n_cand": 6,
+   "rule_a": {
+    "code": "4888",
+    "code5": "48880",
+    "name": "ステラファーマ",
+    "mkt": "グロース",
+    "close": 432.0,
+    "ret1": 0.2272727272727273,
+    "va": 2169084900.0,
+    "rank_all": 1,
+    "score": 3.33,
+    "ul1": 512.0,
+    "strong": true,
+    "vol20": 0.0664,
+    "dev25": 0.097,
+    "rng": 0.2159,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": [],
+    "tob": false
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "4888",
+     "code5": "48880",
+     "name": "ステラファーマ",
+     "mkt": "グロース",
+     "close": 432.0,
+     "ret1": 0.2272727272727273,
+     "va": 2169084900.0,
+     "rank_all": 1,
+     "score": 3.33,
+     "ul1": 512.0,
+     "strong": true,
+     "vol20": 0.0664,
+     "dev25": 0.097,
+     "rng": 0.2159,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "7030",
+     "code5": "70300",
+     "name": "スプリックス",
+     "mkt": "スタンダード",
+     "close": 1329.0,
+     "ret1": 0.1637478108581436,
+     "va": 350829200.0,
+     "rank_all": 2,
+     "score": 2.67,
+     "ul1": 1629.0,
+     "strong": false,
+     "vol20": 0.0525,
+     "dev25": 0.312,
+     "rng": 0.0867,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "4547",
+     "code5": "45470",
+     "name": "キッセイ薬品工業",
+     "mkt": "プライム",
+     "close": 4400.0,
+     "ret1": 0.1253196930946292,
+     "va": 2327629500.0,
+     "rank_all": 3,
+     "score": 2.33,
+     "ul1": 5100.0,
+     "strong": false,
+     "vol20": 0.033,
+     "dev25": 0.1515,
+     "rng": 0.0997,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "4418",
+     "code5": "44180",
+     "name": "ＪＤＳＣ",
+     "mkt": "グロース",
+     "close": 1173.0,
+     "ret1": 0.08011049723756902,
+     "va": 3333399800.0,
+     "rank_all": 4,
+     "score": 2.17,
+     "ul1": 1473.0,
+     "strong": false,
+     "vol20": 0.0558,
+     "dev25": 0.1121,
+     "rng": 0.1243,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "2334",
+     "code5": "23340",
+     "name": "イオレ",
+     "mkt": "グロース",
+     "close": 505.0,
+     "ret1": 0.18823529411764706,
+     "va": 1201929900.0,
+     "rank_all": 5,
+     "score": 2.0,
+     "ul1": 605.0,
+     "strong": true,
+     "vol20": 0.0574,
+     "dev25": 0.0106,
+     "rng": 0.0635,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": true,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4888",
+      "name": "ステラファーマ",
+      "close": 432.0,
+      "ret1": 0.2272727272727273,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "2334",
+      "name": "イオレ",
+      "close": 505.0,
+      "ret1": 0.18823529411764706,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     },
+     {
+      "rank": 3,
+      "code": "7030",
+      "name": "スプリックス",
+      "close": 1329.0,
+      "ret1": 0.1637478108581436,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     }
+    ],
+    "n_cand": 6
+   },
+   "asobi": null,
+   "keta2": [],
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -4989,6 +5195,241 @@
       "close": 1283.0,
       "high": 1284.0,
       "yen": -400,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-17": {
+   "trade_day": "2026-11-17",
+   "asof": "2026-11-16",
+   "made": "2026-11-17 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "150A",
+     "name": "ＪＳＨ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 900.0,
+       "shares": 300,
+       "sell": null
+      },
+      {
+       "lim": 942.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 832.0,
+     "close": 851.0,
+     "high": 863.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6228",
+     "name": "ジェイ・イー・ティ",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 777.0,
+     "close": 694.0,
+     "high": 799.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6776",
+     "name": "天昇電気工業",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 362.0,
+       "shares": 900,
+       "sell": null
+      },
+      {
+       "lim": 379.0,
+       "shares": 400,
+       "sell": null
+      }
+     ],
+     "open": 322.0,
+     "close": 308.0,
+     "high": 324.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4255",
+     "name": "ＴＨＥＣＯＯ",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 4660.0,
+     "close": 4590.0,
+     "high": 4660.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6317",
+     "name": "北川鉄工所",
+     "rank_all": 5,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 2980.0,
+       "shares": 100,
+       "sell": null
+      },
+      {
+       "lim": 3120.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 2835.0,
+     "close": 2723.0,
+     "high": 2835.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-17",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "7522",
+      "name": "ワタミ",
+      "close_prev": 1283.0,
+      "legs": [
+       {
+        "lim": 1373.0,
+        "shares": 200,
+        "sell": null
+       },
+       {
+        "lim": 1476.0,
+        "shares": 400,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 1281.0,
+      "close": 1280.0,
+      "high": 1283.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "6317",
+      "name": "北川鉄工所",
+      "close_prev": 2785.0,
+      "legs": [
+       {
+        "lim": 2980.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 3205.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 2835.0,
+      "close": 2723.0,
+      "high": 2835.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "6776",
+      "name": "天昇電気工業",
+      "close_prev": 338.0,
+      "legs": [
+       {
+        "lim": 362.0,
+        "shares": 900,
+        "sell": null
+       },
+       {
+        "lim": 389.0,
+        "shares": 1600,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 322.0,
+      "close": 308.0,
+      "high": 324.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "友達",
+      "code": "150A",
+      "name": "ＪＳＨ",
+      "close_prev": 841.0,
+      "legs": [
+       {
+        "lim": 900.0,
+        "shares": 300,
+        "sell": null
+       },
+       {
+        "lim": 968.0,
+        "shares": 600,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 832.0,
+      "close": 851.0,
+      "high": 863.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "6538",
+      "name": "ディスラプターズ",
+      "close_prev": 269.0,
+      "legs": [
+       {
+        "lim": 302.0,
+        "shares": 800,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 267.0,
+      "close": 277.0,
+      "high": 283.0,
+      "yen": 0,
       "sclose": false
      }
     ],
