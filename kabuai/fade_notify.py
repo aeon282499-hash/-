@@ -961,6 +961,14 @@ OWN_CAP_YEN_V5 = 500_000
 # 同日 本人「見送りで」: 2段にできない値段は+15%に一発（枠に収まる株数）、それでも100株で損5万か建玉50万を超える銘柄は見送り。
 #  検証(悲観・5年): 100株は必ず 年+370万 最大DD64万 最悪日−50万 → 見送り 年+370万 最大DD61万 最悪日−24万（見送り約5%・約定47→45%）
 OWN_V5_HIGH = ""
+# 同日 本人「じゃあはずして」: 11/18分から 今日の3本・友達の銘柄のうち「貸借で売り禁でない」玉は見送り（繰り上げなし）。売り禁と貸借でない玉は残す。
+#  検証(悲観・張り付き込み・5年): 貸借・売り禁でない 323本 年+6万 勝ち÷負け1.06 最悪−163万（ビューティ花壇）／外すと 年+341万→+334万 最大DD162万→65万 最悪−28万
+OWN_TAI_OUT_FROM = "2026-11-18"
+
+
+def _tai_not_banned(x: dict) -> bool:
+    """貸借銘柄（制度信用で売れる）で、売り禁（日証金停止）でない玉。"""
+    return x.get("seido") == "○" and not (x.get("jsf_stop") or "停止" in (x.get("jsf_txt") or ""))
 
 
 def _own_limits(trade_day: str) -> tuple[int, int]:
@@ -1017,6 +1025,10 @@ def own_orders(plan: dict) -> list:
     out = [dict(x=x, lad=lad(x["close"]), kind="3本", same=x["code"] in fcodes) for x in top]
     if v2:
         out += [dict(x=x, lad=lad(x["close"]), kind="友達", same=False) for x in fgo if x["code"] not in tcodes]
+    if plan["trade_day"] >= OWN_TAI_OUT_FROM:
+        for o in out:
+            if _tai_not_banned(o["x"]):
+                o["lad"] = []; o["why"] = "貸借で売り禁でない"
     a = plan.get("asobi")
     if a and a.get("shares"):
         out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
@@ -1059,7 +1071,7 @@ def own_payload(plan: dict) -> dict:
             continue
         head = f"{_CIRC[i]} `{x['code']}` {x['name']}"; i += 1
         if not o["lad"]:
-            lines.append(f"{head}　見送り　100株で損{risk_y // 10000}万か{cap_y // 10000}万超"); continue
+            lines.append(f"{head}　見送り　" + (o.get("why") or f"100株で損{risk_y // 10000}万か{cap_y // 10000}万超")); continue
         tail = "　※友達chと同じ銘柄・入れるのは1回だけ" if o["same"] else ("　※友達chの銘柄" if o["kind"] == "友達" else "")
         lines.append(f"{head}　{_order_txt(o['lad'])}{tail}"); n += 1
         cancel.append((x["name"], x["close"] + band(x["close"])))
@@ -1095,11 +1107,17 @@ def own_payload(plan: dict) -> dict:
         lines.append("-# TOB/MBOで外した: " + "／".join(f"{x['name']} {x['ret1']*100:+.1f}%" for x in plan["tob_out"]))
     if plan.get("tob_checked") is False:
         lines.append("-# ⚠️ 適時開示が取れず TOB/MBO は未確認")
+    if plan["trade_day"] >= OWN_TAI_OUT_FROM:
+        if not plan.get("iss_checked", True):
+            lines.append("-# ⚠️ 貸借区分が取れず「貸借で売り禁でない」の見送りは未確認")
+        if not plan.get("alert_checked", True):
+            lines.append("-# ⚠️ 規制銘柄情報が取れず、売り禁の銘柄を貸借として見送ったかもしれない")
     if v2:
         lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{risk_y // 10000}万以内の株数（建玉は最大{cap_y // 10000}万）。"
                      + _own_rule_txt(plan["trade_day"]) +
                      f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。"
                      f"友達chの1〜{FRIEND_RANKS_V2 if plan['trade_day'] >= FRIEND_V2_FROM else FRIEND_RANKS}位で今日の3本に無い銘柄も同じ入れ方で載せる。"
+                     + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "") +
                      f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
         if plan.get("keta2"):
             lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
