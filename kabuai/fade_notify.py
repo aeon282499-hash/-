@@ -106,6 +106,10 @@ FRIEND_EACH_FROM = "2026-11-11"
 #   11/11分からの形の全体: 5年 3,075本 約定57% 1年あたり+592/+465万 PF2.04/1.66 減った幅60/89万 最悪月-33/-67万 建玉最大110万
 #   20年(分割調整済みの値段なので5,000円の線は目安) +335/+272万 減った幅80/124万 負けた年0/26
 FRIEND_HIGH_FROM = "2026-11-11"
+# 2026-11-17 本人「ともだちのも外して」: 11/18分から 貸借で売り禁でない玉は見送り（繰り上げなし）。売り禁・貸借でない玉は残す。
+#  検証(友達chの今の形・5年・悲観・張り付き込み): 貸借・売り禁でない 284本 年+11万 勝ち÷負け1.08 最悪−183万（ビューティ花壇）／
+#  外すと 年+417万→+406万 最大DD185万→115万 1銘柄の最悪−183万→−55万 負けた年0/6
+FRIEND_TAI_OUT_FROM = "2026-11-18"
 RULE_LINE_V2 = ("前日終値+7%に約33万＋+12%に約17万の当日中指値で空売り → 約定した分は引け成行で買い戻し。損切り・利確なし。"
                 "届かなかった段は引けで消える。寄りがS高張り付き（寄値＝値幅上限）なら取消。"
                 "1本50万（2段に分けられない値段は+7%に50万一発）。1〜5位のうち+17%未満・100株で50万超は見送り（繰り上げない）。"
@@ -617,6 +621,8 @@ def friend_picks(plan: dict) -> list[dict]:
         else:
             why = ("+17%未満" if not x["strong"] else "・".join(x["reasons"]) if x["reasons"]
                    else "100株で50万超" if x["close"] * 100 > SIZE_YEN else "")
+        if not why and plan["trade_day"] >= FRIEND_TAI_OUT_FROM and _tai_not_banned(x):   # 11/18〜 本人「ともだちのも外して」
+            why = "貸借で売り禁でない"
         if x.get("tob"):   # 2026-11-17〜 TOB/MBO は順位・前日比に関係なく見送り（繰り上げない）
             why = "TOB/MBO"
         out.append(dict(x, skip=why))
@@ -677,7 +683,8 @@ def plan_payload(plan: dict) -> dict:
     lines.append(f"-# 基準日 {asof:%m/%d} の日足・候補 {plan['n_cand']}銘柄（終値100円以上・代金3億以上・前日比+8%以上）")
     v2 = plan["trade_day"] >= FRIEND_V2_FROM
     v2b = plan["trade_day"] >= FRIEND_EACH_FROM
-    lines.append(f"-# 📌 {RULE_LINE_V2B if v2b else RULE_LINE_V2 if v2 else RULE_LINE}")
+    lines.append(f"-# 📌 {RULE_LINE_V2B if v2b else RULE_LINE_V2 if v2 else RULE_LINE}"
+                 + ("。貸借で売り禁でない銘柄は見送り（繰り上げなし）" if plan["trade_day"] >= FRIEND_TAI_OUT_FROM else ""))
     lines.append(f"-# {BT_LINE_V2B if v2b else BT_LINE_V2 if v2 else BT_LINE}")
     lines.append("-# 銘柄の選定だけ。発注はしない。投資判断は自己責任。")
     title = f"🩳 {_md(td)} 友達版　" + (f"注文 {len(go)}本" if go else ("候補なし" if not picks else "今日は全部見送り"))
