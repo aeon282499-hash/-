@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-16",
+ "last_signal_date": "2026-11-17",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1183,10 +1183,15 @@
    "shares": 300,
    "rsi": 32.0,
    "runup5": -8.0,
-   "status": "extended",
+   "status": "closed",
    "entry": 1552.0,
    "gap_pct": 8.96,
-   "ext_exit_date": "2026-11-16"
+   "ext_exit_date": "2026-11-16",
+   "exit_date": "2026-11-16",
+   "exit": 1638.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 5.54,
+   "pnl_yen": 25800
   },
   {
    "ticker": "7014.T",
@@ -1423,7 +1428,8 @@
    "shares": 400,
    "rsi": 35.8,
    "runup5": -25.0,
-   "status": "pending"
+   "status": "pending",
+   "note": "決済価格未取得(entry=1191.0, exit=None)・翌日再試行"
   },
   {
    "ticker": "6721.T",
@@ -1434,7 +1440,13 @@
    "shares": 4300,
    "rsi": 47.1,
    "runup5": -14.8,
-   "status": "pending"
+   "status": "closed",
+   "entry": 117.0,
+   "exit_date": "2026-11-17",
+   "exit": 112.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -4.27,
+   "pnl_yen": -21500
   }
  ],
  "last_reminder_date": "2026-10-30"
