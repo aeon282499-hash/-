@@ -1043,5 +1043,108 @@
   ],
   "made": "2026-11-18T05:54:00+09:00",
   "sent": false
+ },
+ "2026-11-19": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "130A",
+    "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+    "close": 285.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 1.7,
+     "day": "11/19",
+     "stale": false,
+     "fee_pct": 0.6,
+     "day_ok": true,
+     "max_sh": 210000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3909",
+    "name": "ショーケース",
+    "close": 680.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 2.9,
+     "day": "11/19",
+     "stale": false,
+     "fee_pct": 0.43,
+     "day_ok": true,
+     "max_sh": 90000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "338A",
+    "name": "ＺｅｎｍｕＴｅｃｈ",
+    "close": 3350.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 8.5,
+     "day": "11/19",
+     "stale": false,
+     "fee_pct": 0.25,
+     "day_ok": true,
+     "max_sh": 20000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "遊び",
+    "code": "3625",
+    "name": "テックファームホールディ",
+    "close": 750.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "lim": 840.0,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 0.75,
+     "day": "11/19",
+     "stale": false,
+     "fee_pct": 0.1,
+     "day_ok": true,
+     "max_sh": 80000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-18T18:45:02+09:00",
+  "sent": false
  }
 }

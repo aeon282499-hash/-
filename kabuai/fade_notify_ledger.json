@@ -3127,6 +3127,203 @@
    "keta2": [],
    "tob_out": [],
    "own_sent": true
+  },
+  "2026-11-19": {
+   "asof": "2026-11-18",
+   "trade_day": "2026-11-19",
+   "made": "2026-11-18 18:09",
+   "n_cand": 14,
+   "rule_a": null,
+   "rule_a_why": "1位 3624 は前日比+14.94%（+17%未満）",
+   "rows": [
+    {
+     "code": "3624",
+     "code5": "36240",
+     "name": "アクセルマーク",
+     "mkt": "グロース",
+     "close": 100.0,
+     "ret1": 0.14942528735632177,
+     "va": 1190642100.0,
+     "rank_all": 1,
+     "score": 3.79,
+     "ul1": 150.0,
+     "strong": false,
+     "vol20": 0.2718,
+     "dev25": 0.9826,
+     "rng": 0.3908,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "130A",
+     "code5": "130A0",
+     "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+     "mkt": "グロース",
+     "close": 285.0,
+     "ret1": 0.2666666666666666,
+     "va": 994173300.0,
+     "rank_all": 2,
+     "score": 2.93,
+     "ul1": 365.0,
+     "strong": true,
+     "vol20": 0.0838,
+     "dev25": -0.0461,
+     "rng": 0.2311,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "3909",
+     "code5": "39090",
+     "name": "ショーケース",
+     "mkt": "スタンダード",
+     "close": 680.0,
+     "ret1": 0.17241379310344818,
+     "va": 748770200.0,
+     "rank_all": 3,
+     "score": 2.5,
+     "ul1": 780.0,
+     "strong": true,
+     "vol20": 0.1412,
+     "dev25": -0.0406,
+     "rng": 0.0638,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": true,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "338A",
+     "code5": "338A0",
+     "name": "ＺｅｎｍｕＴｅｃｈ",
+     "mkt": "グロース",
+     "close": 3350.0,
+     "ret1": 0.1559696342305037,
+     "va": 2291375000.0,
+     "rank_all": 4,
+     "score": 2.29,
+     "ul1": 4050.0,
+     "strong": false,
+     "vol20": 0.0877,
+     "dev25": -0.1519,
+     "rng": 0.1508,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "4972",
+     "code5": "49720",
+     "name": "綜研化学",
+     "mkt": "スタンダード",
+     "close": 5160.0,
+     "ret1": 0.13033953997809422,
+     "va": 1349940000.0,
+     "rank_all": 5,
+     "score": 2.21,
+     "ul1": 6160.0,
+     "strong": false,
+     "vol20": 0.0329,
+     "dev25": 0.1639,
+     "rng": 0.1742,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [
+      "決算起因"
+     ],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "130A",
+      "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+      "close": 285.0,
+      "ret1": 0.2666666666666666,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "3909",
+      "name": "ショーケース",
+      "close": 680.0,
+      "ret1": 0.17241379310344818,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 3,
+      "code": "338A",
+      "name": "ＺｅｎｍｕＴｅｃｈ",
+      "close": 3350.0,
+      "ret1": 0.1559696342305037,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     }
+    ],
+    "n_cand": 14
+   },
+   "asobi": {
+    "code": "3625",
+    "name": "テックファームホールディ",
+    "close": 750.0,
+    "ret1": 0.12951807228915668,
+    "va": 137287000.0,
+    "lim": 840.0,
+    "shares": 200,
+    "n": 1,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "earn": false
+   },
+   "keta2": [],
+   "earn_mkt": {},
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -5430,6 +5627,163 @@
       "close": 277.0,
       "high": 283.0,
       "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-18": {
+   "trade_day": "2026-11-18",
+   "asof": "2026-11-17",
+   "made": "2026-11-18 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4888",
+     "name": "ステラファーマ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 463.0,
+       "shares": 700,
+       "sell": null
+      },
+      {
+       "lim": 484.0,
+       "shares": 300,
+       "sell": null
+      }
+     ],
+     "open": 424.0,
+     "close": 460.0,
+     "high": 460.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "7030",
+     "name": "スプリックス",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1299.0,
+     "close": 1323.0,
+     "high": 1343.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4547",
+     "name": "キッセイ薬品工業",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 4455.0,
+     "close": 4455.0,
+     "high": 4615.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4418",
+     "name": "ＪＤＳＣ",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 1167.0,
+     "close": 1281.0,
+     "high": 1300.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "2334",
+     "name": "イオレ",
+     "rank_all": 5,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 541.0,
+       "shares": 600,
+       "sell": 541.0
+      },
+      {
+       "lim": 566.0,
+       "shares": 200,
+       "sell": 566.0
+      }
+     ],
+     "open": 515.0,
+     "close": 560.0,
+     "high": 568.0,
+     "status": "約定",
+     "yen": -10200,
+     "sclose": false
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-18",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4888",
+      "name": "ステラファーマ",
+      "close_prev": 432.0,
+      "legs": [
+       {
+        "lim": 463.0,
+        "shares": 300,
+        "sell": null
+       },
+       {
+        "lim": 497.0,
+        "shares": 600,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 424.0,
+      "close": 460.0,
+      "high": 460.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "2334",
+      "name": "イオレ",
+      "close_prev": 505.0,
+      "legs": [
+       {
+        "lim": 541.0,
+        "shares": 300,
+        "sell": 541.0,
+        "pct": -3.512014787430684
+       },
+       {
+        "lim": 581.0,
+        "shares": 500,
+        "sell": null
+       }
+      ],
+      "status": "約定",
+      "open": 515.0,
+      "close": 560.0,
+      "high": 568.0,
+      "yen": -5700,
       "sclose": false
      }
     ],
