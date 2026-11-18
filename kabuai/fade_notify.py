@@ -879,6 +879,12 @@ def _loan_lines(lp: dict | None) -> list[str]:
 
 TOP3_LIMIT_PCT = 0.03
 TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
+# 2026-11-19 本人「15パにして」: 11/20分から 今日の3本は前日比+15%以上（遊び・2桁は+12%のまま）。
+#  検証(今のルール v5・悲観・張り付き込み・5年): +12〜15% 33本 年−3.8万 勝ち÷負け0.60（20年 年+1.9万 1.14・負け年14/26）。
+#  本人ch全体 下限+12% 年+337万 → +15% 年+341万（20年 +195→+193万）・最大DDは同じ65万。3本は上げ幅順なので繰り上がりはない
+TOP3_RET_MIN_V6 = 0.15
+TOP3_FLOOR15_FROM = "2026-11-20"
+ASOBI_RET_MIN = 0.12         # 遊び・2桁の下限（今日の3本とは別）
 TOP3_MAX_100SH = 1_000_000
 TOP3_MIN_BARS = 20           # 2026-10-31: 45営業日の窓に20本未満＝上場直後は撃てないので外す（遊びも同じ）   # 50万で100株買えない銘柄は 100株で100万円までなら100株だけ
 # 2段指値（2026-10-29 本人「OK」→同日「+12%にしよ」）: +3%で25万＋+12%で25万。どちらかの段で100株買えない銘柄は+3%で50万一発。
@@ -923,13 +929,17 @@ def friend_ladder(close: float, trade_day: str) -> list:
     return [(L0, s0)] if s0 else []
 
 
-def top3_plan(cand, master, iss, alert, jsf_list, earn) -> dict:
+def _top3_min(trade_day: str) -> float:
+    return TOP3_RET_MIN_V6 if trade_day >= TOP3_FLOOR15_FROM else TOP3_RET_MIN
+
+
+def top3_plan(cand, master, iss, alert, jsf_list, earn, ret_min: float = TOP3_RET_MIN) -> dict:
     """毎日の3本（2026-10-29 本人「とにかく毎日儲かる順に3つ」）: 候補(終値100円以上・代金3億以上・前日比+12%以上)を
     前日比の大きい順に3本 → 前日終値+3%の当日中指値で空売り→引成・各50万。貸借/売り禁/決算は表示だけ(除外しない)。
     検証: J-Q 5年 2,344本 PF2.07 +3,638万 DD52万(1位2.37/2位2.09/3位1.69)・立花20年 26/26年プラス・各時代1〜3位ともPF1.46以上。"""
     c = cand.reset_index() if "Code" not in cand.columns else cand
     # 100株で100万円以下の銘柄だけ（2026-10-29 本人「50万超〜100万は100株のみOK」・20年: PF1.96・DD70万・マイナス月15/309）
-    c = c[c["ret1"] >= TOP3_RET_MIN]
+    c = c[c["ret1"] >= ret_min]
     c = c[c["C"].map(lambda p: _lim(p, TOP3_LIMIT_PCT) * 100 <= TOP3_MAX_100SH)]
     # 上場20営業日未満は外す（2026-10-31 監査: 新規上場は貸借選定前で一般信用の在庫も無い＝撃てない。5年BTで125本・合計の4%）
     if "nbars" in c.columns:
@@ -960,7 +970,7 @@ def asobi_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
     f = add_features(b)
     f = f.assign(nbars=f.groupby("Code")["C"].transform("size"))
     d = f[(f["Date"] == pd.Timestamp(asof)) & (f["C"] >= PRICE_MIN) & (f["Va"] >= ASOBI_VA[0]) & (f["Va"] < ASOBI_VA[1])
-          & (f["ret1"] >= TOP3_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS)].sort_values(["ret1", "Code"], ascending=[False, True])
+          & (f["ret1"] >= ASOBI_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS)].sort_values(["ret1", "Code"], ascending=[False, True])
     if d.empty:
         return None
     r = d.iloc[0]
@@ -995,7 +1005,7 @@ def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss,
     f = add_features(b)
     f = f.assign(nbars=f.groupby("Code")["C"].transform("size"))
     d = f[(f["Date"] == pd.Timestamp(asof)) & (f["C"] >= KETA2_PX[0]) & (f["C"] < KETA2_PX[1]) & (f["Va"] >= KETA2_VA_MIN)
-          & (f["ret1"] >= TOP3_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS) & f["prevC"].notna()]
+          & (f["ret1"] >= ASOBI_RET_MIN) & (f["nbars"] >= TOP3_MIN_BARS) & f["prevC"].notna()]
     sclose = np.array([c >= p + band(p) - 1e-9 for c, p in zip(d["C"], d["prevC"])], dtype=bool)
     d = d[sclose].sort_values(["Va", "Code"], ascending=[False, True])
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
@@ -1179,7 +1189,7 @@ def own_payload(plan: dict) -> dict:
         over = f"・S高で引けたら損{worst / 1e4:.1f}万" if v2 and worst > risk_y else ""
         notes.append(f"-# {x['name']}　前日終値 {x['close']:,.0f}円（{x['ret1']*100:+.1f}%）・" + (_own_tags(x) if o["kind"] == "3本" else _friend_tags(x)) + over)
     if not (plan.get("top3") or {}).get("rows"):
-        lines.insert(0, f"今日の3本　候補なし（前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上が無い）")
+        lines.insert(0, f"今日の3本　候補なし（前日比+{_top3_min(plan['trade_day'])*100:.0f}%以上・代金3億以上が無い）")
     a = plan.get("asobi")
     if a and a["shares"]:
         lines.append(f"🎲 遊び `{a['code']}` {a['name']}　売り {a['lim']:,.0f}円 × {a['shares']:,}株")
@@ -1217,11 +1227,11 @@ def own_payload(plan: dict) -> dict:
     if v2:
         lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{risk_y // 10000}万以内の株数（建玉は最大{cap_y // 10000}万）。"
                      + _own_rule_txt(plan["trade_day"]) +
-                     f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。"
+                     f"今日の3本＝前日比+{_top3_min(plan['trade_day'])*100:.0f}%以上・代金3億以上を大きい順に3本。"
                      f"友達chの1〜{FRIEND_RANKS_V2 if plan['trade_day'] >= FRIEND_V2_FROM else FRIEND_RANKS}位で今日の3本に無い銘柄も同じ入れ方で載せる。"
                      + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "")
                      + ("売る日の場中（15:30前）に決算が出る銘柄も見送り。" if plan["trade_day"] >= EARN_MKT_FROM else "") +
-                     f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+                     f"遊び＝代金1〜3億で+{ASOBI_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
         if plan.get("keta2"):
             lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
                          f"+{KETA2_LEGS[0][0]*100:.0f}%と+{KETA2_LEGS[1][0]*100:.0f}%に半分ずつ。"
@@ -1231,7 +1241,7 @@ def own_payload(plan: dict) -> dict:
     else:
         lines.append(f"-# 今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。1本50万を+{TOP3_LIMIT_PCT*100:.0f}%と+{TOP3_LADDER_PCT2*100:.0f}%の2段"
                      f"（2段に分けられない値段は+{TOP3_LIMIT_PCT*100:.0f}%に一発・100株で50万超は100株だけ・最大100万）。"
-                     f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+                     f"遊び＝代金1〜3億で+{ASOBI_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
     title = f"🩳 {_md(td)} 今日の注文 {n}本" if n else f"🩳 {_md(td)} 今日の注文なし"
     return {"embeds": [{"title": title, "description": chr(10).join(lines)[:4000], "color": 0xFF8787 if n else 0x868E96}]}
 
@@ -1540,7 +1550,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     cand_nt = cand[~cand["Code"].isin(tob_set)] if "Code" in cand.columns else cand
     bars_nt = bars[~bars["Code"].isin(tob_set)]
     plan["new1"] = new1_plan(cand_nt, master, iss, alert, jsf_list)
-    plan["top3"] = top3_plan(cand_nt, master, iss, alert, jsf_list, earn)
+    plan["top3"] = top3_plan(cand_nt, master, iss, alert, jsf_list, earn, _top3_min(trade_day.isoformat()))
     plan["asobi"] = asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
     try:
         plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn, _keta2_limits(trade_day.isoformat()))
