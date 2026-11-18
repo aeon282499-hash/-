@@ -879,7 +879,7 @@ def _loan_lines(lp: dict | None) -> list[str]:
 
 TOP3_LIMIT_PCT = 0.03
 TOP3_RET_MIN = 0.12          # 2026-10-29 本人「12%にあげて」: +8〜12%は5年PF0.82(27本)・20年PF1.25で弱い
-# 2026-11-19 本人「15パにして」: 11/20分から 今日の3本は前日比+15%以上（遊び・2桁は+12%のまま）。
+# 2026-11-19 本人「15パにして」: 11/20分から 今日の3本は前日比+15%以上（2桁は+12%のまま・遊びは同日やめた）。
 #  検証(今のルール v5・悲観・張り付き込み・5年): +12〜15% 33本 年−3.8万 勝ち÷負け0.60（20年 年+1.9万 1.14・負け年14/26）。
 #  本人ch全体 下限+12% 年+337万 → +15% 年+341万（20年 +195→+193万）・最大DDは同じ65万。3本は上げ幅順なので繰り上がりはない
 TOP3_RET_MIN_V6 = 0.15
@@ -959,6 +959,8 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn, ret_min: float = TOP3_RE
 # 遊び1本（2026-10-30 本人「遊びがある日は遊び1本配信たのむね」）: 3本の外の代金1〜3億・前日比+12%以上の1位に +12%指値だけ・25万。
 #  検証(uwick_bt/fade5y/RESULTS_play12_strict.md・1tick抜け): 5年 338本 PF2.48 +285万 DD10万・20年 PF2.77 DD21万・前後半とも2.5前後。
 #  2位以下は5年 PF1.45/1.07 で弱い＝1位だけ（繰り上げなし）。100株で50万超の銘柄は見送り
+# 2026-11-19 本人「遊びはやめる・消して」: 11/20分から遊びは出さない（計算もしない・本人chの文面からも消す）。2桁は続ける
+ASOBI_STOP_FROM = "2026-11-20"
 ASOBI_VA = (1e8, 3e8)
 ASOBI_LIMIT_PCT = 0.12
 ASOBI_SIZE = 250_000
@@ -1191,7 +1193,9 @@ def own_payload(plan: dict) -> dict:
     if not (plan.get("top3") or {}).get("rows"):
         lines.insert(0, f"今日の3本　候補なし（前日比+{_top3_min(plan['trade_day'])*100:.0f}%以上・代金3億以上が無い）")
     a = plan.get("asobi")
-    if a and a["shares"]:
+    if plan["trade_day"] >= ASOBI_STOP_FROM:
+        pass
+    elif a and a["shares"]:
         lines.append(f"🎲 遊び `{a['code']}` {a['name']}　売り {a['lim']:,.0f}円 × {a['shares']:,}株")
         cancel.append((a["name"], a["close"] + band(a["close"])))
         notes.append(f"-# {a['name']}（遊び）　前日終値 {a['close']:,.0f}円（{a['ret1']*100:+.1f}%・代金{a['va']/1e8:.1f}億）・{_own_tags(a)}")
@@ -1230,8 +1234,9 @@ def own_payload(plan: dict) -> dict:
                      f"今日の3本＝前日比+{_top3_min(plan['trade_day'])*100:.0f}%以上・代金3億以上を大きい順に3本。"
                      f"友達chの1〜{FRIEND_RANKS_V2 if plan['trade_day'] >= FRIEND_V2_FROM else FRIEND_RANKS}位で今日の3本に無い銘柄も同じ入れ方で載せる。"
                      + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "")
-                     + ("売る日の場中（15:30前）に決算が出る銘柄も見送り。" if plan["trade_day"] >= EARN_MKT_FROM else "") +
-                     f"遊び＝代金1〜3億で+{ASOBI_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
+                     + ("売る日の場中（15:30前）に決算が出る銘柄も見送り。" if plan["trade_day"] >= EARN_MKT_FROM else "")
+                     + ("" if plan["trade_day"] >= ASOBI_STOP_FROM else
+                        f"遊び＝代金1〜3億で+{ASOBI_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。") + "損切りなし")
         if plan.get("keta2"):
             lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
                          f"+{KETA2_LEGS[0][0]*100:.0f}%と+{KETA2_LEGS[1][0]*100:.0f}%に半分ずつ。"
@@ -1551,7 +1556,8 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     bars_nt = bars[~bars["Code"].isin(tob_set)]
     plan["new1"] = new1_plan(cand_nt, master, iss, alert, jsf_list)
     plan["top3"] = top3_plan(cand_nt, master, iss, alert, jsf_list, earn, _top3_min(trade_day.isoformat()))
-    plan["asobi"] = asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
+    plan["asobi"] = (asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
+                     if trade_day.isoformat() < ASOBI_STOP_FROM else None)
     try:
         plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn, _keta2_limits(trade_day.isoformat()))
     except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
