@@ -404,6 +404,90 @@ def fetch_earn_codes(asof: date) -> set[str] | None:
     return s
 
 
+# 2026-11-18 本人「場中は消して」: 売る日（取引日）の場中に決算が出る銘柄は見送り（繰り上げなし・本人chと友達ch）。
+#  予定日は JPX の決算発表予定日一覧（毎週更新の xlsx）＋ J-Quants /equities/earnings-calendar（翌営業日分・保険）。
+#  時刻は予定に無いので、J-Quants /fins/summary の前回の開示時刻で決める（前回と同じ時刻が約8割）。15:30 より前＝場中、
+#  前回が無い銘柄は場中とみなして見送る。検証(5年・張り付き込み・悲観): 売る日に決算 本人ch 8回 年+2万／友達ch 10回 年−0.1万
+#  （278A 2026/5/1 −26万）＝儲けはほぼ同じで、決算でS高まで行く一発を避ける保険。
+EARN_MKT_FROM = "2026-11-19"
+JPX_KESSAN_URL = "https://www.jpx.co.jp/listing/event-schedules/financial-announcement/index.html"
+
+
+def _jpx_kessan_codes(day: date) -> set[str] | None:
+    """JPX の決算発表予定日一覧から day に発表予定の {code4}。取れなければ None。"""
+    import io
+    import re as _re
+    import requests
+    verify = os.getenv("JQUANTS_VERIFY_SSL", "true").lower() not in ("0", "false", "no")
+    try:
+        h = requests.get(JPX_KESSAN_URL, timeout=(10, 30), verify=verify)
+        h.raise_for_status()
+        links = sorted(set(_re.findall(r'href="([^"]+\.xlsx?)"', h.text)))
+        if not links:
+            return None
+        out: set[str] = set()
+        for u in links:
+            b = requests.get(u if u.startswith("http") else "https://www.jpx.co.jp" + u, timeout=(10, 60), verify=verify).content
+            x = pd.read_excel(io.BytesIO(b), header=None)
+            dts = pd.to_datetime(x.iloc[:, 0], errors="coerce")
+            for c in x.loc[dts.dt.date == day, 1]:
+                c = str(c).strip()
+                if c.endswith(".0"):
+                    c = c[:-2]
+                if c:
+                    out.add(c)
+        return out
+    except Exception as e:  # noqa: BLE001
+        log(f"JPX 決算発表予定の取得失敗: {type(e).__name__}: {e}")
+        return None
+
+
+def _last_disc_time(c5: str) -> str | None:
+    """その銘柄の前回の決算開示時刻 'HH:MM'（J-Quants /fins/summary の一番新しい開示）。無ければ None。"""
+    rows = _jq_pages("/fins/summary", {"code": c5})
+    rows = [r for r in rows if r.get("DiscDate") and r.get("DiscTime")]
+    if not rows:
+        return None
+    r = max(rows, key=lambda r: (r["DiscDate"], r["DiscTime"]))
+    return str(r["DiscTime"])[:5]
+
+
+def fetch_mkt_earn(trade_day: date, codes5: set[str]) -> dict | None:
+    """取引日の場中（15:30より前）に決算が出そうな銘柄 {code4: '前回13:00' など}。予定表が取れなければ None。"""
+    sched = _jpx_kessan_codes(trade_day)
+    try:
+        cal = _jq_pages("/equities/earnings-calendar", {})
+        jq = {code4(r.get("Code", "")) for r in cal if str(r.get("Date")) == trade_day.isoformat()}
+    except Exception as e:  # noqa: BLE001
+        log(f"決算予定(J-Quants)の取得失敗: {e}")
+        jq = None
+    if sched is None and jq is None:
+        return None
+    on = (sched or set()) | (jq or set())
+    log(f"{trade_day} の決算予定: JPX {len(sched) if sched is not None else '取れず'}件・J-Quants {len(jq) if jq is not None else '取れず'}件")
+    out = {}
+    for c5 in sorted(codes5):
+        c4 = code4(c5)
+        if c4 not in on:
+            continue
+        try:
+            t = _last_disc_time(c5)
+        except Exception as e:  # noqa: BLE001
+            log(f"{c4} の前回の開示時刻が取れず（場中とみなす）: {e}")
+            t = None
+        if t is None or t < "15:30":
+            out[c4] = f"前回{t}" if t else "前回の時刻なし"
+        log(f"{c4} は {trade_day} に決算予定・前回 {t or 'なし'} → " + ("場中とみなし見送り" if c4 in out else "引け後なので残す"))
+    return out
+
+
+def _mkt_earn_why(plan: dict, code: str) -> str:
+    if plan["trade_day"] < EARN_MKT_FROM:
+        return ""
+    t = (plan.get("earn_mkt") or {}).get(code)
+    return f"売る日の場中に決算（{t}）" if t else ""
+
+
 def fetch_iss_map() -> dict:
     """{code4: IssType}（"2"=貸借銘柄＝制度信用で空売り可）。直近公表週の /markets/margin-interest。"""
     try:
@@ -623,6 +707,8 @@ def friend_picks(plan: dict) -> list[dict]:
                    else "100株で50万超" if x["close"] * 100 > SIZE_YEN else "")
         if not why and plan["trade_day"] >= FRIEND_TAI_OUT_FROM and _tai_not_banned(x):   # 11/18〜 本人「ともだちのも外して」
             why = "貸借で売り禁でない"
+        if not why and _mkt_earn_why(plan, x["code"]):   # 11/19〜 本人「場中は消して」
+            why = _mkt_earn_why(plan, x["code"])
         if x.get("tob"):   # 2026-11-17〜 TOB/MBO は順位・前日比に関係なく見送り（繰り上げない）
             why = "TOB/MBO"
         out.append(dict(x, skip=why))
@@ -665,6 +751,8 @@ def plan_payload(plan: dict) -> dict:
         lines.append("⚠️ 規制銘柄情報が取れず「日証金の規制」は未確認")
     if plan.get("tob_checked") is False:
         lines.append("⚠️ 適時開示が取れず「TOB/MBO」の見送りは未確認")
+    if plan["trade_day"] >= EARN_MKT_FROM and plan.get("earn_mkt") is None:
+        lines.append("⚠️ 決算の予定が取れず「売る日の場中に決算」の見送りは未確認")
     for x in picks:
         head = f"{x['rank_all']}位 `{x['code']}` {x['name']}"
         lines.append(f"{head}　見送り　{x['skip']}" if x["skip"] else f"{head}　{_order_txt(friend_ladder(x['close'], plan['trade_day']))}")
@@ -684,7 +772,8 @@ def plan_payload(plan: dict) -> dict:
     v2 = plan["trade_day"] >= FRIEND_V2_FROM
     v2b = plan["trade_day"] >= FRIEND_EACH_FROM
     lines.append(f"-# 📌 {RULE_LINE_V2B if v2b else RULE_LINE_V2 if v2 else RULE_LINE}"
-                 + ("。貸借で売り禁でない銘柄は見送り（繰り上げなし）" if plan["trade_day"] >= FRIEND_TAI_OUT_FROM else ""))
+                 + ("。貸借で売り禁でない銘柄は見送り（繰り上げなし）" if plan["trade_day"] >= FRIEND_TAI_OUT_FROM else "")
+                 + ("。売る日の場中に決算が出る銘柄も見送り" if plan["trade_day"] >= EARN_MKT_FROM else ""))
     lines.append(f"-# {BT_LINE_V2B if v2b else BT_LINE_V2 if v2 else BT_LINE}")
     lines.append("-# 銘柄の選定だけ。発注はしない。投資判断は自己責任。")
     title = f"🩳 {_md(td)} 友達版　" + (f"注文 {len(go)}本" if go else ("候補なし" if not picks else "今日は全部見送り"))
@@ -1036,6 +1125,10 @@ def own_orders(plan: dict) -> list:
         for o in out:
             if _tai_not_banned(o["x"]):
                 o["lad"] = []; o["why"] = "貸借で売り禁でない"
+    for o in out:
+        w = _mkt_earn_why(plan, o["x"]["code"])
+        if w:
+            o["lad"] = []; o["why"] = w
     a = plan.get("asobi")
     if a and a.get("shares"):
         out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
@@ -1119,12 +1212,15 @@ def own_payload(plan: dict) -> dict:
             lines.append("-# ⚠️ 貸借区分が取れず「貸借で売り禁でない」の見送りは未確認")
         if not plan.get("alert_checked", True):
             lines.append("-# ⚠️ 規制銘柄情報が取れず、売り禁の銘柄を貸借として見送ったかもしれない")
+    if plan["trade_day"] >= EARN_MKT_FROM and plan.get("earn_mkt") is None:
+        lines.append("-# ⚠️ 決算の予定が取れず「売る日の場中に決算」の見送りは未確認")
     if v2:
         lines.append(f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{risk_y // 10000}万以内の株数（建玉は最大{cap_y // 10000}万）。"
                      + _own_rule_txt(plan["trade_day"]) +
                      f"今日の3本＝前日比+{TOP3_RET_MIN*100:.0f}%以上・代金3億以上を大きい順に3本。"
                      f"友達chの1〜{FRIEND_RANKS_V2 if plan['trade_day'] >= FRIEND_V2_FROM else FRIEND_RANKS}位で今日の3本に無い銘柄も同じ入れ方で載せる。"
-                     + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "") +
+                     + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "")
+                     + ("売る日の場中（15:30前）に決算が出る銘柄も見送り。" if plan["trade_day"] >= EARN_MKT_FROM else "") +
                      f"遊び＝代金1〜3億で+{TOP3_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。損切りなし")
         if plan.get("keta2"):
             lines.append(f"-# 2桁＝終値100円未満でストップ高で引けて代金{KETA2_VA_MIN / 1e8:.0f}億以上の銘柄を、"
@@ -1451,6 +1547,14 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
         log(f"おまけ2桁の計算失敗（本線は続行）: {type(e).__name__}: {e}")
         plan["keta2"] = []
+    if trade_day.isoformat() >= EARN_MKT_FROM:
+        c5s = {x["code5"] for x in plan["rows"]} | {str(x.get("code5") or "") for x in (plan["top3"] or {}).get("rows", [])}
+        c5s |= {code4(c) + "0" if len(str(c)) == 4 else str(c) for c in {x["code"] for x in (plan["top3"] or {}).get("rows", [])}}
+        try:
+            plan["earn_mkt"] = fetch_mkt_earn(trade_day, {c for c in c5s if c})
+        except Exception as e:  # noqa: BLE001  取れなくても配信は止めない（⚠️を出す）
+            log(f"場中決算の判定に失敗: {type(e).__name__}: {e}")
+            plan["earn_mkt"] = None
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     out_rows = cand[cand["Code"].isin(tob_set)] if "Code" in cand.columns else cand.iloc[0:0]
     plan["tob_out"] = [dict(code=code4(r.Code), name=str(names.get(str(r.Code), ""))[:12], ret1=float(r.ret1))

@@ -73,7 +73,7 @@ jobs:
 
       - name: パッケージインストール
         if: steps.gate.outputs.go == '1'
-        run: pip install pandas numpy requests python-dotenv jpholiday
+        run: pip install pandas numpy requests python-dotenv jpholiday openpyxl   # openpyxl=JPXの決算予定xlsx（2026-11-18）
 
       - name: 計画の作成 → 18:45 に Discord
         if: steps.gate.outputs.go == '1'
