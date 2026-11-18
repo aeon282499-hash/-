@@ -1078,6 +1078,18 @@ OWN_V6_FROM = "2026-11-20"
 #  → 損5万の上限は戻す。残るのは「+15%の段がS高より上で置けない値段は50万を+7%に回す」だけ（ショーケース680円 200株→600株）
 OWN_RISK_YEN_V6 = 50_000
 OWN_CAP_YEN_V6 = 500_000
+# 本人ch v7（2026-11-19 本人「それにして」）: 11/20分から 今日の3本の3位と友達chの銘柄だけ 2段目を+15%→+12%（+7%に1/3・+12%に2/3）。1位・2位は v6 のまま。
+#  検証(f2ededeb…/kaizen*.py・+15%下限・貸借売り禁でない見送り・張り付き込み・悲観・損5万/50万): 5年 年+345→+361万 DD65→62万 最悪日−29→−28万 −25万超4回のまま 約定52→53%
+#  ｜20年 +211→+224万 DD163万のまま。年ごとに今より下は5年1/6・20年8/26（−2〜−16万）。1位・2位を変える形はどれも落ち込みか最悪日が悪くなる
+OWN_V7_FROM = "2026-11-20"
+OWN_LEGS_V7_LOW = ((0.07, 1 / 3), (0.12, 2 / 3))
+
+
+def _own_legs(trade_day: str, kind: str, pos: int = 0):
+    """本人chの段。v7 から 今日の3本の3位(pos>=3)と友達chの銘柄は +7%1/3・+12%2/3、ほかは +7%1/3・+15%2/3。"""
+    if trade_day >= OWN_V7_FROM and (kind == "友達" or pos >= 3):
+        return OWN_LEGS_V7_LOW
+    return OWN_LEGS_V3
 # 同日 本人「じゃあはずして」: 11/18分から 今日の3本・友達の銘柄のうち「貸借で売り禁でない」玉は見送り（繰り上げなし）。売り禁と貸借でない玉は残す。
 #  検証(悲観・張り付き込み・5年): 貸借・売り禁でない 323本 年+6万 勝ち÷負け1.06 最悪−163万（ビューティ花壇）／外すと 年+341万→+334万 最大DD162万→65万 最悪−28万
 OWN_TAI_OUT_FROM = "2026-11-18"
@@ -1140,14 +1152,16 @@ def own_orders(plan: dict) -> list:
     rk, cp = _own_limits(plan["trade_day"])
     hi = OWN_V5_HIGH if plan["trade_day"] >= OWN_V5_FROM else OWN_V4_HIGH
     v6 = plan["trade_day"] >= OWN_V6_FROM
-    lad = ((lambda c: own_ladder(c, OWN_LEGS_V3, hi, rk, cp, renorm=v6)) if v4
-           else (lambda c: own_ladder(c, OWN_LEGS_V3, OWN_V3_HIGH)) if v3 else own_ladder if v2 else top3_ladder)
+    td = plan["trade_day"]
+    lad = ((lambda c, kind="3本", pos=0: own_ladder(c, _own_legs(td, kind, pos), hi, rk, cp, renorm=v6)) if v4
+           else (lambda c, kind="3本", pos=0: own_ladder(c, OWN_LEGS_V3, OWN_V3_HIGH)) if v3
+           else (lambda c, kind="3本", pos=0: own_ladder(c)) if v2 else (lambda c, kind="3本", pos=0: top3_ladder(c)))
     top = (plan.get("top3") or {}).get("rows", [])
     fgo = [x for x in friend_picks(plan) if not x["skip"]] if plan.get("rows") else []
     fcodes, tcodes = {x["code"] for x in fgo}, {x["code"] for x in top}
-    out = [dict(x=x, lad=lad(x["close"]), kind="3本", same=x["code"] in fcodes) for x in top]
+    out = [dict(x=x, lad=lad(x["close"], "3本", j), kind="3本", same=x["code"] in fcodes) for j, x in enumerate(top, 1)]
     if v2:
-        out += [dict(x=x, lad=lad(x["close"]), kind="友達", same=False) for x in fgo if x["code"] not in tcodes]
+        out += [dict(x=x, lad=lad(x["close"], "友達"), kind="友達", same=False) for x in fgo if x["code"] not in tcodes]
     if plan["trade_day"] >= OWN_TAI_OUT_FROM:
         for o in out:
             if _tai_not_banned(o["x"]):
@@ -1170,6 +1184,11 @@ def _own_rule_txt(trade_day: str) -> str:
     if trade_day < OWN_V3_FROM:
         return "金額の3分の1を+3%、3分の2を+12%に置く（+3%の段で100株に届かない値段は+12%に一発）。"
     a, b = (f"+{k * 100:.0f}%" for k, w in OWN_LEGS_V3)
+    if trade_day >= OWN_V7_FROM:
+        rk, cp = _own_limits(trade_day)
+        c = f"+{OWN_LEGS_V7_LOW[1][0] * 100:.0f}%"
+        return (f"1銘柄{cp // 10000}万を、3分の1を{a}、3分の2を{b}（3位と友達chの銘柄は{c}）の指値で割った株数。ただし売った日にS高で引けても損が{rk // 10000}万以内まで"
+                f"（2段目がS高より上の値段は{a}に全部。どちらかの段が100株に届かない値段は2段目に一発。それでも100株で損{rk // 10000}万か{cp // 10000}万を超える銘柄は見送り）。")
     if trade_day >= OWN_V6_FROM:
         rk, cp = _own_limits(trade_day)
         return (f"1銘柄{cp // 10000}万を、3分の1を{a}、3分の2を{b}の指値で割った株数。ただし売った日にS高で引けても損が{rk // 10000}万以内まで"
