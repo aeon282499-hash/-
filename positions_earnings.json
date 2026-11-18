@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-17",
+ "last_signal_date": "2026-11-18",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1428,8 +1428,13 @@
    "shares": 400,
    "rsi": 35.8,
    "runup5": -25.0,
-   "status": "pending",
-   "note": "決済価格未取得(entry=1191.0, exit=None)・翌日再試行"
+   "status": "closed",
+   "entry": 1191.0,
+   "exit_date": "2026-11-17",
+   "exit": 891.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -25.19,
+   "pnl_yen": -120000
   },
   {
    "ticker": "6721.T",
