@@ -4288,9 +4288,9 @@
     "limit_price": 5190,
     "entry_open": 5145.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 1.652,
+    "unrealized_pnl": 1.03,
     "exit_type": null,
     "exit_date": null
   },
@@ -4304,9 +4304,9 @@
     "limit_price": 2950,
     "entry_open": 2921.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": -0.805,
+    "unrealized_pnl": -0.822,
     "exit_type": null,
     "exit_date": null
   },
@@ -4320,9 +4320,9 @@
     "limit_price": 2593,
     "entry_open": 2560.5,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.508,
+    "unrealized_pnl": 0.0,
     "exit_type": null,
     "exit_date": null
   },
@@ -4336,9 +4336,9 @@
     "limit_price": 4060,
     "entry_open": 3999.0,
     "status": "open",
-    "hold_days": 1,
+    "hold_days": 2,
     "pnl_pct": null,
-    "unrealized_pnl": 0.55,
+    "unrealized_pnl": 1.075,
     "exit_type": null,
     "exit_date": null
   }
