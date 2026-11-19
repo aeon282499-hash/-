@@ -2,6 +2,7 @@
 // 米国連動の寄り逆張り: 前夜の米国株(GLW/MU・時間外込み)から寄りを予想し、行きすぎの線に寄付指値。約定したら引成＋寄り値から5%の逆指値。
 // データ: PC(us_link_publish.py)が 平日8:40〜8:58 3分おき＋9:25/11:35/15:45 に chimp-live ハブの live.json の "us_link" キーへ配信。
 // 画面は数字の行だけ（feedback_kabuai_numbers_only）。v8.9: 下に順張り（紙）の段（USL.paper）。v8.9.1: 損切り%は配信値（USL.stop・11/13〜2%・1銘柄70万）。v8.9.2: 出口は配信値（USL.exit="am"=前場引け・11/20〜）。v8.9.3: 参考（表示だけ）の段（USL.ref・キオクシア/東エレ等の勝てる組）。
+// v8.9.4: 「線を更新」ボタン（本人「指値価格手動更新ボタンも俺が押せるように」）。POST /uslink/refresh → PC(us_link_publish.py --poll・1分おき)が計算し直して配信。平日6:30〜8:59だけ出す。
 let USL = null, USL_PENDING = false, USL_AT = 0;
 function uslEnsure(force) {
   if (USL_PENDING) return;
@@ -12,6 +13,37 @@ function uslEnsure(force) {
     .then(j => { USL = (j && j.us_link && Array.isArray(j.us_link.rows)) ? j.us_link : false; })
     .catch(() => { USL = false; })
     .finally(() => { USL_PENDING = false; USL_AT = Date.now(); if ((location.hash || "").startsWith("#/uslink")) render(); });
+}
+var USL_RF = { ok: null, sent: 0, before: "", msg: "" };
+function uslRfCheck() {   // ハブが更新依頼に対応しているか（古いハブならボタンを出さない）
+  if (USL_RF.ok !== null) return;
+  USL_RF.ok = false;
+  fetch(CFG.LIVE_BASE + "/uslink/refresh", { cache: "no-store" }).then(r => r.ok ? r.json() : null)
+    .then(j => { USL_RF.ok = !!j && typeof j === "object" && ("req_at" in j); if (USL_RF.ok && (location.hash || "").startsWith("#/uslink")) render(); })
+    .catch(() => {});
+}
+function uslRfWindow() {   // 平日 6:30〜8:59（日本時間）
+  const d = new Date(Date.now() + 9 * 3600e3), w = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return w >= 1 && w <= 5 && m >= 390 && m < 540;
+}
+function uslRefresh() {
+  if (USL_RF.sent) return;
+  USL_RF.sent = Date.now(); USL_RF.before = USL ? (USL.updated_at || "") + (USL.lines_at || "") : ""; USL_RF.msg = "依頼中…";
+  render();
+  fetch(CFG.LIVE_BASE + "/uslink/refresh", { method: "POST" }).then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && j.ok) { USL_RF.msg = "PCで計算中…（1〜2分）"; uslRfWait(); } else { USL_RF.msg = "依頼できず"; USL_RF.sent = 0; } render(); })
+    .catch(() => { USL_RF.msg = "依頼できず"; USL_RF.sent = 0; render(); });
+}
+function uslRfWait() {
+  if (!USL_RF.sent) return;
+  if (Date.now() - USL_RF.sent > 180000) { USL_RF.msg = "PCから返事なし"; USL_RF.sent = 0; render(); return; }
+  setTimeout(() => {
+    uslEnsure(true);
+    setTimeout(() => {
+      if (USL && (USL.updated_at || "") + (USL.lines_at || "") !== USL_RF.before) { USL_RF.msg = "更新しました"; USL_RF.sent = 0; render(); }
+      else uslRfWait();
+    }, 3000);
+  }, 12000);
 }
 function uslPl(v) {
   if (v == null) return "";
@@ -30,8 +62,10 @@ function uslRow(r, pre, mom) {
   </tr>`;
 }
 function viewUsLink() {
-  uslEnsure(false);
-  const head = (sub) => `<h2>🇺🇸 連動 <span class="sub">${sub || ""}</span> <a class="gchip" onclick="event.preventDefault();uslEnsure(true)">🔄</a></h2>`;
+  uslEnsure(false); uslRfCheck();
+  const rf = USL_RF.ok && uslRfWindow() ? ` <a class="gchip" onclick="event.preventDefault();uslRefresh()">線を更新</a>` : "";
+  const rfm = USL_RF.msg ? ` <small class="muted">${esc(USL_RF.msg)}</small>` : "";
+  const head = (sub) => `<h2>🇺🇸 連動 <span class="sub">${sub || ""}</span> <a class="gchip" onclick="event.preventDefault();uslEnsure(true)">🔄</a>${rf}${rfm}</h2>`;
   if (!USL) return head("") + `<div class="card empty">${USL === false ? "まだありません（平日8:40から）" : "読み込み中…"}</div>`;
   const pre = USL.phase === "lines";
   const today = todayStr() === USL.date;

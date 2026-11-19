@@ -30,10 +30,13 @@ export default {
       if (!env.PUBLISH_TOKEN || auth !== `Bearer ${env.PUBLISH_TOKEN}`) return json({ error: "forbidden" }, 403);
       return hub.fetch(request);
     }
-    if (url.pathname === "/live.json" || url.pathname === "/ws" || url.pathname === "/status") {
+    // 🇺🇸連動の「線を更新」ボタン(2026-11-19 本人「指値価格手動更新ボタンも俺が押せるように」):
+    // アプリが POST /uslink/refresh で依頼時刻を置き、PC(us_link_publish.py --poll)が1分おきに GET で見て線を計算し直す。
+    // 依頼は線の再計算だけ(PCが9:00以降は無視)なので鍵なし・30秒に1回まで。
+    if (url.pathname === "/live.json" || url.pathname === "/ws" || url.pathname === "/status" || url.pathname === "/uslink/refresh") {
       return hub.fetch(request);
     }
-    return json({ ok: true, service: "chimp-live", routes: ["/live.json", "/ws", "/status", "POST /publish"] });
+    return json({ ok: true, service: "chimp-live", routes: ["/live.json", "/ws", "/status", "POST /publish", "GET|POST /uslink/refresh"] });
   },
 };
 
@@ -94,6 +97,18 @@ export class LiveHub {
         headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
                    "X-Updated-At": this.updatedAt || "", ...CORS },
       });
+    }
+
+    if (url.pathname === "/uslink/refresh") {
+      const last = (await this.state.storage.get("uslink_req")) || null;
+      if (request.method === "POST") {
+        const now = Date.now();
+        if (last && now - Date.parse(last) < 30000) return json({ ok: true, req_at: last, throttled: true });
+        const at = new Date(now).toISOString();
+        await this.state.storage.put("uslink_req", at);
+        return json({ ok: true, req_at: at });
+      }
+      return json({ ok: true, req_at: last });
     }
 
     if (url.pathname === "/status") {

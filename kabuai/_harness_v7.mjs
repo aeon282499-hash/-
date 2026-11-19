@@ -301,6 +301,10 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
   check("🇺🇸連動 v8.9.2: 出口=前引け（exit=am）の表示", u.exit !== "am" || (hv.includes("前場の引成") && (u.phase !== "close" || hv.includes("前引け"))), `exit ${u.exit} ${u.phase}`);
   check("🇺🇸連動 v8.9.3: 参考（表示だけ）の段", (u.ref || []).length ? (hv.includes("参考（表示だけ）") && hv.includes("キオクシア")) : !hv.includes("参考（表示だけ）"), `ref ${(u.ref || []).length}行`);
   check("🇺🇸連動 v8.9: 順張り（紙）の段", np ? (hv.includes("順張り（紙）") && hv.includes("上で買い") && hv.includes("レーザーテック")) : !hv.includes("順張り（紙）"), `paper ${np}行`);
+  { const okOld = !hv.includes("線を更新"); sandbox.USL_RF.ok = true; sandbox.uslRfWindow = () => true; const h2 = go("#/uslink");
+    const shown = clean(h2) && h2.includes("線を更新"); sandbox.uslRfWindow = () => false; const h3 = go("#/uslink");
+    check("🇺🇸連動 v8.9.4: 線を更新ボタン（古いハブ/時間外は出ない・6:30〜8:59だけ出る）", okOld && shown && !h3.includes("線を更新"));
+    sandbox.USL_RF.ok = false; }
   sandbox._uslMode = "lines"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 寄り前は線と株数だけ（結果列なし）", clean(hv) && !hv.includes("結果") && !hv.includes("合計") && hv.includes("空売り") && hv.includes("買い"));
   sandbox._uslMode = "404"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 404→まだありません", clean(hv) && hv.includes("まだありません"));
   sandbox._uslMode = "net"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 通信失敗でも落ちない", clean(hv) && hv.includes("まだありません"));
