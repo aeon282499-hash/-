@@ -1146,5 +1146,79 @@
   ],
   "made": "2026-11-19T05:29:22+09:00",
   "sent": false
+ },
+ "2026-11-20": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "3624",
+    "name": "アクセルマーク",
+    "close": 139.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/20",
+     "stale": false,
+     "fee_pct": 0.72,
+     "day_ok": true,
+     "max_sh": 1790000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "130A",
+    "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+    "close": 365.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 2.7,
+     "day": "11/20",
+     "stale": false,
+     "fee_pct": 0.74,
+     "day_ok": true,
+     "max_sh": 210000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "2桁",
+    "code": "4586",
+    "name": "メドレックス",
+    "close": 77.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": true,
+     "max_sh": 1320000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-19T18:45:01+09:00",
+  "sent": false
  }
 }

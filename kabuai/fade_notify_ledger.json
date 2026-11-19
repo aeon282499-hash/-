@@ -3324,6 +3324,225 @@
    "earn_mkt": {},
    "tob_out": [],
    "own_sent": true
+  },
+  "2026-11-20": {
+   "asof": "2026-11-19",
+   "trade_day": "2026-11-20",
+   "made": "2026-11-19 18:09",
+   "n_cand": 7,
+   "rule_a": {
+    "code": "3624",
+    "code5": "36240",
+    "name": "アクセルマーク",
+    "mkt": "グロース",
+    "close": 139.0,
+    "ret1": 0.3899999999999999,
+    "va": 2909596600.0,
+    "rank_all": 1,
+    "score": 4.0,
+    "ul1": 189.0,
+    "strong": true,
+    "vol20": 0.2824,
+    "dev25": 1.6386,
+    "rng": 0.37,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": [],
+    "tob": false
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "3624",
+     "code5": "36240",
+     "name": "アクセルマーク",
+     "mkt": "グロース",
+     "close": 139.0,
+     "ret1": 0.3899999999999999,
+     "va": 2909596600.0,
+     "rank_all": 1,
+     "score": 4.0,
+     "ul1": 189.0,
+     "strong": true,
+     "vol20": 0.2824,
+     "dev25": 1.6386,
+     "rng": 0.37,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "3909",
+     "code5": "39090",
+     "name": "ショーケース",
+     "mkt": "スタンダード",
+     "close": 780.0,
+     "ret1": 0.1470588235294117,
+     "va": 3141766000.0,
+     "rank_all": 2,
+     "score": 2.86,
+     "ul1": 930.0,
+     "strong": false,
+     "vol20": 0.1405,
+     "dev25": 0.0863,
+     "rng": 0.2029,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": true,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "130A",
+     "code5": "130A0",
+     "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+     "mkt": "グロース",
+     "close": 365.0,
+     "ret1": 0.2807017543859649,
+     "va": 772729800.0,
+     "rank_all": 3,
+     "score": 2.71,
+     "ul1": 445.0,
+     "strong": true,
+     "vol20": 0.1002,
+     "dev25": 0.2268,
+     "rng": 0.1263,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "3042",
+     "code5": "30420",
+     "name": "セキュアヴェイル",
+     "mkt": "スタンダード",
+     "close": 884.0,
+     "ret1": 0.12899106002554284,
+     "va": 8432368100.0,
+     "rank_all": 4,
+     "score": 2.29,
+     "ul1": 1034.0,
+     "strong": false,
+     "vol20": 0.1368,
+     "dev25": -0.0947,
+     "rng": 0.2324,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "（株）セキュアヴェイル 申込停止 新規売り・現引き 午後立会分より",
+     "reasons": [
+      "日証金停止"
+     ],
+     "tob": false
+    },
+    {
+     "code": "6315",
+     "code5": "63150",
+     "name": "ＴＯＷＡ",
+     "mkt": "プライム",
+     "close": 2394.0,
+     "ret1": 0.08917197452229297,
+     "va": 17606135900.0,
+     "rank_all": 5,
+     "score": 1.71,
+     "ul1": 2894.0,
+     "strong": false,
+     "vol20": 0.0703,
+     "dev25": 0.1304,
+     "rng": 0.121,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "3624",
+      "name": "アクセルマーク",
+      "close": 139.0,
+      "ret1": 0.3899999999999999,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "130A",
+      "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+      "close": 365.0,
+      "ret1": 0.2807017543859649,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     }
+    ],
+    "n_cand": 7
+   },
+   "asobi": null,
+   "keta2": [
+    {
+     "code": "4586",
+     "name": "メドレックス",
+     "close": 77.0,
+     "ret1": 0.6382978723404256,
+     "va": 1649371900.0,
+     "lad": [
+      [
+       89.0,
+       1800
+      ],
+      [
+       97.0,
+       1600
+      ]
+     ],
+     "n": 1,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "earn": false
+    }
+   ],
+   "earn_mkt": {},
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -5784,6 +6003,198 @@
       "close": 560.0,
       "high": 568.0,
       "yen": -5700,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-19": {
+   "trade_day": "2026-11-19",
+   "asof": "2026-11-18",
+   "made": "2026-11-19 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3624",
+     "name": "アクセルマーク",
+     "rank_all": 1,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 115.0,
+     "close": 139.0,
+     "high": 148.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "130A",
+     "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 305.0,
+       "shares": 1000,
+       "sell": 357.0
+      },
+      {
+       "lim": 320.0,
+       "shares": 500,
+       "sell": 357.0
+      }
+     ],
+     "open": 357.0,
+     "close": 365.0,
+     "high": 365.0,
+     "status": "約定",
+     "yen": -12000,
+     "sclose": true
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3909",
+     "name": "ショーケース",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 728.0,
+       "shares": 400,
+       "sell": 728.0
+      },
+      {
+       "lim": 762.0,
+       "shares": 200,
+       "sell": 762.0
+      }
+     ],
+     "open": 700.0,
+     "close": 780.0,
+     "high": 780.0,
+     "status": "約定",
+     "yen": -24400,
+     "sclose": true
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "338A",
+     "name": "ＺｅｎｍｕＴｅｃｈ",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 3465.0,
+     "close": 3555.0,
+     "high": 3565.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4972",
+     "name": "綜研化学",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 5110.0,
+     "close": 5060.0,
+     "high": 5160.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-19",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "130A",
+      "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+      "close_prev": 285.0,
+      "legs": [
+       {
+        "lim": 305.0,
+        "shares": 300,
+        "sell": 357.0,
+        "pct": -2.2408963585434174
+       },
+       {
+        "lim": 328.0,
+        "shares": 700,
+        "sell": 357.0,
+        "pct": -2.2408963585434174
+       }
+      ],
+      "status": "約定",
+      "open": 357.0,
+      "close": 365.0,
+      "high": 365.0,
+      "yen": -8000,
+      "sclose": true
+     },
+     {
+      "kind": "3本",
+      "code": "3909",
+      "name": "ショーケース",
+      "close_prev": 680.0,
+      "legs": [
+       {
+        "lim": 728.0,
+        "shares": 200,
+        "sell": 728.0,
+        "pct": -7.142857142857142
+       }
+      ],
+      "status": "約定",
+      "open": 700.0,
+      "close": 780.0,
+      "high": 780.0,
+      "yen": -10400,
+      "sclose": true
+     },
+     {
+      "kind": "3本",
+      "code": "338A",
+      "name": "ＺｅｎｍｕＴｅｃｈ",
+      "close_prev": 3350.0,
+      "legs": [
+       {
+        "lim": 3855.0,
+        "shares": 100,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 3465.0,
+      "close": 3555.0,
+      "high": 3565.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "遊び",
+      "code": "3625",
+      "name": "テックファームホールディ",
+      "close_prev": 750.0,
+      "legs": [
+       {
+        "lim": 840.0,
+        "shares": 200,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 750.0,
+      "close": 726.0,
+      "high": 809.0,
+      "yen": 0,
       "sclose": false
      }
     ],
