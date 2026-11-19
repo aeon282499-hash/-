@@ -997,6 +997,9 @@ KETA2_PX = (30.0, 100.0)
 KETA2_VA_MIN = 1e9
 KETA2_LEGS = ((0.15, 0.5), (0.25, 0.5))
 KETA2_MAX = 2
+# 2026-11-20 本人「2桁はやめる　今日から」: 年+7〜15万と小さく、担がれると1回−17.7万（25万の枠に重い）。
+#  11/20分から2桁は出さない・注文にも入れない（11/20分の答え合わせからも外す）。
+KETA2_STOP_FROM = "2026-11-20"
 
 
 def keta2_plan(bars: pd.DataFrame, asof, universe: set[str] | None, master, iss, alert, jsf_list, earn,
@@ -1173,7 +1176,7 @@ def own_orders(plan: dict) -> list:
     a = plan.get("asobi")
     if a and a.get("shares"):
         out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
-    for k in plan.get("keta2") or []:
+    for k in (plan.get("keta2") or []) if plan["trade_day"] < KETA2_STOP_FROM else []:
         if k.get("lad"):
             out.append(dict(x=k, lad=[(L, s) for L, s in k["lad"]], kind="2桁", same=False))
     return out
@@ -1598,7 +1601,7 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
     plan["asobi"] = (asobi_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn)
                      if trade_day.isoformat() < ASOBI_STOP_FROM else None)
     try:
-        plan["keta2"] = keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn, _keta2_limits(trade_day.isoformat()))
+        plan["keta2"] = [] if trade_day.isoformat() >= KETA2_STOP_FROM else keta2_plan(bars_nt, day, universe, master, iss, alert, jsf_list, earn, _keta2_limits(trade_day.isoformat()))
     except Exception as e:  # noqa: BLE001  おまけの失敗で本線の配信を止めない
         log(f"おまけ2桁の計算失敗（本線は続行）: {type(e).__name__}: {e}")
         plan["keta2"] = []
