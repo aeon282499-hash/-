@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-18",
+ "last_signal_date": "2026-11-19",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1321,10 +1321,15 @@
    "shares": 100,
    "rsi": 35.1,
    "runup5": -4.1,
-   "status": "extended",
+   "status": "closed",
    "entry": 3346.0,
    "gap_pct": 8.37,
-   "ext_exit_date": "2026-11-18"
+   "ext_exit_date": "2026-11-18",
+   "exit_date": "2026-11-18",
+   "exit": 3709.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 10.85,
+   "pnl_yen": 36300
   },
   {
    "ticker": "3436.T",
@@ -1335,10 +1340,15 @@
    "shares": 200,
    "rsi": 36.3,
    "runup5": -7.5,
-   "status": "extended",
+   "status": "closed",
    "entry": 2089.0,
    "gap_pct": 11.97,
-   "ext_exit_date": "2026-11-18"
+   "ext_exit_date": "2026-11-18",
+   "exit_date": "2026-11-18",
+   "exit": 2014.5,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": -3.57,
+   "pnl_yen": -14900
   },
   {
    "ticker": "5599.T",
@@ -1452,6 +1462,17 @@
    "exit_kind": "翌寄り",
    "pnl_pct": -4.27,
    "pnl_yen": -21500
+  },
+  {
+   "ticker": "8766.T",
+   "name": "東京海上ホールディングス",
+   "type": "第２四半期",
+   "date": "2026-11-19",
+   "signal_price": 570.5,
+   "shares": 800,
+   "rsi": 49.4,
+   "runup5": -3.9,
+   "status": "pending"
   }
  ],
  "last_reminder_date": "2026-10-30"
