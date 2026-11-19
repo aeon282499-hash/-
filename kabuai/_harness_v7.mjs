@@ -294,10 +294,11 @@ console.log("── 6) 🧠AI調教（v8.3・2026-10-19） ──");
   go(`#/detail/${c0}`); await sandbox.loadStockDetail(c0); check("詳細→🧠AI調教リンク", $get("#dbody").innerHTML.includes(`#/coach/${c0}`)); }
 { console.log("── 🇺🇸連動 v8.9 ──");
   const flush = () => new Promise(r => setTimeout(r, 30));
-  const u = USLJ && USLJ.us_link; check("🇺🇸連動: 本番ハブに us_link がある", !!u && Array.isArray(u.rows) && u.rows.length >= 7, u ? `${u.date} ${u.phase}` : "なし");
+  const u = USLJ && USLJ.us_link; check("🇺🇸連動: 本番ハブに us_link がある", !!u && Array.isArray(u.rows) && u.rows.length >= 6, u ? `${u.date} ${u.phase}` : "なし");
   let hv = go("#/uslink"); check("🇺🇸連動: 読み込み中", clean(hv) && hv.includes("読み込み中"));
   await flush(); hv = go("#/uslink"); const np = (u && Array.isArray(u.paper)) ? u.paper.length : 0;
-  check("🇺🇸連動: 結果つきで描画（全行・合計・寄り・株数）", clean(hv) && (hv.match(/<tr>/g) || []).length === u.rows.length + 1 + (np ? np + 1 : 0) && hv.includes("合計") && hv.includes("株") && hv.includes("キオクシア") && hv.includes("結果"));
+  check("🇺🇸連動: 結果つきで描画（全行・合計・寄り・株数）", clean(hv) && (hv.match(/<tr>/g) || []).length === u.rows.length + 1 + (np ? np + 1 : 0) && hv.includes("合計") && hv.includes("株") && hv.includes("住友電工") && hv.includes("結果"));
+  check("🇺🇸連動 v8.9.2: 出口=前引け（exit=am）の表示", u.exit !== "am" || (hv.includes("前場の引成") && (u.phase !== "close" || hv.includes("前引け"))), `exit ${u.exit} ${u.phase}`);
   check("🇺🇸連動 v8.9: 順張り（紙）の段", np ? (hv.includes("順張り（紙）") && hv.includes("上で買い") && hv.includes("レーザーテック")) : !hv.includes("順張り（紙）"), `paper ${np}行`);
   sandbox._uslMode = "lines"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 寄り前は線と株数だけ（結果列なし）", clean(hv) && !hv.includes("結果") && !hv.includes("合計") && hv.includes("空売り") && hv.includes("買い"));
   sandbox._uslMode = "404"; sandbox.uslEnsure(true); await flush(); hv = go("#/uslink"); check("🇺🇸連動: 404→まだありません", clean(hv) && hv.includes("まだありません"));

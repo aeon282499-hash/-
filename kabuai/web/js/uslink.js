@@ -1,7 +1,7 @@
 // uslink.js — 🇺🇸連動（v8.8・2026-11-12 本人「これをモメンタムチンパンアプリ追加するか」）
 // 米国連動の寄り逆張り: 前夜の米国株(GLW/MU・時間外込み)から寄りを予想し、行きすぎの線に寄付指値。約定したら引成＋寄り値から5%の逆指値。
 // データ: PC(us_link_publish.py)が 平日8:40〜8:58 3分おき＋9:25/11:35/15:45 に chimp-live ハブの live.json の "us_link" キーへ配信。
-// 画面は数字の行だけ（feedback_kabuai_numbers_only）。v8.9: 下に順張り（紙）の段（USL.paper）。v8.9.1: 損切り%は配信値（USL.stop・11/13〜2%・1銘柄70万）。
+// 画面は数字の行だけ（feedback_kabuai_numbers_only）。v8.9: 下に順張り（紙）の段（USL.paper）。v8.9.1: 損切り%は配信値（USL.stop・11/13〜2%・1銘柄70万）。v8.9.2: 出口は配信値（USL.exit="am"=前場引け・11/20〜）。
 let USL = null, USL_PENDING = false, USL_AT = 0;
 function uslEnsure(force) {
   if (USL_PENDING) return;
@@ -36,11 +36,11 @@ function viewUsLink() {
   const pre = USL.phase === "lines";
   const today = todayStr() === USL.date;
   const sub = `${esc(USL.date)}${today ? "" : "（今日の分ではない）"} ・ 線 ${esc(USL.lines_at)} ・ 更新 ${esc((USL.updated_at || "").slice(11))}`;
-  const total = !pre && USL.total_pl != null ? `<div class="hh">合計 ${uslPl(USL.total_pl)} <span class="sub">${USL.phase === "close" ? "引け" : "途中・約20分遅れ"}</span></div>` : "";
+  const total = !pre && USL.total_pl != null ? `<div class="hh">合計 ${uslPl(USL.total_pl)} <span class="sub">${USL.phase === "close" ? (USL.exit === "am" ? "前引け" : "引け") : "途中・約20分遅れ"}</span></div>` : "";
   return head(sub) + total + `<div class="card tight"><table class="tbl calc-tbl num">
     <thead><tr><th>銘柄</th><th>空売り</th><th>買い</th>${pre ? "" : "<th>結果</th>"}</tr></thead>
     <tbody>${USL.rows.map(r => uslRow(r, pre)).join("")}</tbody></table></div>
-    <p class="disc">寄付指値 ・ 約定したら引成＋寄り値から${USL.stop || 5}%の逆指値 ・ 1銘柄${Math.round((USL.budget || 1e6) / 1e4)}万円</p>` + uslPaper(pre);
+    <p class="disc">寄付指値 ・ 約定したら${USL.exit === "am" ? "前場の引成（前引けで返済）" : "引成"}＋寄り値から${USL.stop || 5}%の逆指値 ・ 1銘柄${Math.round((USL.budget || 1e6) / 1e4)}万円</p>` + uslPaper(pre);
 }
 // 順張り(紙・v8.9 2026-11-13 本人「両方やって」): 寄りが上の線以上→買い・下の線以下→空売り。発注しない記録だけ
 function uslPaper(pre) {
