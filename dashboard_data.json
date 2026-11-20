@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20 08:16:33",
+  "generated_at": "2026-11-20 13:05:15",
   "date": "2026-11-20",
   "tier_summary": {
     "S": 0,
@@ -8,35 +8,35 @@
     "C": 38
   },
   "driver_returns": {
-    "AMAT": -3.8,
+    "AMAT": -3.65,
     "AMD": -7.72,
     "AMZN": -3.87,
     "ASML": -2.8,
     "AVGO": -2.09,
-    "CRWD": 2.71,
-    "GEV": -2.06,
+    "CRWD": 7.95,
+    "GEV": -0.99,
     "GOOGL": -3.46,
-    "IONQ": -3.28,
+    "IONQ": -5.48,
     "KLAC": -2.35,
     "LRCX": -3.77,
-    "META": -3.27,
-    "MSFT": -1.97,
+    "META": -0.4,
+    "MSFT": -1.78,
     "MU": -2.1,
     "NRG": 0.2,
     "NVDA": -3.3,
     "ON": -2.25,
-    "PANW": 6.42,
-    "PLTR": -1.91,
+    "PANW": 9.9,
+    "PLTR": 0.07,
     "PLUG": -4.63,
-    "QBTS": -4.94,
-    "RGTI": -3.24,
-    "S": 2.87,
+    "QBTS": -4.83,
+    "RGTI": -1.54,
+    "S": 10.35,
     "SOX": -2.41,
     "TSLA": -2.43,
     "TSM": -2.9,
-    "VRT": -4.88,
-    "VST": -1.14,
-    "ZS": 3.98
+    "VRT": 2.16,
+    "VST": -1.23,
+    "ZS": 6.83
   },
   "themes": [
     {
@@ -140,7 +140,7 @@
         "S"
       ],
       "policy": "",
-      "us_tailwind": 4.0
+      "us_tailwind": 8.76
     },
     {
       "theme": "フィジカルAI_自動運転_車載",
@@ -327,7 +327,7 @@
         "VST"
       ],
       "policy": "",
-      "us_tailwind": -1.97
+      "us_tailwind": 0.04
     },
     {
       "theme": "AIサーバー受動部品",
@@ -347,7 +347,7 @@
         "NVDA"
       ],
       "policy": "",
-      "us_tailwind": -3.17
+      "us_tailwind": -2.56
     },
     {
       "theme": "パワー半導体",
@@ -467,7 +467,7 @@
         "QBTS"
       ],
       "policy": "",
-      "us_tailwind": -3.82
+      "us_tailwind": -3.95
     },
     {
       "theme": "EV_二次電池",
@@ -505,7 +505,7 @@
         "TSM"
       ],
       "policy": "ラピダス(北海道・次世代2nm国策)/TSMC熊本JASM/経済安保・補助金で国内設備投資が構造的に増加",
-      "us_tailwind": -3.05
+      "us_tailwind": -3.03
     },
     {
       "theme": "コンデンサ_電子部品",
@@ -538,7 +538,7 @@
         "GOOGL"
       ],
       "policy": "",
-      "us_tailwind": -2.66
+      "us_tailwind": -2.12
     },
     {
       "theme": "防衛",
@@ -589,7 +589,7 @@
         "AMZN"
       ],
       "policy": "",
-      "us_tailwind": -2.94
+      "us_tailwind": -2.9
     }
   ],
   "stocks": [
@@ -606,7 +606,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 4.0,
+      "us_tailwind": 8.76,
       "score": 80.6,
       "tier": "A",
       "init_stars": 3,
@@ -801,7 +801,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 4.0,
+      "us_tailwind": 8.76,
       "score": 61.6,
       "tier": "B",
       "init_stars": 3,
@@ -2411,7 +2411,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 4.0,
+      "us_tailwind": 8.76,
       "score": 25.6,
       "tier": "C",
       "init_stars": 1,
@@ -2601,7 +2601,7 @@
         "ZS",
         "S"
       ],
-      "us_tailwind": 4.0,
+      "us_tailwind": 8.76,
       "score": 21.6,
       "tier": "C",
       "init_stars": 1,
