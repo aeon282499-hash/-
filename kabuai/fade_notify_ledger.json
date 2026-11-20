@@ -3543,6 +3543,213 @@
    "earn_mkt": {},
    "tob_out": [],
    "own_sent": true
+  },
+  "2026-11-24": {
+   "asof": "2026-11-20",
+   "trade_day": "2026-11-24",
+   "made": "2026-11-20 18:09",
+   "n_cand": 5,
+   "rule_a": {
+    "code": "3624",
+    "code5": "36240",
+    "name": "アクセルマーク",
+    "mkt": "グロース",
+    "close": 185.0,
+    "ret1": 0.3309352517985611,
+    "va": 3348829400.0,
+    "rank_all": 1,
+    "score": 3.8,
+    "ul1": 235.0,
+    "strong": true,
+    "vol20": 0.2873,
+    "dev25": 2.2479,
+    "rng": 0.6835,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": [],
+    "tob": false
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "3624",
+     "code5": "36240",
+     "name": "アクセルマーク",
+     "mkt": "グロース",
+     "close": 185.0,
+     "ret1": 0.3309352517985611,
+     "va": 3348829400.0,
+     "rank_all": 1,
+     "score": 3.8,
+     "ul1": 235.0,
+     "strong": true,
+     "vol20": 0.2873,
+     "dev25": 2.2479,
+     "rng": 0.6835,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "4586",
+     "code5": "45860",
+     "name": "メドレックス",
+     "mkt": "スタンダード",
+     "close": 107.0,
+     "ret1": 0.3896103896103895,
+     "va": 4429968700.0,
+     "rank_all": 2,
+     "score": 3.4,
+     "ul1": 157.0,
+     "strong": true,
+     "vol20": 0.1806,
+     "dev25": 1.1748,
+     "rng": 0.4026,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "3416",
+     "code5": "34160",
+     "name": "ピクスタ",
+     "mkt": "スタンダード",
+     "close": 966.0,
+     "ret1": 0.18382352941176472,
+     "va": 374014400.0,
+     "rank_all": 3,
+     "score": 2.0,
+     "ul1": 1116.0,
+     "strong": true,
+     "vol20": 0.069,
+     "dev25": 0.0738,
+     "rng": 0.0931,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "5240",
+     "code5": "52400",
+     "name": "ｍｏｎｏＡＩ　ｔｅｃｈｎ",
+     "mkt": "グロース",
+     "close": 133.0,
+     "ret1": 0.14655172413793105,
+     "va": 539087900.0,
+     "rank_all": 4,
+     "score": 1.8,
+     "ul1": 183.0,
+     "strong": false,
+     "vol20": 0.059,
+     "dev25": -0.0519,
+     "rng": 0.3966,
+     "seido": "○",
+     "jsf_stop": true,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "ｍｏｎｏＡＩ　ｔｅｃｈｎｏｌｏｇｙ 申込停止 新規売り・現引き",
+     "reasons": [
+      "日証金停止"
+     ],
+     "tob": false
+    },
+    {
+     "code": "5133",
+     "code5": "51330",
+     "name": "テリロジーホールディング",
+     "mkt": "スタンダード",
+     "close": 414.0,
+     "ret1": 0.09814323607427067,
+     "va": 1667172700.0,
+     "rank_all": 5,
+     "score": 1.0,
+     "ul1": 494.0,
+     "strong": false,
+     "vol20": 0.0566,
+     "dev25": -0.0563,
+     "rng": 0.1565,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4586",
+      "name": "メドレックス",
+      "close": 107.0,
+      "ret1": 0.3896103896103895,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "3624",
+      "name": "アクセルマーク",
+      "close": 185.0,
+      "ret1": 0.3309352517985611,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 3,
+      "code": "3416",
+      "name": "ピクスタ",
+      "close": 966.0,
+      "ret1": 0.18382352941176472,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     }
+    ],
+    "n_cand": 5
+   },
+   "asobi": null,
+   "keta2": [],
+   "earn_mkt": {},
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -6194,6 +6401,164 @@
       "open": 750.0,
       "close": 726.0,
       "high": 809.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-20": {
+   "trade_day": "2026-11-20",
+   "asof": "2026-11-19",
+   "made": "2026-11-20 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3624",
+     "name": "アクセルマーク",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 149.0,
+       "shares": 2200,
+       "sell": 149.0
+      },
+      {
+       "lim": 156.0,
+       "shares": 1000,
+       "sell": 156.0
+      }
+     ],
+     "open": 119.0,
+     "close": 185.0,
+     "high": 185.0,
+     "status": "約定",
+     "yen": -108200,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3909",
+     "name": "ショーケース",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 870.0,
+     "close": 674.0,
+     "high": 889.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "130A",
+     "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 391.0,
+       "shares": 800,
+       "sell": null
+      },
+      {
+       "lim": 409.0,
+       "shares": 400,
+       "sell": null
+      }
+     ],
+     "open": 335.0,
+     "close": 297.0,
+     "high": 335.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3042",
+     "name": "セキュアヴェイル",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 869.0,
+     "close": 802.0,
+     "high": 945.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6315",
+     "name": "ＴＯＷＡ",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 2254.0,
+     "close": 2352.0,
+     "high": 2394.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-20",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "3624",
+      "name": "アクセルマーク",
+      "close_prev": 139.0,
+      "legs": [
+       {
+        "lim": 149.0,
+        "shares": 500,
+        "sell": 149.0,
+        "pct": -24.161073825503358
+       },
+       {
+        "lim": 160.0,
+        "shares": 900,
+        "sell": 160.0,
+        "pct": -15.625
+       }
+      ],
+      "status": "約定",
+      "open": 119.0,
+      "close": 185.0,
+      "high": 185.0,
+      "yen": -40500,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "130A",
+      "name": "Ｖｅｒｉｔａｓ　Ｉｎ　Ｓ",
+      "close_prev": 365.0,
+      "legs": [
+       {
+        "lim": 391.0,
+        "shares": 400,
+        "sell": null
+       },
+       {
+        "lim": 420.0,
+        "shares": 700,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 335.0,
+      "close": 297.0,
+      "high": 335.0,
       "yen": 0,
       "sclose": false
      }

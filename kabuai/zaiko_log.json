@@ -1220,5 +1220,83 @@
   ],
   "made": "2026-11-20T05:34:10+09:00",
   "sent": false
+ },
+ "2026-11-24": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4586",
+    "name": "メドレックス",
+    "close": 107.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/24",
+     "stale": false,
+     "fee_pct": 0.93,
+     "day_ok": true,
+     "max_sh": 1320000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3624",
+    "name": "アクセルマーク",
+    "close": 185.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/24",
+     "stale": false,
+     "fee_pct": 0.54,
+     "day_ok": true,
+     "max_sh": 1790000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3416",
+    "name": "ピクスタ",
+    "close": 966.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/24",
+     "stale": false,
+     "fee_pct": 0.1,
+     "day_ok": true,
+     "max_sh": 60000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-20T18:45:02+09:00",
+  "sent": false
  }
 }
