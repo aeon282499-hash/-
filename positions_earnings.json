@@ -1,5 +1,5 @@
 {
- "last_signal_date": "2026-11-19",
+ "last_signal_date": "2026-11-20",
  "positions": [
   {
    "ticker": "6521.T",
@@ -1376,10 +1376,15 @@
    "shares": 200,
    "rsi": 34.6,
    "runup5": -6.4,
-   "status": "extended",
+   "status": "closed",
    "entry": 1997.0,
    "gap_pct": 10.22,
-   "ext_exit_date": "2026-11-19"
+   "ext_exit_date": "2026-11-19",
+   "exit_date": "2026-11-19",
+   "exit": 1907.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": -4.51,
+   "pnl_yen": -18000
   },
   {
    "ticker": "336A.T",
@@ -1390,10 +1395,15 @@
    "shares": 400,
    "rsi": 34.7,
    "runup5": -13.1,
-   "status": "extended",
+   "status": "closed",
    "entry": 1083.0,
    "gap_pct": 13.85,
-   "ext_exit_date": "2026-11-19"
+   "ext_exit_date": "2026-11-19",
+   "exit_date": "2026-11-19",
+   "exit": 1155.0,
+   "exit_kind": "PEAD延長",
+   "pnl_pct": 6.65,
+   "pnl_yen": 28800
   },
   {
    "ticker": "8876.T",
@@ -1472,7 +1482,13 @@
    "shares": 800,
    "rsi": 49.4,
    "runup5": -3.9,
-   "status": "pending"
+   "status": "closed",
+   "entry": 566.0,
+   "exit_date": "2026-11-20",
+   "exit": 560.0,
+   "exit_kind": "翌寄り",
+   "pnl_pct": -1.06,
+   "pnl_yen": -4800
   }
  ],
  "last_reminder_date": "2026-10-30"
