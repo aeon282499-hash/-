@@ -1,0 +1,39 @@
+# 一回限り: キオクシア 5分足デイトレのバックテスト（2026-11-21）。作業ブランチへのpushでだけ動く。
+# 作業環境からは Yahoo に繋がらないので Actions で yfinance を使い、結果を results_kioxia_5m/ にコミットする。
+name: キオクシア5分足BT（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kioxia_5m_backtest.py
+      - .github/workflows/kioxia_5m_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install yfinance pandas numpy matplotlib
+      - name: バックテスト
+        run: python -X utf8 kioxia_5m_backtest.py --out results_kioxia_5m
+      - name: 結果をコミット
+        if: always()
+        run: |
+          if [ -d results_kioxia_5m ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add results_kioxia_5m
+            git commit -m "results: キオクシア5分足BT [skip ci]" || echo "変更なし"
+            git push || echo "push失敗"
+          fi
