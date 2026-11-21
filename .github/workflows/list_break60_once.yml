@@ -1,0 +1,33 @@
+# 一回限り: 初動ブレイク（買い・売り鏡像）の一覧／PF検証をログに出す（2026-11-15）。作業ブランチへのpushでだけ動く。
+name: 初動ブレイク一覧・PF（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/bt_break60_both_recent.py
+      - .github/workflows/list_break60_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      KABUAI_DATA_SOURCE: jquants_api
+      KABUAI_API_LOOKBACK: "750"   # 約3年。シグナル判定に約95日使うので検証期間は約2.6年
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: PF検証
+        working-directory: kabuai
+        run: python bt_break60_both_recent.py

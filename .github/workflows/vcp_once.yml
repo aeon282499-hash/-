@@ -1,0 +1,33 @@
+# 一回限り: VCP（スイングの出口・デイトレの入口）の検証をログに出す（2026-11-15）。作業ブランチへのpushでだけ動く。
+name: VCP検証（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/bt_vcp_recent.py
+      - .github/workflows/vcp_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      KABUAI_DATA_SOURCE: jquants_api
+      KABUAI_API_LOOKBACK: "750"   # 約3年。200日線・250日高値の助走で検証期間は約2年
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: VCP検証
+        working-directory: kabuai
+        run: python bt_vcp_recent.py
