@@ -3,7 +3,7 @@ plan_builder.py — 📋作戦（明日の作戦を1画面に）— 2026-09-17 �
 ニュースを拾って明日狙う銘柄」。
 
 出す物（全部「検証済みのルール」から機械的に組む。新しい予測は一切足さない）:
-  ① 実弾の注文     … 🩳フェード GO（①100/②50＝どちらも前終+0%当日中指値・同じ銘柄は20日で3回まで＝2026-10-01〜）・👑極上（150万×1＝縮小中・寄指）
+  ① 実弾の注文     … 🩳フェード GO（①100/②50＝どちらも前終+0%当日中指値・同じ銘柄は20日で3回まで＝2026-10-01〜）・👑極上（100万×1・寄指）
                        ※ 実弾は この2系統だけ。2026-09-27 本人「極みは廃止・極上だけ」で🔻極み売りを外した。
                          2026-09-22 に💥崩壊を実弾から外した（年+8.0万に対しDD-112万・01-08 PF0.77）
                        → 各行に「注文の書き方」をそのまま載せる（写すだけ）
@@ -118,7 +118,7 @@ def fade_order_text(prev_close, rank: int, jsf_stop: bool) -> tuple[str, str, in
         warn = f"🚫売り禁＝ハイカラ在庫が要る。SBIのプレミアム料(円/株)で注文種別を決める: {band}"
     return order, warn, shares
 CRASH_SIZE = "紙（実弾から外した・2026-09-22）"
-GOKUJO_SIZE = "150万"   # 2026-09-27 縮小モード中(shadow_exit.GOKUJO_SIZE=150万)・2026-10-28 本人「これでいく」＝150万で続行(「9/30に300万へ戻す」は撤回)。旧: "300万"(9/21本人決定)。勝ち乗せ無し・1枠だけ
+GOKUJO_SIZE = "100万"   # 2026-11-21 本人「100万に変えて」(shadow_exit.GOKUJO_SIZE=100万)。旧: "150万"(2026-09-27 縮小モード中(shadow_exit.GOKUJO_SIZE=150万)・2026-10-28 本人「これでいく」＝150万で続行(「9/30に300万へ戻す」は撤回)。旧: "300万"(9/21本人決定)。勝ち乗せ無し・1枠だけ
 KIWAMI_SELL_SIZE = "100万×最大3"
 LADDER = [
     "実弾は🩳フェード・👑極上 の2系統だけ（2026-09-27 本人「極みは廃止・極上だけ」で🔻極み売りを外した・9/22に💥崩壊を外した）",
@@ -126,7 +126,7 @@ LADDER = [
     "フェードの現金余力ラダー（2026-09-26 本人決定）: 40万未満①50万／40万台①60万／50〜54万①70万／55万〜①100万＋②50万（55万未満は②を撃たない・下げは翌営業日・上げは週末に切り替え）",
     "現金余力100万到達: フェード①130万（時価総額300億以下の小型だけ・中型は100万のまま・🏢大型1000億以上は撃たない＝10年+2,009万/DD-79 vs 一律130万 +1,979/DD-105）",
     "フェード: 時価総額1000億以上の大型は撃たない（2026-09-19採用・自動で候補から外れて小型が繰り上がる。10年で大型の急騰は翌日落ちない=件あたり-0.1%・小型は+1.1%）",
-    "極上: 150万×1枠（2026-10-28 本人決定で150万を続行・勝ち乗せ無し）／初日の引けが建値-1%以下なら翌朝処分／3営業日目の大引けで売り・損切り-3%・利確+5%",
+    "極上: 100万×1枠（2026-11-21 本人「100万に変えて」・勝ち乗せ無し）／初日の引けが建値-1%以下なら翌朝処分／3営業日目の大引けで売り・損切り-3%・利確+5%",
 ]
 
 
@@ -301,7 +301,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
     except Exception as e:
         print(f"[plan] 崩壊節スキップ: {e}")
 
-    # ③ 👑極上（150万×1・寄指上限）。極み買い(9/21)・🔻極み売り(9/27)は廃止＝出さない
+    # ③ 👑極上（100万×1・寄指上限）。極み買い(9/21)・🔻極み売り(9/27)は廃止＝出さない
     def _sig_rows(fname: str, system: str, pri: int, size: str, side: str, how, to_list: list):
         j = _load_json(fname)
         if not j or str(j.get("date", "")) != target_s:
@@ -437,7 +437,7 @@ def build_plan(rows: list[dict], sell_watch: dict | None, arena: dict | None, da
         _rec("💥崩壊", "紙のみ（2026-09-22 実弾から外した）", [(x.get("exec_date") or x.get("d0") or "", x.get("name", ""), x.get("result_pct")) for x in j if x.get("result_pct") is not None and not x.get("skipped")])
         j = _load_json("shadow_exit_gokujo.json") or []
         lst = j.get("positions") if isinstance(j, dict) else j
-        _rec("👑極上", "帳簿150万×1(9/28分〜縮小中・9/21-26は300万・9/14-20は150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
+        _rec("👑極上", "帳簿100万×1(11/24分〜・9/28〜11/21は150万・9/21-26は300万・9/14-20は150万)", [(x.get("exit_date") or x.get("entry_date") or "", x.get("name", ""), x.get("pnl_pct")) for x in (lst or []) if x.get("status") == "closed"])
     except Exception as e:
         print(f"[plan] 答え合わせ節スキップ: {e}")
 
