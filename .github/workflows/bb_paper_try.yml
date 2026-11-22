@@ -1,0 +1,35 @@
+# 試運転: bb_paper_daily.py を過去の日（11/12〜11/20）で動かして中身を確かめる（コミットしない・2026-11-23）。
+name: BB売り 紙の台帳 試運転
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/bb_paper_daily.py
+      - .github/workflows/bb_paper_try.yml
+
+jobs:
+  try:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      PYTHONIOENCODING: utf-8
+      BB_PAPER_START: "2026-11-10"
+      BB_PAPER_OUT: /tmp/bb_paper_try
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 試運転（1回目＝付ける・2回目＝付ける日なし になるはず）
+        working-directory: kabuai
+        run: |
+          python -X utf8 bb_paper_daily.py
+          echo "===== 2回目 ====="
+          python -X utf8 bb_paper_daily.py
+          echo "===== ledger ====="
+          cat /tmp/bb_paper_try/ledger.csv || true
+          cat /tmp/bb_paper_try/days.csv
