@@ -10,7 +10,7 @@
   合図   10:00〜11:25 に始まった足が確定した時点で ①終値 ≥ 上バンド×1.005 ②終値 ≥ 寄値×1.02（1銘柄1日1回・最初の合図だけ）
   売り   合図の次の足の始値（＝次の足の最初の断面の現在値）で、いちにち信用の新規売り（紙）
   買戻し 確定した足の終値 ≤ 中心線（40本MA）→ 次の足の始値／戻らなければ大引け（15:30の値）
-  保険   売値+5% に逆指値（検証には無い。台帳では「保険あり」の損益を別の列に記録）
+  保険   売値+7% に逆指値（bb_stop_compare_1122.py: +2〜3%は利益を大きく削る・+7%は事故よけ。台帳は保険なし/ありの両方を記録）
   上限   1日2回・同時に1銘柄・1日の損失−2万円（100株換算）。上限で見送った合図も「見送り」として記録する
   検証の成績（確認期間 10/23〜11/20・前場・寄値+2%・中心線回帰）: 12回・勝率75%・PF4.02（件数が少ないので参考）
 
@@ -68,7 +68,7 @@ GU_MIN = 0.03
 PREV_TOV_MIN = 1e8
 PERIOD, SIGMA, BAND_OUT, OPEN_UP = 40, 2.0, 0.005, 0.02
 SIG_FROM, SIG_TO = "10:00", "11:25"        # 合図の足の開始時刻
-STOP_PCT = 0.05                             # 保険の逆指値（検証には無い）
+STOP_PCT = 0.07                             # 保険の逆指値（+7%・kabuai/bb_stop_compare_1122.py で決定）
 COST_PCT = 0.10                             # 往復（＋不利1tick×2 は tick() で引く）
 SHARES = 100
 MAX_TRADES, MAX_LOSS_YEN = 2, 20000
@@ -286,7 +286,7 @@ class Session:
             bar = st.builder.push(ts, last, vol)
             if st.state == "short" and last >= st.rec["entry"] * (1 + STOP_PCT) and not st.rec.get("stop_hit"):
                 st.rec["stop_hit"] = True; st.rec["stop_px"] = st.rec["entry"] * (1 + STOP_PCT)
-                self.send(f"⚠️【BB売り・紙】{st.code} {st.name} 保険の逆指値（+5%）に到達 {st.rec['stop_px']:,.0f}円 {t}"
+                self.send(f"⚠️【BB売り・紙】{st.code} {st.name} 保険の逆指値（+7%）に到達 {st.rec['stop_px']:,.0f}円 {t}"
                           "（検証のルールは保険なし＝台帳は両方記録）")
             if bar is None:
                 continue
@@ -312,7 +312,7 @@ class Session:
                 self.send(f"🔻【BB売り・紙】{code} {st.name}  合図 {bt}の足  終値{bar.c:,.0f}（上バンド{up:,.0f}・寄値比+{st.rec['open_up_pct']}%）\n"
                           f"  → 次の足の始値で いちにち信用の新規売り（成行）" + ("" if ok else f"  ※上限で見送り（{why}）") +
                           f"\n  買戻し: 5分足の終値が中心線（今{ma:,.0f}円）以下で次の足／戻らなければ大引け"
-                          f"\n  保険: 売値+5%に逆指値  ｜GU+{st.rec['gu_pct']}%・VWAP乖離{st.rec['vwap_dev_pct']}%・出来高×{st.rec['vol_ratio']}")
+                          f"\n  保険: 売値+7%に逆指値  ｜GU+{st.rec['gu_pct']}%・VWAP乖離{st.rec['vwap_dev_pct']}%・出来高×{st.rec['vol_ratio']}")
                 # 足を確定させたこの断面＝次の足の最初の値 → ここで売り（紙）
                 self.enter(st, last, ts)
             elif st.state == "short" and bar.c <= ma:
