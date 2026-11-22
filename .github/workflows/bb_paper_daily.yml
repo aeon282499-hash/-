@@ -1,0 +1,45 @@
+name: 📉BB売り 紙の台帳（毎日）
+
+# kabuai/bb_paper_daily.py（2026-11-23）: GU株のBB40/2.07σ上抜け売り（前場）を、大引け後に Yahoo 5分足で紙の台帳に付ける。
+# 発注なし。立花の毎分データが止まっているため、検証と同じデータ・同じ計算で後から付ける。11/24〜の前向き検証（12月末に判定）。
+# 付けた日は bb_paper/days.csv に残るので、2本目（バックアップ）や手動実行で二重に付くことはない。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 10 * * 1-5'   # 19:30 JST（本命）
+    - cron: '30 13 * * 1-5'   # 22:30 JST（遅延・取りこぼし対策）
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 紙の台帳を付ける
+        working-directory: kabuai
+        run: python -X utf8 bb_paper_daily.py
+      - name: 台帳をコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bb_paper || true
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(bb_paper): ledger [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && break
+            echo "push retry $i"; sleep 5
+          done
