@@ -1,0 +1,41 @@
+# 一回限り: BB売り（今のルール）に損切り なし/+2/+3/+5/+7% を入れた場合の比較（2026-11-22）。
+name: BB売り 損切りの比較（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/bb_stop_compare_1122.py
+      - .github/workflows/bb_stop_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 前向き検証
+        working-directory: kabuai
+        run: |
+          mkdir -p ../results_bb_stop
+          python -X utf8 bb_stop_compare_1122.py 2>&1 | tee ../results_bb_stop/log.txt
+      - name: 結果をコミット
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results_bb_stop || true
+          git commit -m "results: BB売り 損切り比較 [skip ci]" || echo "変更なし"
+          for i in 1 2 3; do git pull --rebase -q && git push && break || sleep 5; done
