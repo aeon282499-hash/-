@@ -1,0 +1,77 @@
+  5分足 50/1395 銘柄
+  5分足 100/1395 銘柄
+  5分足 150/1395 銘柄
+  5分足 200/1395 銘柄
+  5分足 250/1395 銘柄
+  5分足 300/1395 銘柄
+  5分足 350/1395 銘柄
+  5分足 400/1395 銘柄
+  5分足 450/1395 銘柄
+  5分足 500/1395 銘柄
+  5分足 550/1395 銘柄
+  5分足 600/1395 銘柄
+  5分足 650/1395 銘柄
+  5分足 700/1395 銘柄
+  5分足 750/1395 銘柄
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795355919. The requested range must be within the last 60 days.
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795355919. The requested range must be within the last 60 days.
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795355920. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795355920. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795355920. The requested range must be within the last 60 days.
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795355920. The requested range must be within the last 60 days.
+
+6 Failed downloads:
+['623A.T']: 5m data not available for startTime=1789689600 and endTime=1795355919. The requested range must be within the last 60 days.
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795355919. The requested range must be within the last 60 days.
+['621A.T', '619A.T']: 5m data not available for startTime=1789516800 and endTime=1795355920. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795355920. The requested range must be within the last 60 days.
+['627A.T']: 5m data not available for startTime=1789689600 and endTime=1795355920. The requested range must be within the last 60 days.
+  5分足 800/1395 銘柄
+$632A.T: 5m data not available for startTime=1788739200 and endTime=1795355926. The requested range must be within the last 60 days.
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795355928. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['632A.T']: 5m data not available for startTime=1788739200 and endTime=1795355926. The requested range must be within the last 60 days.
+['633A.T']: 5m data not available for startTime=1788739200 and endTime=1795355928. The requested range must be within the last 60 days.
+  5分足 850/1395 銘柄
+  5分足 900/1395 銘柄
+  5分足 950/1395 銘柄
+  5分足 1000/1395 銘柄
+  5分足 1050/1395 銘柄
+  5分足 1100/1395 銘柄
+  5分足 1150/1395 銘柄
+  5分足 1200/1395 銘柄
+  5分足 1250/1395 銘柄
+  5分足 1300/1395 銘柄
+  5分足 1350/1395 銘柄
+  5分足 1395/1395 銘柄
+
+################ 全時間帯（10:00〜14:25） ################
+
+  ◆ 追加条件: なし
+    BB20 中心線回帰  選定: n=130 勝率 68% PF 2.58 1件+0.94%  ／ 確認: n= 72 勝率 54% PF 1.11 1件+0.10%
+    BB20 大引け    選定: n=130 勝率 62% PF 2.87 1件+1.60%  ／ 確認: n= 72 勝率 46% PF 1.15 1件+0.17%
+    BB40 中心線回帰  選定: n=120 勝率 68% PF 3.66 1件+1.57%  ／ 確認: n= 54 勝率 54% PF 1.25 1件+0.26%
+    BB40 大引け    選定: n=120 勝率 61% PF 3.14 1件+1.73%  ／ 確認: n= 54 勝率 46% PF 1.36 1件+0.43%
+
+  ◆ 追加条件: 寄値+2%以上
+    BB20 中心線回帰  選定: n= 88 勝率 70% PF 3.95 1件+1.63%  ／ 確認: n= 40 勝率 65% PF 1.85 1件+0.61%
+    BB20 大引け    選定: n= 88 勝率 61% PF 3.76 1件+2.33%  ／ 確認: n= 40 勝率 55% PF 2.19 1件+1.07%
+    BB40 中心線回帰  選定: n= 83 勝率 71% PF 5.42 1件+2.25%  ／ 確認: n= 34 勝率 56% PF 2.37 1件+1.06%
+    BB40 大引け    選定: n= 83 勝率 60% PF 4.03 1件+2.46%  ／ 確認: n= 34 勝率 53% PF 2.85 1件+1.62%
+
+################ 前場だけ（10:00〜11:25） ################
+
+  ◆ 追加条件: なし
+    BB20 中心線回帰  選定: n= 44 勝率 61% PF 2.51 1件+1.29%  ／ 確認: n= 19 勝率 53% PF 1.33 1件+0.29%
+    BB20 大引け    選定: n= 44 勝率 59% PF 2.50 1件+1.82%  ／ 確認: n= 19 勝率 47% PF 1.00 1件-0.01%
+    BB40 中心線回帰  選定: n= 73 勝率 66% PF 3.04 1件+1.41%  ／ 確認: n= 28 勝率 68% PF 2.01 1件+0.78%
+    BB40 大引け    選定: n= 73 勝率 55% PF 2.26 1件+1.31%  ／ 確認: n= 28 勝率 54% PF 1.52 1件+0.55%
+
+  ◆ 追加条件: 寄値+2%以上
+    BB20 中心線回帰  選定: n= 30 勝率 63% PF 2.54 1件+1.56%  ／ 確認: n= 11 勝率 45% PF 0.77 1件-0.26%
+    BB20 大引け    選定: n= 30 勝率 57% PF 1.96 1件+1.50%  ／ 確認: n= 11 勝率 45% PF 1.17 1件+0.25%
+    BB40 中心線回帰  選定: n= 54 勝率 69% PF 4.58 1件+1.97%  ／ 確認: n= 12 勝率 75% PF 4.02 1件+1.65%
+    BB40 大引け    選定: n= 54 勝率 54% PF 2.84 1件+1.86%  ／ 確認: n= 12 勝率 67% PF 3.45 1件+1.94%
+
+読み方: 判断は「確認」（10/23〜・どちらにも使っていない日）。件数が少ないので差が小さければ「どちらでも同じ」。
