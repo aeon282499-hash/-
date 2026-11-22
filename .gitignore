@@ -44,3 +44,7 @@ board_ticks/
 fibo_oct_log.csv
 oshime5_log.csv
 fibo_replay_cache/
+
+# BB売りの場中通知の状態ファイルと紙の台帳（PCで毎日生成）
+live_flow/bb_sell_live.json
+bb_sell_paper_log.csv
