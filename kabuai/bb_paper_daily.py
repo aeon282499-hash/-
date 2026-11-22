@@ -153,7 +153,7 @@ def main() -> None:
     today = datetime.now(JST).strftime("%Y-%m-%d")
     recent = _recent_trading_days(8)
     done = set(pd.read_csv(DAYS).date.astype(str)) if DAYS.exists() else set()
-    targets = [d for d in recent if START <= d <= today and d not in done]
+    targets = [d for d in recent[1:] if START <= d <= today and d not in done]   # 先頭の日は前日が無いので付けない
     if not targets:
         print(f"[bb_paper] 付ける日なし（START={START}・済={sorted(done)[-3:]}）"); write_summary(); return
     token = _jquants_key()
