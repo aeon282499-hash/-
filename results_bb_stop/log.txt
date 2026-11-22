@@ -1,0 +1,66 @@
+  5分足 50/1395 銘柄
+  5分足 100/1395 銘柄
+  5分足 150/1395 銘柄
+  5分足 200/1395 銘柄
+  5分足 250/1395 銘柄
+  5分足 300/1395 銘柄
+  5分足 350/1395 銘柄
+  5分足 400/1395 銘柄
+  5分足 450/1395 銘柄
+  5分足 500/1395 銘柄
+  5分足 550/1395 銘柄
+  5分足 600/1395 銘柄
+  5分足 650/1395 銘柄
+  5分足 700/1395 銘柄
+  5分足 750/1395 銘柄
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795386294. The requested range must be within the last 60 days.
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795386295. The requested range must be within the last 60 days.
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795386295. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795386295. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795386296. The requested range must be within the last 60 days.
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795386297. The requested range must be within the last 60 days.
+
+6 Failed downloads:
+['619A.T']: 5m data not available for startTime=1789516800 and endTime=1795386294. The requested range must be within the last 60 days.
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795386295. The requested range must be within the last 60 days.
+['623A.T']: 5m data not available for startTime=1789689600 and endTime=1795386295. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795386295. The requested range must be within the last 60 days.
+['627A.T']: 5m data not available for startTime=1789689600 and endTime=1795386296. The requested range must be within the last 60 days.
+['621A.T']: 5m data not available for startTime=1789516800 and endTime=1795386297. The requested range must be within the last 60 days.
+  5分足 800/1395 銘柄
+$632A.T: 5m data not available for startTime=1788739200 and endTime=1795386300. The requested range must be within the last 60 days.
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795386301. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['632A.T']: 5m data not available for startTime=1788739200 and endTime=1795386300. The requested range must be within the last 60 days.
+['633A.T']: 5m data not available for startTime=1788739200 and endTime=1795386301. The requested range must be within the last 60 days.
+  5分足 850/1395 銘柄
+  5分足 900/1395 銘柄
+  5分足 950/1395 銘柄
+  5分足 1000/1395 銘柄
+  5分足 1050/1395 銘柄
+  5分足 1100/1395 銘柄
+  5分足 1150/1395 銘柄
+  5分足 1200/1395 銘柄
+  5分足 1250/1395 銘柄
+  5分足 1300/1395 銘柄
+  5分足 1350/1395 銘柄
+  5分足 1395/1395 銘柄
+
+################ 全時間帯（合図 10:00〜14:25） ################
+  損切りなし    選定: n= 83 勝率 71% PF 5.42 1件+2.25% 最大負け -6.46% 損切り発動  0%  ／ 確認: n= 35 勝率 54% PF 2.20 1件+0.97% 最大負け -9.88% 損切り発動  0%
+  損切り+2%   選定: n= 83 勝率 45% PF 1.43 1件+0.46% 最大負け -3.89% 損切り発動 39%  ／ 確認: n= 35 勝率 43% PF 1.73 1件+0.58% 最大負け -2.74% 損切り発動 26%
+  損切り+3%   選定: n= 83 勝率 55% PF 1.92 1件+0.96% 最大負け -4.90% 損切り発動 24%  ／ 確認: n= 35 勝率 49% PF 1.87 1件+0.69% 最大負け -3.74% 損切り発動 17%
+  損切り+5%   選定: n= 83 勝率 61% PF 1.99 1件+1.11% 最大負け -6.91% 損切り発動 16%  ／ 確認: n= 35 勝率 54% PF 2.59 1件+1.09% 最大負け -5.75% 損切り発動  6%
+  損切り+7%   選定: n= 83 勝率 66% PF 2.80 1件+1.71% 最大負け -8.93% 損切り発動  6%  ／ 確認: n= 35 勝率 54% PF 2.38 1件+1.03% 最大負け -7.75% 損切り発動  3%
+  参考: 売った後に逆行した最大幅（買戻しまでの高値÷売値−1）中央値1.3% / 75%点2.5% / 90%点5.5% / 95%点6.8%
+
+################ 前場だけ（合図 10:00〜11:25） ################
+  損切りなし    選定: n= 54 勝率 69% PF 4.58 1件+1.97% 最大負け -6.46% 損切り発動  0%  ／ 確認: n= 13 勝率 69% PF 3.08 1件+1.37% 最大負け -5.32% 損切り発動  0%
+  損切り+2%   選定: n= 54 勝率 44% PF 1.68 1件+0.67% 最大負け -3.46% 損切り発動 37%  ／ 確認: n= 13 勝率 54% PF 1.92 1件+0.83% 最大負け -2.38% 損切り発動 38%
+  損切り+3%   選定: n= 54 勝率 54% PF 2.19 1件+1.16% 最大負け -4.46% 損切り発動 24%  ／ 確認: n= 13 勝率 69% PF 3.40 1件+1.43% 最大負け -3.33% 損切り発動 15%
+  損切り+5%   選定: n= 54 勝率 59% PF 2.13 1件+1.24% 最大負け -6.48% 損切り発動 17%  ／ 確認: n= 13 勝率 69% PF 3.12 1件+1.38% 最大負け -5.19% 損切り発動  8%
+  損切り+7%   選定: n= 54 勝率 63% PF 2.50 1件+1.47% 最大負け -8.15% 損切り発動  6%  ／ 確認: n= 13 勝率 69% PF 3.08 1件+1.37% 最大負け -5.32% 損切り発動  0%
+  参考: 売った後に逆行した最大幅（買戻しまでの高値÷売値−1）中央値1.3% / 75%点2.6% / 90%点5.5% / 95%点6.7%
+
+読み方: 損切りを入れて PF と1件平均が「確認」でもあまり落ちず、最大負けが小さくなる幅が使える設定。
