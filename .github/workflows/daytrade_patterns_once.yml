@@ -1,0 +1,45 @@
+# 一回限り: デイトレの代表的な型（10系統・20通り）を同じ規約で並べる（2026-11-22）。
+name: デイトレ型の総当たり（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - kabuai/daytrade_patterns_1122.py
+      - .github/workflows/daytrade_patterns_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jquants-once
+  cancel-in-progress: false
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 総当たり
+        working-directory: kabuai
+        run: |
+          mkdir -p ../results_daytrade_patterns
+          python -X utf8 daytrade_patterns_1122.py 2>&1 | tee ../results_daytrade_patterns/log.txt
+      - name: 結果をコミット
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results_daytrade_patterns || true
+          git commit -m "results: デイトレ型の総当たり [skip ci]" || echo "変更なし"
+          for i in 1 2 3; do git pull --rebase -q && git push && break || sleep 5; done
