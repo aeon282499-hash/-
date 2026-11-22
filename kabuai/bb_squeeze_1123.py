@@ -111,7 +111,7 @@ def main() -> None:
         for bname in BBS:
             for mode in ("放れに乗る", "だましを取る(逆)"):
                 for dr in ("上放れ", "下放れ"):
-                    d = T[T.code.isin(codes) & (T.bb == bname) & (T.mode == mode) & (T.dir == dr)]
+                    d = T[T.code.isin(codes) & (T.bb == bname) & (T["mode"] == mode) & (T.dir == dr)]
                     print(f"  {bname} {mode:<9} {dr}  選定: {st(d[~d.fwd].ret)}  ／ 確認: {st(d[d.fwd].ret)}")
                     print(f"       （物差し: 同じ日に10:00で同じ向き→引け）選定: {st(d[~d.fwd].base)}  ／ 確認: {st(d[d.fwd].base)}")
     print("\n読み方: 「選定」「確認」の両方で PF1.2 以上・件数30以上で、物差しより上なら候補。物差しと同じなら地合いをなぞっただけ。")
