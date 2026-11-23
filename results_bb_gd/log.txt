@@ -1,0 +1,82 @@
+  5分足 50/1947 銘柄
+  5分足 100/1947 銘柄
+  5分足 150/1947 銘柄
+  5分足 200/1947 銘柄
+  5分足 250/1947 銘柄
+  5分足 300/1947 銘柄
+  5分足 350/1947 銘柄
+  5分足 400/1947 銘柄
+  5分足 450/1947 銘柄
+  5分足 500/1947 銘柄
+  5分足 550/1947 銘柄
+  5分足 600/1947 銘柄
+  5分足 650/1947 銘柄
+  5分足 700/1947 銘柄
+  5分足 750/1947 銘柄
+  5分足 800/1947 銘柄
+  5分足 850/1947 銘柄
+  5分足 900/1947 銘柄
+  5分足 950/1947 銘柄
+  5分足 1000/1947 銘柄
+  5分足 1050/1947 銘柄
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795475451. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795475453. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['619A.T']: 5m data not available for startTime=1789516800 and endTime=1795475451. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795475453. The requested range must be within the last 60 days.
+  5分足 1100/1947 銘柄
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795475456. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795475457. The requested range must be within the last 60 days.
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795475458. The requested range must be within the last 60 days.
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795475458. The requested range must be within the last 60 days.
+
+4 Failed downloads:
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795475456. The requested range must be within the last 60 days.
+['627A.T']: 5m data not available for startTime=1789689600 and endTime=1795475457. The requested range must be within the last 60 days.
+['621A.T']: 5m data not available for startTime=1789516800 and endTime=1795475458. The requested range must be within the last 60 days.
+['623A.T']: 5m data not available for startTime=1789689600 and endTime=1795475458. The requested range must be within the last 60 days.
+  5分足 1150/1947 銘柄
+$632A.T: 5m data not available for startTime=1788739200 and endTime=1795475462. The requested range must be within the last 60 days.
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795475462. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['632A.T', '633A.T']: 5m data not available for startTime=1788739200 and endTime=1795475462. The requested range must be within the last 60 days.
+  5分足 1200/1947 銘柄
+  5分足 1250/1947 銘柄
+  5分足 1300/1947 銘柄
+  5分足 1350/1947 銘柄
+  5分足 1400/1947 銘柄
+  5分足 1450/1947 銘柄
+  5分足 1500/1947 銘柄
+  5分足 1550/1947 銘柄
+  5分足 1600/1947 銘柄
+  5分足 1650/1947 銘柄
+  5分足 1700/1947 銘柄
+  5分足 1750/1947 銘柄
+  5分足 1800/1947 銘柄
+  5分足 1850/1947 銘柄
+  5分足 1900/1947 銘柄
+  5分足 1947/1947 銘柄
+
+################ GU+3%の売り（今のルール） ################
+  [前場] 中心線 or 3%利確 損切りなし   選定: n=  55 勝率 85% PF 6.44 1件+1.76%  ／ 確認: n=  13 勝率 77% PF 5.91 1件+1.23%
+  [前場] 中心線 or 3%利確 損切り7%   選定: n=  55 勝率 80% PF 2.66 1件+1.24%  ／ 確認: n=  13 勝率 77% PF 5.91 1件+1.23%
+  [前場] 中心線のみ      損切りなし   選定: n=  55 勝率 69% PF 4.72 1件+2.02%  ／ 確認: n=  13 勝率 69% PF 3.08 1件+1.37%
+  [前場] 中心線のみ      損切り7%   選定: n=  55 勝率 64% PF 2.58 1件+1.52%  ／ 確認: n=  13 勝率 69% PF 3.08 1件+1.37%
+  [全 ] 中心線 or 3%利確 損切りなし   選定: n=  84 勝率 85% PF 6.44 1件+1.64%  ／ 確認: n=  35 勝率 57% PF 1.71 1件+0.46%
+  [全 ] 中心線 or 3%利確 損切り7%   選定: n=  84 勝率 79% PF 2.37 1件+1.06%  ／ 確認: n=  35 勝率 57% PF 1.88 1件+0.52%
+  [全 ] 中心線のみ      損切りなし   選定: n=  84 勝率 71% PF 5.52 1件+2.28%  ／ 確認: n=  35 勝率 54% PF 2.20 1件+0.97%
+  [全 ] 中心線のみ      損切り7%   選定: n=  84 勝率 67% PF 2.85 1件+1.74%  ／ 確認: n=  35 勝率 54% PF 2.38 1件+1.03%
+
+################ GD−3%の買い（鏡像） ################
+  [前場] 中心線 or 3%利確 損切りなし   選定: n=  11 勝率 64% PF 1.00 1件-0.00%  ／ 確認: n=  48 勝率 62% PF 1.51 1件+0.37%
+  [前場] 中心線 or 3%利確 損切り7%   選定: n=  11 勝率 64% PF 1.04 1件+0.05%  ／ 確認: n=  48 勝率 62% PF 1.51 1件+0.37%
+  [前場] 中心線のみ      損切りなし   選定: n=  11 勝率 55% PF 2.28 1件+1.80%  ／ 確認: n=  48 勝率 50% PF 0.79 1件-0.20%
+  [前場] 中心線のみ      損切り7%   選定: n=  11 勝率 55% PF 2.36 1件+1.85%  ／ 確認: n=  48 勝率 50% PF 0.71 1件-0.30%
+  [全 ] 中心線 or 3%利確 損切りなし   選定: n=  21 勝率 57% PF 0.95 1件-0.07%  ／ 確認: n=  70 勝率 54% PF 0.97 1件-0.03%
+  [全 ] 中心線 or 3%利確 損切り7%   選定: n=  21 勝率 57% PF 0.99 1件-0.01%  ／ 確認: n=  70 勝率 54% PF 0.96 1件-0.04%
+  [全 ] 中心線のみ      損切りなし   選定: n=  21 勝率 48% PF 1.86 1件+1.24%  ／ 確認: n=  70 勝率 44% PF 0.69 1件-0.36%
+  [全 ] 中心線のみ      損切り7%   選定: n=  21 勝率 48% PF 1.94 1件+1.29%  ／ 確認: n=  70 勝率 44% PF 0.64 1件-0.44%
+
+読み方: 判断は「確認」（10/23〜）。買いは在庫・売り禁の心配がない。
