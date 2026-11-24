@@ -481,6 +481,43 @@ def fetch_mkt_earn(trade_day: date, codes5: set[str]) -> dict | None:
     return out
 
 
+# 2026-11-24 本人「いれて」（資金調達の日を外す）: 本人ch（今日の3本・友達の銘柄）で、上げた日 D の開示（時刻は問わない）か
+#  D−1 の15時以降の開示の表題に資金調達の語があれば見送り（繰り上げなし）。友達chは変えない。
+#  検証(f2ededeb…/irfull.py・excl_fund.py・BRiSK表題・v7・張り付き込み・悲観): 資金調達の日だけ両期間で負け
+#  （上げ理由 勝÷負 5年0.93/17〜21年0.62・引け後 0.71/0.55・翌日もS高32%）。外すと 5年 年+361→+369万・17/1〜21/10 +148→+154万・最悪日は同じ。
+#  語は検証と同じ（新株予約権の行使状況・売出も含む）。
+FUND_OUT_FROM = "2026-11-26"
+FUND_TITLE_RE = re.compile(r"新株|増資|新株予約権|第三者割当|募集|売出|行使")
+
+
+def fetch_fund_titles(asof: date) -> dict | None:
+    """{code4: 表題}（D の全部＋D−1 の15時以降で資金調達の語がある開示）。D の分が取れなければ None。"""
+    out: dict = {}
+    for d, after15 in ((asof, False), (prev_trading_day(asof), True)):
+        rows = _tdnet_rows(d)
+        if rows is None:
+            if not after15:
+                log("資金調達の判定: TDnet が取れず未確認")
+                return None
+            continue
+        for r in rows:
+            t = unicodedata.normalize("NFKC", r.get("title", "") or "")
+            if not FUND_TITLE_RE.search(t):
+                continue
+            tm = str(r.get("time", "00:00"))
+            if after15 and not (tm[:2].isdigit() and int(tm[:2]) >= 15):
+                continue
+            out.setdefault(str(r.get("code5", ""))[:4], t[:40])
+    log(f"資金調達の開示（{asof} と前日15時以降）: {len(out)}銘柄")
+    return out
+
+
+def _fund_why(plan: dict, code: str) -> str:
+    if plan["trade_day"] < FUND_OUT_FROM:
+        return ""
+    return "資金調達の開示" if code4(code) in (plan.get("fund") or {}) else ""
+
+
 def _mkt_earn_why(plan: dict, code: str) -> str:
     if plan["trade_day"] < EARN_MKT_FROM:
         return ""
@@ -1173,6 +1210,10 @@ def own_orders(plan: dict) -> list:
         w = _mkt_earn_why(plan, o["x"]["code"])
         if w:
             o["lad"] = []; o["why"] = w
+    for o in out:
+        w = _fund_why(plan, o["x"]["code"])
+        if w and o["kind"] in ("3本", "友達"):
+            o["lad"] = []; o["why"] = w
     a = plan.get("asobi")
     if a and a.get("shares"):
         out.append(dict(x=a, lad=[(a["lim"], a["shares"])], kind="遊び", same=False))
@@ -1270,6 +1311,8 @@ def own_payload(plan: dict) -> dict:
             lines.append("-# ⚠️ 規制銘柄情報が取れず、売り禁の銘柄を貸借として見送ったかもしれない")
     if plan["trade_day"] >= EARN_MKT_FROM and plan.get("earn_mkt") is None:
         lines.append("-# ⚠️ 決算の予定が取れず「売る日の場中に決算」の見送りは未確認")
+    if plan["trade_day"] >= FUND_OUT_FROM and plan.get("fund") is None:
+        lines.append("-# ⚠️ 適時開示が取れず「資金調達の開示」の見送りは未確認")
     if v2:
         lines.append(("-# " if v6 else f"-# 1銘柄ごとに、売った日にストップ高で引けても損が{risk_y // 10000}万以内の株数（建玉は最大{cap_y // 10000}万）。")
                      + _own_rule_txt(plan["trade_day"]) +
@@ -1277,6 +1320,7 @@ def own_payload(plan: dict) -> dict:
                      f"友達chの1〜{FRIEND_RANKS_V2 if plan['trade_day'] >= FRIEND_V2_FROM else FRIEND_RANKS}位で今日の3本に無い銘柄も同じ入れ方で載せる。"
                      + ("貸借で売り禁でない銘柄は見送り（繰り上げなし）。" if plan["trade_day"] >= OWN_TAI_OUT_FROM else "")
                      + ("売る日の場中（15:30前）に決算が出る銘柄も見送り。" if plan["trade_day"] >= EARN_MKT_FROM else "")
+                     + ("上げた日か前日15時以降に資金調達（新株・増資・第三者割当など）の開示がある銘柄も見送り。" if plan["trade_day"] >= FUND_OUT_FROM else "")
                      + ("" if plan["trade_day"] >= ASOBI_STOP_FROM else
                         f"遊び＝代金1〜3億で+{ASOBI_RET_MIN*100:.0f}%以上の1位に+{ASOBI_LIMIT_PCT*100:.0f}%指値だけ25万。") + "損切りなし")
         if plan.get("keta2"):
@@ -1613,6 +1657,15 @@ def run_evening(day: date, dry_run: bool, force: bool) -> int:
         except Exception as e:  # noqa: BLE001  取れなくても配信は止めない（⚠️を出す）
             log(f"場中決算の判定に失敗: {type(e).__name__}: {e}")
             plan["earn_mkt"] = None
+    if trade_day.isoformat() >= FUND_OUT_FROM:
+        try:
+            plan["fund"] = fetch_fund_titles(day)
+        except Exception as e:  # noqa: BLE001  取れなくても配信は止めない（⚠️を出す）
+            log(f"資金調達の判定に失敗: {type(e).__name__}: {e}")
+            plan["fund"] = None
+        hit = [x["code"] for x in (plan["top3"] or {}).get("rows", []) if code4(x["code"]) in (plan["fund"] or {})]
+        if hit:
+            log("資金調達で見送り: " + " ".join(f"{c}({plan['fund'][code4(c)]})" for c in hit))
     names = dict(zip(master["Code"], master["CoName"])) if not master.empty else {}
     out_rows = cand[cand["Code"].isin(tob_set)] if "Code" in cand.columns else cand.iloc[0:0]
     plan["tob_out"] = [dict(code=code4(r.Code), name=str(names.get(str(r.Code), ""))[:12], ret1=float(r.ret1))
