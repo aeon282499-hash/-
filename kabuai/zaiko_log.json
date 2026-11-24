@@ -1298,5 +1298,54 @@
   ],
   "made": "2026-11-24T08:51:45+09:00",
   "sent": false
+ },
+ "2026-11-25": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4422",
+    "name": "ＶＡＬＵＥＮＥＸ",
+    "close": 616.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 2.7,
+     "day": "11/25",
+     "stale": false,
+     "fee_pct": 0.44,
+     "day_ok": true,
+     "max_sh": 140000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "3321",
+    "name": "ミタチ産業",
+    "close": 1720.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-24T18:45:01+09:00",
+  "sent": false
  }
 }

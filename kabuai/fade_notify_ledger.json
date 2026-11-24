@@ -3750,6 +3750,200 @@
    "earn_mkt": {},
    "tob_out": [],
    "own_sent": true
+  },
+  "2026-11-25": {
+   "asof": "2026-11-24",
+   "trade_day": "2026-11-25",
+   "made": "2026-11-24 18:09",
+   "n_cand": 60,
+   "rule_a": {
+    "code": "4422",
+    "code5": "44220",
+    "name": "ＶＡＬＵＥＮＥＸ",
+    "mkt": "グロース",
+    "close": 616.0,
+    "ret1": 0.193798449612403,
+    "va": 889197500.0,
+    "rank_all": 1,
+    "score": 3.92,
+    "ul1": 716.0,
+    "strong": true,
+    "vol20": 0.0868,
+    "dev25": 0.4315,
+    "rng": 0.2519,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": [],
+    "tob": false
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "4422",
+     "code5": "44220",
+     "name": "ＶＡＬＵＥＮＥＸ",
+     "mkt": "グロース",
+     "close": 616.0,
+     "ret1": 0.193798449612403,
+     "va": 889197500.0,
+     "rank_all": 1,
+     "score": 3.92,
+     "ul1": 716.0,
+     "strong": true,
+     "vol20": 0.0868,
+     "dev25": 0.4315,
+     "rng": 0.2519,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "3624",
+     "code5": "36240",
+     "name": "アクセルマーク",
+     "mkt": "グロース",
+     "close": 211.0,
+     "ret1": 0.14054054054054044,
+     "va": 2443553300.0,
+     "rank_all": 2,
+     "score": 3.9,
+     "ul1": 291.0,
+     "strong": false,
+     "vol20": 0.2602,
+     "dev25": 2.3879,
+     "rng": 0.3405,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "6787",
+     "code5": "67870",
+     "name": "メイコー",
+     "mkt": "プライム",
+     "close": 8730.0,
+     "ret1": 0.13082901554404147,
+     "va": 20780307000.0,
+     "rank_all": 3,
+     "score": 3.6,
+     "ul1": 10230.0,
+     "strong": false,
+     "vol20": 0.0817,
+     "dev25": 0.0224,
+     "rng": 0.1062,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "6981",
+     "code5": "69810",
+     "name": "村田製作所",
+     "mkt": "プライム",
+     "close": 5400.0,
+     "ret1": 0.14893617021276606,
+     "va": 133547863300.0,
+     "rank_all": 4,
+     "score": 2.95,
+     "ul1": 6400.0,
+     "strong": false,
+     "vol20": 0.0668,
+     "dev25": -0.0611,
+     "rng": 0.08,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "4004",
+     "code5": "40040",
+     "name": "レゾナック・ホールディン",
+     "mkt": "プライム",
+     "close": 12265.0,
+     "ret1": 0.11550704865848105,
+     "va": 56356969000.0,
+     "rank_all": 5,
+     "score": 2.83,
+     "ul1": 15265.0,
+     "strong": false,
+     "vol20": 0.0703,
+     "dev25": -0.0431,
+     "rng": 0.0796,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [],
+    "n_loan17": 0
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "4422",
+      "name": "ＶＡＬＵＥＮＥＸ",
+      "close": 616.0,
+      "ret1": 0.193798449612403,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "3321",
+      "name": "ミタチ産業",
+      "close": 1720.0,
+      "ret1": 0.16294793779580807,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": true
+     }
+    ],
+    "n_cand": 60
+   },
+   "asobi": null,
+   "keta2": [],
+   "earn_mkt": {},
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -6559,6 +6753,202 @@
       "open": 335.0,
       "close": 297.0,
       "high": 335.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
+    "sent": true
+   }
+  },
+  "2026-11-24": {
+   "trade_day": "2026-11-24",
+   "asof": "2026-11-20",
+   "made": "2026-11-24 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3624",
+     "name": "アクセルマーク",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 198.0,
+       "shares": 1600,
+       "sell": 198.0
+      },
+      {
+       "lim": 208.0,
+       "shares": 800,
+       "sell": 208.0
+      }
+     ],
+     "open": 170.0,
+     "close": 211.0,
+     "high": 231.0,
+     "status": "約定",
+     "yen": -23200,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4586",
+     "name": "メドレックス",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 115.0,
+       "shares": 2800,
+       "sell": 122.0
+      },
+      {
+       "lim": 120.0,
+       "shares": 1300,
+       "sell": 122.0
+      }
+     ],
+     "open": 122.0,
+     "close": 99.0,
+     "high": 125.0,
+     "status": "約定",
+     "yen": 94300,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3416",
+     "name": "ピクスタ",
+     "rank_all": 3,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 1034.0,
+       "shares": 300,
+       "sell": null
+      },
+      {
+       "lim": 1082.0,
+       "shares": 100,
+       "sell": null
+      }
+     ],
+     "open": 981.0,
+     "close": 910.0,
+     "high": 981.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "5240",
+     "name": "ｍｏｎｏＡＩ　ｔｅｃｈｎ",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 128.0,
+     "close": 121.0,
+     "high": 130.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "5133",
+     "name": "テリロジーホールディング",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 410.0,
+     "close": 388.0,
+     "high": 411.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-24",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4586",
+      "name": "メドレックス",
+      "close_prev": 107.0,
+      "legs": [
+       {
+        "lim": 115.0,
+        "shares": 400,
+        "sell": 122.0,
+        "pct": 18.852459016393443
+       },
+       {
+        "lim": 124.0,
+        "shares": 800,
+        "sell": 124.0,
+        "pct": 20.161290322580644
+       }
+      ],
+      "status": "約定",
+      "open": 122.0,
+      "close": 99.0,
+      "high": 125.0,
+      "yen": 29200,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "3624",
+      "name": "アクセルマーク",
+      "close_prev": 185.0,
+      "legs": [
+       {
+        "lim": 198.0,
+        "shares": 600,
+        "sell": 198.0,
+        "pct": -6.565656565656567
+       },
+       {
+        "lim": 213.0,
+        "shares": 1100,
+        "sell": 213.0,
+        "pct": 0.9389671361502347
+       }
+      ],
+      "status": "約定",
+      "open": 170.0,
+      "close": 211.0,
+      "high": 231.0,
+      "yen": -5600,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "3416",
+      "name": "ピクスタ",
+      "close_prev": 966.0,
+      "legs": [
+       {
+        "lim": 1034.0,
+        "shares": 100,
+        "sell": null
+       },
+       {
+        "lim": 1082.0,
+        "shares": 300,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 981.0,
+      "close": 910.0,
+      "high": 981.0,
       "yen": 0,
       "sclose": false
      }
