@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24 08:16:34",
+  "generated_at": "2026-11-24 16:03:14",
   "date": "2026-11-24",
   "tier_summary": {
     "S": 0,
@@ -27,7 +27,7 @@
     "ON": 9.75,
     "PANW": 2.94,
     "PLTR": 11.06,
-    "PLUG": 3.5,
+    "PLUG": 3.13,
     "QBTS": 12.12,
     "RGTI": 13.06,
     "S": 6.9,
@@ -276,7 +276,7 @@
         "PLUG"
       ],
       "policy": "",
-      "us_tailwind": 3.5
+      "us_tailwind": 3.13
     },
     {
       "theme": "DX_業務SaaS",
