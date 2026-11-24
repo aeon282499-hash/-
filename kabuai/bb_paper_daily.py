@@ -42,13 +42,21 @@ START = os.getenv("BB_PAPER_START", "2026-11-24")   # ルールを固めた 11/2
 P, SIG, DEV, OPEN_UP, GU_MIN = 40, 2.07, 0.005, 0.02, 0.03
 W_LO, W_HI = 10 * 60, 11 * 60 + 25        # 合図の足の開始時刻（前場だけ）
 STOP = 0.07
+# 制限値幅（JPX・基準値=前日終値）。11/24 本人「(a) 合図の足がストップ高の値段なら売らない」
+LIMIT_TBL = [(100, 30), (200, 50), (500, 80), (700, 100), (1000, 150), (1500, 300), (2000, 400), (3000, 500), (5000, 700),
+             (7000, 1000), (10000, 1500), (15000, 3000), (20000, 4000), (30000, 5000), (50000, 7000), (70000, 10000),
+             (100000, 15000), (150000, 30000), (200000, 40000), (300000, 50000), (500000, 70000), (1e18, 100000)]
+
+
+def limit_up(pc: float) -> float:
+    return pc + next(w for u, w in LIMIT_TBL if pc < u)
 SHARES, MAX_TRADES, MAX_LOSS_YEN = 100, 2, 20000
 
 OUT = Path(os.getenv("BB_PAPER_OUT", str(Path(__file__).resolve().parent.parent / "bb_paper")))
 LEDGER, DAYS, SUMMARY = OUT / "ledger.csv", OUT / "days.csv", OUT / "summary.md"
 FIELDS = ["date", "code", "gu_pct", "signal_bar", "signal_close", "upper", "ma", "open_up_pct",
           "entry_time", "entry", "exit_time", "exit", "exit_reason", "ret_pct", "stop_hit", "ret_pct_with_stop",
-          "yen_100", "yen_100_with_stop", "taken", "skip_reason"]
+          "yen_100", "yen_100_with_stop", "at_limit", "taken", "skip_reason"]
 
 
 def hm(ts) -> str:
@@ -104,15 +112,18 @@ def day_signal(code: str, s: pd.DataFrame, ds: str, earn: set) -> dict | None:
             "open_up_pct": round((c[e] / o[st] - 1) * 100, 2), "entry_time": hm(s.index[e + 1]), "entry": ep_raw,
             "exit_time": x_time, "exit": x_px, "exit_reason": why, "ret_pct": round(r, 3), "stop_hit": int(hit),
             "ret_pct_with_stop": round(rs, 3), "yen_100": round(r / 100 * ep * SHARES),
-            "yen_100_with_stop": round(rs / 100 * ep * SHARES), "_exit_time_s": t_s, "_why_s": why_s}
+            "yen_100_with_stop": round(rs / 100 * ep * SHARES), "at_limit": int(c[e] >= limit_up(pc) - 1e-9),
+            "_exit_time_s": t_s, "_why_s": why_s}
 
 
 def apply_limits(rows: list[dict]) -> list[dict]:
-    """1日2回・同時に1銘柄・1日の損失−2万円（保険ありで数える）。合図の早い順。"""
+    """S高の値段の合図は売らない・1日2回・同時に1銘柄・1日の損失−2万円（保険ありで数える）。合図の早い順。"""
     rows.sort(key=lambda x: (x["signal_bar"], x["code"]))
     n, busy_until, loss = 0, "00:00", 0
     for x in rows:
-        if n >= MAX_TRADES:
+        if x.get("at_limit"):
+            x["taken"], x["skip_reason"] = 0, "S高の値段"
+        elif n >= MAX_TRADES:
             x["taken"], x["skip_reason"] = 0, "1日2回まで"
         elif x["entry_time"] < busy_until:
             x["taken"], x["skip_reason"] = 0, "建玉あり"
