@@ -1,4 +1,12 @@
 {
-  "date": "2026-11-24",
-  "signals": []
+  "date": "2026-11-25",
+  "signals": [
+    {
+      "ticker": "4118.T",
+      "name": "カネカ",
+      "direction": "BUY",
+      "prev_close": 6073.0,
+      "limit_price": 6130
+    }
+  ]
 }
