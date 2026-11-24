@@ -1,0 +1,92 @@
+
+1 Failed download:
+['1577.T']: OperationalError('database is locked')
+  5分足 50/1395 銘柄
+  5分足 100/1395 銘柄
+  5分足 150/1395 銘柄
+  5分足 200/1395 銘柄
+  5分足 250/1395 銘柄
+  5分足 300/1395 銘柄
+  5分足 350/1395 銘柄
+  5分足 400/1395 銘柄
+  5分足 450/1395 銘柄
+  5分足 500/1395 銘柄
+  5分足 550/1395 銘柄
+  5分足 600/1395 銘柄
+  5分足 650/1395 銘柄
+  5分足 700/1395 銘柄
+  5分足 750/1395 銘柄
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795389490. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795389490. The requested range must be within the last 60 days.
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795389491. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795389491. The requested range must be within the last 60 days.
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795389491. The requested range must be within the last 60 days.
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795389492. The requested range must be within the last 60 days.
+
+6 Failed downloads:
+['621A.T']: 5m data not available for startTime=1789516800 and endTime=1795389490. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795389490. The requested range must be within the last 60 days.
+['623A.T', '627A.T']: 5m data not available for startTime=1789689600 and endTime=1795389491. The requested range must be within the last 60 days.
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795389491. The requested range must be within the last 60 days.
+['619A.T']: 5m data not available for startTime=1789516800 and endTime=1795389492. The requested range must be within the last 60 days.
+  5分足 800/1395 銘柄
+$632A.T: 5m data not available for startTime=1788739200 and endTime=1795389496. The requested range must be within the last 60 days.
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795389496. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['632A.T', '633A.T']: 5m data not available for startTime=1788739200 and endTime=1795389496. The requested range must be within the last 60 days.
+  5分足 850/1395 銘柄
+  5分足 900/1395 銘柄
+  5分足 950/1395 銘柄
+  5分足 1000/1395 銘柄
+  5分足 1050/1395 銘柄
+  5分足 1100/1395 銘柄
+  5分足 1150/1395 銘柄
+  5分足 1200/1395 銘柄
+  5分足 1250/1395 銘柄
+  5分足 1300/1395 銘柄
+  5分足 1350/1395 銘柄
+  5分足 1395/1395 銘柄
+
+################ 前場（合図10:00〜11:25） ・保険なし ################
+  1回目    選定: n= 45 勝率 62% PF 3.81 1件+1.86%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%  保有中央115分
+  2回目    選定: n=  0  ／ 確認: n=  0  保有中央0分
+  3回目以降  選定: n=  0  ／ 確認: n=  0  保有中央0分
+  1銘柄1日の合計（回すと）  選定: n= 45 勝率 62% PF 3.81 1件+1.86%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%
+  1銘柄1日の合計（1回だけ）選定: n= 45 勝率 62% PF 3.81 1件+1.86%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%
+  回った回数の分布: {1: 55}
+  100株の円 選定: 回す 合計+152,706円 ／ 1回だけ +152,706円 ／ 最悪の日(回す) -12,392円
+  100株の円 確認: 回す 合計+26,301円 ／ 1回だけ +26,301円 ／ 最悪の日(回す) -11,516円
+
+################ 前場（合図10:00〜11:25） ・保険+7% ################
+  1回目    選定: n= 45 勝率 56% PF 2.06 1件+1.25%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%  保有中央105分
+  2回目    選定: n=  2 勝率100% PF  inf 1件+7.48%  ／ 確認: n=  0  保有中央138分
+  3回目以降  選定: n=  0  ／ 確認: n=  0  保有中央0分
+  1銘柄1日の合計（回すと）  選定: n= 45 勝率 58% PF 2.81 1件+1.59%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%
+  1銘柄1日の合計（1回だけ）選定: n= 45 勝率 56% PF 2.06 1件+1.25%  ／ 確認: n= 10 勝率 80% PF 4.30 1件+1.86%
+  回った回数の分布: {1: 53, 2: 2}
+  100株の円 選定: 回す 合計+148,633円 ／ 1回だけ +130,353円 ／ 最悪の日(回す) -12,392円
+  100株の円 確認: 回す 合計+26,301円 ／ 1回だけ +26,301円 ／ 最悪の日(回す) -11,516円
+
+################ 1日（合図10:00〜14:25） ・保険なし ################
+  1回目    選定: n= 70 勝率 69% PF 5.24 1件+2.30%  ／ 確認: n= 32 勝率 56% PF 2.40 1件+1.09%  保有中央88分
+  2回目    選定: n=  2 勝率 50% PF 1.57 1件+1.43%  ／ 確認: n=  0  保有中央30分
+  3回目以降  選定: n=  0  ／ 確認: n=  0  保有中央0分
+  1銘柄1日の合計（回すと）  選定: n= 70 勝率 69% PF 5.32 1件+2.34%  ／ 確認: n= 32 勝率 56% PF 2.40 1件+1.09%
+  1銘柄1日の合計（1回だけ）選定: n= 70 勝率 69% PF 5.24 1件+2.30%  ／ 確認: n= 32 勝率 56% PF 2.40 1件+1.09%
+  回った回数の分布: {1: 100, 2: 2}
+  100株の円 選定: 回す 合計+267,184円 ／ 1回だけ +264,756円 ／ 最悪の日(回す) -13,287円
+  100株の円 確認: 回す 合計+36,487円 ／ 1回だけ +36,487円 ／ 最悪の日(回す) -10,679円
+
+################ 1日（合図10:00〜14:25） ・保険+7% ################
+  1回目    選定: n= 70 勝率 63% PF 2.79 1件+1.74%  ／ 確認: n= 32 勝率 56% PF 2.62 1件+1.16%  保有中央80分
+  2回目    選定: n=  4 勝率 75% PF 4.57 1件+4.45%  ／ 確認: n=  1 勝率  0% PF 0.00 1件-7.73%  保有中央50分
+  3回目以降  選定: n=  0  ／ 確認: n=  1 勝率100% PF  inf 1件+3.77%  保有中央55分
+  1銘柄1日の合計（回すと）  選定: n= 70 勝率 64% PF 3.55 1件+2.00%  ／ 確認: n= 32 勝率 56% PF 2.23 1件+1.03%
+  1銘柄1日の合計（1回だけ）選定: n= 70 勝率 63% PF 2.79 1件+1.74%  ／ 確認: n= 32 勝率 56% PF 2.62 1件+1.16%
+  回った回数の分布: {1: 97, 2: 4, 3: 1}
+  100株の円 選定: 回す 合計+247,299円 ／ 1回だけ +226,592円 ／ 最悪の日(回す) -13,287円
+  100株の円 確認: 回す 合計+35,982円 ／ 1回だけ +37,161円 ／ 最悪の日(回す) -11,184円
+
+読み方: 2回目・3回目が「選定」「確認」の両方でプラス（PF1.2以上）なら、回す価値がある。
+        片方だけ・件数30未満なら、1回目だけの今のルールのまま。空売りの在庫・売り禁は見ていない（楽観側）。

@@ -1,0 +1,116 @@
+
+1 Failed download:
+['1436.T']: OperationalError('database is locked')
+  5分足 50/1395 銘柄
+  5分足 100/1395 銘柄
+  5分足 150/1395 銘柄
+  5分足 200/1395 銘柄
+  5分足 250/1395 銘柄
+  5分足 300/1395 銘柄
+  5分足 350/1395 銘柄
+  5分足 400/1395 銘柄
+  5分足 450/1395 銘柄
+  5分足 500/1395 銘柄
+  5分足 550/1395 銘柄
+  5分足 600/1395 銘柄
+  5分足 650/1395 銘柄
+  5分足 700/1395 銘柄
+  5分足 750/1395 銘柄
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795319571. The requested range must be within the last 60 days.
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795319571. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795319572. The requested range must be within the last 60 days.
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795319572. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795319574. The requested range must be within the last 60 days.
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795319574. The requested range must be within the last 60 days.
+
+6 Failed downloads:
+['623A.T']: 5m data not available for startTime=1789689600 and endTime=1795319571. The requested range must be within the last 60 days.
+['619A.T']: 5m data not available for startTime=1789516800 and endTime=1795319571. The requested range must be within the last 60 days.
+['627A.T']: 5m data not available for startTime=1789689600 and endTime=1795319572. The requested range must be within the last 60 days.
+['621A.T']: 5m data not available for startTime=1789516800 and endTime=1795319572. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795319574. The requested range must be within the last 60 days.
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795319574. The requested range must be within the last 60 days.
+  5分足 800/1395 銘柄
+$632A.T: 5m data not available for startTime=1788739200 and endTime=1795319577. The requested range must be within the last 60 days.
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795319579. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['632A.T']: 5m data not available for startTime=1788739200 and endTime=1795319577. The requested range must be within the last 60 days.
+['633A.T']: 5m data not available for startTime=1788739200 and endTime=1795319579. The requested range must be within the last 60 days.
+  5分足 850/1395 銘柄
+  5分足 900/1395 銘柄
+  5分足 950/1395 銘柄
+  5分足 1000/1395 銘柄
+  5分足 1050/1395 銘柄
+  5分足 1100/1395 銘柄
+  5分足 1150/1395 銘柄
+  5分足 1200/1395 銘柄
+  5分足 1250/1395 銘柄
+  5分足 1300/1395 銘柄
+  5分足 1350/1395 銘柄
+  5分足 1395/1395 銘柄
+
+[filters] BB売りの合図 176件（選定 121 / 確認 55）
+
+################ 全時間帯（10:00〜14:25） ################
+  条件なし（BBだけ）  選定: n=121 勝率 69% PF 4.03 1件+1.75%  ／ 確認: n= 55 勝率 55% PF 1.25 1件+0.25%
+
+  ◆ VWAP乖離% が しきい値以上のときだけ売る
+    ≥2     選定: n= 88 勝率 76% PF 4.88 1件+2.24%  ／ 確認: n= 31 勝率 68% PF 1.47 1件+0.51%
+    ≥3     選定: n= 57 勝率 79% PF 8.22 1件+3.10%  ／ 確認: n= 19 勝率 68% PF 1.46 1件+0.69%
+    ≥4     選定: n= 40 勝率 78% PF 8.39 1件+3.45%  ／ 確認: n= 10 勝率 70% PF 2.74 1件+1.66%
+    ≥5     選定: n= 24 勝率 75% PF 6.91 1件+3.77%  ／ 確認: n=  5 勝率 60% PF 1.32 1件+0.59%
+    ≥6     選定: n= 17 勝率 82% PF 9.13 1件+4.23%  ／ 確認: n=  3 勝率 67% PF 1.85 1件+1.10%
+    → 選定期間で一番良かった ≥4 を確認期間に当てると n= 10 勝率 70% PF 2.74 1件+1.66%（条件なしの確認期間 n= 55 勝率 55% PF 1.25 1件+0.25%）
+
+  ◆ 出来高倍率 が しきい値以上のときだけ売る
+    ≥1.0   選定: n= 85 勝率 74% PF 3.71 1件+1.84%  ／ 確認: n= 40 勝率 55% PF 1.62 1件+0.57%
+    ≥1.5   選定: n= 64 勝率 73% PF 3.58 1件+1.89%  ／ 確認: n= 30 勝率 60% PF 1.44 1件+0.43%
+    ≥2.0   選定: n= 49 勝率 71% PF 2.91 1件+1.63%  ／ 確認: n= 21 勝率 57% PF 1.23 1件+0.29%
+    ≥3.0   選定: n= 31 勝率 68% PF 2.47 1件+1.52%  ／ 確認: n= 15 勝率 53% PF 1.08 1件+0.11%
+    → 選定期間で一番良かった ≥1.5 を確認期間に当てると n= 30 勝率 60% PF 1.44 1件+0.43%（条件なしの確認期間 n= 55 勝率 55% PF 1.25 1件+0.25%）
+
+  ◆ 寄値乖離% が しきい値以上のときだけ売る
+    ≥2     選定: n= 75 勝率 71% PF 5.54 1件+2.12%  ／ 確認: n= 27 勝率 59% PF 3.27 1件+1.19%
+    ≥3     選定: n= 65 勝率 68% PF 5.20 1件+2.07%  ／ 確認: n= 19 勝率 58% PF 3.03 1件+1.38%
+    ≥4     選定: n= 49 勝率 69% PF 5.55 1件+2.29%  ／ 確認: n= 13 勝率 62% PF 3.16 1件+1.87%
+    ≥5     選定: n= 41 勝率 73% PF 5.88 1件+2.40%  ／ 確認: n= 11 勝率 64% PF 2.36 1件+1.38%
+    → 選定期間で一番良かった ≥5 を確認期間に当てると n= 11 勝率 64% PF 2.36 1件+1.38%（条件なしの確認期間 n= 55 勝率 55% PF 1.25 1件+0.25%）
+
+  参考（確認期間）: 各指標の中央値より上/下で分けた成績
+    VWAP乖離%（中央値 2.56）  上: n= 22 勝率 68% PF 1.52 1件+0.67%  ／ 下: n= 33 勝率 45% PF 0.97 1件-0.03%
+    出来高倍率（中央値 1.65）  上: n= 25 勝率 64% PF 1.55 1件+0.58%  ／ 下: n= 30 勝率 47% PF 0.98 1件-0.02%
+    寄値乖離%（中央値 2.89）  上: n= 21 勝率 57% PF 3.19 1件+1.35%  ／ 下: n= 34 勝率 53% PF 0.66 1件-0.43%
+
+################ 前場だけ（10:00〜11:25） ################
+  条件なし（BBだけ）  選定: n= 75 勝率 67% PF 3.49 1件+1.67%  ／ 確認: n= 28 勝率 68% PF 2.00 1件+0.77%
+
+  ◆ VWAP乖離% が しきい値以上のときだけ売る
+    ≥2     選定: n= 54 勝率 76% PF 4.08 1件+2.15%  ／ 確認: n= 16 勝率 75% PF 3.08 1件+1.35%
+    ≥3     選定: n= 34 勝率 76% PF 7.81 1件+2.96%  ／ 確認: n=  9 勝率 78% PF 4.76 1件+2.35%
+    ≥4     選定: n= 26 勝率 73% PF 6.93 1件+3.11%  ／ 確認: n=  5 勝率 60% PF 2.92 1件+2.17%
+    ≥5     選定: n= 17 勝率 71% PF 5.17 1件+3.20%  ／ 確認: n=  2 勝率 50% PF 0.93 1件-0.17%
+    ≥6     選定: n= 11 勝率 82% PF 7.32 1件+3.79%  ／ 確認: n=  0
+    → 選定期間で一番良かった ≥3 を確認期間に当てると n=  9 勝率 78% PF 4.76 1件+2.35%（条件なしの確認期間 n= 28 勝率 68% PF 2.00 1件+0.77%）
+
+  ◆ 出来高倍率 が しきい値以上のときだけ売る
+    ≥1.0   選定: n= 46 勝率 70% PF 2.48 1件+1.44%  ／ 確認: n= 16 勝率 75% PF 4.92 1件+1.65%
+    ≥1.5   選定: n= 31 勝率 71% PF 2.44 1件+1.59%  ／ 確認: n= 11 勝率 82% PF 4.54 1件+1.76%
+    ≥2.0   選定: n= 23 勝率 70% PF 1.67 1件+0.86%  ／ 確認: n=  8 勝率 75% PF 3.37 1件+1.62%
+    ≥3.0   選定: n= 13 勝率 69% PF 1.26 1件+0.46%  ／ 確認: n=  4 勝率 75% PF62.76 1件+2.28%
+    → 選定期間で一番良かった ≥1.5 を確認期間に当てると n= 11 勝率 82% PF 4.54 1件+1.76%（条件なしの確認期間 n= 28 勝率 68% PF 2.00 1件+0.77%）
+
+  ◆ 寄値乖離% が しきい値以上のときだけ売る
+    ≥2     選定: n= 49 勝率 69% PF 5.81 1件+2.21%  ／ 確認: n= 12 勝率 75% PF 3.97 1件+1.63%
+    ≥3     選定: n= 44 勝率 66% PF 5.12 1件+2.11%  ／ 確認: n= 11 勝率 73% PF 3.63 1件+1.57%
+    ≥4     選定: n= 36 勝率 67% PF 5.49 1件+2.24%  ／ 確認: n=  7 勝率 71% PF 3.25 1件+2.01%
+    ≥5     選定: n= 29 勝率 69% PF 4.96 1件+2.21%  ／ 確認: n=  7 勝率 71% PF 3.25 1件+2.01%
+    → 選定期間で一番良かった ≥4 を確認期間に当てると n=  7 勝率 71% PF 3.25 1件+2.01%（条件なしの確認期間 n= 28 勝率 68% PF 2.00 1件+0.77%）
+
+  参考（確認期間）: 各指標の中央値より上/下で分けた成績
+    VWAP乖離%（中央値 2.48）  上: n= 10 勝率 80% PF 4.86 1件+2.17%  ／ 下: n= 18 勝率 61% PF 0.98 1件-0.01%
+    出来高倍率（中央値 1.29）  上: n= 13 勝率 77% PF 4.55 1件+1.75%  ／ 下: n= 15 勝率 60% PF 0.91 1件-0.09%
+    寄値乖離%（中央値 3.22）  上: n=  9 勝率 78% PF 3.49 1件+1.73%  ／ 下: n= 19 勝率 63% PF 1.39 1件+0.31%
+
+読み方: 「確認期間」で条件なしより良く、かつ件数が十分（30件前後以上）残るものだけが、足す価値のある条件。
+        選定期間だけ良いものは過去への合わせ込み。前場だけの確認期間は件数が少ないので参考程度。

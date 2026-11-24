@@ -1,0 +1,119 @@
+[dt] 母集団（前日代金3億+・300〜2万円）67,292銘柄日・2,077銘柄
+  5分足 50/2077 銘柄
+  5分足 100/2077 銘柄
+  5分足 150/2077 銘柄
+  5分足 200/2077 銘柄
+  5分足 250/2077 銘柄
+  5分足 300/2077 銘柄
+  5分足 350/2077 銘柄
+  5分足 400/2077 銘柄
+  5分足 450/2077 銘柄
+  5分足 500/2077 銘柄
+HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 3480.T"}}}
+$3480.T: No data found, symbol may be delisted
+
+1 Failed download:
+['3480.T']: No data found, symbol may be delisted
+  5分足 550/2077 銘柄
+  5分足 600/2077 銘柄
+  5分足 650/2077 銘柄
+  5分足 700/2077 銘柄
+  5分足 750/2077 銘柄
+  5分足 800/2077 銘柄
+  5分足 850/2077 銘柄
+  5分足 900/2077 銘柄
+  5分足 950/2077 銘柄
+  5分足 1000/2077 銘柄
+  5分足 1050/2077 銘柄
+  5分足 1100/2077 銘柄
+  5分足 1150/2077 銘柄
+$623A.T: 5m data not available for startTime=1789689600 and endTime=1795314442. The requested range must be within the last 60 days.
+$621A.T: 5m data not available for startTime=1789516800 and endTime=1795314442. The requested range must be within the last 60 days.
+$618A.T: 5m data not available for startTime=1789084800 and endTime=1795314442. The requested range must be within the last 60 days.
+$625A.T: 5m data not available for startTime=1789603200 and endTime=1795314443. The requested range must be within the last 60 days.
+$622A.T: 5m data not available for startTime=1789689600 and endTime=1795314443. The requested range must be within the last 60 days.
+$619A.T: 5m data not available for startTime=1789516800 and endTime=1795314444. The requested range must be within the last 60 days.
+$627A.T: 5m data not available for startTime=1789689600 and endTime=1795314444. The requested range must be within the last 60 days.
+
+7 Failed downloads:
+['623A.T']: 5m data not available for startTime=1789689600 and endTime=1795314442. The requested range must be within the last 60 days.
+['621A.T']: 5m data not available for startTime=1789516800 and endTime=1795314442. The requested range must be within the last 60 days.
+['618A.T']: 5m data not available for startTime=1789084800 and endTime=1795314442. The requested range must be within the last 60 days.
+['625A.T']: 5m data not available for startTime=1789603200 and endTime=1795314443. The requested range must be within the last 60 days.
+['622A.T']: 5m data not available for startTime=1789689600 and endTime=1795314443. The requested range must be within the last 60 days.
+['619A.T']: 5m data not available for startTime=1789516800 and endTime=1795314444. The requested range must be within the last 60 days.
+['627A.T']: 5m data not available for startTime=1789689600 and endTime=1795314444. The requested range must be within the last 60 days.
+  5分足 1200/2077 銘柄
+$633A.T: 5m data not available for startTime=1788739200 and endTime=1795314448. The requested range must be within the last 60 days.
+$630A.T: 5m data not available for startTime=1788739200 and endTime=1795314448. The requested range must be within the last 60 days.
+
+2 Failed downloads:
+['633A.T', '630A.T']: 5m data not available for startTime=1788739200 and endTime=1795314448. The requested range must be within the last 60 days.
+  5分足 1250/2077 銘柄
+  5分足 1300/2077 銘柄
+  5分足 1350/2077 銘柄
+  5分足 1400/2077 銘柄
+  5分足 1450/2077 銘柄
+  5分足 1500/2077 銘柄
+  5分足 1550/2077 銘柄
+  5分足 1600/2077 銘柄
+  5分足 1650/2077 銘柄
+  5分足 1700/2077 銘柄
+  5分足 1750/2077 銘柄
+  5分足 1800/2077 銘柄
+  5分足 1850/2077 銘柄
+  5分足 1900/2077 銘柄
+  5分足 1950/2077 銘柄
+  5分足 2000/2077 銘柄
+  5分足 2050/2077 銘柄
+  5分足 2077/2077 銘柄
+[dt] 銘柄日 60,083（2026-08-25〜2026-11-20・59日）／ 選定期間 〜2026-10-22・確認期間 2026-10-23〜
+  A1 ORB15分（上抜け買い/下抜け売り）: n=66947 PF0.69 確認PF0.68 z=-24.0
+  A2 ORB30分（上抜け買い/下抜け売り）: n=51685 PF0.74 確認PF0.82 z=-23.7
+  B1 GU+3% を9:30に売り: n=2745 PF0.97 確認PF0.98 z=+4.2
+  B2 GU+3% を12:30に売り: n=2743 PF0.80 確認PF0.70 z=+1.7
+  B3 GD−3% を9:30に買い: n=3442 PF0.89 確認PF0.96 z=-2.2
+  B4 GD−3% を12:30に買い: n=3441 PF0.84 確認PF0.86 z=-0.1
+  C1 GU+3%・最初15分陽線→9:20買い: n=1444 PF0.58 確認PF0.47 z=-9.7
+  D1 10時以降 寄値+5%超え→売り(MA40回帰): n=1288 PF0.85 確認PF0.67 z=+4.5
+  D2 10時以降 寄値+7%超え→売り(MA40回帰): n=590 PF1.30 確認PF0.97 z=+6.4
+  E1 VWAP±2%乖離→VWAPへ回帰: n=7852 PF0.71 確認PF0.71 z=+15.7
+  E2 VWAP±3%乖離→VWAPへ回帰: n=2715 PF0.95 確認PF0.99 z=+16.1
+  F1 10時に寄値−3%以下→買い: n=1138 PF0.47 確認PF0.41 z=-0.2
+  F2 10時に寄値+3%以上→売り: n=972 PF0.93 確認PF0.83 z=+5.6
+  G1 14:30に前日比+3%以上→買い: n=4853 PF0.36 確認PF0.27 z=-14.5
+  G2 14:30に前日比−3%以下→売り: n=6642 PF0.56 確認PF0.26 z=-20.4
+  H1 前日+8%以上→寄りで売り: n=734 PF1.18 確認PF0.94 z=-0.6
+  H2 前日−8%以下→寄りで買い: n=878 PF1.03 確認PF1.17 z=+5.9
+  J1 前場+3%以上→12:30に売り: n=4380 PF0.89 確認PF1.01 z=+11.6
+  J2 前場−3%以下→12:30に買い: n=6161 PF0.75 確認PF1.03 z=+1.9
+  I1 9:30の強弱 上位10%買い/下位10%売り: n=12066 PF0.79 確認PF0.71 z=-3.1
+
+================ 一覧（コスト: 往復0.10%＋入口/出口で不利1tick）================
+                          型 ★     n         買/売    勝率   PF   1件%  選定PF  選定1件%   確認n  確認PF  確認1件%  確認ランダム1件%      z  上3日除く合計%
+     A1 ORB15分（上抜け買い/下抜け売り）   66947 32480/34467 36.95 0.69 -0.20  0.70  -0.18 23039  0.68  -0.24      -0.11 -24.04 -15716.57
+     A2 ORB30分（上抜け買い/下抜け売り）   51685 23901/27784 40.77 0.74 -0.16  0.70  -0.17 17882  0.82  -0.13      -0.02 -23.68  -9966.13
+          B1 GU+3% を9:30に売り    2745      0/2745 45.65 0.97 -0.03  0.95  -0.06  1539  0.98  -0.01      -0.12   4.24   -481.65
+         B2 GU+3% を12:30に売り    2743      0/2743 44.48 0.80 -0.16  0.92  -0.06  1537  0.70  -0.24      -0.27   1.72   -855.51
+          B3 GD−3% を9:30に買い    3442      3442/0 44.33 0.89 -0.15  0.80  -0.26  1841  0.96  -0.06       0.01  -2.24  -2384.16
+         B4 GD−3% を12:30に買い    3441      3441/0 40.95 0.84 -0.13  0.82  -0.13  1841  0.86  -0.14      -0.14  -0.06  -1640.13
+    C1 GU+3%・最初15分陽線→9:20買い    1444      1444/0 43.07 0.58 -0.55  0.75  -0.36   895  0.47  -0.66      -0.43  -9.66   -994.12
+D1 10時以降 寄値+5%超え→売り(MA40回帰)    1288      0/1288 48.99 0.85 -0.17  0.98  -0.02   499  0.67  -0.42      -0.84   4.51   -386.62
+D2 10時以降 寄値+7%超え→売り(MA40回帰)     590       0/590 53.22 1.30  0.35  1.51   0.60   227  0.97  -0.04      -0.99   6.41     76.02
+       E1 VWAP±2%乖離→VWAPへ回帰    7852   4628/3224 47.55 0.71 -0.28  0.72  -0.28  4121  0.71  -0.27      -0.55  15.66  -2621.67
+       E2 VWAP±3%乖離→VWAPへ回帰    2715   1587/1128 51.20 0.95 -0.06  0.90  -0.12  1541  0.99  -0.01      -0.65  16.06   -744.93
+          F1 10時に寄値−3%以下→買い    1138      1138/0 35.41 0.47 -0.91  0.51  -0.78   445  0.41  -1.12      -1.11  -0.16  -1246.35
+          F2 10時に寄値+3%以上→売り     972       0/972 46.71 0.93 -0.10  0.99  -0.01   367  0.83  -0.25      -0.69   5.64   -348.07
+       G1 14:30に前日比+3%以上→買い    4853      4853/0 32.41 0.36 -0.30  0.43  -0.27  2225  0.27  -0.34      -0.15 -14.46  -1526.07
+       G2 14:30に前日比−3%以下→売り    6642      0/6642 40.06 0.56 -0.19  1.22   0.06  3441  0.26  -0.43      -0.22 -20.38  -1878.25
+           H1 前日+8%以上→寄りで売り     734       0/734 52.59 1.18  0.31  1.40   0.66   330  0.94  -0.11      -0.07  -0.56    -56.51
+           H2 前日−8%以下→寄りで買い     878       878/0 44.19 1.03  0.05  0.84  -0.26   506  1.17   0.28      -0.14   5.92   -783.38
+        J1 前場+3%以上→12:30に売り    4380      0/4380 44.82 0.89 -0.07  0.80  -0.15  2138  1.01   0.01      -0.12  11.61   -916.67
+        J2 前場−3%以下→12:30に買い    6161      6161/0 38.65 0.75 -0.22  0.43  -0.50  3328  1.03   0.02       0.00   1.94  -3546.01
+ I1 9:30の強弱 上位10%買い/下位10%売り   12066   6033/6033 44.14 0.79 -0.22  0.84  -0.15  4036  0.71  -0.37      -0.31  -3.13  -3512.73
+
+=== 判定 ===
+  ★なし＝コストを払って、ランダムな時刻より確かに勝てる型は見つからなかった。
+  売りの型は空売りできるか（在庫・売り禁）を見ていない＝実際はもっと悪い。
+  注意: D（MA40回帰）・E（VWAP回帰）は、ランダムな時刻に入るとすぐ回帰条件に当たってコスト負けしやすい＝z が甘く出る。
+        この2系統は z より「確認PF>1.1」と「上3日除く合計」を重く見る。

@@ -1,0 +1,33 @@
+# 一回限り: VCPブレイクのスイングを10年・1銘柄1枠・枠シムで検証（2026-11-15）。作業ブランチへのpushでだけ動く。
+# PC の jquants_cache*.pkl が CI に無いので、J-Quants から10年ぶん取り直す（約3〜4時間）。
+name: VCP 10年検証（一回限り）
+
+on:
+  push:
+    branches: [claude/new-session-pe26yi]
+    paths:
+      - .github/workflows/vcp10y_once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      JQUANTS_VERIFY_SSL: "true"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install -r kabuai/requirements.txt
+      - name: 10年ぶんの日足を取得
+        working-directory: kabuai
+        run: python fetch_daily_10y.py 2440
+      - name: VCP 10年検証
+        run: python -X utf8 _bt_vcp_10y_1115.py
