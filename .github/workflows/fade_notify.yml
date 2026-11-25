@@ -92,7 +92,8 @@ jobs:
           python -X utf8 kabuai/zaiko_log.py $ZARGS || echo "在庫の記録に失敗（配信は済んでいるので続行）"
 
       - name: 台帳をコミット
-        if: ${{ steps.gate.outputs.go == '1' && inputs.dry_run != true }}
+        # 途中で落ちても台帳(答え合わせの送信済み)は残す（2026-11-25 落ちるたびに答え合わせを送り直して3回届いた）
+        if: ${{ !cancelled() && steps.gate.outputs.go == '1' && inputs.dry_run != true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

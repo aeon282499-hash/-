@@ -891,7 +891,7 @@ def loan_plan(asof, trade_day, cand, master, earn, iss, alert, jsf_list) -> dict
     if not iss or cand.empty:
         return None
     c = cand.reset_index() if "Code" not in cand.columns else cand
-    sub = c[c["Code"].map(lambda x: iss.get(code4(x)) == "2")].drop(columns=["score", "rank_all"], errors="ignore")
+    sub = c[c["Code"].map(lambda x: iss.get(code4(x)) == "2").astype(bool)].drop(columns=["score", "rank_all"], errors="ignore")
     if sub.empty:
         return dict(rule_a=None, rule_a_why="貸借の候補なし", top=None)
     p = build_plan(asof, trade_day, score_rank(sub), master, earn, iss, alert, jsf_list)
@@ -977,7 +977,7 @@ def top3_plan(cand, master, iss, alert, jsf_list, earn, ret_min: float = TOP3_RE
     c = cand.reset_index() if "Code" not in cand.columns else cand
     # 100株で100万円以下の銘柄だけ（2026-10-29 本人「50万超〜100万は100株のみOK」・20年: PF1.96・DD70万・マイナス月15/309）
     c = c[c["ret1"] >= ret_min]
-    c = c[c["C"].map(lambda p: _lim(p, TOP3_LIMIT_PCT) * 100 <= TOP3_MAX_100SH)]
+    c = c[c["C"].map(lambda p: _lim(p, TOP3_LIMIT_PCT) * 100 <= TOP3_MAX_100SH).astype(bool)]   # astype: 0行だとmapがfloatになり列ごと消える（2026-11-25 配信失敗）
     # 上場20営業日未満は外す（2026-10-31 監査: 新規上場は貸借選定前で一般信用の在庫も無い＝撃てない。5年BTで125本・合計の4%）
     if "nbars" in c.columns:
         c = c[c["nbars"] >= TOP3_MIN_BARS]

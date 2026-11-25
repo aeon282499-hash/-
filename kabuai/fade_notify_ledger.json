@@ -6955,6 +6955,101 @@
     ],
     "sent": true
    }
+  },
+  "2026-11-25": {
+   "trade_day": "2026-11-25",
+   "asof": "2026-11-24",
+   "made": "2026-11-25 19:10",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4422",
+     "name": "ＶＡＬＵＥＮＥＸ",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [],
+     "open": 716.0,
+     "close": 716.0,
+     "high": 716.0,
+     "status": "寄りS高張り付き→取消",
+     "yen": 0
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "3624",
+     "name": "アクセルマーク",
+     "rank_all": 2,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 210.0,
+     "close": 188.0,
+     "high": 243.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6787",
+     "name": "メイコー",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 8150.0,
+     "close": 7740.0,
+     "high": 8150.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6981",
+     "name": "村田製作所",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 4861.0,
+     "close": 4633.0,
+     "high": 4896.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4004",
+     "name": "レゾナック・ホールディン",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 11520.0,
+     "close": 10900.0,
+     "high": 11590.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-25",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4422",
+      "name": "ＶＡＬＵＥＮＥＸ",
+      "close_prev": 616.0,
+      "legs": [],
+      "status": "寄りS高張り付き→取消",
+      "open": 716.0,
+      "close": 716.0,
+      "yen": 0
+     }
+    ],
+    "sent": true
+   }
   }
  }
 }
