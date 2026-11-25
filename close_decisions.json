@@ -3998,5 +3998,22 @@
     }
   },
   "2026-11-20": {},
-  "2026-11-24": {}
+  "2026-11-24": {},
+  "2026-11-25": {
+    "main:BUY:4118.T": {
+      "decision": "HOLD",
+      "rsi": 43.98,
+      "price": 6050.0
+    },
+    "kiwami:BUY:4118.T": {
+      "decision": "HOLD",
+      "rsi": 44.17,
+      "price": 6055.0
+    },
+    "kiwami_gokujo:BUY:4118.T": {
+      "decision": "HOLD",
+      "rsi": 44.17,
+      "price": 6055.0
+    }
+  }
 }
