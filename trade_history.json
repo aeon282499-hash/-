@@ -2189,6 +2189,16 @@
       "close": 4021.0,
       "pnl": 0.55,
       "win": true
+    },
+    {
+      "date": "2026-11-25",
+      "ticker": "4118.T",
+      "name": "カネカ",
+      "direction": "BUY",
+      "open": 6022.0,
+      "close": 6056.0,
+      "pnl": 0.56,
+      "win": true
     }
   ]
 }
