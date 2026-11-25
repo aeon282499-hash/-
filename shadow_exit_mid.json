@@ -1844,11 +1844,11 @@
     "atr_pct": 2.626,
     "stop_pct": 3.0,
     "live_stop": 3.0,
-    "entry_open": null,
-    "status": "pending",
+    "entry_open": 3875.0,
+    "status": "expired",
     "hold_days": 0,
     "pnl_pct": null,
-    "exit_type": null,
-    "exit_date": null
+    "exit_type": "NOFILL",
+    "exit_date": "2026-11-25"
   }
 ]

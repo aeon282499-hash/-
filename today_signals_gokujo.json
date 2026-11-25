@@ -1,20 +1,4 @@
 {
-  "date": "2026-11-25",
-  "signals": [
-    {
-      "ticker": "4118.T",
-      "name": "カネカ",
-      "direction": "BUY",
-      "prev_close": 6073.0,
-      "limit_price": 6130,
-      "days_cover": 0.565239818747901,
-      "vt5": 0.735,
-      "updn_vol": 0.908,
-      "rsi": 44.77,
-      "deviation": -1.97,
-      "vol_ratio": 1.18,
-      "range_ratio": 1.51,
-      "turnover": 2039347200.0
-    }
-  ]
+  "date": "2026-11-26",
+  "signals": []
 }
