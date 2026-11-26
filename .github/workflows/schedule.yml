@@ -230,7 +230,7 @@ jobs:
             earnings_preview_state.json \
             today_signals_sector_theme.json sector33_map.json logs/sector_theme_diag.jsonl \
             today_signals_theme.json logs/theme_diag.jsonl \
-            shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json _shadow_skipped_gokujo.json \
+            shadow_exit_main.json shadow_exit_mid.json shadow_exit_small.json shadow_exit_gokujo.json shadow_exit_gokujo_day.json _shadow_skipped_gokujo.json \
             kiwami_sell.json kiwami_sent.json kiwami_rebound_gauge.json \
             dashboard_data.json; do
             [ -f "$f" ] && git add "$f"

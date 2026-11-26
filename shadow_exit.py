@@ -665,6 +665,15 @@ def run_shadow(tiers, today: date, get_data) -> bool:
         a = record_signals(k, today, all_data)
         print(f"[shadow-{TIER_FILES[k][3]}] 新規{a}件 / 影決済{c}件 / 影失効{e}件")
 
+    # 極上デイ（2026-11-26・紙の並走）: 同じ極上シグナルを寄りで買って当日中に手仕舞う版。
+    # 別台帳 shadow_exit_gokujo_day.json だけを書く＝極上本体の台帳・配信には触れない。
+    try:
+        import gokujo_day
+        ds, da = gokujo_day.update(today, all_data)
+        print(f"[shadow-極上デイ] 新規{da}件 / 決着{ds}件")
+    except Exception as e:
+        print(f"[shadow] 極上デイの更新スキップ（極上本体に影響なし）: {e}")
+
     # 極みの売り台帳（2026-07-29新設・損切り+2.5%／3枠）。買いと同じく更新→記帳の順。
     # ここが落ちても買いの台帳は上で保存済み＝独立。
     try:
