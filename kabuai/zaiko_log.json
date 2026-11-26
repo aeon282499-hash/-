@@ -1347,5 +1347,59 @@
   ],
   "made": "2026-11-25T23:41:38+09:00",
   "sent": false
+ },
+ "2026-11-27": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "4598",
+    "name": "Ｄｅｌｔａ−Ｆｌｙ　Ｐｈ",
+    "close": 114.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/27",
+     "stale": false,
+     "fee_pct": 0.88,
+     "day_ok": true,
+     "max_sh": 840000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "4586",
+    "name": "メドレックス",
+    "close": 135.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "×",
+     "fee": 1.0,
+     "day": "11/27",
+     "stale": false,
+     "fee_pct": 0.74,
+     "day_ok": true,
+     "max_sh": 1320000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-26T18:45:03+09:00",
+  "sent": false
  }
 }
