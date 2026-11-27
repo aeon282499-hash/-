@@ -4357,6 +4357,249 @@
     }
    ],
    "own_sent": true
+  },
+  "2026-11-30": {
+   "asof": "2026-11-27",
+   "trade_day": "2026-11-30",
+   "made": "2026-11-27 18:09",
+   "n_cand": 83,
+   "rule_a": {
+    "code": "281A",
+    "code5": "281A0",
+    "name": "インフォメティス",
+    "mkt": "グロース",
+    "close": 320.0,
+    "ret1": 0.33333333333333326,
+    "va": 515318000.0,
+    "rank_all": 1,
+    "score": 3.88,
+    "ul1": 400.0,
+    "strong": true,
+    "vol20": 0.0888,
+    "dev25": 0.1054,
+    "rng": 0.3417,
+    "seido": "×",
+    "jsf_stop": false,
+    "jsf_warn": false,
+    "tse_reg": false,
+    "daily_pub": false,
+    "jsf_txt": "",
+    "reasons": [],
+    "tob": false
+   },
+   "rule_a_why": "",
+   "rows": [
+    {
+     "code": "281A",
+     "code5": "281A0",
+     "name": "インフォメティス",
+     "mkt": "グロース",
+     "close": 320.0,
+     "ret1": 0.33333333333333326,
+     "va": 515318000.0,
+     "rank_all": 1,
+     "score": 3.88,
+     "ul1": 400.0,
+     "strong": true,
+     "vol20": 0.0888,
+     "dev25": 0.1054,
+     "rng": 0.3417,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "6787",
+     "code5": "67870",
+     "name": "メイコー",
+     "mkt": "プライム",
+     "close": 9900.0,
+     "ret1": 0.12244897959183665,
+     "va": 28757616000.0,
+     "rank_all": 2,
+     "score": 3.58,
+     "ul1": 11400.0,
+     "strong": false,
+     "vol20": 0.0946,
+     "dev25": 0.1874,
+     "rng": 0.1247,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "6855",
+     "code5": "68550",
+     "name": "日本電子材料",
+     "mkt": "スタンダード",
+     "close": 6200.0,
+     "ret1": 0.13138686131386867,
+     "va": 6480930000.0,
+     "rank_all": 3,
+     "score": 3.51,
+     "ul1": 7200.0,
+     "strong": false,
+     "vol20": 0.0809,
+     "dev25": 0.0685,
+     "rng": 0.1369,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    },
+    {
+     "code": "7640",
+     "code5": "76400",
+     "name": "トップカルチャー",
+     "mkt": "スタンダード",
+     "close": 160.0,
+     "ret1": 0.23076923076923084,
+     "va": 672141900.0,
+     "rank_all": 4,
+     "score": 3.43,
+     "ul1": 210.0,
+     "strong": true,
+     "vol20": 0.0699,
+     "dev25": 0.0507,
+     "rng": 0.2077,
+     "seido": "○",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "※ トップカルチャー 注意喚起",
+     "reasons": [
+      "日証金注意喚起"
+     ],
+     "tob": false
+    },
+    {
+     "code": "6777",
+     "code5": "67770",
+     "name": "ｓａｎｔｅｃ　Ｈｏｌｄｉ",
+     "mkt": "スタンダード",
+     "close": 16940.0,
+     "ret1": 0.12858094603597592,
+     "va": 3260288000.0,
+     "rank_all": 5,
+     "score": 3.37,
+     "ul1": 20940.0,
+     "strong": false,
+     "vol20": 0.108,
+     "dev25": -0.0282,
+     "rng": 0.1252,
+     "seido": "×",
+     "jsf_stop": false,
+     "jsf_warn": false,
+     "tse_reg": false,
+     "daily_pub": false,
+     "jsf_txt": "",
+     "reasons": [],
+     "tob": false
+    }
+   ],
+   "earn_checked": true,
+   "iss_checked": true,
+   "alert_checked": true,
+   "sent": true,
+   "tob_checked": true,
+   "new1": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "7640",
+      "name": "トップカルチャー",
+      "close": 160.0,
+      "ret1": 0.23076923076923084,
+      "jsf_stop": false,
+      "jsf_warn": true
+     }
+    ],
+    "n_loan17": 1
+   },
+   "top3": {
+    "rows": [
+     {
+      "rank": 1,
+      "code": "281A",
+      "name": "インフォメティス",
+      "close": 320.0,
+      "ret1": 0.33333333333333326,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 2,
+      "code": "6721",
+      "name": "ウインテスト",
+      "close": 100.0,
+      "ret1": 0.23456790123456783,
+      "seido": "×",
+      "jsf_stop": false,
+      "jsf_warn": false,
+      "earn": false
+     },
+     {
+      "rank": 3,
+      "code": "7640",
+      "name": "トップカルチャー",
+      "close": 160.0,
+      "ret1": 0.23076923076923084,
+      "seido": "○",
+      "jsf_stop": false,
+      "jsf_warn": true,
+      "earn": false
+     }
+    ],
+    "n_cand": 83
+   },
+   "asobi": null,
+   "keta2": [],
+   "earn_mkt": {},
+   "fund": {
+    "652A": "第三者割当増資の結果に関するお知らせ",
+    "5721": "(訂正)「第三者割当による第11回新株予約権及び買取契約の締結並びに第6回無担保",
+    "656A": "第三者割当増資の結果に関するお知らせ",
+    "558A": "有償ストック・オプション(新株予約権)の発行内容確定に関するお知らせ",
+    "660A": "第三者割当増資の結果に関するお知らせ",
+    "7066": "募集新株予約権(有償ストック・オプション)の発行内容確定に関するお知らせ",
+    "3046": "第39回定時株主総会における議決権行使結果に関するお知らせ",
+    "5597": "第1回無担保転換社債型新株予約権付社債・第11回新株予約権の買入消却並びに第2回",
+    "8006": "株式の売出しに関するお知らせ",
+    "1762": "株式の売出しに関するお知らせ",
+    "6634": "第三者割当による第20回新株予約権の払込完了に関するお知らせ",
+    "9562": "第6回新株予約権(税制適格ストック・オプション)の発行内容確定に関するお知らせ",
+    "9889": "株式の売出しに関するお知らせ",
+    "4575": "(訂正)適時開示書類「第22回新株予約権(行使価額修正条項付)の大量行使に関する",
+    "3662": "(訂正)「(訂正)「第9回新株予約権の行使価額及び第1回無担保転換社債型新株予約",
+    "3647": "第11回新株予約権の買取及び消却の完了並びに第三者割当による第12回新株予約権及",
+    "4918": "第三者割当による第6回新株予約権(行使価額修正条項付)の大量行使に関するお知らせ",
+    "5840": "募集株式の払込金額及びブックビルディングの仮条件決定のお知らせ",
+    "9250": "第三者割当により発行される新株式及び第6回新株予約権の払込完了並びに主要株主の異",
+    "3498": "2029年満期ユーロ円建転換社債型新株予約権付社債の転換価額の調整に関するお知ら",
+    "3991": "取締役等に対する譲渡制限付株式としての新株式発行に関するお知らせ",
+    "5532": "募集新株予約権(有償ストック・オプション)の発行内容確定に関するお知らせ",
+    "5535": "当社子会社執行役員に対する新株予約権(税制適格ストック・オプション)の発行に関す",
+    "9983": "株式報酬型ストックオプション(新株予約権)の発行に関するお知らせ"
+   },
+   "tob_out": [],
+   "own_sent": true
   }
  },
  "scores": {
@@ -7544,6 +7787,162 @@
    "own": {
     "trade_day": "2026-11-26",
     "items": [],
+    "sent": true
+   }
+  },
+  "2026-11-27": {
+   "trade_day": "2026-11-27",
+   "asof": "2026-11-26",
+   "made": "2026-11-27 18:05",
+   "items": [
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4586",
+     "name": "メドレックス",
+     "rank_all": 1,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 145.0,
+       "shares": 2200,
+       "sell": null
+      },
+      {
+       "lim": 152.0,
+       "shares": 1000,
+       "sell": null
+      }
+     ],
+     "open": 130.0,
+     "close": 103.0,
+     "high": 138.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4598",
+     "name": "Ｄｅｌｔａ−Ｆｌｙ　Ｐｈ",
+     "rank_all": 2,
+     "skip": "",
+     "legs": [
+      {
+       "lim": 122.0,
+       "shares": 2700,
+       "sell": null
+      },
+      {
+       "lim": 128.0,
+       "shares": 1300,
+       "sell": null
+      }
+     ],
+     "open": 104.0,
+     "close": 90.0,
+     "high": 106.0,
+     "status": "届かず",
+     "yen": 0,
+     "sclose": false
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "4222",
+     "name": "児玉化学工業",
+     "rank_all": 3,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 548.0,
+     "close": 558.0,
+     "high": 575.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6787",
+     "name": "メイコー",
+     "rank_all": 4,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 9120.0,
+     "close": 9900.0,
+     "high": 9970.0,
+     "status": "見送り",
+     "yen": null
+    },
+    {
+     "f3": true,
+     "v2": true,
+     "code": "6227",
+     "name": "ＡＩメカテック",
+     "rank_all": 5,
+     "skip": "+17%未満",
+     "legs": [],
+     "open": 4005.0,
+     "close": 4240.0,
+     "high": 4250.0,
+     "status": "見送り",
+     "yen": null
+    }
+   ],
+   "sent": true,
+   "own": {
+    "trade_day": "2026-11-27",
+    "items": [
+     {
+      "kind": "3本",
+      "code": "4598",
+      "name": "Ｄｅｌｔａ−Ｆｌｙ　Ｐｈ",
+      "close_prev": 114.0,
+      "legs": [
+       {
+        "lim": 122.0,
+        "shares": 400,
+        "sell": null
+       },
+       {
+        "lim": 132.0,
+        "shares": 900,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 104.0,
+      "close": 90.0,
+      "high": 106.0,
+      "yen": 0,
+      "sclose": false
+     },
+     {
+      "kind": "3本",
+      "code": "4586",
+      "name": "メドレックス",
+      "close_prev": 135.0,
+      "legs": [
+       {
+        "lim": 145.0,
+        "shares": 500,
+        "sell": null
+       },
+       {
+        "lim": 156.0,
+        "shares": 900,
+        "sell": null
+       }
+      ],
+      "status": "届かず",
+      "open": 130.0,
+      "close": 103.0,
+      "high": 138.0,
+      "yen": 0,
+      "sclose": false
+     }
+    ],
     "sent": true
    }
   }

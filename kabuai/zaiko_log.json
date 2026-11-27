@@ -1401,5 +1401,73 @@
   ],
   "made": "2026-11-27T06:29:29+09:00",
   "sent": false
+ },
+ "2026-11-30": {
+  "items": [
+   {
+    "kind": "3本",
+    "code": "281A",
+    "name": "インフォメティス",
+    "close": 320.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": "〇",
+     "fee": 0.32,
+     "day": "11/30",
+     "stale": false,
+     "fee_pct": 0.1,
+     "day_ok": true,
+     "max_sh": 180000
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "6721",
+    "name": "ウインテスト",
+    "close": 100.0,
+    "seido": "×",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   },
+   {
+    "kind": "3本",
+    "code": "7640",
+    "name": "トップカルチャー",
+    "close": 160.0,
+    "seido": "○",
+    "jsf_stop": false,
+    "matsui": {
+     "zaiko": null,
+     "day_ok": false
+    },
+    "kabucom": {
+     "daytrade": true,
+     "choki": false
+    },
+    "sbi": null,
+    "rakuten": null,
+    "kabucom_bid": null
+   }
+  ],
+  "made": "2026-11-27T18:45:03+09:00",
+  "sent": false
  }
 }
