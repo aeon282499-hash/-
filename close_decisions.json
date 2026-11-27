@@ -4032,5 +4032,22 @@
       "rsi": 47.06,
       "price": 6113.0
     }
+  },
+  "2026-11-27": {
+    "main:BUY:4118.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami:BUY:4118.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    },
+    "kiwami_gokujo:BUY:4118.T": {
+      "decision": "MAXHOLD",
+      "rsi": null,
+      "price": null
+    }
   }
 }
