@@ -1,4 +1,18 @@
 {
-  "date": "2026-11-27",
-  "signals": []
+  "date": "2026-11-30",
+  "signals": [
+    {
+      "ticker": "6849.T",
+      "name": "日本光電工業",
+      "direction": "BUY",
+      "prev_close": 1494.0,
+      "limit_price": 1508,
+      "days_cover": 0.05426951452028972,
+      "rsi": 40.07,
+      "deviation": -4.03,
+      "vol_ratio": 2.7,
+      "range_ratio": 0.73,
+      "turnover": 3765638000.0
+    }
+  ]
 }
