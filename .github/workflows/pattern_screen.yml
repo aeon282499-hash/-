@@ -84,8 +84,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add pattern_signals.json pattern_signals.md 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "chore(pattern): signals [skip ci]" && git pull --rebase && git push)
+          [ -f pattern_signals.json ] || exit 0
+          # 結果ファイルは毎回まるごと上書き＝最新mainに載せ直すだけ（並走でぶつからない）
+          mkdir -p /tmp/ps && cp pattern_signals.json pattern_signals.md /tmp/ps/
+          for i in 1 2 3; do
+            git fetch -q origin main && git reset -q --hard origin/main
+            cp /tmp/ps/pattern_signals.* .
+            git add pattern_signals.json pattern_signals.md
+            git diff --cached --quiet && exit 0
+            git commit -q -m "chore(pattern): signals [skip ci]" && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
 
       - name: 検証ログを保存
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.bt }}
