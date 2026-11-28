@@ -1,4 +1,4 @@
-name: ★買い時かも パターン選定（一目・SAR・MACD・RSI・BB）
+name: 🎖リアルライブ軍団（★買い時かも 一目・SAR・MACD・RSI・BB）
 
 # pattern_screener.py を回す。売買はしない（候補リストを出すだけ）。
 #   定期: 平日 18:07 JST（J-Quants日足の公開後）に当日分で判定 → pattern_signals.json/.md をコミット＋Discord

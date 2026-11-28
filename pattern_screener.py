@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""pattern_screener.py — 「株リアルライブ型 ★買い時かも」のチャート形を全銘柄から探す。2026-11-28 本人依頼。
+"""pattern_screener.py — 🎖リアルライブ軍団：「株リアルライブ型 ★買い時かも」のチャート形を全銘柄から探す。2026-11-28 本人依頼。
 
 ■ 何を探すか（スライド16枚＝ゼンショー/ファストリ/日東電工/コーエーテクモ/KDDI/NEC/リクルート/富士通/
   スルガ銀/大塚HD/任天堂/中外製薬 の共通項を数値化）
@@ -297,7 +297,7 @@ def write_outputs(rows: list[dict], markets: list[str], top: int) -> None:
         json.dump({"generated_at": datetime.now(JST).isoformat(timespec="seconds"),
                    "markets": markets, "count": len(rows), "signals": rows}, f, ensure_ascii=False, indent=1)
     d = rows[0]["date"] if rows else "-"
-    md = [f"# ★買い時かも 候補（{d}・{'/'.join(MARKET_KEYS[m] for m in markets)}）", "",
+    md = [f"# 🎖リアルライブ軍団 ★買い時かも 候補（{d}・{'/'.join(MARKET_KEYS[m] for m in markets)}）", "",
           f"該当 {len(rows)} 銘柄 / 上位 {min(top, len(rows))}", "",
           "| # | コード | 銘柄 | 市場 | 点 | 終値 | ブレイク価格 | 高値まで | RSI | BBσ | MACD | 出来高比 | 注意 |",
           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -319,7 +319,7 @@ def send_discord(rows: list[dict], top: int) -> None:
         return
     import requests
     d = rows[0]["date"] if rows else datetime.now(JST).strftime("%Y-%m-%d")
-    lines = [f"**★買い時かも 候補 {d}**（{len(rows)}件中 上位{min(top, len(rows))}）"]
+    lines = [f"**🎖リアルライブ軍団 ★買い時かも {d}**（{len(rows)}件中 上位{min(top, len(rows))}）"]
     for r in rows[:top]:
         lines.append(f"`{r['code']}` {r['name']}［{r['market'][:3]}］{r['score']}点 終値{r['close']:,.0f} "
                      f"→ 抜け{r['break_price']:,.0f}（+{r['dist_hi_pct']}%）RSI{r['rsi']:.0f} {r['bbz']:+.1f}σ "
