@@ -392,6 +392,29 @@ def backtest(prices: dict[str, pd.DataFrame], universe: set[str] | None, min_sco
     summ(first, "初回のみ(14日空け)")
 
 
+# ── 条件ごとの診断 ──────────────────────────────────────────────
+def explain(prices: dict[str, pd.DataFrame], pairs: list[tuple[str, str]]) -> None:
+    """銘柄:日付 ごとに、必須条件のどれで落ちたかを表示（スライドとの答え合わせ用）。"""
+    for code, d in pairs:
+        df = prices.get(code + ".T")
+        if df is None:
+            print(f"{code} {d}: データ無し"); continue
+        df = df[df.index <= pd.Timestamp(d)]
+        o = indicators(df); o["macd_hist_prev"] = o["macd_hist"].shift(1)
+        r = o.iloc[-1]
+        cloud_ok = bool(r["above_cloud"] or r["cloud_pos"] >= CLOUD_BREAK_FRAC)
+        checks = {
+            f"雲(位置{r['cloud_pos']:.2f})": cloud_ok, "SAR上げ": bool(r["sar_up"]),
+            f"RSI{r['rsi']:.1f}": RSI_LO <= r["rsi"] <= RSI_HI, f"BB{r['bbz']:+.2f}σ": BBZ_LO <= r["bbz"] <= BBZ_HI,
+            ">25MA": bool(r["close"] > r["sma25"]), f"高値まで{r['dist_hi']:.1f}%": 0 <= r["dist_hi"] <= HIGH_DIST_MAX,
+            f"代金{r['turnover20_oku']:.1f}億": r["turnover20_oku"] >= MIN_TURNOVER_OKU,
+        }
+        ok = all(checks.values())
+        sc, why = score_row(r)
+        print(f"{code} {o.index[-1]:%Y-%m-%d} {'◎通過' if ok else '×'} {sc:.1f}点 MACD:{why['macd']} | "
+              + " ".join(f"{k}{'○' if v else '×'}" for k, v in checks.items()))
+
+
 # ── main ────────────────────────────────────────────────────────
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -403,6 +426,7 @@ def main() -> None:
     ap.add_argument("--bt-days", type=int, default=500)
     ap.add_argument("--bt-min-score", type=float, default=0)
     ap.add_argument("--cache", default="jquants_cache.pkl")
+    ap.add_argument("--explain", default="", help="6701:2026-10-16,6702:2026-10-07 … 条件ごとの○×")
     a = ap.parse_args()
     markets = [m.strip().lower() for m in a.markets.split(",") if m.strip()]
     for m in markets:
@@ -420,6 +444,15 @@ def main() -> None:
     universe = market_filter(master, markets) if master else None
     if master:
         print(f"[master] {'/'.join(MARKET_KEYS[m] for m in markets)}: {len(universe)} 銘柄")
+
+    if a.explain:
+        pairs = [tuple(x.split(":")) for x in a.explain.split(",") if ":" in x]
+        last = max(d for _, d in pairs)
+        first = min(d for _, d in pairs)
+        span = (datetime.strptime(last, "%Y-%m-%d") - datetime.strptime(first, "%Y-%m-%d")).days
+        prices = load_prices(token, last, LOOKBACK_DAYS + int(span * 0.7))
+        explain(prices, pairs)
+        return
 
     if a.bt:
         if os.path.exists(a.cache):

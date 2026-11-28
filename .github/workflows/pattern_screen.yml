@@ -26,6 +26,10 @@ on:
         description: "true=検証モード（過去 bt_days 営業日でシグナル後5/10/20日の成績）"
         type: boolean
         default: false
+      explain:
+        description: "診断 6701:2026-10-16,… （入れると条件ごとの○×だけ出す）"
+        required: false
+        default: ""
       bt_days:
         description: "検証の営業日数"
         default: "500"
@@ -60,8 +64,12 @@ jobs:
         run: |
           python pattern_screener.py --bt --markets "${{ inputs.markets }}" --bt-days "${{ inputs.bt_days }}" | tee pattern_bt.log
 
+      - name: 診断
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.explain != '' }}
+        run: python pattern_screener.py --explain "${{ inputs.explain }}"
+
       - name: スクリーニング
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.bt) }}
+        if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.bt || inputs.explain != '')) }}
         run: |
           MK="${{ inputs.markets }}"; [ -z "$MK" ] && MK="growth,standard"
           DT="${{ inputs.date }}";    [ -z "$DT" ] && DT="today"
@@ -72,7 +80,7 @@ jobs:
           [ -f pattern_signals.md ] && cat pattern_signals.md >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: 結果をコミット
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.bt) }}
+        if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.bt || inputs.explain != '')) }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
