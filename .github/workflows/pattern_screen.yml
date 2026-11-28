@@ -1,0 +1,87 @@
+name: ★買い時かも パターン選定（一目・SAR・MACD・RSI・BB）
+
+# pattern_screener.py を回す。売買はしない（候補リストを出すだけ）。
+#   定期: 平日 18:07 JST（J-Quants日足の公開後）に当日分で判定 → pattern_signals.json/.md をコミット＋Discord
+#   手動: Actions → このワークフロー → Run workflow（市場・日付・検証モードを選べる）
+# Discord は Secrets の DISCORD_WEBHOOK_PATTERN_URL（未設定ならログに出すだけ）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      markets:
+        description: "市場（growth,standard,prime をカンマ区切り）"
+        default: "growth,standard"
+      date:
+        description: "判定日 YYYY-MM-DD（空=今日 / 過去日で再現も可）"
+        required: false
+        default: ""
+      top:
+        description: "上位何件を出すか"
+        default: "20"
+      dry_run:
+        description: "true=Discordに送らない"
+        type: boolean
+        default: false
+      bt:
+        description: "true=検証モード（過去 bt_days 営業日でシグナル後5/10/20日の成績）"
+        type: boolean
+        default: false
+      bt_days:
+        description: "検証の営業日数"
+        default: "500"
+  schedule:
+    - cron: '7 9 * * 1-5'   # UTC 09:07 = JST 18:07 平日
+
+concurrency:
+  group: pattern-screen
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+      DISCORD_WEBHOOK_PATTERN_URL: ${{ secrets.DISCORD_WEBHOOK_PATTERN_URL }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: パッケージインストール
+        run: pip install -r requirements.txt
+
+      - name: 検証
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.bt }}
+        run: |
+          python pattern_screener.py --bt --markets "${{ inputs.markets }}" --bt-days "${{ inputs.bt_days }}" | tee pattern_bt.log
+
+      - name: スクリーニング
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.bt) }}
+        run: |
+          MK="${{ inputs.markets }}"; [ -z "$MK" ] && MK="growth,standard"
+          DT="${{ inputs.date }}";    [ -z "$DT" ] && DT="today"
+          TOP="${{ inputs.top }}";    [ -z "$TOP" ] && TOP="20"
+          ARGS="--markets $MK --date $DT --top $TOP"
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry"
+          python pattern_screener.py $ARGS
+          [ -f pattern_signals.md ] && cat pattern_signals.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: 結果をコミット
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.bt) }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pattern_signals.json pattern_signals.md 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "chore(pattern): signals [skip ci]" && git pull --rebase && git push)
+
+      - name: 検証ログを保存
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.bt }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pattern-bt
+          path: pattern_bt.log
