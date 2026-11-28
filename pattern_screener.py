@@ -420,7 +420,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--markets", default="growth,standard")
     ap.add_argument("--date", default=None, help="判定日 YYYY-MM-DD / today（省略=前営業日まで）")
-    ap.add_argument("--top", type=int, default=20)
+    ap.add_argument("--top", type=int, default=5)
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--bt", action="store_true")
     ap.add_argument("--bt-days", type=int, default=500)

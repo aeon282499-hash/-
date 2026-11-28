@@ -17,7 +17,7 @@ on:
         default: ""
       top:
         description: "上位何件を出すか"
-        default: "20"
+        default: "5"
       dry_run:
         description: "true=Discordに送らない"
         type: boolean
@@ -73,7 +73,7 @@ jobs:
         run: |
           MK="${{ inputs.markets }}"; [ -z "$MK" ] && MK="growth,standard"
           DT="${{ inputs.date }}";    [ -z "$DT" ] && DT="today"
-          TOP="${{ inputs.top }}";    [ -z "$TOP" ] && TOP="20"
+          TOP="${{ inputs.top }}";    [ -z "$TOP" ] && TOP="5"
           ARGS="--markets $MK --date $DT --top $TOP"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry"
           python pattern_screener.py $ARGS
